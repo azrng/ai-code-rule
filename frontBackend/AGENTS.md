@@ -23,15 +23,19 @@
 ## 技术栈
 
 ### 前端
-- Vew3 + TypeScript + Vite
-- Element Plus组件库
-- lucide-vue（唯一图标库，尺寸统一 18-24px）
-- ECharts + echarts-for-vue（唯一图表库，使用主题化配色）
-- Zustand（全局状态管理：用户信息、权限、通知等跨组件共享状态）
+- Vue 3 + TypeScript + Vite
+- Element Plus 组件库
+- Element Plus Icons（唯一图标库，尺寸统一 18-24px）
+- Vue Router 4（路由管理）
+- Pinia（全局状态管理：用户信息、权限、通知等跨组件共享状态）
+- Axios（HTTP 客户端）
 
 ### 后端
-- .Net10(2025年发布正式版) + ASP.NET Core Web API
-- 分层架构：`controller → service → repository → model`
+- .NET 10 (2025 年已经发布正式版) + ASP.NET Core Web API
+- Clean Architecture 分层架构：
+  - `API`（表现层）→ `Application`（应用层）→ `Domain`（领域层）← `Infrastructure`（基础设施层）
+- ORM：Entity Framework Core
+- 测试框架：xUnit + Moq
 
 ### 部署
 - Docker + Docker Compose
@@ -48,8 +52,8 @@
 - 前端 API 请求统一指向 `http://localhost:8000`，通过环境变量 `VITE_API_BASE_URL` 配置，不允许硬编码
 
 ### 设计系统
-- 全量使用 Tailwind 工具类，所有视觉规范在 `design-system.yaml` 中定义
-- 禁止 inline style，禁止硬编码颜色/间距/圆角
+- 使用 Element Plus 主题系统，所有视觉规范在 `design-system.yaml` 中定义
+- 优先使用 Element Plus 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
 
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
 
@@ -65,33 +69,40 @@ project-root/
 │   ├── src/
 │   │   ├── api/               # 按业务域拆分的请求模块
 │   │   ├── components/
-│   │   │   ├── ui/            # 基础 UI 组件（Button、Card、Badge 等）
-│   │   │   ├── layout/        # 布局组件（Container、Grid、Flex）
-│   │   │   └── charts/        # ECharts 封装组件
-│   │   ├── pages/             # 页面级组件
-│   │   ├── hooks/             # 自定义 hooks
-│   │   ├── store/             # Zustand stores（按业务域拆分）
+│   │   │   ├── common/        # 通用业务组件
+│   │   │   └── layout/        # 布局组件
+│   │   ├── views/             # 页面级组件（按业务域拆分）
+│   │   ├── router/
+│   │   │   ├── index.ts       # 路由配置
+│   │   │   └── routes.ts      # 路由定义
+│   │   ├── stores/            # Pinia stores（按业务域拆分）
 │   │   ├── types/             # TypeScript 类型定义
 │   │   ├── utils/             # 纯工具函数
-│   │   └── config/
-│   │       └── echarts-theme.ts  # ECharts 主题配置（唯一来源）
+│   │   ├── directives/        # 自定义指令
+│   │   ├── hooks/             # 组合式函数
+│   │   ├── config/
+│   │   │   └── element-theme.ts  # Element Plus 主题配置
+│   │   ├── App.vue
+│   │   └── main.ts
 │   ├── Dockerfile
-│   └── package.json
-├── backend/                  # 【已替换】标准的 ASP.NET Core 解决方案
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tsconfig.json
+├── backend/                  # Clean Architecture 解决方案
 │   ├── src/
-│   │   ├── YourProject.API/                 # 主 Web API 项目
-│   │   │   ├── Controllers/                 # API 控制器（路由层）
+│   │   ├── YourProject.API/                 # 表现层
+│   │   │   ├── Controllers/                 # API 控制器
 │   │   │   ├── Middleware/                  # 自定义中间件
 │   │   │   ├── Filters/                     # 动作过滤器
-│   │   │   ├── Program.cs                   # 应用入口和服务配置
+│   │   │   ├── Program.cs                   # 应用入口
 │   │   │   ├── appsettings.json             # 配置文件
 │   │   │   └── YourProject.API.csproj
 │   │   │
-│   │   ├── YourProject.Application/         # 应用层（业务逻辑）
-│   │   │   ├── Services/                    # 应用服务（实现用例）
-│   │   │   ├── DTOs/                        # 数据传输对象 (Request/Response)
-│   │   │   ├── Interfaces/                  # 服务接口
-│   │   │   ├── Behaviors/                   # MediatR 管道行为（如验证、日志）
+│   │   ├── YourProject.Application/         # 应用层
+│   │   │   ├── Services/                    # 应用服务接口与实现
+│   │   │   ├── DTOs/                        # 数据传输对象
+│   │   │   ├── Interfaces/                  # 应用服务接口
+│   │   │   ├── Mappings/                    # AutoMapper 配置
 │   │   │   └── YourProject.Application.csproj
 │   │   │
 │   │   ├── YourProject.Domain/              # 领域层（核心业务模型）
@@ -99,25 +110,29 @@ project-root/
 │   │   │   ├── ValueObjects/                # 值对象
 │   │   │   ├── Enums/                       # 枚举
 │   │   │   ├── Events/                      # 领域事件
+│   │   │   ├── Exceptions/                  # 领域异常
 │   │   │   └── YourProject.Domain.csproj
 │   │   │
 │   │   └── YourProject.Infrastructure/      # 基础设施层
 │   │       ├── Data/                        # 数据访问
 │   │       │   ├── Context/                 # DbContext
-│   │       │   ├── Migrations/              # Entity Framework Core 迁移文件
+│   │       │   ├── Configurations/          # EF Core 配置
+│   │       │   ├── Migrations/              # EF Core 迁移文件
 │   │       │   └── Repositories/            # 仓储实现
-│   │       ├── Identity/                    # 身份认证实现
-│   │       ├── Services/                    # 外部服务实现（如邮件、短信）
+│   │       ├── Services/                    # 外部服务实现
 │   │       └── YourProject.Infrastructure.csproj
-│   ├── tests/                  # 集成测试
+│   ├── tests/
+│   │   ├── YourProject.UnitTests/           # 单元测试
+│   │   └── YourProject.IntegrationTests/    # 集成测试
 │   ├── Dockerfile
-│   └── backend.sln             # Visual Studio 解决方案文件
+│   └── backend.sln
 ├── doc/
 │   ├── devlog/
 │   ├── design/
 │   └── requirement.md
 ├── docker-compose.yml
 ├── .env.example
+├── .gitignore
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── GEMINI.md
@@ -177,17 +192,17 @@ project-root/
 **入场要求**：阶段 0 设计文档已由用户确认
 
 **工作内容**：
-1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 所有规范
-2. 数据层使用 mock（静态 mock 数据或 mock 文件），不依赖真实后端接口
-3. 同步输出接口契约文件 `frontend/src/types/api.ts`，定义所有请求体和响应体的 TypeScript 类型
+1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 和 Element Plus 规范
+2. 数据层使用 mock（静态 mock 数据），不依赖真实后端接口
+3. 同步输出接口说明文档，供后端开发参考
 
 **产物**：
 - 可在浏览器中运行的前端页面
-- `frontend/src/types/api.ts` 接口契约文件
+- 接口需求说明（用于后端开发）
 
 **门控规则**：
 - 用户确认前端页面符合设计文档预期
-- `api.ts` 中的接口类型已定稳，不再变动
+- 前端页面交互逻辑已验证通过
 - 满足以上两点后，才允许进入阶段 2
 
 ---
@@ -196,21 +211,21 @@ project-root/
 
 **触发条件**：用户发出「开始后端开发」指令
 
-**入场要求**：`frontend/src/types/api.ts` 接口契约文件已定稳
+**入场要求**：前端页面已完成，接口需求已明确
 
 **工作内容**：
-1. 严格按照 `api.ts` 中的类型定义实现 FastAPI 接口，字段名和类型必须一一对应
-2. 遵循 `router → service → repository → model` 完整分层
-3. 涉及数据库结构变更时，同步生成 Alembic migration
-4. 每个接口必须可通过 curl 或 Postman 独立验证
+1. 按照接口需求实现 ASP.NET Core Web API 接口
+2. 遵循 `Controller → Application → Domain → Infrastructure` 分层架构
+3. 涉及数据库结构变更时，使用 EF Core Migrations 生成迁移脚本
+4. 每个接口必须可通过 Swagger 或 Postman 独立验证
 
 **字段命名约定**：
-- 前端（TypeScript）：camelCase
-- 后端 Pydantic schema：snake_case
-- 转换层：前端 axios 拦截器统一处理 camelCase ↔ snake_case 转换，后端不做适配
+- C# 属性：PascalCase
+- JSON 输出：camelCase（通过 System.Text.Json 配置自动转换）
+- 数据库字段：snake_case（通过 EF Core 命名约定配置）
 
 **门控规则**：
-- 核心接口独立测试（curl / Postman）通过后，才允许进入阶段 3
+- 核心接口独立测试（Swagger / Postman）通过后，才允许进入阶段 3
 
 ---
 
@@ -223,19 +238,10 @@ project-root/
 **工作内容**：
 1. 前端替换 mock 数据，改为调用真实后端接口
 2. 处理跨域配置、鉴权 token 传递、HTTP 错误码映射
-3. 对齐异常处理：后端错误结构与前端 Toast / Alert 展示逻辑匹配
+3. 对齐异常处理：后端错误结构与前端 Message / Alert 展示逻辑匹配
 4. 执行核心业务路径 smoke test（至少覆盖：登录 → 核心操作 → 数据回显 → 退出）
 
 **完成标志**：核心路径 smoke test 通过，`doc/devlog/` 已补充本阶段记录
-
----
-
-### 接口契约规范
-
-- **唯一来源**：`frontend/src/types/api.ts`
-- **定义时机**：阶段 1 由前端（Claude Code）定义，阶段 2 后端（Codex）严格对照实现
-- **变更规则**：接口类型需要变更时，必须先修改 `api.ts`，再同步修改前后端实现，不允许后端自行扩展字段
-- **文件结构建议**：按业务域拆分为命名空间或分文件，避免单文件过大
 
 ---
 
@@ -247,19 +253,17 @@ project-root/
 4. 再阅读相关模块和现有实现
 5. 优先复用当前结构，再决定是否新增文件
 
-进行 UI 开发时：
-1. `design-system.yaml` 是颜色、间距、圆角、排版、页面状态、组件使用规则的唯一来源
-2. 所有样式使用 Tailwind 工具类，禁止 inline style={{}} 和 CSS-in-JS
-3. 颜色必须来自 design-system 定义的语义化 token，禁止硬编码十六进制值
-4. 图表统一使用 ECharts，颜色和主题配置统一来自 `src/config/echarts-theme.ts`
-5. 图标统一使用 lucide-react，尺寸 18-24px
-6. 全局状态（用户、权限、通知、全局筛选等）使用 Zustand store
-7. 组件本地状态使用 React Hooks（useState、useReducer）
+进行前端开发时：
+1. `design-system.yaml` 是颜色、间距、圆角、排版、页面状态、组件使用规则的参考依据
+2. 优先使用 Element Plus 组件，样式使用 Element Plus 的 class 和 SCSS 变量
+3. 图标统一使用 Element Plus Icons，尺寸 18-24px
+4. 全局状态（用户、权限、通知等）使用 Pinia store
+5. 组件本地状态使用 Composition API（ref、reactive、computed）
 
 进行后端开发时：
-1. 保持 `controller -> service -> repository -> model` 分层
-2. 使用 API 的请求与响应模型
-3. 涉及表结构变更时使用 Alembic
+1. 保持 Clean Architecture 分层依赖规则
+2. Controller 只负责 HTTP 处理，业务逻辑放在 Application 层
+3. 涉及表结构变更时使用 EF Core Migrations
 
 进行部署改动时：
 1. 优先复用现有 Dockerfile 和 Compose 链路
@@ -280,11 +284,39 @@ project-root/
 
 ## 前端规则
 
+### Composition API 规范
+- **必须使用** `<script setup lang="ts">` 语法糖
+- 响应式数据使用 `ref`（基础类型）和 `reactive`（对象类型）
+- 计算属性使用 `computed`，副作用使用 `watch` 和 `watchEffect`
+- 生命周期钩子使用 `onMounted`、`onUnmounted` 等
+- 可复用逻辑封装为组合式函数（`useXxx`），放在 `hooks/` 目录
+
+### 组件通信规范
+- **父传子**：使用 `defineProps` 定义，只读不可修改
+- **子传父**：使用 `defineEmits` 定义事件
+- **跨级传值**：优先使用 Pinia，其次使用 `provide`/`inject`
+- **兄弟组件**：通过共同父组件或 Pinia 中转
+- 避免直接修改 props，需要修改时使用 v-model 或 emit
+
+### 路由管理规范
+- 路由配置集中放在 `src/router/routes.ts`
+- 路由守卫统一在 `src/router/index.ts` 中配置
+- 路由跳转使用 `router.push` 和 `router.replace`
+- 获取路由参数使用 `useRoute().params` 或 `useRoute().query`
+- 路由命名使用有意义的名称（如 `UserList`、`OrderDetail`）
+
+### Pinia 状态管理规范
+- Store 按业务域拆分，放在 `src/stores/` 目录
+- 使用 `defineStore` 定义 store
+- State 定义数据，Getters 定义计算属性，Actions 定义修改逻辑
+- 修改 state 必须通过 actions，禁止在组件中直接修改 store 状态
+- 异步操作放在 actions 中，同步计算放在 getters 中
+
 ### 样式规则
-- 所有样式使用 Tailwind CSS 工具类，禁止 `style={{}}`，禁止 CSS-in-JS（styled-components、emotion 等）
-- 所有颜色来自 design-system.yaml 中定义的语义化 token，禁止硬编码十六进制值（如 `#1A90FF`）
-- 所有间距使用 Tailwind 工具类（`p-4`、`m-2`、`gap-3`），禁止硬编码数值
-- 响应式设计遵循移动优先原则，必须在 `sm / md / lg / xl` 断点处测试
+- 优先使用 Element Plus 组件内置样式和 class
+- 自定义样式使用 SCSS，变量来自 `design-system.yaml`
+- 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）
+- 响应式设计遵循移动优先原则，必须在不同断点下测试
 
 ### 组件规则
 - 优先复用 `src/components/` 下已有组件，禁止重复创建
@@ -292,58 +324,83 @@ project-root/
 - 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
 - 除非仓库已在使用，否则不要引入新的组件库或样式体系
 
-### 图表规则
-- 统一使用 ECharts（通过 `echarts-for-react` 封装）
-- 图表颜色、字体、网格线、tooltip 样式统一来自 `src/config/echarts-theme.ts`
-- 禁止在页面中直接硬编码图表颜色
-- 图表组件封装在 `src/components/charts/` 目录下，页面不直接使用 echarts-for-react
-
-### 状态管理规则
-- **本地状态**：使用 React Hooks（useState、useReducer、useCallback、useEffect）
-- **全局共享状态**：使用 Zustand（用户信息、权限、菜单、通知、跨页面共享数据）
-- Zustand store 按业务域拆分，放在 `src/store/` 目录下
-- 禁止使用 Redux、MobX、Recoil
-- Context API 仅用于主题、语言等低频全局配置，不用于业务状态
-
 ### 请求规则
 - 禁止在组件中直接调用后端 API，统一通过 `src/api/` 下的请求模块封装
+- Axios 实例统一配置，拦截器处理 token、错误
 - 业务常量不要散落在页面组件内部
+- API 函数命名规范：`getXxx`、`createXxx`、`updateXxx`、`deleteXxx`
 
 ---
 
-## 后端规则
-- 保持职责分离：
-  - `controller`：处理 HTTP 与依赖注入
-  - `service`：处理业务逻辑
-  - `repository`：处理数据库访问
-  - `model/schema`：分离持久化模型与接口契约
-- SQLAlchemy Model 变更应与 Alembic migration 一起评估与提交
-- 不允许硬编码密钥或环境相关配置
-- 日志、异常处理、响应结构应与项目现有风格保持一致
+## 后端规则（Clean Architecture）
+
+### 分层依赖规则
+```
+API → Application → Domain ← Infrastructure
+                ↑_______________|
+```
+- `Domain` 层：无外部依赖，包含核心业务模型
+- `Application` 层：依赖 Domain，定义服务接口和 DTO
+- `API` 层：依赖 Application，处理 HTTP 请求
+- `Infrastructure` 层：依赖 Application 和 Domain，实现具体技术细节
+
+### Controller 层规则
+- Controller 只负责 HTTP 处理，不包含业务逻辑
+- 使用 `[ApiController]` 特性，自动处理 400 响应
+- 使用 `[Route("api/[controller]")]` 统一路由前缀
+- 注入 Application 层的服务接口，不直接依赖 Infrastructure
+- 统一使用 `ActionResult<T>` 或 `IActionResult` 返回类型
+
+### Application 层规则
+- 服务类实现接口，接口定义在 `Interfaces/` 目录
+- 服务方法必须是异步的（返回 `Task<T>`）
+- 使用 DTO 进行数据传递，不直接暴露 Domain 实体
+- 使用 AutoMapper 进行对象映射（如需要）
+- 业务异常抛出继承自 `ApplicationException` 的自定义异常
+
+### Domain 层规则
+- 实体类继承自基类（包含 Id、创建时间等公共属性）
+- 值对象使用 record 类型，实现值相等比较
+- 领域事件继承自 `INotification`（MediatR）
+- 禁止依赖外部库，保持纯净
+
+### Infrastructure 层规则
+- DbContext 实现数据上下文，配置连接和映射
+- 使用 EF Core Migrations 管理数据库结构变更
+- 仓储实现依赖注入，遵循仓储模式
+- 外部服务（邮件、文件存储等）实现在此层
+
+### 数据访问规则
+- 使用 Entity Framework Core 进行数据访问
+- DbContext 通过构造函数注入
+- 使用 LINQ 查询，避免原生 SQL
+- 涉及事务时使用 `IDbContextTransaction`
+- 软删除通过全局查询过滤器实现
 
 ---
 
 ## 测试规则
+
 ### 总体要求
-- 影响行为的改动应优先补充或更新测试，而不是只修改实现代码
+- 影响行为的改动应优先补充或更新测试
 - 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为，不要只覆盖静态渲染或无意义分支
+- 测试应覆盖真实业务行为
 
 ### 前端测试
-- 页面交互、表单校验、表格行为、权限状态、异常状态发生变化时，应补充对应测试
-- 至少关注以下关键状态：`loading`、`empty`、`error`、`no-permission`
-- 若涉及数据请求、筛选、分页、提交等用户关键路径，应验证主要交互结果
-- 组件测试优先验证用户可见行为，不依赖实现细节
+- 前端暂时不考虑单元测试
+- 但必须进行手动 smoke test 验证核心功能
 
 ### 后端测试
-- 接口行为、服务逻辑、数据结构、权限控制发生变化时，应补充对应测试
-- 路由层测试应关注状态码、响应结构、参数校验和异常处理
-- 服务层测试应关注业务逻辑分支，而不是只验证函数被调用
+- 单元测试使用 xUnit + Moq
+- Controller 测试：验证状态码、响应结构、参数校验
+- Service 测试：验证业务逻辑分支，使用 mock 隔离依赖
+- Repository 测试：使用 In-Memory 数据库或 Testcontainers
+- 集成测试：使用 WebApplicationFactory 测试完整请求管道
 
 ### 外部依赖与数据
-- 测试中不要真实调用第三方服务，统一使用 mock、stub 或测试替身
+- 测试中不要真实调用第三方服务，统一使用 mock
 - 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态或不可控外部环境
+- 不要让测试依赖本地人工状态
 
 ### 无法执行测试时
 - 必须说明未执行的测试类型
@@ -353,6 +410,7 @@ project-root/
 ---
 
 ## Git 与提交流程
+
 ### 分支命名
 - `feat/<desc>`：新功能
 - `fix/<desc>`：缺陷修复
@@ -366,24 +424,24 @@ project-root/
 - 示例：
   - `feat(auth): add refresh token endpoint`
   - `fix(frontend): correct table pagination reset`
-  - `chore(docker): pin base image version`
+  - `chore(dotnet): pin NuGet package version`
 
 ### 交付前自查
-- 类型检查已执行，或已明确说明未执行原因
-- lint 已执行，或已明确说明未执行原因
-- 前后端相关测试已执行，或已明确说明未执行原因
-- 表结构变更已确认 Alembic migration
+- 前端：类型检查（tsc）、构建（npm run build）
+- 后端：编译（dotnet build）、测试（dotnet test）
+- 涉及数据库结构变更时已确认 EF Core Migration
 - 新增环境变量已同步更新相关文档
 - 涉及 Docker 时已确认构建或部署链路
 
 ### 提交触发规则
 - 每次修改完后都必须提交代码
-- 若仓库尚未初始化为可用 Git 工作区，最终说明中必须明确写明无法执行提交校验
 - 若本次开发生成了本地运行产物、缓存、测试数据库、构建产物或依赖目录，应同步检查并更新 `.gitignore`
 
 ---
 
 ## Docker 规则
+
+### 总体要求
 - 优先复用现有 Docker 与 Compose 文件
 - 生产镜像优先采用多阶段构建
 - 不要把密钥写入镜像
@@ -399,7 +457,7 @@ project-root/
   - 前后端核心访问链路是否可用
 - 若发现宿主机端口冲突，不要直接停止未知本地进程；优先调整 Compose 映射端口，并同步更新文档和前端配置
 - 对于依赖数据库或其他基础服务的容器，Compose 中应尽量补充健康检查或等价的启动等待策略
-- 新增镜像构建链路时，应同步补充 `.dockerignore`，避免将 `node_modules`、虚拟环境、测试数据库、构建产物等无关内容打入镜像上下文
+- 新增镜像构建链路时，应同步补充 `.dockerignore`
 
 ---
 
@@ -444,8 +502,7 @@ project-root/
 - 排版 token
 - 间距、圆角、阴影 token
 - 布局与断点规则
-- Tailwind 配置映射规则
-- ECharts 主题色映射
+- Element Plus 主题配置映射
 - 页面状态规范
 - 组件使用规则
 - 明确的 `do / dont` 规则
@@ -485,7 +542,7 @@ project-root/
 ## 交付收口规范
 - 当用户请求"开始开发"而非"只出方案"时，AI Agent 在实现完成后应默认继续做交付收口，而不是停在代码编写阶段
 - 交付收口至少应按实际情况依次检查：
-  1. 类型检查 / lint / 测试
+  1. 编译 / 类型检查 / 测试
   2. 构建
   3. Docker 构建与启动验证
   4. 浏览器或接口级 smoke test
@@ -497,16 +554,16 @@ project-root/
 
 ## 常见禁止事项
 - 禁止在组件中直接调用后端 API，统一通过请求层封装
-- 禁止在 FastAPI 路由层编写业务逻辑，应放入 `service` 层
-- 禁止修改 SQLAlchemy Model 后不补 Alembic migration
-- 禁止在异步代码中使用阻塞式等待
+- 禁止在 Controller 层编写业务逻辑，应放入 Application 层
+- 禁止修改 EF Core Model 后不补 Migration
+- 禁止在异步代码中使用阻塞式等待（.Result / .Wait()）
 - 禁止绕过既有提交校验流程，如 `git commit --no-verify`
-- 禁止使用 inline style={{}}
-- 禁止硬编码颜色值（如 `#1A90FF`）、间距值（如 `padding: "20px"`）
-- 禁止使用 Redux、MobX、Recoil 进行状态管理
-- 禁止使用非 ECharts 的图表库（Recharts、Chart.js 等）
-- 禁止在图表组件中直接硬编码颜色，必须引用 echarts-theme 配置
-- 禁止使用 lucide-react 以外的图标库
+- 禁止使用 inline style
+- 禁止硬编码颜色值（如 `#1A90FF`）、间距值
+- 禁止在 Domain 层依赖外部库
+- 禁止使用非 Element Plus Icons 以外的图标库
+- 禁止使用 Pinia 以外的状态管理库（Redux、MobX 等）
+- 禁止使用 `<script>`  Options API，必须使用 Composition API
 
 ---
 
