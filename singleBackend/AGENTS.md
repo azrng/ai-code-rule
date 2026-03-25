@@ -22,31 +22,12 @@
 
 ## 技术栈
 
-### 前端
-- React 18 + TypeScript
-- Tailwind CSS v3（唯一样式引擎）
-- lucide-react（唯一图标库，尺寸统一 18-24px）
-- ECharts + echarts-for-react（唯一图表库，使用主题化配色）
-- Zustand（全局状态管理：用户信息、权限、通知等跨组件共享状态）
-- React Hooks（本地组件状态）
-
-### 后端
-- Python + FastAPI + SQLAlchemy + Alembic
-- 分层架构：`router → service → repository → model`
+- .Net10(2025年发布正式版) + Avalonia + Ursa.Avalonia + Fluent + CommunityToolkit.Mvvm
+- 分层架构：View (视图层) → ViewModel (视图模型层) → Service (应用服务层) → Repository (仓储层) → Model (领域模型层)
 
 ### 部署
 - Docker + Docker Compose
 - 数据库：PostgreSQL
-
-### 默认端口
-| 服务                 | 容器内端口 | 宿主机映射端口 |
-| -------------------- | ---------- | -------------- |
-| 前端（React）        | 3000       | 3000           |
-| 后端（FastAPI）      | 8000       | 8000           |
-| 数据库（PostgreSQL） | 5432       | 5432           |
-
-- 若宿主机端口冲突，优先调整 Compose 映射端口（宿主机侧），容器内端口保持不变
-- 前端 API 请求统一指向 `http://localhost:8000`，通过环境变量 `VITE_API_BASE_URL` 配置，不允许硬编码
 
 ### 设计系统
 - 全量使用 Tailwind 工具类，所有视觉规范在 `design-system.yaml` 中定义
