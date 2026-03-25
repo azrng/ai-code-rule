@@ -22,16 +22,20 @@
 
 ## 技术栈
 
-- .Net10(2025年发布正式版) + Avalonia + Ursa.Avalonia + Fluent + CommunityToolkit.Mvvm
+- .NET 10 (2025 年发布正式版) + Avalonia 11+ + Ursa.Avalonia + CommunityToolkit.Mvvm
 - 分层架构：View (视图层) → ViewModel (视图模型层) → Service (应用服务层) → Repository (仓储层) → Model (领域模型层)
+- 数据访问：Dapper + SQLite
+- 消息传递：CommunityToolkit.Mvvm IMessenger
+- 依赖注入：Microsoft.Extensions.DependencyInjection
 
 ### 部署
-- Docker + Docker Compose
-- 数据库：PostgreSQL
+- 桌面应用打包：单文件发布
+- 数据库：SQLite (本地可选) / PostgreSQL (可选)
 
 ### 设计系统
-- 全量使用 Tailwind 工具类，所有视觉规范在 `design-system.yaml` 中定义
-- 禁止 inline style，禁止硬编码颜色/间距/圆角
+- 使用 Fluent Design 风格，遵循 `design-system.yaml` 中定义的设计 token
+- 样式必须使用 Avalonia 样式表 (Styles/Classes)，禁止硬编码在控件属性中
+- 颜色、间距、圆角必须来自样式资源，使用 {StaticResource} 或 {DynamicResource} 引用
 
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
 
@@ -42,41 +46,45 @@
 
 ```text
 project-root/
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── api/               # 按业务域拆分的请求模块
-│   │   ├── components/
-│   │   │   ├── ui/            # 基础 UI 组件（Button、Card、Badge 等）
-│   │   │   ├── layout/        # 布局组件（Container、Grid、Flex）
-│   │   │   └── charts/        # ECharts 封装组件
-│   │   ├── pages/             # 页面级组件
-│   │   ├── hooks/             # 自定义 hooks
-│   │   ├── store/             # Zustand stores（按业务域拆分）
-│   │   ├── types/             # TypeScript 类型定义
-│   │   ├── utils/             # 纯工具函数
-│   │   └── config/
-│   │       └── echarts-theme.ts  # ECharts 主题配置（唯一来源）
-│   ├── Dockerfile
-│   └── package.json
-├── backend/
-│   ├── app/
-│   │   ├── api/               # 路由层
-│   │   ├── core/              # 配置、安全、依赖注入
-│   │   ├── models/            # SQLAlchemy 模型
-│   │   ├── schemas/           # 请求/响应模型
-│   │   ├── services/          # 业务逻辑层
-│   │   ├── repositories/      # 数据访问层
-│   │   └── main.py
-│   ├── alembic/
-│   ├── tests/
-│   └── Dockerfile
+├── src/
+│   ├── AppName/
+│   │   ├── Views/                    # 视图层
+│   │   │   ├── Controls/             # 自定义控件
+│   │   │   ├── Converters/           # 值转换器
+│   │   │   ├── Dialogs/              # 对话框视图
+│   │   │   └── Pages/                # 页面视图（按业务域拆分）
+│   │   ├── ViewModels/               # 视图模型层
+│   │   │   ├── Base/                 # ViewModel 基类
+│   │   │   ├── Dialogs/              # 对话框 ViewModel
+│   │   │   └── Pages/                # 页面 ViewModel（按业务域拆分）
+│   │   ├── Services/                 # 应用服务层
+│   │   │   ├── Interfaces/           # 服务接口定义
+│   │   │   └── Implementations/      # 服务实现
+│   │   ├── Repositories/             # 仓储层
+│   │   │   ├── Interfaces/           # 仓储接口定义
+│   │   │   └── Implementations/      # 仓储实现
+│   │   ├── Models/                   # 领域模型层
+│   │   │   ├── Entities/             # 数据实体
+│   │   │   └── DTOs/                 # 数据传输对象
+│   │   ├── Helpers/                  # 工具类、扩展方法
+│   │   ├── Assets/                   # 资源文件
+│   │   │   ├── Styles/               # Avalonia 样式表
+│   │   │   │   ├── Fluent.axaml      # Fluent 主题
+│   │   │   │   ├── Colors.axaml      # 颜色资源
+│   │   │   │   ├── Fonts.axaml       # 字体资源
+│   │   │   │   └── Global.axaml      # 全局样式
+│   │   │   └── Images/               # 图片资源
+│   │   ├── Data/                     # 数据访问
+│   │   │   ├── Context/              # 数据库上下文
+│   │   │   └── Migrations/           # 数据库迁移脚本
+│   │   ├── App.axaml                 # 应用级资源
+│   │   └── Program.cs                # 入口文件
+│   └── AppName.sln
 ├── doc/
 │   ├── devlog/
 │   ├── design/
 │   └── requirement.md
-├── docker-compose.yml
-├── .env.example
+├── .gitignore
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── GEMINI.md
@@ -94,7 +102,7 @@ project-root/
 
 ```
 阶段 0          阶段 1          阶段 2          阶段 3
-设计文档   →   前端实现   →   后端实现   →   前后端联调
+设计文档   →   视图实现   →   业务逻辑实现   →   集成测试
 （用户确认）   （Claude Code）  （Codex）       （协作）
 ```
 
@@ -129,72 +137,62 @@ project-root/
 
 ---
 
-### 阶段 1 — 前端实现（Claude Code 主导）
+### 阶段 1 — 视图实现（Claude Code 主导）
 
-**触发条件**：用户发出「开始前端开发」指令
+**触发条件**：用户发出「开始视图开发」指令
 
 **入场要求**：阶段 0 设计文档已由用户确认
 
 **工作内容**：
-1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 所有规范
-2. 数据层使用 mock（静态 mock 数据或 mock 文件），不依赖真实后端接口
-3. 同步输出接口契约文件 `frontend/src/types/api.ts`，定义所有请求体和响应体的 TypeScript 类型
+1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 和 Avalonia 样式规范
+2. 数据层使用 mock（静态 mock 数据），不依赖真实服务
+3. 同步输出接口契约文件 `src/AppName/Models/DTOs/`，定义所有数据传输对象
 
 **产物**：
-- 可在浏览器中运行的前端页面
-- `frontend/src/types/api.ts` 接口契约文件
+- 可运行的 Avalonia 视图页面
+- `src/AppName/Models/DTOs/` 接口契约类
 
 **门控规则**：
-- 用户确认前端页面符合设计文档预期
-- `api.ts` 中的接口类型已定稳，不再变动
+- 用户确认视图页面符合设计文档预期
+- DTO 类中的类型已定稳，不再变动
 - 满足以上两点后，才允许进入阶段 2
 
 ---
 
-### 阶段 2 — 后端实现（Codex 主导）
+### 阶段 2 — 业务逻辑实现（Codex 主导）
 
 **触发条件**：用户发出「开始后端开发」指令
 
-**入场要求**：`frontend/src/types/api.ts` 接口契约文件已定稳
+**入场要求**：`src/AppName/Models/DTOs/` 接口契约文件已定稳
 
 **工作内容**：
-1. 严格按照 `api.ts` 中的类型定义实现 FastAPI 接口，字段名和类型必须一一对应
-2. 遵循 `router → service → repository → model` 完整分层
-3. 涉及数据库结构变更时，同步生成 Alembic migration
-4. 每个接口必须可通过 curl 或 Postman 独立验证
+1. 严格按照 DTO 中的类型定义实现 Service 层和 Repository 层
+2. 遵循 `ViewModel → Service → Repository → Model` 完整分层
+3. 涉及数据库结构变更时，同步生成迁移脚本
+4. 每个服务方法必须可通过单元测试独立验证
 
 **字段命名约定**：
-- 前端（TypeScript）：camelCase
-- 后端 Pydantic schema：snake_case
-- 转换层：前端 axios 拦截器统一处理 camelCase ↔ snake_case 转换，后端不做适配
+- C# 属性：PascalCase
+- 数据库字段：snake_case
+- 转换层：Dapper 映射通过 Column 特性或自定义映射处理
 
 **门控规则**：
-- 核心接口独立测试（curl / Postman）通过后，才允许进入阶段 3
+- 核心业务逻辑单元测试通过后，才允许进入阶段 3
 
 ---
 
-### 阶段 3 — 前后端联调
+### 阶段 3 — 集成测试
 
 **触发条件**：用户发出「开始联调」指令
 
-**入场要求**：前端页面和后端接口均已完成独立验证
+**入场要求**：视图页面和业务逻辑均已独立完成验证
 
 **工作内容**：
-1. 前端替换 mock 数据，改为调用真实后端接口
-2. 处理跨域配置、鉴权 token 传递、HTTP 错误码映射
-3. 对齐异常处理：后端错误结构与前端 Toast / Alert 展示逻辑匹配
-4. 执行核心业务路径 smoke test（至少覆盖：登录 → 核心操作 → 数据回显 → 退出）
+1. ViewModel 绑定真实 Service，验证数据流
+2. 处理异常映射：后端错误结构与 Dialog / Toast 展示逻辑匹配
+3. 执行核心业务路径 smoke test（至少覆盖：登录 → 核心操作 → 数据回显 → 退出）
 
 **完成标志**：核心路径 smoke test 通过，`doc/devlog/` 已补充本阶段记录
-
----
-
-### 接口契约规范
-
-- **唯一来源**：`frontend/src/types/api.ts`
-- **定义时机**：阶段 1 由前端（Claude Code）定义，阶段 2 后端（Codex）严格对照实现
-- **变更规则**：接口类型需要变更时，必须先修改 `api.ts`，再同步修改前后端实现，不允许后端自行扩展字段
-- **文件结构建议**：按业务域拆分为命名空间或分文件，避免单文件过大
 
 ---
 
@@ -207,23 +205,22 @@ project-root/
 5. 优先复用当前结构，再决定是否新增文件
 
 进行 UI 开发时：
-1. `design-system.yaml` 是颜色、间距、圆角、排版、页面状态、组件使用规则的唯一来源
-2. 所有样式使用 Tailwind 工具类，禁止 inline style={{}} 和 CSS-in-JS
-3. 颜色必须来自 design-system 定义的语义化 token，禁止硬编码十六进制值
-4. 图表统一使用 ECharts，颜色和主题配置统一来自 `src/config/echarts-theme.ts`
-5. 图标统一使用 lucide-react，尺寸 18-24px
-6. 全局状态（用户、权限、通知、全局筛选等）使用 Zustand store
-7. 组件本地状态使用 React Hooks（useState、useReducer）
+1. `design-system.yaml` 是颜色、间距、圆角、排版、页面状态、组件使用规则的参考依据
+2. 所有样式使用 Avalonia Styles，禁止在控件中直接设置属性值
+3. 颜色必须来自样式资源，使用 {StaticResource} 或 {DynamicResource} 引用
+4. 图标统一使用 Avalonia.Controls.Shapes 或素材图片
+5. 全局状态（用户、权限、通知等）使用 Messenger 传递
+6. ViewModel 本地状态使用 ObservableProperty 特性
 
 进行后端开发时：
-1. 保持 `router -> service -> repository -> model` 分层
-2. 使用 FastAPI 的请求与响应模型
-3. 涉及表结构变更时使用 Alembic
+1. 保持 `ViewModel → Service → Repository → Model` 分层
+2. 使用 CommunityToolkit.Mvvm 的 [RelayCommand] 特性
+3. 涉及数据库结构变更时使用迁移脚本
 
 进行部署改动时：
-1. 优先复用现有 Dockerfile 和 Compose 链路
-2. 镜像 tag 必须可追踪
-3. 清理旧镜像前要保留可回滚版本
+1. 优先复用现有打包配置
+2. 发布版本必须可追踪
+3. 清理旧版本前要保留可回滚版本
 
 ---
 
@@ -237,48 +234,72 @@ project-root/
 
 ---
 
-## 前端规则
+## Avalonia 视图层规则
 
 ### 样式规则
-- 所有样式使用 Tailwind CSS 工具类，禁止 `style={{}}`，禁止 CSS-in-JS（styled-components、emotion 等）
-- 所有颜色来自 design-system.yaml 中定义的语义化 token，禁止硬编码十六进制值（如 `#1A90FF`）
-- 所有间距使用 Tailwind 工具类（`p-4`、`m-2`、`gap-3`），禁止硬编码数值
-- 响应式设计遵循移动优先原则，必须在 `sm / md / lg / xl` 断点处测试
+- 所有样式使用 Avalonia Styles (`.axaml` 文件)，禁止在控件中直接设置 `Background`、`Margin` 等属性
+- 所有颜色来自 `design-system.yaml` 中定义的语义化 token，通过样式资源引用
+- 所有间距使用 Margin / Padding 工具类，禁止硬编码数值
+- 响应式设计遵循窗口大小变化，必须在不同窗口尺寸下测试
 
 ### 组件规则
-- 优先复用 `src/components/` 下已有组件，禁止重复创建
+- 优先复用 `src/AppName/Views/Controls/` 下已有组件，禁止重复创建
 - 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象
 - 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
-- 除非仓库已在使用，否则不要引入新的组件库或样式体系
+- 使用 Ursa.Avalonia 控件库优先，必要时使用 Avalonia 官方控件
 
-### 图表规则
-- 统一使用 ECharts（通过 `echarts-for-react` 封装）
-- 图表颜色、字体、网格线、tooltip 样式统一来自 `src/config/echarts-theme.ts`
-- 禁止在页面中直接硬编码图表颜色
-- 图表组件封装在 `src/components/charts/` 目录下，页面不直接使用 echarts-for-react
+### MVVM 模式规则
+- **ViewModel 基类**：所有 ViewModel 必须继承 `ObservableObject` (CommunityToolkit.Mvvm)
+- **属性通知**：使用 `[ObservableProperty]` 特性自动生成 INotifyPropertyChanged
+- **命令定义**：使用 `[RelayCommand]` 特性生成 ICommand，禁止手动创建 RelayCommand
+- **消息传递**：ViewModel 间通信使用 `IMessenger` (CommunityToolkit.Mvvm)
+- **依赖注入**：ViewModel 依赖通过构造函数注入，使用 Microsoft.Extensions.DependencyInjection
+
+### 导航规则
+- 使用 Ursa 的导航组件进行页面切换
+- 导航逻辑封装在 NavigationService 中，禁止在 ViewModel 中直接操作 View
+- 页面参数通过导航消息传递，禁止使用静态全局状态
+- 支持导航历史记录（前进/后退）
+
+### 对话框规则
+- 使用 Ursa 的 Dialog/Overlay 组件实现对话框
+- 对话框内容必须使用 ViewModel，禁止 Code-behind 写业务逻辑
+- 对话框结果通过 TaskCompletionSource 异步返回
+- 支持自定义对话框样式和动画效果
+
+### 数据绑定规则
+- 列表数据使用 `ObservableCollection<T>` 或 `ObservableRangeCollection<T>`
+- 复杂集合变更使用 `ReplaceAll` 方法而非清空后重添
+- 异步数据加载必须支持取消（CancellationToken）
+- 绑定路径必须正确，禁止使用 `x:Name` 访问控件
 
 ### 状态管理规则
-- **本地状态**：使用 React Hooks（useState、useReducer、useCallback、useEffect）
-- **全局共享状态**：使用 Zustand（用户信息、权限、菜单、通知、跨页面共享数据）
-- Zustand store 按业务域拆分，放在 `src/store/` 目录下
-- 禁止使用 Redux、MobX、Recoil
-- Context API 仅用于主题、语言等低频全局配置，不用于业务状态
-
-### 请求规则
-- 禁止在组件中直接调用后端 API，统一通过 `src/api/` 下的请求模块封装
-- 业务常量不要散落在页面组件内部
+- **本地状态**：使用 ObservableProperty 特性管理 ViewModel 状态
+- **全局共享状态**：使用 IMessenger 传递跨 ViewModel 消息
+- 禁止使用静态全局类（如 Singleton）存储业务状态
+- Context 仅用于主题、语言等低频全局配置
 
 ---
 
-## 后端规则
-- 保持职责分离：
-  - `router`：处理 HTTP 与依赖注入
-  - `service`：处理业务逻辑
-  - `repository`：处理数据库访问
-  - `model/schema`：分离持久化模型与接口契约
-- SQLAlchemy Model 变更应与 Alembic migration 一起评估与提交
-- 不允许硬编码密钥或环境相关配置
-- 日志、异常处理、响应结构应与项目现有风格保持一致
+## 业务逻辑层规则
+
+### Service 层规则
+- 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录
+- 服务方法必须是异步的（返回 `Task<T>` 或 `ValueTask<T>`）
+- 服务层处理所有业务逻辑，不直接访问 Repository 以外的依赖
+- 服务层异常必须统一封装，抛出业务异常类型
+
+### Repository 层规则
+- 仓储类必须实现接口，接口定义在 `Repositories/Interfaces/` 目录
+- 使用 Dapper 进行数据访问，SQL 语句放在 SQL 文件或常量中
+- 仓储方法必须是异步的，支持取消令牌
+- 涉及事务时，使用 IDbTransaction 统一管理
+
+### 数据访问规则
+- 使用 Dapper + SQLite 进行本地数据存储
+- 数据库连接字符串从配置文件读取，禁止硬编码
+- 数据库连接必须使用 `using` 语句管理生命周期
+- SQL 注入防护：所有查询必须使用参数化查询
 
 ---
 
@@ -288,20 +309,20 @@ project-root/
 - 若本次改动未补测试，必须在最终说明中写明原因和风险
 - 测试应覆盖真实业务行为，不要只覆盖静态渲染或无意义分支
 
-### 前端测试
-- 页面交互、表单校验、表格行为、权限状态、异常状态发生变化时，应补充对应测试
+### 视图层测试
+- 页面交互、表单校验、列表行为、权限状态、异常状态发生变化时，应补充对应测试
 - 至少关注以下关键状态：`loading`、`empty`、`error`、`no-permission`
 - 若涉及数据请求、筛选、分页、提交等用户关键路径，应验证主要交互结果
-- 组件测试优先验证用户可见行为，不依赖实现细节
+- 使用 Avalonia.Headless 进行 UI 自动化测试
 
-### 后端测试
-- 接口行为、服务逻辑、数据结构、权限控制发生变化时，应补充对应测试
-- 路由层测试应关注状态码、响应结构、参数校验和异常处理
-- 服务层测试应关注业务逻辑分支，而不是只验证函数被调用
-- 涉及 SQLAlchemy Model 变更时，应同时检查 Alembic migration 与相关数据读写路径
+### 业务逻辑层测试
+- ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试
+- Service 层业务逻辑、数据转换、异常处理发生变化时，应补充对应测试
+- Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试
+- 使用 xUnit 作为测试框架
 
 ### 外部依赖与数据
-- 测试中不要真实调用第三方服务，统一使用 mock、stub 或测试替身
+- 测试中不要真实调用外部服务，统一使用 mock、stub 或测试替身
 - 测试数据应尽量最小化、可读、可重复执行
 - 不要让测试依赖本地人工状态或不可控外部环境
 
@@ -325,16 +346,15 @@ project-root/
   - `<type>(<scope>): <简短描述>`
 - 示例：
   - `feat(auth): add refresh token endpoint`
-  - `fix(frontend): correct table pagination reset`
-  - `chore(docker): pin base image version`
+  - `fix(viewmodel): correct table pagination reset`
+  - `chore(dotnet): pin NuGet package version`
 
 ### 交付前自查
-- 类型检查已执行，或已明确说明未执行原因
-- lint 已执行，或已明确说明未执行原因
-- 前后端相关测试已执行，或已明确说明未执行原因
-- 表结构变更已确认 Alembic migration
-- 新增环境变量已同步更新相关文档
-- 涉及 Docker 时已确认构建或部署链路
+- 编译已执行，或已明确说明未执行原因
+- 代码分析已执行，或已明确说明未执行原因
+- 相关测试已执行，或已明确说明未执行原因
+- 涉及数据库结构变更时已确认迁移脚本
+- 新增配置文件已同步更新相关文档
 
 ### 提交触发规则
 - 每次修改完后都必须提交代码
@@ -343,23 +363,21 @@ project-root/
 
 ---
 
-## Docker 规则
-- 优先复用现有 Docker 与 Compose 文件
-- 生产镜像优先采用多阶段构建
-- 不要把密钥写入镜像
-- 部署链路要可追踪
-- 清理旧镜像时要保留最小回滚窗口
+## 发布规则
+- 优先复用现有打包配置
+- 生产发布优先采用单文件发布 (Single File Publish)
+- 不要把密钥写入配置文件
+- 发布链路要可追踪
+- 清理旧版本时要保留最小回滚窗口
 
-### Docker 交付规则
-- 只要本次任务新增或修改了 Dockerfile、`docker-compose.yml`、运行端口、环境变量或启动命令，完成实现后应主动执行一次镜像构建和容器化启动验证；若因环境限制无法执行，必须明确说明
-- 容器化验证至少包括：
-  - 镜像构建是否成功
-  - Compose 服务是否成功启动
-  - 关键服务是否处于可用状态
-  - 前后端核心访问链路是否可用
-- 若发现宿主机端口冲突，不要直接停止未知本地进程；优先调整 Compose 映射端口，并同步更新文档和前端配置
-- 对于依赖数据库或其他基础服务的容器，Compose 中应尽量补充健康检查或等价的启动等待策略
-- 新增镜像构建链路时，应同步补充 `.dockerignore`，避免将 `node_modules`、虚拟环境、测试数据库、构建产物等无关内容打入镜像上下文
+### 发布交付规则
+- 只要本次任务涉及发布配置、版本号和启动命令，完成实现后应主动执行一次构建验证
+- 若因环境限制无法执行，必须明确说明
+- 发布验证至少包括：
+  - 构建是否成功
+  - 应用是否成功启动
+  - 关键功能是否处于可用状态
+  - 核心访问链路是否可用
 
 ---
 
@@ -404,10 +422,8 @@ project-root/
 - 排版 token
 - 间距、圆角、阴影 token
 - 布局与断点规则
-- Tailwind 配置映射规则
-- ECharts 主题色映射
-- 页面状态规范
 - 组件使用规则
+- 页面状态规范
 - 明确的 `do / dont` 规则
 
 ---
@@ -415,10 +431,10 @@ project-root/
 ## 文档更新要求
 以下内容发生变化时，必须同步更新相关文档：
 - 命令或脚本
-- 环境变量
-- 构建或部署流程
+- 配置文件
+- 构建或发布流程
 - 任务流程
-- 镜像 tag 或清理策略
+- 版本号或清理策略
 - 对外使用方式或接口约定
 
 优先更新已有文档，不新增重复说明。
@@ -426,7 +442,7 @@ project-root/
 
 ### 文档目录约定
 - `doc/requirement.md`：用户编写的需求文档，AI 不应将设计说明或开发过程记录写入此文件
-- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（ASCII）、交互说明。由用户与 AI 协作产出，用户确认后作为前后端开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
+- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（ASCII）、交互说明。由用户与 AI 协作产出，用户确认后作为视图和业务逻辑开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
 - `doc/devlog/`：每次开发完成后的简短开发日志
 
 ### devlog 要求
@@ -445,28 +461,26 @@ project-root/
 ## 交付收口规范
 - 当用户请求"开始开发"而非"只出方案"时，AI Agent 在实现完成后应默认继续做交付收口，而不是停在代码编写阶段
 - 交付收口至少应按实际情况依次检查：
-  1. 类型检查 / lint / 测试
+  1. 编译 / 代码分析 / 测试
   2. 构建
-  3. Docker 构建与启动验证
-  4. 浏览器或接口级 smoke test
+  3. 发布构建与启动验证
+  4. 应用级 smoke test
   5. 文档、`TASK.md`、`doc/devlog/`、忽略文件更新
-- 若存在可本地验证的部署链路，AI Agent 应优先自行验证
+- 若存在可本地验证的发布链路，AI Agent 应优先自行验证
 - 若某项验证未执行，最终输出必须明确说明未执行项、原因、影响范围和建议下一步
 
 ---
 
 ## 常见禁止事项
-- 禁止在组件中直接调用后端 API，统一通过请求层封装
-- 禁止在 FastAPI 路由层编写业务逻辑，应放入 `service` 层
-- 禁止修改 SQLAlchemy Model 后不补 Alembic migration
-- 禁止在异步代码中使用阻塞式等待
+- 禁止在 ViewModel 中直接操作 View 控件
+- 禁止在 Service 层编写数据访问逻辑，应放入 `Repository` 层
+- 禁止修改数据模型后不补迁移脚本
+- 禁止在异步代码中使用阻塞式等待（.Result / .Wait()）
 - 禁止绕过既有提交校验流程，如 `git commit --no-verify`
-- 禁止使用 inline style={{}}
-- 禁止硬编码颜色值（如 `#1A90FF`）、间距值（如 `padding: "20px"`）
-- 禁止使用 Redux、MobX、Recoil 进行状态管理
-- 禁止使用非 ECharts 的图表库（Recharts、Chart.js 等）
-- 禁止在图表组件中直接硬编码颜色，必须引用 echarts-theme 配置
-- 禁止使用 lucide-react 以外的图标库
+- 禁止在控件中直接设置样式属性（Background、Margin 等）
+- 禁止硬编码颜色值（如 `#1A90FF`）、间距值（如 `Margin="20"`）
+- 禁止在 Code-behind (.axaml.cs) 中编写业务逻辑
+- 禁止使用静态全局类存储业务状态
 
 ---
 
