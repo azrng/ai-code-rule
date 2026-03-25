@@ -37,6 +37,21 @@
 - ORM：Entity Framework Core
 - 测试框架：xUnit + Moq
 
+### 核心库
+- `Azrng.Core` (1.15.8)：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
+- `Azrng.Core.Json` (1.3.1)：JSON 序列化（基于 System.Text.Json）
+- `Azrng.AspNetCore.Core` (1.3.0)：API 基础设施（统一响应、模型校验、异常中间件）
+- `Azrng.SqlMigration` (0.4.0)：SQL 脚本迁移执行
+- `Common.Cache.Redis` (2.0.0)：Redis 缓存封装（基于 StackExchange.Redis）
+
+### 依赖注入规范
+- 使用 Azrng 标记接口方式：
+  - `ITransientDependency`：临时注入
+  - `IScopedDependency`：作用域注入
+  - `ISingletonDependency`：单例注入
+- 在 Program.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
+- 服务类实现对应标记接口，自动被扫描注册到 DI 容器到 DI 容器
+
 ### 部署
 - Docker + Docker Compose
 - 数据库：PostgreSQL
@@ -216,7 +231,7 @@ project-root/
 **工作内容**：
 1. 按照接口需求实现 ASP.NET Core Web API 接口
 2. 遵循 `Controller → Application → Domain → Infrastructure` 分层架构
-3. 涉及数据库结构变更时，使用 EF Core Migrations 生成迁移脚本
+3. 涉及数据库结构变更时，使用 Azrng.SqlMigration 生成迁移脚本
 4. 每个接口必须可通过 Swagger 或 Postman 独立验证
 
 **字段命名约定**：
@@ -245,6 +260,15 @@ project-root/
 
 ---
 
+### 接口契约规范
+
+- **唯一来源**：Swagger 自动生成
+- **定义时机**：后端实现完成后，通过 Swagger UI 查看接口定义
+- **变更规则**：接口变更时，必须先修改 DTO，再同步修改前端类型定义
+- **文件结构建议**：前端按业务域拆分类型定义文件
+
+---
+
 ## 使用方式
 每个 AI Agent 在开始修改前都必须：
 1. 先阅读本文档，理解核心规则和流程
@@ -263,7 +287,9 @@ project-root/
 进行后端开发时：
 1. 保持 Clean Architecture 分层依赖规则
 2. Controller 只负责 HTTP 处理，业务逻辑放在 Application 层
-3. 涉及表结构变更时使用 EF Core Migrations
+3. 服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口
+4. 统一响应使用 `ResultModel<T>` 包装
+5. 异常处理使用 Azrng 异常体系
 
 进行部署改动时：
 1. 优先复用现有 Dockerfile 和 Compose 链路
@@ -356,7 +382,7 @@ API → Application → Domain ← Infrastructure
 - 服务方法必须是异步的（返回 `Task<T>`）
 - 使用 DTO 进行数据传递，不直接暴露 Domain 实体
 - 使用 AutoMapper 进行对象映射（如需要）
-- 业务异常抛出继承自 `ApplicationException` 的自定义异常
+- 业务异常抛出继承自 `BaseException` 的自定义异常
 
 ### Domain 层规则
 - 实体类继承自基类（包含 Id、创建时间等公共属性）
@@ -376,6 +402,47 @@ API → Application → Domain ← Infrastructure
 - 使用 LINQ 查询，避免原生 SQL
 - 涉及事务时使用 `IDbContextTransaction`
 - 软删除通过全局查询过滤器实现
+
+### 统一响应格式
+- 所有 API 响应统一使用 `ResultModel<T>` 包装
+- 成功响应：`ResultModel<T>.Success(data)`
+- 错误响应：`ResultModel<T>.Failure(message, errorCode)`
+- 状态码：200 表示成功，其他表示各类错误
+- 异常处理由 Azrng.AspNetCore.Core 中间件统一捕获
+
+### 依赖注入规范
+- 服务类必须实现以下接口之一：
+  - `ITransientDependency`：每次请求创建新实例
+  - `IScopedDependency`：每个请求作用域内单例
+  - `ISingletonDependency`：应用程序生命周期单例
+- Controller 通过构造函数注入服务
+- 禁止使用静态服务定位器 pattern
+
+### 异常处理规范
+- 业务异常继承 `BaseException` 或其子类：
+  - `LogicBusinessException`：业务逻辑异常
+  - `ParameterException`：参数校验异常
+  - `NotFoundException`：资源不存在
+  - `ForbiddenException`：禁止访问
+  - `InternalServerException`：服务器内部错误
+- 异常由中间件统一捕获并转换为 `ResultModel` 响应
+- 禁止在 Controller 外部直接返回错误状态码
+
+### Redis 缓存使用规范
+- 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口
+- 通过 `services.AddRedisCacheStore()` 注册 Redis 服务
+- 缓存操作必须设置合理的过期时间
+- 热点数据使用本地缓存 + Redis 二级缓存
+- 发布订阅场景使用 `PublishAsync`/`SubscribeAsync`
+- 禁止在循环中频繁调用 Redis
+
+### 数据库迁移规则
+- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移
+- 迁移脚本放在 `Migrations/` 目录，按版本号命名
+- 迁移脚本必须幂等，可重复执行
+- 应用启动时自动执行迁移（可选配置）
+- 回滚脚本必须与正向脚本配套提供
+- 每次迁移后更新数据库版本记录表
 
 ---
 
@@ -429,7 +496,7 @@ API → Application → Domain ← Infrastructure
 ### 交付前自查
 - 前端：类型检查（tsc）、构建（npm run build）
 - 后端：编译（dotnet build）、测试（dotnet test）
-- 涉及数据库结构变更时已确认 EF Core Migration
+- 涉及数据库结构变更时已确认迁移脚本
 - 新增环境变量已同步更新相关文档
 - 涉及 Docker 时已确认构建或部署链路
 
@@ -555,7 +622,7 @@ API → Application → Domain ← Infrastructure
 ## 常见禁止事项
 - 禁止在组件中直接调用后端 API，统一通过请求层封装
 - 禁止在 Controller 层编写业务逻辑，应放入 Application 层
-- 禁止修改 EF Core Model 后不补 Migration
+- 禁止修改数据模型后不补迁移脚本
 - 禁止在异步代码中使用阻塞式等待（.Result / .Wait()）
 - 禁止绕过既有提交校验流程，如 `git commit --no-verify`
 - 禁止使用 inline style
@@ -563,7 +630,12 @@ API → Application → Domain ← Infrastructure
 - 禁止在 Domain 层依赖外部库
 - 禁止使用非 Element Plus Icons 以外的图标库
 - 禁止使用 Pinia 以外的状态管理库（Redux、MobX 等）
-- 禁止使用 `<script>`  Options API，必须使用 Composition API
+- 禁止使用 `<script>` Options API，必须使用 Composition API
+- 禁止直接使用 EF Core Migrations，应使用 Azrng.SqlMigration
+- 禁止直接操作 Redis，必须通过 IRedisProvider 接口
+- 禁止手动配置依赖注入，应使用标记接口方式（ITransientDependency/IScopedDependency/ISingletonDependency）
+- 禁止返回非 ResultModel 包装的响应格式
+- 禁止抛出非 Azrng 体系的自定义异常
 
 ---
 

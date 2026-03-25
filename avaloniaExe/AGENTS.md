@@ -28,6 +28,18 @@
 - 消息传递：CommunityToolkit.Mvvm IMessenger
 - 依赖注入：Microsoft.Extensions.DependencyInjection
 
+### 核心库
+- `Azrng.Core` (1.15.8)：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
+- `Azrng.Core.Json` (1.3.1)：JSON 序列化（基于 System.Text.Json）
+
+### 依赖注入规范
+- 使用 Azrng 标记接口方式批量注册服务：
+  - `ITransientDependency`：临时注入
+  - `IScopedDependency`：作用域注入
+  - `ISingletonDependency`：单例注入
+- 在 Program.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
+- 服务类实现对应标记接口，自动被扫描注册到 DI 容器到 DI 容器
+
 ### 部署
 - 桌面应用打包：单文件发布
 - 数据库：SQLite (本地可选) / PostgreSQL (可选)
@@ -253,7 +265,8 @@ project-root/
 - **属性通知**：使用 `[ObservableProperty]` 特性自动生成 INotifyPropertyChanged
 - **命令定义**：使用 `[RelayCommand]` 特性生成 ICommand，禁止手动创建 RelayCommand
 - **消息传递**：ViewModel 间通信使用 `IMessenger` (CommunityToolkit.Mvvm)
-- **依赖注入**：ViewModel 依赖通过构造函数注入，使用 Microsoft.Extensions.DependencyInjection
+- **依赖注入**：ViewModel 依赖通过构造函数注入
+- **服务注册**：服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
 
 ### 导航规则
 - 使用 Ursa 的导航组件进行页面切换
@@ -287,19 +300,36 @@ project-root/
 - 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录
 - 服务方法必须是异步的（返回 `Task<T>` 或 `ValueTask<T>`）
 - 服务层处理所有业务逻辑，不直接访问 Repository 以外的依赖
-- 服务层异常必须统一封装，抛出业务异常类型
+- 服务层异常必须统一封装，抛出 Azrng 异常体系的业务异常类型
+- 服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
 
 ### Repository 层规则
 - 仓储类必须实现接口，接口定义在 `Repositories/Interfaces/` 目录
 - 使用 Dapper 进行数据访问，SQL 语句放在 SQL 文件或常量中
 - 仓储方法必须是异步的，支持取消令牌
 - 涉及事务时，使用 IDbTransaction 统一管理
+- 仓储类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
 
 ### 数据访问规则
 - 使用 Dapper + SQLite 进行本地数据存储
 - 数据库连接字符串从配置文件读取，禁止硬编码
 - 数据库连接必须使用 `using` 语句管理生命周期
 - SQL 注入防护：所有查询必须使用参数化查询
+
+### 统一结果包装
+- 服务层方法返回值统一使用 `ResultModel<T>` 包装
+- 成功响应：`ResultModel<T>.Success(data)`
+- 错误响应：`ResultModel<T>.Failure(message, errorCode)`
+- 异常处理使用 Azrng.Core 异常体系
+
+### 异常处理规范
+- 业务异常继承 `BaseException` 或其子类：
+  - `LogicBusinessException`：业务逻辑异常
+  - `ParameterException`：参数校验异常
+  - `NotFoundException`：资源不存在
+  - `ForbiddenException`：禁止访问
+  - `InternalServerException`：服务器内部错误
+- 异常在 ViewModel 层捕获并转换为用户友好的提示信息
 
 ---
 
@@ -481,6 +511,8 @@ project-root/
 - 禁止硬编码颜色值（如 `#1A90FF`）、间距值（如 `Margin="20"`）
 - 禁止在 Code-behind (.axaml.cs) 中编写业务逻辑
 - 禁止使用静态全局类存储业务状态
+- 禁止返回非 ResultModel 包装的响应格式
+- 禁止抛出非 Azrng 体系的自定义异常
 
 ---
 
