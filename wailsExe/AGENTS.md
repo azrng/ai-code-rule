@@ -1,0 +1,556 @@
+# AGENTS-new.md
+
+## 目标
+职责划分如下：
+- `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`：各 AI Agent 统一工作规则、任务管理机制、交付要求，内容保持同步
+- `design-system.yaml`：设计 token 与 UI 规范
+- `TASK.md`：具体任务内容与任务进度
+
+---
+
+## 注意事项
+1. 你需要理解用户提出的需求的业务逻辑然后再做设计和开发
+2. 你需要根据设计的功能需求设计多级的菜单，管理员默认有所有菜单权限
+3. 功能模块必须有完整可操作的功能页面
+4. 所有的功能至少要确保能够完成基本的流程操作，功能的按钮必须都是可以交互的，界面的内容尽量多填充一些信息
+5. 整体系统需要有一个登录页面，并要有默认应用图标，登录页面，登录系统左上角应该有应用图标和应用名称。
+6. 系统涉及时能够有一些酷炫的动效，需要符合医疗行业的审美要求，界面简洁大方，操作流程清晰易懂。
+7.  如系统内所有设计到变更、新增、删除等业务逻辑，必须能够真实生效的，而不是假的交互，确保浏览器刷新页面后能看到生效后的内容
+8.  由于此系统的功能模块较多，实现的时候先把系统的框架搭起来，然后按照一个一个子模块的方式来实现，而不是一下子实现全部功能
+
+---
+
+## 技术栈
+
+### 前端
+- Vue 3 + TypeScript + Vite
+- Element Plus 组件库
+- Element Plus Icons（唯一图标库，尺寸统一 18-24px）
+- Vue Router 4（路由管理）
+- Pinia（全局状态管理：用户信息、权限、通知等跨组件共享状态）
+- Axios（HTTP 客户端，仅用于外部 API 调用）
+
+### 后端
+- Go + Wails v3
+- 标准分层架构：`Handler → Service → Repository → Model`
+- ORM：GORM
+- 数据库：SQLite（本地默认）
+
+### 前后端通信
+- **Wails 原生绑定**：Go 方法通过 `wails:generate` 暴露给前端 JS/TS 调用
+- 禁止使用 HTTP 请求与 Go 后端通信（Wails 不是 B/S 架构）
+- 如需调用外部 API，使用 Axios 通过前端发起
+
+### 部署
+- 仅 Windows 平台
+- 使用 `wails build` 生成 Windows 可执行文件
+
+### 设计系统
+- 使用 Element Plus 主题系统，所有视觉规范在 `design-system.yaml` 中定义
+- 优先使用 Element Plus 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
+
+如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+
+---
+
+## 推荐目录结构
+若仓库尚未形成稳定结构，可优先参考以下组织方式；若仓库已有实现，以现状为准，不强制迁移。
+
+```text
+project-root/
+├── frontend/
+│   ├── src/
+│   │   ├── api/               # 外部 API 请求模块（仅用于外部服务调用）
+│   │   ├── components/
+│   │   │   ├── common/        # 通用业务组件
+│   │   │   └── layout/        # 布局组件
+│   │   ├── views/             # 页面级组件（按业务域拆分）
+│   │   ├── router/
+│   │   │   ├── index.ts       # 路由配置
+│   │   │   └── routes.ts      # 路由定义
+│   │   ├── stores/            # Pinia stores（按业务域拆分）
+│   │   ├── types/             # TypeScript 类型定义
+│   │   ├── utils/             # 纯工具函数
+│   │   ├── hooks/             # 组合式函数
+│   │   ├── bindings/          # Wails 自动生成的 Go 绑定类型声明
+│   │   ├── config/
+│   │   │   └── element-theme.ts  # Element Plus 主题配置
+│   │   ├── App.vue
+│   │   └── main.ts
+│   ├── wails.js               # Wails 自动生成的绑定入口
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tsconfig.json
+├── backend/                   # Go 后端
+│   ├── app.go                 # Wails 应用入口
+│   ├── main.go                # 程序入口
+│   ├── handler/               # 处理器层（对应前端调用入口）
+│   │   └── handler.go
+│   ├── service/               # 业务逻辑层
+│   │   └── service.go
+│   ├── repository/            # 数据访问层
+│   │   └── repository.go
+│   ├── model/                 # 数据模型层
+│   │   ├── entity.go          # GORM 实体定义
+│   │   └── dto.go             # 数据传输对象
+│   ├── database/              # 数据库配置与初始化
+│   │   └── database.go
+│   ├── go.mod
+│   └── go.sum
+├── doc/
+│   ├── devlog/
+│   ├── design/
+│   └── requirement.md
+├── build/                     # Wails 构建配置
+│   └── windows/               # Windows 图标等资源
+├── wails.json                 # Wails 项目配置
+├── .gitignore
+├── AGENTS.md
+├── CLAUDE.md
+├── GEMINI.md
+├── design-system.yaml
+└── TASK.md
+```
+
+---
+
+## 开发流程
+
+### 总体阶段划分
+
+所有新功能开发必须严格经历以下四个阶段，阶段之间有明确的门控条件，不满足条件不得进入下一阶段：
+
+```
+阶段 0          阶段 1          阶段 2          阶段 3
+设计文档   →   视图实现   →   Go 后端实现  →   绑定联调
+（用户确认）   （Claude Code）  （Codex）       （协作）
+```
+
+**例外情况**（AI 自动判断，无需走阶段 0）：
+- Bug 修复（功能行为不变，只修正错误）
+- 已有页面的样式、文案微调
+- 配置、环境变量、构建脚本调整
+- 单个字段的增删（不涉及新页面或新业务流程）
+
+---
+
+### 阶段 0 — 设计文档（新功能强制前置）
+
+**触发条件**：用户提出新功能需求
+
+**执行方式**：由用户与 AI 对话协作产出，用户最终确认定稿
+
+**产物**：`doc/design/设计文档.md`（全项目一份，新功能以新章节追加，不新建文件）
+
+**文档必须包含以下四个部分**：
+
+| 部分     | 内容要求                                                       |
+| -------- | -------------------------------------------------------------- |
+| 架构设计 | 模块划分、数据流向、涉及的技术决策说明                         |
+| 功能需求 | 页面列表、功能点明细、业务规则、权限矩阵                       |
+| 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / empty / error） |
+| 交互说明 | 操作流程、状态流转、边界场景、错误处理方式                     |
+
+**门控规则**：
+- 用户明确确认设计文档后，才允许进入阶段 1
+- AI 在此阶段只输出文档内容，不写任何实现代码
+
+---
+
+### 阶段 1 — 视图实现（Claude Code 主导）
+
+**触发条件**：用户发出「开始视图开发」指令
+
+**入场要求**：阶段 0 设计文档已由用户确认
+
+**工作内容**：
+1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 和 Element Plus 规范
+2. 数据层使用 mock（静态 mock 数据），不依赖真实 Go 后端绑定
+3. 同步输出接口需求说明，供 Go 后端开发参考
+
+**产物**：
+- 可在浏览器中运行的前端页面（通过 `wails dev` 预览）
+- 接口需求说明（用于 Go 后端开发）
+
+**门控规则**：
+- 用户确认视图页面符合设计文档预期
+- 前端页面交互逻辑已验证通过
+- 满足以上两点后，才允许进入阶段 2
+
+---
+
+### 阶段 2 — Go 后端实现（Codex 主导）
+
+**触发条件**：用户发出「开始后端开发」指令
+
+**入场要求**：前端页面已完成，接口需求已明确
+
+**工作内容**：
+1. 按照接口需求实现 Go Handler/Service/Repository
+2. Handler 方法需要标记 `//export` 注释以暴露给前端
+3. 运行 `wails generate module` 重新生成前端绑定
+4. 涉及数据库结构变更时，使用 GORM AutoMigrate
+
+**Go 方法导出规范**：
+- 需要暴露给前端的方法必须在 App 结构体上定义
+- 方法首字母大写（Go 导出规则）
+- 方法参数和返回值必须是可序列化类型（string、int、struct、slice 等）
+- 返回 error 时，前端会收到 JS Error 对象
+
+**门控规则**：
+- 核心方法独立测试通过后，才允许进入阶段 3
+
+---
+
+### 阶段 3 — 绑定联调
+
+**触发条件**：用户发出「开始联调」指令
+
+**入场要求**：视图页面和 Go 后端均已独立完成验证
+
+**工作内容**：
+1. 运行 `wails generate module` 生成最新绑定
+2. 前端替换 mock 数据，改为调用 Wails 绑定方法
+3. 对齐异常处理：Go error 与前端 Message / Alert 展示逻辑匹配
+4. 执行核心业务路径 smoke test（至少覆盖：登录 → 核心操作 → 数据回显 → 退出）
+
+**完成标志**：核心路径 smoke test 通过，`doc/devlog/` 已补充本阶段记录
+
+---
+
+## 使用方式
+每个 AI Agent 在开始修改前都必须：
+1. 先阅读本文档，理解核心规则和流程
+2. 确认当前处于哪个开发阶段，检查该阶段的入场条件是否满足
+3. 再阅读 `design-system.yaml`
+4. 再阅读相关模块和现有实现
+5. 优先复用当前结构，再决定是否新增文件
+
+进行前端开发时：
+1. `design-system.yaml` 是颜色、间距、圆角、排版、页面状态、组件使用规则的参考依据
+2. 优先使用 Element Plus 组件，样式使用 Element Plus 的 class 和 SCSS 变量
+3. 图标统一使用 Element Plus Icons，尺寸 18-24px
+4. 全局状态（用户、权限、通知等）使用 Pinia store
+5. 组件本地状态使用 Composition API（ref、reactive、computed）
+
+进行 Go 后端开发时：
+1. 保持 `Handler → Service → Repository → Model` 分层
+2. Handler 层只做参数校验和转发，不写业务逻辑
+3. 需要暴露给前端的方法必须在 App 结构体上定义
+4. 修改 Go 方法签名后必须运行 `wails generate module` 更新绑定
+
+进行部署改动时：
+1. 优先复用现有 wails.json 构建配置
+2. 发布版本必须可追踪
+3. 清理旧版本前要保留可回滚版本
+
+---
+
+## 核心规则
+- 先理解，再修改。
+- 先复用，再新增。
+- 交付必须可直接使用，不能只停留在演示层。
+- 不允许新增平行配置体系。
+- 不做与当前任务无关的重构。
+- 所有改动都必须可说明、可验证。
+
+---
+
+## 前端规则
+
+### Composition API 规范
+- **必须使用** `<script setup lang="ts">` 语法糖
+- 响应式数据使用 `ref`（基础类型）和 `reactive`（对象类型）
+- 计算属性使用 `computed`，副作用使用 `watch` 和 `watchEffect`
+- 生命周期钩子使用 `onMounted`、`onUnmounted` 等
+- 可复用逻辑封装为组合式函数（`useXxx`），放在 `hooks/` 目录
+
+### 组件通信规范
+- **父传子**：使用 `defineProps` 定义，只读不可修改
+- **子传父**：使用 `defineEmits` 定义事件
+- **跨级传值**：优先使用 Pinia，其次使用 `provide`/`inject`
+- **兄弟组件**：通过共同父组件或 Pinia 中转
+- 避免直接修改 props，需要修改时使用 v-model 或 emit
+
+### 路由管理规范
+- 路由配置集中放在 `src/router/routes.ts`
+- 路由守卫统一在 `src/router/index.ts` 中配置
+- 路由跳转使用 `router.push` 和 `router.replace`
+- 获取路由参数使用 `useRoute().params` 或 `useRoute().query`
+- 路由命名使用有意义的名称（如 `UserList`、`OrderDetail`）
+
+### Pinia 状态管理规范
+- Store 按业务域拆分，放在 `src/stores/` 目录
+- 使用 `defineStore` 定义 store
+- State 定义数据，Getters 定义计算属性，Actions 定义修改逻辑
+- 修改 state 必须通过 actions，禁止在组件中直接修改 store 状态
+- 异步操作放在 actions 中，同步计算放在 getters 中
+
+### Wails 绑定调用规范
+- 通过 `src/bindings/` 下自动生成的模块调用 Go 方法
+- 绑定方法返回 Promise，必须使用 `await` 或 `.then()/.catch()` 处理
+- 禁止绕过 Wails 绑定直接通过 HTTP 请求与 Go 后端通信
+- 绑定方法调用应封装在 hooks 或 store 中，不直接散落在页面组件内
+- 修改 Go 方法签名后必须重新运行 `wails generate module`
+
+### 样式规则
+- 优先使用 Element Plus 组件内置样式和 class
+- 自定义样式使用 SCSS，变量来自 `design-system.yaml`
+- 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）
+- Wails 窗口为固定大小，不需要考虑移动端响应式
+
+### 组件规则
+- 优先复用 `src/components/` 下已有组件，禁止重复创建
+- 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象
+- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
+- 除非仓库已在使用，否则不要引入新的组件库或样式体系
+
+### 外部 API 请求规则
+- 仅在需要调用外部服务时使用 Axios
+- 禁止使用 Axios 调用本机 Go 后端（必须通过 Wails 绑定）
+- Axios 实例统一配置，拦截器处理错误
+- API 函数命名规范：`getXxx`、`createXxx`、`updateXxx`、`deleteXxx`
+
+---
+
+## Go 后端规则
+
+### 分层架构
+```
+Handler → Service → Repository → Model
+```
+- `Handler`：参数校验、调用 Service、返回结果
+- `Service`：业务逻辑处理
+- `Repository`：数据访问
+- `Model`：GORM 实体与 DTO
+
+### Handler 层规则
+- Handler 方法定义在 App 结构体上（Wails 绑定要求）
+- 只做参数校验和转发，不写业务逻辑
+- 方法命名使用 PascalCase
+- 参数和返回值必须是可序列化类型
+- 错误通过返回 error 传递
+
+### Service 层规则
+- 服务方法接收接口（非 struct），方便测试
+- 服务方法必须是幂等的，相同输入得到相同输出
+- 业务错误返回自定义错误类型
+- 禁止在 Service 中直接操作数据库
+
+### Repository 层规则
+- 使用 GORM 进行数据访问
+- 数据库连接通过依赖注入传入
+- 涉及事务时使用 `db.Transaction()`
+- 复杂查询使用 GORM Scope 封装
+
+### Model 层规则
+- GORM 实体使用 struct tag 定义字段映射
+- 表名使用 snake_case
+- 软删除使用 `gorm.DeletedAt`
+- 公共字段（ID、创建时间、更新时间）提取为 BaseModel
+
+### 数据库规则
+- 使用 GORM AutoMigrate 管理表结构
+- 数据库文件默认存储在应用数据目录
+- 禁止硬编码数据库连接字符串
+- 所有查询必须使用参数化查询（GORM 自动处理）
+
+### Wails 绑定规则
+- 暴露给前端的方法必须有 Go doc 注释
+- 方法签名变更后必须运行 `wails generate module`
+- 前端 `src/bindings/` 目录下的文件由 Wails 自动生成，禁止手动修改
+- 方法参数不支持 chan、func、unsafe.Pointer 等类型
+
+---
+
+## 测试规则
+
+### 总体要求
+- 测试暂时不作为强制要求
+- 若补充测试，应覆盖真实业务行为
+
+### Go 后端测试（可选）
+- 使用标准 `testing` 包
+- Service 层测试 mock Repository
+- Repository 层测试使用 SQLite 内存数据库
+
+### 前端测试（可选）
+- 暂时不考虑单元测试
+- 但必须进行手动 smoke test 验证核心功能
+
+### 无法执行测试时
+- 必须说明未执行的测试类型
+- 必须说明未执行原因
+- 必须说明潜在影响范围和风险
+
+---
+
+## Git 与提交流程
+
+### 分支命名
+- `feat/<desc>`：新功能
+- `fix/<desc>`：缺陷修复
+- `refactor/<desc>`：无行为变更的重构
+- `chore/<desc>`：工具、依赖、配置调整
+- `docs/<desc>`：仅文档变更
+
+### Commit 规范
+- 提交信息优先采用 Conventional Commits：
+  - `<type>(<scope>): <简短描述>`
+- 示例：
+  - `feat(auth): add login handler`
+  - `fix(frontend): correct table pagination reset`
+  - `chore(wails): update build config`
+
+### 交付前自查
+- 前端：类型检查（tsc）、构建（npm run build）
+- 后端：编译（`go build`）、`wails generate module`
+- 涉及数据库结构变更时已确认 GORM AutoMigrate
+- 新增环境变量已同步更新相关文档
+
+### 提交触发规则
+- 每次修改完后都必须提交代码
+- 若仓库尚未初始化为可用 Git 工作区，最终说明中必须明确写明无法执行提交校验
+- 若本次开发生成了本地运行产物、缓存、测试数据库、构建产物或依赖目录，应同步检查并更新 `.gitignore`
+
+---
+
+## 发布规则
+- 优先复用现有 `wails.json` 构建配置
+- 仅支持 Windows 平台发布
+- 使用 `wails build -platform windows/amd64` 构建可执行文件
+- 不要把密钥写入配置文件
+- 发布链路要可追踪
+- 清理旧版本时要保留最小回滚窗口
+
+### 发布交付规则
+- 只要本次任务涉及发布配置、版本号和构建命令，完成实现后应主动执行一次构建验证
+- 若因环境限制无法执行，必须明确说明
+- 发布验证至少包括：
+  - 构建是否成功
+  - 应用是否成功启动
+  - 关键功能是否处于可用状态
+
+---
+
+## 任务管理机制
+`TASK.md` 是唯一任务记录文件，用于记录具体任务内容，不负责承载规则解释。
+
+### 任务状态
+- `TODO`：未开始
+- `DOING`：进行中
+- `BLOCKED`：被阻塞
+- `REVIEW`：已完成开发，等待确认
+- `DONE`：已完成
+
+### 执行规则
+1. 开始工作前，先查看 `TASK.md` 是否已有对应任务
+2. 如果已有任务，优先更新原任务，不重复新建
+3. 如果没有任务，在 `TASK.md` 中新增最小任务记录
+4. 开始执行时，将任务状态更新为 `DOING`
+5. 若任务无法继续，更新为 `BLOCKED` 并写明原因
+6. 开发完成但仍需确认时，更新为 `REVIEW`
+7. 验证完成并确认交付后，更新为 `DONE`
+
+### 每个任务至少包含
+- 任务 ID
+- 任务名称
+- 任务目标
+- 任务状态
+- 最近更新时间
+
+### AI Agent 要求
+- 开始任务前先同步任务状态
+- 开发过程中及时更新 `TASK.md`
+- 范围变化时同步补充
+- 每次开发完成后，都需在 `doc/devlog/` 下新增一份本次开发简短说明的 Markdown 记录
+
+---
+
+## 设计系统文件规范
+`design-system.yaml` 是唯一设计系统文件，包含：
+- 品牌与产品风格意图
+- 语义化颜色 token
+- 排版 token
+- 间距、圆角、阴影 token
+- 布局规则
+- Element Plus 主题配置映射
+- 页面状态规范
+- 组件使用规则
+- 明确的 `do / dont` 规则
+
+---
+
+## 文档更新要求
+以下内容发生变化时，必须同步更新相关文档：
+- 命令或脚本
+- 配置文件
+- 构建或发布流程
+- 任务流程
+- 版本号或清理策略
+- 对外使用方式或接口约定
+
+优先更新已有文档，不新增重复说明。
+每次开发完成后，必须在 `doc/devlog/` 下补充一份简短开发记录，作为本次工作的可追踪说明。
+
+### 文档目录约定
+- `doc/requirement.md`：用户编写的需求文档，AI 不应将设计说明或开发过程记录写入此文件
+- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（ASCII）、交互说明。由用户与 AI 协作产出，用户确认后作为开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
+- `doc/devlog/`：每次开发完成后的简短开发日志
+
+### devlog 要求
+- 文件目录：`doc/devlog/`
+- 文件格式：Markdown
+- 文件命名建议：`YYYY-MM-DD-任务简述.md`
+- 内容保持简短，至少包含：
+  - 本次目标
+  - 核心改动
+  - 修改文件
+  - 校验情况
+  - 风险或遗留项
+
+---
+
+## 交付收口规范
+- 当用户请求"开始开发"而非"只出方案"时，AI Agent 在实现完成后应默认继续做交付收口，而不是停在代码编写阶段
+- 交付收口至少应按实际情况依次检查：
+  1. 编译 / 类型检查
+  2. `wails generate module` 绑定更新
+  3. `wails build` 构建验证
+  4. 应用级 smoke test
+  5. 文档、`TASK.md`、`doc/devlog/`、忽略文件更新
+- 若存在可本地验证的发布链路，AI Agent 应优先自行验证
+- 若某项验证未执行，最终输出必须明确说明未执行项、原因、影响范围和建议下一步
+
+---
+
+## 常见禁止事项
+- 禁止使用 HTTP 请求与 Go 后端通信，必须通过 Wails 绑定
+- 禁止手动修改 `src/bindings/` 下的自动生成文件
+- 禁止在 Handler 层编写业务逻辑，应放入 Service 层
+- 禁止在 Service 层直接操作数据库，应通过 Repository
+- 禁止在异步代码中使用阻塞式等待
+- 禁止绕过既有提交校验流程，如 `git commit --no-verify`
+- 禁止使用 inline style
+- 禁止硬编码颜色值（如 `#1A90FF`）、间距值
+- 禁止使用非 Element Plus Icons 以外的图标库
+- 禁止使用 Pinia 以外的状态管理库（Redux、MobX 等）
+- 禁止使用 `<script>` Options API，必须使用 Composition API
+- 禁止在 Go 方法中使用不可序列化的类型作为参数或返回值
+- 禁止跨平台构建，仅支持 Windows
+
+---
+
+## 交付输出要求
+最终输出优先使用中文，并至少说明：
+- 本次改了什么
+- 核心实现方式
+- 修改了哪些文件
+- 已执行和未执行的校验
+- 当前任务状态
+- 风险、阻塞或假设
+- 是否已更新 `doc/devlog/`
+
+---
+
+文件结束。
