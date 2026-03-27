@@ -4,7 +4,20 @@
 
 ---
 
+## 目录结构
+
+| 目录 | 技术栈 | 说明 |
+|------|--------|------|
+| `frontBackend/` | Vue 3 + .NET 10 + PostgreSQL | 前后端分离方案 |
+| `staticHtml/` | HTML + Bootstrap 5 + Vanilla JS | 纯 HTML 静态页面方案 |
+| `avaloniaExe/` | Avalonia UI | 桌面应用方案 |
+| `wailsExe/` | Wails | 桌面应用方案 |
+
+---
+
 ## 文档结构
+
+各目录下均包含以下文件：
 
 | 文件 | 说明 |
 |------|------|
