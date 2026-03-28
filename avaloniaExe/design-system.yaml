@@ -15,7 +15,7 @@ meta:
     ui_framework: "Avalonia 11+"
     component_library: "Ursa.Avalonia"
     mvvm: "CommunityToolkit.Mvvm"
-    data_access: "Dapper + SQLite"
+    data_access: "Dapper + SQLite / PostgreSQL（按项目选择）"
     messaging: "IMessenger"
     dependency_injection: "Microsoft.Extensions.DependencyInjection"
   usage:
@@ -36,21 +36,21 @@ product:
     - "可信"
     - "高效"
     - "现代"
-    - "医疗审美"
+    - "克制"
   ui_goal:
     - "以桌面端高信息密度场景为前提，保证层级清晰和操作稳定"
     - "在复杂业务页面中优先保证可读性、状态感知和低学习成本"
     - "重要操作必须有明确反馈，危险操作必须有二次确认"
-    - "登录页、主框架、列表页、表单页、详情页、对话框风格保持统一"
+    - "主框架、列表页、表单页、详情页、对话框风格保持统一"
   motion_goal:
     - "动效用于强化导航和状态反馈，不做喧宾夺主的装饰"
     - "页面切换、对话框出现、加载占位采用轻量 Fluent 风格过渡"
 
 design_principles:
-  - "Fluent Design 为主，结合医疗行业场景保持简洁、克制、可依赖"
+  - "Fluent Design 为主，保持简洁、克制、可依赖"
   - "统一使用浅色主题作为默认主题，深色主题仅在项目明确要求时扩展"
   - "主流程优先，次级信息弱化，危险操作显著区分"
-  - "所有用户可见状态必须可解释：成功、失败、为空、加载中、无权限"
+  - "所有用户可见状态必须可解释：成功、失败、为空、加载中"
 
 tokens:
   colors:
@@ -238,7 +238,7 @@ layout:
   responsive_rules:
     - "宽度低于 compact_width 时，次级面板优先折叠或转为抽屉"
     - "表格列过多时优先启用横向滚动，不强行压缩到不可读"
-    - "登录页与仪表盘页必须在 1280、1440、1920 宽度下确认布局"
+    - "主界面与工作台页必须在 1280、1440、1920 宽度下确认布局"
 
 page_states:
   loading:
@@ -256,7 +256,7 @@ page_states:
   no_permission:
     required:
       - "必须明确说明缺少权限，不可伪装成空数据"
-      - "若可申请权限，应提供申请或联系管理员入口"
+      - "若当前工具没有访问条件控制，可省略该状态"
 
 icons:
   source:
@@ -366,7 +366,7 @@ do:
   - "使用 Avalonia Styles(.axaml) 管理视觉规则"
   - "使用语义化资源名称，而不是直接使用原始色值"
   - "使用 Ursa.Avalonia 优先构建导航、对话框、基础控件体验"
-  - "让登录页左上角显示应用图标和应用名称"
+  - "让主界面左上角显示应用图标和应用名称"
   - "让所有可见按钮、菜单、操作入口都具备真实交互"
   - "为新增页面补齐 loading、empty、error、no-permission 状态"
 
