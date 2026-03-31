@@ -129,7 +129,7 @@ tokens:
       link: "text-primary-600"
       link_hover: "text-primary-700"
     background:
-      page: "bg-slate-50"
+      page: "bg-gray-50"
       panel: "bg-white"
       subtle: "bg-gray-100"
       raised: "bg-white"
