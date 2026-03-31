@@ -1,0 +1,409 @@
+# 设计与组件规则的唯一事实来源。
+# 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
+# 技术栈：Next.js + React + TypeScript + Tailwind CSS + shadcn/ui + lucide-react
+
+meta:
+  name: "Next.js 通用管理系统设计系统"
+  version: "1.0.0"
+  status: "启用中"
+  owners:
+    - "design"
+    - "frontend"
+    - "fullstack"
+  tech_stack:
+    framework: "Next.js App Router"
+    styling: "Tailwind CSS（唯一样式引擎）"
+    typography: "next/font（统一字体接入）"
+    icons: "lucide-react（唯一图标库，尺寸 18-24px）"
+    ui: "shadcn/ui（如项目已使用则沿用）"
+    forms: "React Hook Form + Zod"
+    state_global: "Zustand（仅客户端跨组件状态）"
+    state_server: "Server Component + Server Action + Route Handler"
+  default_ports:
+    frontend: 3000 # Next.js 开发服务器 / 容器内端口
+    database: 5432 # PostgreSQL / 容器内端口
+  api_rule:
+    browser_base: "/api"
+    server_rule: "Server Component 优先直接调用服务层，不通过 HTTP 回环请求自己的接口"
+    env_rule: "外部服务地址通过环境变量配置，禁止在客户端硬编码"
+  usage:
+    read_order:
+      - "在进行任何 UI 改动前阅读本文件"
+      - "然后查看现有布局、ui 组件、tailwind 配置和字体配置"
+      - "最后再开始新增页面、组件或状态逻辑"
+    principles:
+      - "优先复用已有布局、组件和 token"
+      - "优先使用语义化 token，不直接写视觉常量"
+      - "优先 Server Component，最小化客户端边界"
+      - "页面状态必须完整，不交付半成品视图"
+
+product:
+  style_keywords:
+    - "专业"
+    - "可信"
+    - "清晰"
+    - "高效"
+    - "克制"
+  ui_goal:
+    - "适合通用管理后台，强调信息层级、可读性和操作确定性"
+    - "重要状态一眼可辨，表单与列表操作成本低"
+    - "桌面端优先，同时保证移动端可查看与关键操作可完成"
+    - "动效克制，不制造分散注意力的装饰"
+
+tokens:
+  colors:
+    primary:
+      50: "#EEF8FF"
+      100: "#D9EEFF"
+      200: "#B8E0FF"
+      300: "#8CCBFF"
+      400: "#5AAFFF"
+      500: "#2E8BFF"
+      600: "#1B6DE2"
+      700: "#1654B3"
+      800: "#153F85"
+      900: "#16315F"
+    secondary:
+      50: "#EFFBF8"
+      100: "#D9F6EE"
+      200: "#B6ECD9"
+      300: "#84DDBD"
+      400: "#4EC89D"
+      500: "#22A97E"
+      600: "#168766"
+      700: "#136B53"
+      800: "#125444"
+      900: "#103F35"
+    success:
+      50: "#EEFDF3"
+      100: "#DCFBE6"
+      200: "#B8F5CC"
+      300: "#7DECA5"
+      400: "#3DDA76"
+      500: "#1CBD5D"
+      600: "#10964A"
+      700: "#11753D"
+      800: "#125D34"
+      900: "#114D2E"
+    warning:
+      50: "#FFF8E8"
+      100: "#FEEFC8"
+      200: "#FDDD8E"
+      300: "#FBCB57"
+      400: "#F8B72B"
+      500: "#EA9B12"
+      600: "#CC780A"
+      700: "#A95A0C"
+      800: "#894611"
+      900: "#713A12"
+    error:
+      50: "#FFF1F2"
+      100: "#FFE0E4"
+      200: "#FFC7CF"
+      300: "#FF9EAB"
+      400: "#FF6E83"
+      500: "#F0445E"
+      600: "#D22F49"
+      700: "#B0233B"
+      800: "#911F34"
+      900: "#771E30"
+    gray:
+      50: "#F8FAFC"
+      100: "#F1F5F9"
+      200: "#E2E8F0"
+      300: "#CBD5E1"
+      400: "#94A3B8"
+      500: "#64748B"
+      600: "#475569"
+      700: "#334155"
+      800: "#1E293B"
+      900: "#0F172A"
+
+  semantic:
+    text:
+      primary: "text-gray-900"
+      secondary: "text-gray-600"
+      muted: "text-gray-500"
+      disabled: "text-gray-400"
+      inverse: "text-white"
+      link: "text-primary-600"
+      link_hover: "text-primary-700"
+    background:
+      page: "bg-slate-50"
+      panel: "bg-white"
+      subtle: "bg-gray-100"
+      raised: "bg-white"
+      active: "bg-primary-50"
+      brand: "bg-primary-600"
+    border:
+      default: "border-gray-200"
+      strong: "border-gray-300"
+      focus: "border-primary-500"
+      muted: "border-gray-100"
+    status:
+      success_bg: "bg-success-50"
+      success_text: "text-success-700"
+      warning_bg: "bg-warning-50"
+      warning_text: "text-warning-700"
+      error_bg: "bg-error-50"
+      error_text: "text-error-700"
+
+  typography:
+    font_family:
+      sans: "Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+      mono: "'Geist Mono', 'SF Mono', Consolas, monospace"
+    font_size:
+      xs: "12px"
+      sm: "14px"
+      base: "16px"
+      lg: "18px"
+      xl: "20px"
+      2xl: "24px"
+      3xl: "30px"
+    font_weight:
+      normal: 400
+      medium: 500
+      semibold: 600
+      bold: 700
+    line_height:
+      tight: 1.25
+      normal: 1.5
+      relaxed: 1.7
+
+  spacing:
+    base_unit: "4px"
+    scale:
+      1: "4px"
+      2: "8px"
+      3: "12px"
+      4: "16px"
+      5: "20px"
+      6: "24px"
+      8: "32px"
+      10: "40px"
+      12: "48px"
+      16: "64px"
+
+  radius:
+    sm: "6px"
+    md: "10px"
+    lg: "14px"
+    xl: "20px"
+    full: "9999px"
+
+  shadow:
+    xs: "0 1px 2px rgba(15, 23, 42, 0.04)"
+    sm: "0 4px 12px rgba(15, 23, 42, 0.06)"
+    md: "0 10px 30px rgba(15, 23, 42, 0.08)"
+    lg: "0 18px 50px rgba(15, 23, 42, 0.12)"
+
+  transitions:
+    fast: "120ms"
+    base: "200ms"
+    slow: "320ms"
+
+  breakpoints:
+    sm: "640px"
+    md: "768px"
+    lg: "1024px"
+    xl: "1280px"
+    2xl: "1536px"
+
+charts:
+  library: "ECharts（如项目已使用图表；否则保持与现有方案一致）"
+  usage_rules:
+    - "图表颜色必须来自 design token，不在页面中硬编码"
+    - "图表组件应统一封装 loading / empty / error 状态"
+    - "图表容器必须有明确高度"
+
+state_management:
+  local_state:
+    tool: "React Hooks"
+    use_for:
+      - "表单输入过程"
+      - "弹窗开关"
+      - "局部 loading/error 状态"
+      - "局部筛选、排序、临时交互反馈"
+  global_state:
+    tool: "Zustand"
+    use_for:
+      - "侧边栏折叠状态"
+      - "全局筛选条件"
+      - "轻量通知与界面偏好"
+      - "客户端会话展示态"
+    forbidden:
+      - "把服务端分页列表整份塞进 store"
+      - "把数据库结果作为唯一数据源长期缓存在 store"
+  server_state:
+    default_pattern: "Server Component 直接取数"
+    mutation_pattern: "Server Action 提交后 revalidate"
+    route_handler_pattern: "仅用于外部消费、浏览器调用、Webhook 或文件流"
+  forms:
+    library: "React Hook Form + Zod"
+    rule: "校验规则与业务 schema 共用，不允许页面自行维护一份平行校验"
+
+page_states:
+  required:
+    - "loading"
+    - "empty"
+    - "error"
+    - "not-found"
+    - "no-permission"
+  guidance:
+    loading:
+      implementation: "优先使用 route segment 的 loading.tsx 或 Skeleton"
+    empty:
+      implementation: "说明当前为空的原因，并给出引导动作"
+    error:
+      implementation: "错误信息可读、可恢复，提供重试或返回路径"
+    not_found:
+      implementation: "资源不存在时使用 not-found.tsx，而不是展示空白页"
+    no_permission:
+      implementation: "明确提示权限不足，不暴露内部实现细节"
+
+component_rules:
+  reuse_first: true
+  file_placement:
+    app: "路由、layout、loading、error、template"
+    components: "通用组件与布局组件"
+    features: "按业务域组织的复杂组件与页面块"
+    server: "服务层、仓储层、动作层"
+  naming:
+    components: "PascalCase"
+    hooks: "camelCase，以 use 开头"
+    stores: "camelCase，以 use 开头并以 Store 结尾"
+    actions: "camelCase，体现业务动作"
+  rules:
+    - "优先复用项目已有 Button、Input、Table、Dialog、Form 体系"
+    - "共享组件必须具备明确复用价值"
+    - "避免为单页面需求抽出无边界的大而全组件"
+
+form_rules:
+  layout:
+    label_position: "标签在输入框上方"
+    label_style: "text-sm font-medium text-gray-700"
+    helper_text: "text-xs text-gray-500 mt-1"
+    error_text: "text-xs text-error-600 mt-1"
+    field_gap: "gap-4"
+    section_gap: "gap-6"
+  validation:
+    strategy: "blur + submit 双阶段校验"
+    source_of_truth: "Zod schema"
+    error_style: "边框、文案、图标同时反馈，禁止只靠颜色区分"
+  submit_behavior:
+    loading: "提交按钮 disabled + spinner"
+    success: "明确反馈成功并刷新受影响区域"
+    failure: "保留用户输入并提示可恢复原因"
+
+component_specs:
+  app_shell:
+    description: "后台主框架布局"
+    structure:
+      - "左侧导航"
+      - "顶部操作区"
+      - "主内容区域"
+      - "移动端抽屉导航"
+    rules:
+      - "导航折叠后仍需保留图标和 tooltip"
+      - "顶部区域保留全局搜索、通知或用户菜单扩展位"
+
+  page_header:
+    description: "页面标题区"
+    structure:
+      - "标题"
+      - "副标题/说明"
+      - "右侧操作按钮区"
+      - "面包屑（按需）"
+    rules:
+      - "页面标题与路由语义保持一致"
+      - "主要操作按钮最多 1 个，次级操作放右侧"
+
+  card:
+    description: "基础信息卡片"
+    style: "rounded-xl border border-gray-200 bg-white shadow-xs"
+    padding: "p-5 md:p-6"
+    rules:
+      - "卡片内容按信息层级组织，不堆砌按钮"
+      - "卡片标题区与内容区保持稳定间距"
+
+  button:
+    variants:
+      primary: "bg-primary-600 text-white hover:bg-primary-700"
+      secondary: "bg-white text-gray-900 border border-gray-300 hover:bg-gray-50"
+      ghost: "text-gray-700 hover:bg-gray-100"
+      danger: "bg-error-600 text-white hover:bg-error-700"
+    sizes:
+      sm: "h-8 px-3 text-sm"
+      md: "h-10 px-4 text-sm"
+      lg: "h-11 px-5 text-base"
+    rules:
+      - "危险操作只使用 danger 语义，不复用 primary 染红"
+      - "按钮 loading 时保留宽度，避免跳动"
+
+  input:
+    style: "h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+    focus: "border-primary-500 ring-2 ring-primary-100 outline-none"
+    error: "border-error-500 ring-2 ring-error-100"
+    rules:
+      - "禁止只写 outline-none 不补充 focus 态"
+      - "placeholder 统一使用 text-gray-400"
+
+  table:
+    description: "后台列表表格"
+    rules:
+      - "表头固定语义清晰，列名与业务语言一致"
+      - "操作列按钮不要超过 3 个，更多操作放菜单"
+      - "列表页必须处理 loading / empty / error / pagination"
+
+  dialog_drawer:
+    description: "确认、编辑、详情类浮层"
+    selection_rule: "确认与高风险操作使用 Dialog；详情、复杂编辑优先 Drawer"
+    rules:
+      - "浮层层级不超过 2 层"
+      - "表单浮层 footer 区固定，避免滚动后找不到提交按钮"
+
+  feedback:
+    alert: "页内持续提示"
+    toast: "短时操作反馈"
+    skeleton: "列表与卡片加载态优先"
+    rules:
+      - "Toast 文案简洁，不承载长段解释"
+      - "错误反馈需可恢复，至少给出返回或重试路径"
+
+icons:
+  library: "lucide-react"
+  sizes:
+    default: 18
+    emphasis: 20
+    hero: 24
+  usage_rules:
+    - "统一从 lucide-react 导入"
+    - "颜色通过 className 控制"
+    - "禁止混用其他图标库或自定义零散 SVG 风格"
+
+responsive:
+  principle: "移动优先"
+  common_patterns:
+    page_padding: "px-4 md:px-6 lg:px-8"
+    grid: "grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+    action_bar: "移动端纵向堆叠，桌面端横向排列"
+    sidebar: "桌面端固定侧栏，移动端抽屉"
+  rules:
+    - "关键操作在移动端必须可点按，不依赖 hover"
+    - "表格在小屏上优先转换为卡片列表或横向滚动容器"
+
+do:
+  - "优先使用 Server Component 渲染后台页面"
+  - "优先复用 token、字体、布局和现有 ui 组件"
+  - "保持页面状态完整：loading / empty / error / not-found / no-permission"
+  - "使用语义化类名和设计 token，而不是视觉硬编码"
+  - "用 Server Action 处理同站点业务写操作"
+  - "桌面端与移动端都进行基本可用性检查"
+
+dont:
+  - "不要在 Server Component 中 fetch 自己的 /api"
+  - "不要在客户端组件中直接访问数据库或服务端密钥"
+  - "不要使用 inline style 或硬编码颜色/圆角/阴影/间距"
+  - "不要把服务端主数据源长期塞进 Zustand"
+  - "不要交付没有 loading / empty / error 状态的页面"
+  - "不要为了单次需求额外引入新的样式体系、图标库或状态库"

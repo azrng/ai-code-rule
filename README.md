@@ -9,6 +9,7 @@
 | 目录 | 技术栈 | 说明 |
 |------|--------|------|
 | `frontBackend/` | Vue 3 + .NET 10 + PostgreSQL | 前后端分离方案 |
+| `nextFullstack/` | Next.js + Prisma + PostgreSQL | Next.js 全栈方案 |
 | `staticHtml/` | HTML + Bootstrap 5 + Vanilla JS | 纯 HTML 静态页面方案 |
 | `avaloniaExe/` | Avalonia UI | 桌面应用方案 |
 | `wailsExe/` | Wails | 桌面应用方案 |
