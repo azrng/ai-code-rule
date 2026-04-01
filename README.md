@@ -10,6 +10,8 @@
 | [dotnetLayered](dotnetLayered/) | .NET 分层 API 后端 | .NET 10 + ASP.NET Core Web API（9 项目分层架构）+ EF Core |
 | [dotnetBlazor](dotnetBlazor/) | .NET Blazor 全栈 Web | .NET 10 + Blazor Server + BootstrapBlazor (Bootstrap 5) |
 | [frontBackend](frontBackend/) | 前后端分离 Web 应用 | Vue 3 + Element Plus + TypeScript + .NET Web API |
+| [vueLinkdotNet](vueLinkdotNet/) | Vue + .NET 前后端分离 | Vue 3 + Element Plus + TypeScript + .NET Web API（Clean Architecture） |
+| [reactLinkdotNet](reactLinkdotNet/) | React + .NET 前后端分离 | React 18 + Ant Design 5 + TypeScript + Zustand + .NET Web API（Clean Architecture） |
 | [nextFullstack](nextFullstack/) | Next.js 全栈 Web 应用 | Next.js (App Router) + React + TypeScript + Tailwind CSS + shadcn/ui |
 | [python](python/) | Python API 后端 | Python 3.12+ + FastAPI + Pydantic V2 + SQLAlchemy 2.0 (async) |
 | [wpfExe](wpfExe/) | WPF Windows 桌面应用 | .NET 10 + WPF + WPF UI + CommunityToolkit.Mvvm + Dapper/SQLite |
