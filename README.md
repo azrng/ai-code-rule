@@ -16,7 +16,8 @@
 | [python](python/) | Python API 后端 | Python 3.12+ + FastAPI + Pydantic V2 + SQLAlchemy 2.0 (async) |
 | [wpfExe](wpfExe/) | WPF Windows 桌面应用 | .NET 10 + WPF + WPF UI + CommunityToolkit.Mvvm + Dapper/SQLite |
 | [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | .NET 10 + Avalonia 11 + Ursa.Avalonia + CommunityToolkit.Mvvm + Dapper/SQLite |
-| [wailsExe](wailsExe/) | Wails 桌面应用 | Vue 3 + Element Plus + Go/Wails |
+| [vueWailsExe](vueWailsExe/) | Wails 桌面应用（Vue） | Vue 3 + Element Plus + Go/Wails |
+| [reactWailsExe](reactWailsExe/) | Wails 桌面应用（React） | React 18 + Ant Design 5 + Zustand + Go/Wails |
 | [staticHtml](staticHtml/) | 纯静态页面 | HTML5 + Bootstrap 5 + Chart.js + Vanilla JS (ES6+) |
 
 ## 文件结构说明
