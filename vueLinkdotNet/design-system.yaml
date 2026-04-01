@@ -1,6 +1,6 @@
 # 设计与组件规则的唯一事实来源。
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
-# 技术栈：React + TypeScript + Tailwind CSS + ECharts + Zustand
+# 技术栈：Vue 3 + TypeScript + Element Plus + ECharts + Pinia
 
 meta:
   name: "企业级应用设计系统"
@@ -10,18 +10,18 @@ meta:
     - "design"
     - "frontend"
   tech_stack:
-    styling: "Tailwind CSS v3（唯一样式引擎）"
-    icons: "lucide-react（唯一图标库，尺寸 18-24px）"
-    charts: "ECharts + echarts-for-react（唯一图表库）"
-    state_global: "Zustand（跨组件全局状态）"
-    state_local: "React Hooks（组件本地状态）"
+    styling: "Element Plus SCSS + CSS 变量（唯一样式引擎）"
+    icons: "Element Plus Icons（@element-plus/icons-vue，唯一图标库，尺寸 18-24px）"
+    charts: "ECharts + vue-echarts（唯一图表库）"
+    state_global: "Pinia（跨组件全局状态）"
+    state_local: "Vue Composition API（ref、reactive、computed）"
   default_ports:
-    frontend: 3000 # React 开发服务器 / 容器内端口
-    backend: 8000 # FastAPI 服务 / 容器内端口
+    frontend: 3000 # Vue 开发服务器 / 容器内端口
+    backend: 8080 # .NET Web API / 容器内端口
     database: 5432 # PostgreSQL / 容器内端口
   api_base_url:
     env_var: "VITE_API_BASE_URL"
-    default: "http://localhost:8000"
+    default: "http://localhost:8080"
     rule: "前端所有 API 请求统一读取此环境变量，禁止在代码中硬编码后端地址"
   port_conflict_policy: "宿主机端口冲突时，优先调整 docker-compose.yml 中的宿主机映射端口，容器内端口保持不变，并同步更新 .env.example 和前端配置"
   usage:
@@ -31,7 +31,7 @@ meta:
       - "然后再查看现有页面与组件实现"
     principles:
       - "优先复用，而不是重新发明"
-      - "优先使用语义化 token 对应的 Tailwind 类，而不是硬编码视觉值"
+      - "优先使用 Element Plus 组件和 CSS 变量，而不是硬编码视觉值"
       - "优先使用已有项目组件，而不是先写自定义组件"
       - "图表颜色统一来自 echarts-theme，不在页面层硬编码"
 
@@ -50,8 +50,8 @@ product:
 
 # ============================================================
 # 颜色 Token
-# 对应 Tailwind 配置中的自定义颜色（tailwind.config.ts）
-# 使用方式：className="bg-primary-500 text-error-600"
+# 对应 Element Plus CSS 变量体系
+# 使用方式：var(--el-color-primary) 或 Element Plus 组件属性
 # ============================================================
 tokens:
   colors:
@@ -129,34 +129,35 @@ tokens:
       900: "#111827"
 
   # ============================================================
-  # 语义化颜色映射（优先使用语义名，而非具体色阶）
+  # 语义化颜色映射（使用 Element Plus CSS 变量）
+  # 优先使用 Element Plus 的 CSS 变量，而非硬编码色值
   # ============================================================
   semantic:
     text:
-      primary: "text-gray-900" # 主文本
-      secondary: "text-gray-500" # 次要文本
-      disabled: "text-gray-400" # 禁用文本
-      inverse: "text-white" # 反色文本（深色背景上）
-      link: "text-primary-500" # 链接
-      link_hover: "text-primary-600"
+      primary: "var(--el-text-color-primary)" # 主文本
+      secondary: "var(--el-text-color-secondary)" # 次要文本
+      disabled: "var(--el-text-color-disabled)" # 禁用文本
+      inverse: "var(--el-color-white)" # 反色文本（深色背景上）
+      link: "var(--el-color-primary)" # 链接
+      link_hover: "var(--el-color-primary-light-3)"
     background:
-      page: "bg-gray-50" # 页面背景
-      container: "bg-white" # 卡片/面板背景
-      subtle: "bg-gray-100" # 次级区块背景
-      active: "bg-primary-50" # 激活/选中背景
+      page: "var(--el-bg-color-page)" # 页面背景
+      container: "var(--el-bg-color)" # 卡片/面板背景
+      subtle: "var(--el-fill-color-light)" # 次级区块背景
+      active: "var(--el-color-primary-light-9)" # 激活/选中背景
     border:
-      default: "border-gray-200" # 默认边框
-      strong: "border-gray-300" # 强调边框
-      focus: "border-primary-500" # 焦点边框
+      default: "var(--el-border-color-lighter)" # 默认边框
+      strong: "var(--el-border-color)" # 强调边框
+      focus: "var(--el-color-primary)" # 焦点边框
     status:
-      success_bg: "bg-success-50"
-      success_text: "text-success-700"
-      warning_bg: "bg-warning-50"
-      warning_text: "text-warning-700"
-      error_bg: "bg-error-50"
-      error_text: "text-error-700"
-      info_bg: "bg-info-50"
-      info_text: "text-info-700"
+      success_bg: "var(--el-color-success-light-9)"
+      success_text: "var(--el-color-success)"
+      warning_bg: "var(--el-color-warning-light-9)"
+      warning_text: "var(--el-color-warning)"
+      error_bg: "var(--el-color-danger-light-9)"
+      error_text: "var(--el-color-danger)"
+      info_bg: "var(--el-color-info-light-9)"
+      info_text: "var(--el-color-info)"
 
   typography:
     font_family:
@@ -183,7 +184,7 @@ tokens:
 
   spacing:
     base_unit: "4px"
-    # 使用 Tailwind 间距工具类，禁止硬编码数值
+    # 使用 Element Plus 间距规范和 SCSS 变量，禁止硬编码数值
     scale:
       0.5: "2px" # 0.5
       1: "4px" # p-1, m-1
@@ -267,46 +268,49 @@ echarts:
     legend: 13
     title: 14
   usage_rules:
-    - "所有图表通过 src/components/charts/ 下封装的组件使用，禁止页面直接使用 ReactECharts"
+    - "所有图表通过 src/components/charts/ 下封装的组件使用，禁止页面直接使用 vue-echarts"
     - "图表颜色统一引用 echarts-theme，禁止在 option 中硬编码颜色"
-    - "图表容器必须设置明确的高度（className='h-64' 或 h-80 等）"
+    - "图表容器必须设置明确的高度（style='height: 320px' 或使用 CSS 类）"
     - "图表组件必须处理 loading 和 empty 状态"
     - "tooltip、legend、axis 样式统一来自主题，不单独覆盖"
 
 # ============================================================
-# Tailwind 配置映射
-# tailwind.config.ts 中的 extend 配置应与此保持同步
+# Element Plus 主题配置映射
+# 通过 SCSS 变量覆盖 + CSS 变量实现主题定制
 # ============================================================
-tailwind:
-  extend_colors:
-    primary: "tokens.colors.primary（50-900）"
-    success: "tokens.colors.success（50-900）"
-    warning: "tokens.colors.warning（50-900）"
-    error: "tokens.colors.error（50-900）"
-    info: "tokens.colors.info"
-    gray: "tokens.colors.gray（50-900）"
+element_plus:
+  theme_overrides:
+    location: "src/config/element-theme.ts 或 vite.config.ts 中的 Element Plus SCSS 变量覆盖"
+    description: "通过 element-plus 的 SCSS 变量和 CSS 变量自定义主题颜色"
+    scss_variables:
+      "--el-color-primary": "tokens.colors.primary.500 (#409EFF)"
+      "--el-color-success": "tokens.colors.success.500 (#67C23A)"
+      "--el-color-warning": "tokens.colors.warning.500 (#E6A23C)"
+      "--el-color-danger": "tokens.colors.danger.500 (#F56C6C)"
+      "--el-color-info": "tokens.colors.gray.500 (#909399)"
+      "--el-border-radius-base": "tokens.radius.md (4px)"
+      "--el-font-size-base": "tokens.typography.font_size.sm (14px)"
   usage_rules:
-    - "使用语义化类名：bg-primary-500、text-error-600、border-gray-200"
-    - "禁止使用 bg-[#1A90FF] 等任意值语法"
-    - "禁止使用 Tailwind 内置的 blue-500、green-500 等默认颜色（用项目自定义色）"
-    - "禁止使用 style={{}} 属性"
-    - "间距统一用工具类：p-4、m-2、gap-3、px-6 等"
-    - "响应式遵循移动优先：grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+    - "优先使用 Element Plus 组件内置属性和 CSS 变量"
+    - "禁止使用 style 属性硬编码样式"
+    - "间距统一使用 Element Plus 间距规范或 SCSS 变量"
+    - "响应式使用 Element Plus 的 el-row / el-col 栅格系统"
+    - "主题定制通过 SCSS 变量覆盖，不使用 CSS-in-JS"
 
 # ============================================================
 # 状态管理规范
 # ============================================================
 state_management:
   local_state:
-    tool: "React Hooks（useState、useReducer、useCallback、useEffect）"
+    tool: "Vue Composition API（ref、reactive、computed、watch、onMounted）"
     use_for:
       - "表单输入值"
       - "弹窗开关"
       - "单个组件的 loading/error 状态"
       - "本地筛选、排序、分页"
   global_state:
-    tool: "Zustand"
-    store_location: "src/store/"
+    tool: "Pinia"
+    store_location: "src/stores/"
     use_for:
       - "当前登录用户信息"
       - "权限与角色"
@@ -316,10 +320,9 @@ state_management:
       - "主题/语言配置"
     store_naming: "use[Domain]Store（如 useUserStore、usePermissionStore）"
     forbidden:
-      - "Redux"
-      - "MobX"
-      - "Recoil"
-      - "Context API 用于业务状态（仅允许用于主题/语言等低频配置）"
+      - "Vuex Options API"
+      - "Vuex Event Bus"
+      - "provide/inject 用于业务状态（仅允许用于组件通信的低频场景）"
 
 # ============================================================
 # 页面状态规范
@@ -333,8 +336,8 @@ page_states:
   guidance:
     loading:
       description: "数据加载中"
-      implementation: "列表/表格用骨架屏（Skeleton 效果），按钮操作用 disabled + spinner"
-      tailwind_example: "animate-pulse bg-gray-200 rounded"
+      implementation: "列表/表格用 el-skeleton 骨架屏，按钮操作用 disabled + el-icon loading"
+      example: "<el-skeleton :rows=\"5\" animated />"
     empty:
       description: "无数据"
       implementation: "展示空状态图示 + 简短说明 + 引导操作按钮"
@@ -351,9 +354,9 @@ page_states:
 component_rules:
   reuse_first: true
   naming:
-    components: "PascalCase"
-    hooks: "camelCase，以 use 开头"
-    stores: "camelCase，以 use 开头，以 Store 结尾"
+    components: "PascalCase（.vue 文件）"
+    composables: "camelCase，以 use 开头（useXxx.ts）"
+    stores: "camelCase，以 use 开头，以 Store 结尾（useXxxStore.ts）"
     utils: "camelCase"
   custom_component_policy:
     - "只有在确实存在复用价值时才新增共享组件"
@@ -366,44 +369,42 @@ component_rules:
       examples:
         - "PageContainer（页面容器，统一 padding）"
         - "SectionCard（分区卡片）"
-        - "Grid（响应式网格）"
-        - "Flex（弹性布局）"
+        - "AppMain（主布局）"
+        - "AppSidebar（侧边栏）"
+        - "AppNavbar（导航栏）"
     ui:
-      description: "基础 UI 组件"
-      location: "src/components/ui/"
+      description: "优先使用 Element Plus 组件，不重复造轮子"
+      location: "src/components/common/"
       examples:
-        - "Button（主/次/幽灵/危险变体）"
-        - "Badge（状态标签）"
-        - "StatCard（数据统计卡片）"
-        - "StatusTag（业务状态标签）"
-        - "SearchBar（搜索栏）"
-        - "FilterBar（筛选栏）"
-        - "Input（文本输入框）"
-        - "Select（下拉选择器）"
-        - "Checkbox（多选框）"
-        - "Radio（单选框）"
-        - "Switch（开关）"
-        - "DatePicker（日期选择器）"
-        - "Upload（文件上传）"
-        - "Table（数据表格）"
-        - "Pagination（分页）"
-        - "Tag（标签）"
-        - "Tooltip（文字提示）"
-        - "Popover（气泡卡片）"
-        - "Progress（进度条）"
-        - "Avatar（头像）"
-        - "Modal（弹窗）"
-        - "Drawer（抽屉）"
-        - "Alert（内联提示）"
-        - "Toast（轻提示）"
-        - "Steps（步骤条）"
-        - "Tabs（标签页）"
-        - "Breadcrumb（面包屑）"
-        - "Collapse（折叠面板）"
-        - "Divider（分割线）"
-        - "Skeleton（骨架屏）"
-        - "Spin（加载中）"
-        - "Empty（空状态）"
+        - "ElButton（主/次/幽灵/危险/文字变体）"
+        - "ElBadge（状态标签）"
+        - "ElTag（标签/筛选条件）"
+        - "ElTable（数据表格）"
+        - "ElForm（表单）"
+        - "ElInput（文本输入框）"
+        - "ElSelect（下拉选择器）"
+        - "ElCheckbox（多选框）"
+        - "ElRadio（单选框）"
+        - "ElSwitch（开关）"
+        - "ElDatePicker（日期选择器）"
+        - "ElUpload（文件上传）"
+        - "ElPagination（分页）"
+        - "ElTooltip（文字提示）"
+        - "ElPopover（气泡卡片）"
+        - "ElProgress（进度条）"
+        - "ElAvatar（头像）"
+        - "ElDialog（弹窗）"
+        - "ElDrawer（抽屉）"
+        - "ElAlert（内联提示）"
+        - "ElMessage / ElNotification（轻提示/通知）"
+        - "ElSteps（步骤条）"
+        - "ElTabs（标签页）"
+        - "ElBreadcrumb（面包屑）"
+        - "ElCollapse（折叠面板）"
+        - "ElDivider（分割线）"
+        - "ElSkeleton（骨架屏）"
+        - "ElLoading / v-loading（加载中）"
+        - "ElEmpty（空状态）"
     charts:
       description: "ECharts 封装图表组件"
       location: "src/components/charts/"
@@ -424,34 +425,26 @@ form_rules:
   layout:
     label_position: "标签在输入框上方（top），企业表单标准布局"
     label_style: "text-sm font-medium text-gray-700"
-    required_mark: "标签后紧跟红色星号 * ，使用 text-error-500"
+    required_mark: "标签后紧跟红色星号 *"
     helper_text: "输入框下方，text-xs text-gray-500"
-    error_text: "输入框下方，text-xs text-error-600，替换 helper_text 位置"
-    field_gap: "垂直间距 gap-4（16px），分组间距 gap-6（24px）"
-    section_gap: "表单分区间距 gap-8（32px）"
+    error_text: "输入框下方，text-xs text-danger-600，替换 helper_text 位置"
+    field_gap: "垂直间距 mb-4（16px），分组间距 mb-6（24px）"
+    section_gap: "表单分区间距 mb-8（32px）"
   sizes:
     sm:
-      height: "h-8"
-      padding: "px-3 py-1.5"
-      text: "text-sm"
-      description: "紧凑型，用于筛选栏、内联表单"
+      description: "紧凑型，用于筛选栏、内联表单，      el_size: "small"
     md:
-      height: "h-10"
-      padding: "px-3 py-2"
-      text: "text-sm"
       description: "默认尺寸，企业表单标准"
+      el_size: "default"
     lg:
-      height: "h-12"
-      padding: "px-4 py-3"
-      text: "text-base"
       description: "宽松型，用于登录、注册等关键表单"
+      el_size: "large"
   validation:
-    trigger: "onBlur 失焦校验为主，提交时全量校验"
-    error_border: "border-error-500 focus:border-error-500 focus:ring-error-100"
-    success_border: "border-success-500"
-    error_icon: "InputAdornment 右侧 AlertCircle 图标，text-error-500，size=16"
+    trigger: "使用 el-form 的 rules 配置，blur 失焦校验为主，提交时全量校验"
+    error_border: "Element Plus 自动添加 is-error 类名"
+    success_border: "Element Plus 自动添加 is-success 类名"
   submit_behavior:
-    loading_state: "提交按钮 disabled + Loader2 旋转图标，防止重复提交"
+    loading_state: "提交按钮 :loading=\"true\" :disabled=\"true\"，防止重复提交"
     reset_policy: "提交成功后根据业务场景决定是否重置，不强制"
 
 # ============================================================
@@ -492,7 +485,7 @@ component_specs:
 
   select:
     description: "下拉选择器，支持单选、多选、搜索"
-    library: "原生 <select> 不满足企业需求时，使用自定义实现或 headlessui Listbox"
+    library: "使用 Element Plus 的 el-select 组件，自带搜索、多选、虚拟滚动"
     sizes:
       sm: "h-8 px-3 text-sm"
       md: "h-10 px-3 text-sm" # 默认
@@ -599,7 +592,7 @@ component_specs:
 
   datepicker:
     description: "日期与时间选择器"
-    library: "react-datepicker，样式通过 Tailwind 自定义覆盖，禁止引入其默认 CSS"
+    library: "使用 Element Plus 的 el-date-picker 组件，自带完整样式和交互"
     trigger:
       style: "同 Input md 尺寸规范，左侧 Calendar 图标 size=16 text-gray-400"
       placeholder: "text-gray-400，格式提示如 YYYY-MM-DD"
@@ -625,7 +618,7 @@ component_specs:
       position: "popup 左侧面板或顶部，常用：今天、昨天、最近7天、最近30天、本月、上月"
       style: "text-sm text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg cursor-pointer"
     rules:
-      - "禁止引入 react-datepicker 的默认 CSS，全量使用 Tailwind 覆盖"
+      - "使用 Element Plus 的 el-date-picker 组件，自带完整样式"
       - "日期范围选择时，结束日期不能早于开始日期，需校验并提示"
       - "时区处理统一由业务层负责，组件只处理本地展示"
 
@@ -1141,16 +1134,16 @@ component_specs:
       - "Spin 适用于提交、保存等操作的等待状态"
       - "全页 Spin 仅用于页面初始化加载，不用于局部操作"
 icons:
-  library: "lucide-react"
+  library: "Element Plus Icons（@element-plus/icons-vue）"
   sizes:
     default: 18
     medium: 20
     large: 24
   usage_rules:
-    - "统一从 lucide-react 导入，禁止自定义 SVG 或其他图标库"
-    - "尺寸统一用 size prop：<Icon size={20} />"
-    - "颜色通过 className 控制：<Icon size={20} className='text-primary-500' />"
-    - "禁止使用 <img src='icon.svg' /> 或 <i className='fa-...' />"
+    - "统一从 @element-plus/icons-vue 导入，禁止自定义 SVG 或其他图标库"
+    - "尺寸统一用 :size prop：<ElIcon :size=\"20\"><component :is=\"Search\" /></ElIcon>"
+    - "颜色通过 style 或 CSS 类控制"
+    - "禁止使用 <img src='icon.svg' /> 或 <i class='fa-...' />"
 
 # ============================================================
 # 响应式设计规范
@@ -1158,15 +1151,14 @@ icons:
 responsive:
   principle: "移动优先（Mobile First）"
   breakpoints:
-    default: "手机竖屏（< 640px）"
-    sm: "640px - 手机横屏"
-    md: "768px - 平板"
-    lg: "1024px - 桌面"
-    xl: "1280px - 宽屏"
-    2xl: "1536px - 超宽屏"
+    xs: "< 768px（手机/小平板）"
+    sm: "768px - 平板"
+    md: "992px - 小桌面"
+    lg: "1200px - 桌面"
+    xl: "1920px - 宽屏"
   common_patterns:
-    grid_cols: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-    padding: "px-4 sm:px-6 lg:px-8"
+    grid_cols: "el-row + el-col :span='24' :md='{span: 12}' :lg='{span: 8}'"
+    padding: "页面内边距 p-4 md:p-6 lg:p-8"
     text_size: "text-sm md:text-base lg:text-lg"
     sidebar_width: "w-full lg:w-64"
 
@@ -1175,33 +1167,29 @@ responsive:
 # ============================================================
 do:
   - "优先复用现有组件和页面模式"
-  - "优先使用语义化 Tailwind 类（bg-primary-500 而非 bg-[#1A90FF]）"
+  - "优先使用 Element Plus 组件和 CSS 变量"
   - "保持完整的页面状态反馈（loading/empty/error/no-permission）"
   - "图表颜色统一来自 echarts-theme 配置文件"
-  - "全局状态使用 Zustand store，本地状态使用 React Hooks"
-  - "图标统一使用 lucide-react，尺寸 18-24px"
+  - "全局状态使用 Pinia store，组件本地状态使用 Vue Composition API（ref、reactive、computed）"
+  - "图标统一使用 @element-plus/icons-vue"
   - "响应式遵循移动优先原则"
   - "同时关注桌面端与移动端可读性"
 
 dont:
-  - "不要使用 style={{}} 属性"
-  - "不要硬编码颜色值（如 #1A90FF、bg-[#1A90FF]）"
-  - "不要使用 Tailwind 内置颜色（blue-500 等），用项目自定义色"
-  - "不要硬编码间距数值（如 padding: '20px'）"
+  - "不要使用 style 属性硬编码样式"
+  - "不要硬编码颜色值（如 #409EFF）"
+  - "不要使用内联 CSS 数值（如 padding: '20px'）"
   - "不要使用 ECharts 以外的图表库（Recharts、Chart.js 等）"
   - "不要在图表 option 中硬编码颜色，必须引用 echarts-theme"
-  - "不要使用 Redux、MobX、Recoil"
+  - "不要使用 Vuex Options API"
   - "不要在组件中直接调用后端 API，统一通过 src/api/ 封装"
   - "不要交付缺少 loading、empty、error 状态的页面"
   - "不要再创建新的设计 token 文件或平行配置体系"
-  - "不要使用 lucide-react 以外的图标库"
+  - "不要使用 @element-plus/icons-vue 以外的图标库"
   - "不要在没有充分复用价值的情况下创建新共享组件"
-  - "不要在 Input/Select 等表单组件中使用 outline-none 而不补 ring/border 焦点样式"
-  - "不要使用 react-datepicker 的默认 CSS，全量用 Tailwind 覆盖样式"
   - "不要在 Tooltip 内放置可交互元素（按钮/链接），应使用 Popover"
-  - "不要嵌套超过 2 层弹窗（Modal/Drawer）"
+  - "不要嵌套超过 2 层弹窗（ElDialog/ElDrawer）"
   - "不要使用 ECharts 以外的图表库，不要用 Recharts、Chart.js 等"
-  - "不要让 Tag 与 Badge 混用：Badge 表示状态，Tag 表示内容标记"
-  - "不要超过 8 个 Tab，超出用 Select 代替"
+  - "不要超过 8 个 ElTabs，超出用 ElSelect 代替"
   - "不要在侧边导航菜单中嵌套超过 2 层菜单"
-  - "不要在表格/列表数据加载时使用全页 Spin 遮罩，应使用 Skeleton"
+  - "不要在表格/列表数据加载时使用全页 v-loading 遮罩，应使用 ElSkeleton"
