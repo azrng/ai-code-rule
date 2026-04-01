@@ -596,7 +596,7 @@ API → Application → Domain ← Infrastructure
 ### devlog 要求
 - 文件目录：`doc/devlog/`
 - 文件格式：Markdown
-- 文件命名建议：`YYYY-MM-DD-任务简述.md`
+- 文件命名建议：`YYYY-MM-DD-HHmm-任务简述.md`
 - 内容保持简短，至少包含：
   - 本次目标
   - 核心改动

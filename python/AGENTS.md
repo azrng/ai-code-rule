@@ -522,7 +522,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 |------|------|--------|
 | `doc/requirement.md` | 需求文档（仅用户编写） | 用户 |
 | `doc/design/设计文档.md` | 项目设计文档（唯一） | AI 代理 |
-| `doc/devlog/YYYY-MM-DD-任务简述.md` | 开发日志 | AI 代理 |
+| `doc/devlog/YYYY-MM-DD-HHmm-任务简述.md` | 开发日志 | AI 代理 |
 
 ### 8.2 开发日志格式
 
