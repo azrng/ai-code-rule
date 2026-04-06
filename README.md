@@ -6,6 +6,7 @@
 
 | 目录 | 项目类型 | 技术栈 |
 |------|----------|--------|
+| [dotnetConsole](dotnetConsole/) | .NET 控制台应用 | .NET 10 + System.CommandLine + Serilog + 依赖注入 |
 | [dotnetCore](dotnetCore/) | .NET 单层 API 后端 | .NET 10 + ASP.NET Core Web API + EF Core + Swagger |
 | [dotnetLayered](dotnetLayered/) | .NET 分层 API 后端 | .NET 10 + ASP.NET Core Web API（9 项目分层架构）+ EF Core |
 | [dotnetBlazor](dotnetBlazor/) | .NET Blazor 全栈 Web | .NET 10 + Blazor Server + BootstrapBlazor (Bootstrap 5) |
