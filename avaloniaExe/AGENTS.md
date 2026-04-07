@@ -1,8 +1,9 @@
-# AGENTS-new.md
+# AGENTS.md
 
 ## 目标
 职责划分如下：
-- `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`：各 AI Agent 统一工作规则、任务管理机制、交付要求，内容保持同步
+- `AGENTS.md`：唯一协作规范来源，统一定义工作规则、任务机制、交付要求
+- `CLAUDE.md` / `GEMINI.md`：各 Agent 的入口说明文件，仅负责提醒先读取 `AGENTS.md`，不维护平行规则内容
 - `design-system.yaml`：设计 token 与 UI 规范
 - `TASK.md`：具体任务内容与任务进度
 
@@ -10,14 +11,14 @@
 
 ## 工作方法
 
-1、行动前先思考。写代码前先阅读现有文件。
-2、输出要简洁，但推理要彻底。
-3、优先编辑而不是重写整个文件。
-4、除非文件可能已变更，否则无需重复阅读已读文件。
-5、完成前需测试代码。
-6、避免奉承性开头或冗余结尾。
-7、保持解决方案简单直接。
-8、用户指令始终优先于本文件内容。
+1. 行动前先思考，写代码前先阅读现有文件并理解业务目标。
+2. 输出保持简洁，但分析与落地必须完整。
+3. 优先编辑现有文件，而不是无差别重写。
+4. 已确认无变更风险的文件无需重复阅读，但遇到上下文缺口时必须补读。
+5. 完成前尽量执行可落地的校验，无法执行时明确说明原因和影响。
+6. 避免奉承性开头或冗余结尾，直接进入有价值的信息。
+7. 保持解决方案简单直接，避免过度设计。
+8. 用户指令始终优先于本文件内容。
 
 ---
 
@@ -26,41 +27,41 @@
 2. 你需要根据设计的功能需求设计合适的工具导航和操作入口，避免无意义的层级复杂度
 3. 功能模块必须有完整可操作的功能页面
 4. 所有的功能至少要确保能够完成基本的流程操作，功能的按钮必须都是可以交互的，界面的内容尽量多填充一些信息
-5. 整体系统应有默认应用图标，主界面左上角应有应用图标和应用名称。
-6. 系统需要有一些克制但清晰的动效，界面简洁大方，操作流程清晰易懂。
-7.  如系统内所有涉及到变更、新增、删除等业务逻辑，必须能够真实生效，而不是假的交互，确保重新进入页面、重新打开窗口或重新加载数据后仍能看到生效后的内容
-8.  由于此系统的功能模块较多，实现的时候先把系统的框架搭起来，然后按照一个一个子模块的方式来实现，而不是一下子实现全部功能
+5. 整体系统应有默认应用图标，主界面左上角应有应用图标和应用名称
+6. 系统需要有一些克制但清晰的动效，界面简洁大方，操作流程清晰易懂
+7. 如系统内所有涉及变更、新增、删除等业务逻辑，必须能够真实生效，而不是假的交互，确保重新进入页面、重新打开窗口或重新加载数据后仍能看到生效后的内容
+8. 由于此系统的功能模块较多，实现的时候先把系统的框架搭起来，然后按照一个一个子模块的方式来实现，而不是一下子实现全部功能
 
 ---
 
 ## 技术栈
 
-- .NET 10 (2025 年发布正式版) + Avalonia 11+ + Ursa.Avalonia + CommunityToolkit.Mvvm
-- 分层架构：View (视图层) → ViewModel (视图模型层) → Service (应用服务层) → Repository (仓储层) → Model (领域模型层)
+- .NET 10 + Avalonia 11+ + Ursa.Avalonia + CommunityToolkit.Mvvm
+- 分层架构：View（视图层）→ ViewModel（视图模型层）→ Service（应用服务层）→ Repository（仓储层）→ Model（领域模型层）
 - 数据访问：Dapper + SQLite
 - 消息传递：CommunityToolkit.Mvvm IMessenger
 - 依赖注入：Microsoft.Extensions.DependencyInjection
 
 ### 核心库
-- `Azrng.Core` (1.15.8)：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
-- `Azrng.Core.Json` (1.3.1)：JSON 序列化（基于 System.Text.Json）
+- `Azrng.Core`（基础类库：实体基类、扩展方法、工具类、结果包装、异常体系）
+- `Azrng.Core.Json`（JSON 序列化，基于 `System.Text.Json`）
 
 ### 依赖注入规范
 - 使用 Azrng 标记接口方式批量注册服务：
   - `ITransientDependency`：临时注入
   - `IScopedDependency`：作用域注入
   - `ISingletonDependency`：单例注入
-- 在 Program.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
-- 服务类实现对应标记接口，自动被扫描注册到 DI 容器到 DI 容器
+- 在 `Program.cs` 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
+- 服务类实现对应标记接口，自动被扫描注册到 DI 容器
 
 ### 部署
 - 桌面应用打包：单文件发布
-- 数据库：SQLite (本地可选) / PostgreSQL (可选)
+- 数据库：SQLite（本地默认）/ PostgreSQL（按项目需要扩展）
 
 ### 设计系统
 - 使用 Fluent Design 风格，遵循 `design-system.yaml` 中定义的设计 token
-- 样式必须使用 Avalonia 样式表 (Styles/Classes)，禁止硬编码在控件属性中
-- 颜色、间距、圆角必须来自样式资源，使用 {StaticResource} 或 {DynamicResource} 引用
+- 样式必须使用 Avalonia 样式表（Styles / Classes），禁止硬编码在控件属性中
+- 颜色、间距、圆角必须来自样式资源，使用 `{StaticResource}` 或 `{DynamicResource}` 引用
 
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
 
@@ -125,16 +126,16 @@ project-root/
 
 所有新功能开发必须严格经历以下四个阶段，阶段之间有明确的门控条件，不满足条件不得进入下一阶段：
 
-```
-阶段 0          阶段 1          阶段 2          阶段 3
+```text
+阶段 0          阶段 1          阶段 2              阶段 3
 设计文档   →   视图实现   →   业务逻辑实现   →   集成测试
-（用户确认）   （Claude Code）  （Codex）       （协作）
+（用户确认）   （Claude Code）  （Codex）          （协作）
 ```
 
 **例外情况**（AI 自动判断，无需走阶段 0）：
 - Bug 修复（功能行为不变，只修正错误）
 - 已有页面的样式、文案微调
-- 配置、环境变量、部署脚本调整
+- 配置、环境变量、发布脚本调整
 - 单个字段的增删（不涉及新页面或新业务流程）
 
 ---
@@ -145,16 +146,20 @@ project-root/
 
 **执行方式**：由用户与 AI 对话协作产出，用户最终确认定稿
 
+- 若 `doc/requirement.md` 不存在，AI 必须先根据用户当前输入自动生成一版详细需求文档初稿，再进入设计文档整理
+- 自动生成的需求文档至少应包含：业务目标、用户角色、页面/模块范围、核心流程、关键字段、权限规则、边界场景、已知约束
+- 若用户输入不足以支撑完整需求，AI 必须显式写出“待确认项”与“当前假设”，可以先形成初稿，但不得将假设内容表述为已确认事实
+
 **产物**：`doc/design/设计文档.md`（全项目一份，新功能以新章节追加，不新建文件）
 
 **文档必须包含以下四个部分**：
 
-| 部分     | 内容要求                                                       |
-| -------- | -------------------------------------------------------------- |
-| 架构设计 | 模块划分、数据流向、涉及的技术决策说明                         |
-| 功能需求 | 页面列表、功能点明细、业务规则、关键状态说明                   |
+| 部分 | 内容要求 |
+| ---- | -------- |
+| 架构设计 | 模块划分、数据流向、涉及的技术决策说明 |
+| 功能需求 | 页面列表、功能点明细、业务规则、关键状态说明 |
 | 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / empty / error） |
-| 交互说明 | 操作流程、状态流转、边界场景、错误处理方式                     |
+| 交互说明 | 操作流程、状态流转、边界场景、错误处理方式 |
 
 **门控规则**：
 - 用户明确确认设计文档后，才允许进入阶段 1
@@ -186,9 +191,9 @@ project-root/
 
 ### 阶段 2 — 业务逻辑实现（Codex 主导）
 
-**触发条件**：用户发出「开始后端开发」指令
+**触发条件**：用户发出「开始业务逻辑开发」指令
 
-**入场要求**：`src/AppName/Models/DTOs/` 接口契约文件已定稳
+**入场要求**：前端视图已完成，`src/AppName/Models/DTOs/` 接口契约文件已明确
 
 **工作内容**：
 1. 严格按照 DTO 中的类型定义实现 Service 层和 Repository 层
@@ -197,9 +202,10 @@ project-root/
 4. 每个服务方法必须可通过单元测试独立验证
 
 **字段命名约定**：
-- C# 属性：PascalCase
+- C# 类型 / 属性：PascalCase
 - 数据库字段：snake_case
-- 转换层：Dapper 映射通过 Column 特性或自定义映射处理
+- DTO / 序列化字段：遵循当前协议约定并保持一致
+- 转换层：Dapper 映射通过 `Column` 特性或自定义映射处理
 
 **门控规则**：
 - 核心业务逻辑单元测试通过后，才允许进入阶段 3
@@ -210,11 +216,11 @@ project-root/
 
 **触发条件**：用户发出「开始联调」指令
 
-**入场要求**：视图页面和业务逻辑均已独立完成验证
+**入场要求**：视图页面和业务逻辑均已完成独立验证
 
 **工作内容**：
 1. ViewModel 绑定真实 Service，验证数据流
-2. 处理异常映射：后端错误结构与 Dialog / Toast 展示逻辑匹配
+2. 处理异常映射：服务端错误结构与 Dialog / Toast 展示逻辑匹配
 3. 执行核心业务路径 smoke test（至少覆盖：进入主界面 → 核心操作 → 数据回显）
 
 **完成标志**：核心路径 smoke test 通过，`doc/devlog/` 已补充本阶段记录
@@ -226,23 +232,24 @@ project-root/
 1. 先阅读本文档，理解核心规则和流程
 2. 确认当前处于哪个开发阶段，检查该阶段的入场条件是否满足
 3. 再阅读 `design-system.yaml`
-4. 再阅读相关模块和现有实现
+4. 再阅读 `doc/requirement.md`、`doc/design/设计文档.md`、相关模块和现有实现
 5. 优先复用当前结构，再决定是否新增文件
 
 进行 UI 开发时：
 1. `design-system.yaml` 是颜色、间距、圆角、排版、页面状态、组件使用规则的参考依据
 2. 所有样式使用 Avalonia Styles，禁止在控件中直接设置属性值
-3. 颜色必须来自样式资源，使用 {StaticResource} 或 {DynamicResource} 引用
-4. 图标统一使用 Avalonia.Controls.Shapes 或素材图片
+3. 颜色必须来自样式资源，使用 `{StaticResource}` 或 `{DynamicResource}` 引用
+4. 图标统一使用 Avalonia 官方图形能力、Ursa 组件能力或仓库既有素材
 5. 全局状态（工具状态、通知、页面消息等）使用 Messenger 传递
-6. ViewModel 本地状态使用 ObservableProperty 特性
+6. ViewModel 本地状态使用 `ObservableProperty` 特性
 
-进行后端开发时：
+进行业务逻辑开发时：
 1. 保持 `ViewModel → Service → Repository → Model` 分层
-2. 使用 CommunityToolkit.Mvvm 的 [RelayCommand] 特性
-3. 涉及数据库结构变更时使用迁移脚本
+2. 优先使用 CommunityToolkit.Mvvm 的 `[RelayCommand]`、`[ObservableProperty]` 特性
+3. 涉及数据库结构变更时同步补迁移脚本
+4. 数据访问统一通过 Repository 层，不在 ViewModel / Service 中直接写 SQL
 
-进行部署改动时：
+进行发布改动时：
 1. 优先复用现有打包配置
 2. 发布版本必须可追踪
 3. 清理旧版本前要保留可回滚版本
@@ -258,14 +265,29 @@ project-root/
 - 不要猜测问题，要实证排查：通过日志、断点、数据等实际证据定位原因，禁止凭猜测修改代码。
 - 所有改动都必须可说明、可验证。
 
+## 思考与实现原则
+- 先理解业务目标、用户角色、核心流程，再进行设计和开发。
+- 优先选择符合当前需求的最优可行方案，兼顾正确性、可维护性与实现成本。
+- 尽可能复用现有代码、结构与组件；只有在明确存在复用价值时才新增抽象。
+- 严禁过度设计、过度封装和无意义冗余，避免为单次需求引入不必要的层次和复杂度。
+- 代码实现应保持清晰、简洁、稳定，优先保证业务正确性、可读性和后续维护性。
+- 遇到需求不清、规则冲突或实现复杂度明显升高时，先说明判断与权衡，再继续执行。
+
+## 编码规则
+- 所有源码、配置、文档文件统一使用 `UTF-8` 编码。
+- 读取或修改含中文文件时，若出现乱码，先判断是终端显示问题还是文件编码损坏；未确认前禁止覆盖原文件。
+- 禁止使用可能隐式改变编码的方式直接改写源码文件，如 shell 重定向、`Out-File`、`Set-Content`。
+- Windows / PowerShell 下读取中文文件时，必须显式使用 `UTF-8`。
+- 修改含中文内容后，必须重新读取一次并确认关键中文显示正常。
+
 ---
 
 ## Avalonia 视图层规则
 
 ### 样式规则
-- 所有样式使用 Avalonia Styles (`.axaml` 文件)，禁止在控件中直接设置 `Background`、`Margin` 等属性
+- 所有样式使用 Avalonia Styles（`.axaml` 文件），禁止在控件中直接设置 `Background`、`Margin` 等属性
 - 所有颜色来自 `design-system.yaml` 中定义的语义化 token，通过样式资源引用
-- 所有间距使用 Margin / Padding 工具类，禁止硬编码数值
+- 所有间距使用统一的资源或样式类，禁止硬编码数值
 - 响应式设计遵循窗口大小变化，必须在不同窗口尺寸下测试
 
 ### 组件规则
@@ -275,35 +297,35 @@ project-root/
 - 使用 Ursa.Avalonia 控件库优先，必要时使用 Avalonia 官方控件
 
 ### MVVM 模式规则
-- **ViewModel 基类**：所有 ViewModel 必须继承 `ObservableObject` (CommunityToolkit.Mvvm)
-- **属性通知**：使用 `[ObservableProperty]` 特性自动生成 INotifyPropertyChanged
-- **命令定义**：使用 `[RelayCommand]` 特性生成 ICommand，禁止手动创建 RelayCommand
-- **消息传递**：ViewModel 间通信使用 `IMessenger` (CommunityToolkit.Mvvm)
+- **ViewModel 基类**：所有 ViewModel 必须继承 `ObservableObject`（CommunityToolkit.Mvvm）
+- **属性通知**：使用 `[ObservableProperty]` 特性自动生成 `INotifyPropertyChanged`
+- **命令定义**：使用 `[RelayCommand]` 特性生成 `ICommand`，禁止手动创建 `RelayCommand`
+- **消息传递**：ViewModel 间通信使用 `IMessenger`
 - **依赖注入**：ViewModel 依赖通过构造函数注入
-- **服务注册**：服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
+- **服务注册**：服务类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
 
 ### 导航规则
-- 使用 Ursa 的导航组件进行页面切换
-- 导航逻辑封装在 NavigationService 中，禁止在 ViewModel 中直接操作 View
-- 页面参数通过导航消息传递，禁止使用静态全局状态
-- 支持导航历史记录（前进/后退）
+- 使用项目既有导航方案或 Ursa 导航能力进行页面切换
+- 导航逻辑封装在导航服务中，禁止在 ViewModel 中直接操作 View
+- 页面参数通过导航消息或显式参数对象传递，禁止使用静态全局状态
+- 需要历史记录时，应支持前进 / 后退
 
 ### 对话框规则
-- 使用 Ursa 的 Dialog/Overlay 组件实现对话框
-- 对话框内容必须使用 ViewModel，禁止 Code-behind 写业务逻辑
-- 对话框结果通过 TaskCompletionSource 异步返回
-- 支持自定义对话框样式和动画效果
+- 使用项目既有对话框方案或 Ursa 的 Dialog / Overlay 组件实现对话框
+- 对话框内容必须使用 ViewModel，禁止在 Code-behind 编写业务逻辑
+- 对话框结果通过异步返回，禁止依赖隐式全局状态
+- 危险操作需提供明确的二次确认
 
 ### 数据绑定规则
-- 列表数据使用 `ObservableCollection<T>` 或 `ObservableRangeCollection<T>`
-- 复杂集合变更使用 `ReplaceAll` 方法而非清空后重添
-- 异步数据加载必须支持取消（CancellationToken）
-- 绑定路径必须正确，禁止使用 `x:Name` 访问控件
+- 列表数据使用 `ObservableCollection<T>` 或适合当前项目的可观察集合
+- 复杂集合变更优先使用批量更新策略，而不是简单清空后重添
+- 异步数据加载必须支持取消（`CancellationToken`）
+- 绑定路径必须可维护，禁止依赖脆弱的控件查找方式
 
 ### 状态管理规则
-- **本地状态**：使用 ObservableProperty 特性管理 ViewModel 状态
-- **全局共享状态**：使用 IMessenger 传递跨 ViewModel 消息
-- 禁止使用静态全局类（如 Singleton）存储业务状态
+- **本地状态**：使用 `ObservableProperty` 特性管理 ViewModel 状态
+- **全局共享状态**：使用 `IMessenger` 传递跨 ViewModel 消息
+- 禁止使用静态全局类存储业务状态
 - Context 仅用于主题、语言等低频全局配置
 
 ---
@@ -312,22 +334,22 @@ project-root/
 
 ### Service 层规则
 - 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录
-- 服务方法必须是异步的（返回 `Task<T>` 或 `ValueTask<T>`）
-- 服务层处理所有业务逻辑，不直接访问 Repository 以外的依赖
-- 服务层异常必须统一封装，抛出 Azrng 异常体系的业务异常类型
-- 服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
+- 服务方法必须优先采用异步形式（返回 `Task<T>` 或 `ValueTask<T>`）
+- 服务层处理所有业务逻辑，不直接访问 Repository 以外的数据依赖
+- 服务层异常必须统一封装，抛出 Azrng 异常体系中的业务异常类型
+- 服务类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
 
 ### Repository 层规则
 - 仓储类必须实现接口，接口定义在 `Repositories/Interfaces/` 目录
 - 使用 Dapper 进行数据访问，SQL 语句放在 SQL 文件或常量中
-- 仓储方法必须是异步的，支持取消令牌
-- 涉及事务时，使用 IDbTransaction 统一管理
-- 仓储类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
+- 仓储方法必须优先采用异步形式，并支持取消令牌
+- 涉及事务时，使用 `IDbTransaction` 统一管理
+- 仓储类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
 
 ### 数据访问规则
 - 使用 Dapper + SQLite 进行本地数据存储
 - 数据库连接字符串从配置文件读取，禁止硬编码
-- 数据库连接必须使用 `using` 语句管理生命周期
+- 数据库连接必须正确管理生命周期
 - SQL 注入防护：所有查询必须使用参数化查询
 
 ### 统一结果包装
@@ -348,22 +370,23 @@ project-root/
 ---
 
 ## 测试规则
+
 ### 总体要求
-- 影响行为的改动应优先补充或更新测试，而不是只修改实现代码
+- 影响行为的改动应优先补充或更新测试
 - 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为，不要只覆盖静态渲染或无意义分支
+- 测试应覆盖真实业务行为
 
 ### 视图层测试
-- 页面交互、表单校验、列表行为、状态展示、异常状态发生变化时，应补充对应测试
+- 页面交互、表单校验、列表行为、状态展示、异常状态变化时，应补充对应测试
 - 至少关注以下关键状态：`loading`、`empty`、`error`、`no-permission`
-- 若涉及数据请求、筛选、分页、提交等用户关键路径，应验证主要交互结果
-- 使用 Avalonia.Headless 进行 UI 自动化测试
+- 若涉及数据请求、筛选、分页、提交等关键路径，应验证主要交互结果
+- 推荐使用 Avalonia Headless 或项目既有 UI 测试方案
 
 ### 业务逻辑层测试
 - ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试
 - Service 层业务逻辑、数据转换、异常处理发生变化时，应补充对应测试
 - Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试
-- 使用 xUnit 作为测试框架
+- 推荐使用 xUnit 作为测试框架
 
 ### 外部依赖与数据
 - 测试中不要真实调用外部服务，统一使用 mock、stub 或测试替身
@@ -378,6 +401,7 @@ project-root/
 ---
 
 ## Git 与提交流程
+
 ### 分支命名
 - `feat/<desc>`：新功能
 - `fix/<desc>`：缺陷修复
@@ -389,39 +413,40 @@ project-root/
 - 提交信息优先采用 Conventional Commits：
   - `<type>(<scope>): <简短描述>`
 - 示例：
-  - `feat(auth): add refresh token endpoint`
-  - `fix(viewmodel): correct table pagination reset`
+  - `feat(import): add swagger import workflow`
+  - `fix(viewmodel): correct request history refresh`
   - `chore(dotnet): pin NuGet package version`
 
 ### 交付前自查
 - 编译已执行，或已明确说明未执行原因
-- 代码分析已执行，或已明确说明未执行原因
 - 相关测试已执行，或已明确说明未执行原因
 - 涉及数据库结构变更时已确认迁移脚本
 - 新增配置文件已同步更新相关文档
 
 ### 提交触发规则
 - 每次修改完后都必须提交代码
-- 若仓库尚未初始化为可用 Git 工作区，最终说明中必须明确写明无法执行提交校验
+- 若仓库尚未初始化为可用 Git 工作区，最终说明中必须明确写明无法执行提交流程校验
 - 若本次开发生成了本地运行产物、缓存、测试数据库、构建产物或依赖目录，应同步检查并更新 `.gitignore`
 
 ---
 
 ## 发布规则
+
+### 总体要求
 - 优先复用现有打包配置
-- 生产发布优先采用单文件发布 (Single File Publish)
-- 不要把密钥写入配置文件
+- 生产发布优先采用单文件发布（Single File Publish）
+- 不要把密钥写入配置文件或发布产物
 - 发布链路要可追踪
 - 清理旧版本时要保留最小回滚窗口
 
 ### 发布交付规则
-- 只要本次任务涉及发布配置、版本号和启动命令，完成实现后应主动执行一次构建验证
-- 若因环境限制无法执行，必须明确说明
+- 只要本次任务涉及发布配置、版本号、运行命令或环境依赖，完成实现后应主动执行一次构建验证
 - 发布验证至少包括：
   - 构建是否成功
   - 应用是否成功启动
   - 关键功能是否处于可用状态
   - 核心访问链路是否可用
+- 若因环境限制无法执行，必须明确说明
 
 ---
 
@@ -482,17 +507,23 @@ project-root/
 - 对外使用方式或接口约定
 
 优先更新已有文档，不新增重复说明。
-每次开发完成后，必须在 `doc/devlog/` 下补充一份简短开发记录，作为本次工作的可追踪说明。
+每次开发完成后，必须在 `doc/devlog/` 下补充一份简短开发记录。
 
 ### 文档目录约定
-- `doc/requirement.md`：用户编写的需求文档，AI 不应将设计说明或开发过程记录写入此文件
-- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（ASCII）、交互说明。由用户与 AI 协作产出，用户确认后作为视图和业务逻辑开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
+- `doc/requirement.md`：需求文档。若文件已存在，AI 应基于用户新增需求进行补充或修订；若文件不存在，AI 必须根据用户输入先自动生成详细初稿。该文件仅承载业务需求，不写入设计说明或开发过程记录
+- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（ASCII）、交互说明。由用户与 AI 协作产出，用户确认后作为开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
 - `doc/devlog/`：每次开发完成后的简短开发日志
+
+### requirement 要求
+- 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留“待补充”空壳
+- 需求文档建议固定包含以下章节：项目背景、目标与范围、用户角色、页面/模块清单、核心业务流程、关键数据与字段、权限与可见范围、边界场景与异常、非功能要求、待确认项
+- 自动生成需求文档时，优先写清业务事实、流程与边界，不提前写入技术实现方案
 
 ### devlog 要求
 - 文件目录：`doc/devlog/`
 - 文件格式：Markdown
-- 文件命名建议：`YYYY-MM-DD-HHmm-任务简述.md`
+- 文件命名建议：`YYYY-MM-DD-HH-mm-ss-中文任务简述.md`
+- 文件名中的任务简述必须使用中文，不使用英文 slug、拼音缩写或中英混杂描述
 - 内容保持简短，至少包含：
   - 本次目标
   - 核心改动
@@ -503,9 +534,9 @@ project-root/
 ---
 
 ## 交付收口规范
-- 当用户请求"开始开发"而非"只出方案"时，AI Agent 在实现完成后应默认继续做交付收口，而不是停在代码编写阶段
+- 当用户请求“开始开发”而非“只出方案”时，AI Agent 在实现完成后应默认继续做交付收口
 - 交付收口至少应按实际情况依次检查：
-  1. 编译 / 代码分析 / 测试
+  1. 编译 / 测试
   2. 构建
   3. 发布构建与启动验证
   4. 应用级 smoke test
@@ -519,13 +550,13 @@ project-root/
 - 禁止在 ViewModel 中直接操作 View 控件
 - 禁止在 Service 层编写数据访问逻辑，应放入 `Repository` 层
 - 禁止修改数据模型后不补迁移脚本
-- 禁止在异步代码中使用阻塞式等待（.Result / .Wait()）
+- 禁止在异步代码中使用阻塞式等待（`.Result` / `.Wait()`）
 - 禁止绕过既有提交校验流程，如 `git commit --no-verify`
-- 禁止在控件中直接设置样式属性（Background、Margin 等）
-- 禁止硬编码颜色值（如 `#1A90FF`）、间距值（如 `Margin="20"`）
-- 禁止在 Code-behind (.axaml.cs) 中编写业务逻辑
+- 禁止在控件中直接设置样式属性（`Background`、`Margin` 等）
+- 禁止硬编码颜色值（如 `#1A90FF`）、间距值
+- 禁止在 Code-behind（`.axaml.cs`）中编写业务逻辑
 - 禁止使用静态全局类存储业务状态
-- 禁止返回非 ResultModel 包装的响应格式
+- 禁止返回非 `ResultModel` 包装的响应格式
 - 禁止抛出非 Azrng 体系的自定义异常
 
 ---
