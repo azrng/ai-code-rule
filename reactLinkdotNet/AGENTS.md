@@ -256,6 +256,7 @@
 - 禁止使用 @ant-design/icons 以外的图标库
 - 禁止使用 Zustand 以外的全局状态管理库（Redux、MobX、Recoil 等）
 - 禁止使用 class 组件，必须使用函数组件 + Hooks
+- 禁止在 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数
 - 禁止直接使用 EF Core Migrations，应使用 Azrng.SqlMigration
 - 禁止直接操作 Redis，必须通过 IRedisProvider 接口
 - 禁止手动配置依赖注入，应使用标记接口方式（ITransientDependency/IScopedDependency/ISingletonDependency）
