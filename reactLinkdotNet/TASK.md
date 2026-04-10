@@ -11,6 +11,7 @@
 | ------- | -------- | -------- | -------- | --------- | -------- | ------ | ------------ |
 | T001 | 维护仓库规范文件 | 统一仓库规范文件结构，明确协作规则、设计系统、任务机制与文档目录约定 | 治理 | 通用 | DONE | P1 | 2026-04-07 |
 | T002 | 补充禁止主构造函数规则 | 为 `reactLinkdotNet` 补充禁止使用 C# 主构造函数的协作规则，并同步记录变更 | 治理 | Codex | REVIEW | P1 | 2026-04-09 |
+| T003 | 扁平化子规则文件结构 | 将仅承载子规则的目录调整为扁平命名文件，降低规则模板目录层级复杂度 | 治理 | Codex | DONE | P1 | 2026-04-10 |
 
 ---
 
@@ -45,6 +46,31 @@
   - YYYY-MM-DD：
 ```
 
+### T003 扁平化子规则文件结构
+
+- 任务目标：将原 `frontend`、`backend`、`doc`、`infra` 子目录中的规则文件调整为 `frontend-AGENTS.md`、`backend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`，减少仅为承载单文件而存在的目录层级。
+- 当前阶段：治理
+- 负责人 AI：Codex
+- 协作对象：用户
+- 依赖任务：T001
+- 影响范围：
+  - `reactLinkdotNet/AGENTS.md`
+  - `reactLinkdotNet/TASK.md`
+  - `reactLinkdotNet` 子规则文件命名与目录结构
+  - 根目录 `doc/devlog/`
+- 验收标准：
+  - `reactLinkdotNet` 下子规则改为扁平命名文件
+  - 根规则与任务记录中的相关引用已同步更新
+  - 新增一条本次调整的 devlog 记录
+- 必跑校验：
+  - 搜索确认旧路径引用已移除
+  - 回读关键文件确认中文与路径显示正常
+- 风险与说明：
+  - 本次调整涉及规则文件路径变更，需要同步修正文档中的引用
+- 最近进展：
+  - 2026-04-10：创建任务并开始执行子规则结构扁平化调整
+  - 2026-04-10：已完成文件重命名、引用修正、目录清理与 devlog 记录补充
+
 ---
 
 ### T002 补充禁止主构造函数规则
@@ -56,11 +82,11 @@
 - 依赖任务：T001
 - 影响范围：
   - `reactLinkdotNet/AGENTS.md`
-  - `reactLinkdotNet/backend/AGENTS.md`
+  - `reactLinkdotNet/backend-AGENTS.md`
   - `doc/devlog/`
 - 验收标准：
   - 根 `AGENTS.md` 已补充全局禁止项。
-  - `backend/AGENTS.md` 已补充后端 C# 类禁用主构造函数规则。
+  - `backend-AGENTS.md` 已补充后端 C# 类禁用主构造函数规则。
   - 已新增本次修改的 `doc/devlog/` 记录。
 - 必跑校验：
   - 重新读取修改后的规则文件，确认中文编码正常。

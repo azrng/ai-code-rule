@@ -38,20 +38,20 @@
 
 | 文件 | 适用范围 | 何时阅读 |
 | --- | --- | --- |
-| `frontend/AGENTS.md` | React 页面、组件、状态、路由、样式与前端测试规则 | 涉及前端实现、页面交互、前端 smoke test 时阅读 |
-| `backend/AGENTS.md` | ASP.NET Core Web API、Clean Architecture、缓存、迁移与后端测试规则 | 涉及后端接口、领域逻辑、数据访问、缓存、异常处理时阅读 |
-| `doc/AGENTS.md` | 设计文档、接口契约、设计系统与文档维护规则 | 涉及阶段 0 设计、接口契约、`design-system.yaml`、`requirement`、`devlog` 时阅读 |
-| `infra/AGENTS.md` | 部署、端口、Docker 与容器化交付规则 | 涉及 Docker、端口、环境变量、部署链路时阅读 |
+| `frontend-AGENTS.md` | React 页面、组件、状态、路由、样式与前端测试规则 | 涉及前端实现、页面交互、前端 smoke test 时阅读 |
+| `backend-AGENTS.md` | ASP.NET Core Web API、Clean Architecture、缓存、迁移与后端测试规则 | 涉及后端接口、领域逻辑、数据访问、缓存、异常处理时阅读 |
+| `doc-AGENTS.md` | 设计文档、接口契约、设计系统与文档维护规则 | 涉及阶段 0 设计、接口契约、`design-system.yaml`、`requirement`、`devlog` 时阅读 |
+| `infra-AGENTS.md` | 部署、端口、Docker 与容器化交付规则 | 涉及 Docker、端口、环境变量、部署链路时阅读 |
 
 ---
 
 ## 子规则阅读顺序
 
 1. 先阅读当前文件，理解全局规则、阶段门控和交付要求。
-2. 涉及设计说明、契约或文档维护时，继续阅读 `doc/AGENTS.md`。
-3. 涉及页面、组件、交互、状态和样式时，继续阅读 `frontend/AGENTS.md`。
-4. 涉及接口、领域逻辑、数据访问、缓存和迁移时，继续阅读 `backend/AGENTS.md`。
-5. 涉及容器化、端口、部署链路时，补充阅读 `infra/AGENTS.md`。
+2. 涉及设计说明、契约或文档维护时，继续阅读 `doc-AGENTS.md`。
+3. 涉及页面、组件、交互、状态和样式时，继续阅读 `frontend-AGENTS.md`。
+4. 涉及接口、领域逻辑、数据访问、缓存和迁移时，继续阅读 `backend-AGENTS.md`。
+5. 涉及容器化、端口、部署链路时，补充阅读 `infra-AGENTS.md`。
 
 ---
 
@@ -73,10 +73,10 @@
 - 配置、环境变量、部署脚本调整
 - 单个字段的增删（不涉及新页面或新业务流程）
 
-- 阶段 0 设计文档与接口契约细则见 `doc/AGENTS.md`
-- 阶段 1 前端实现细则见 `frontend/AGENTS.md`
-- 阶段 2 后端实现细则见 `backend/AGENTS.md`
-- 阶段 3 联调与部署相关约束结合当前文件和 `infra/AGENTS.md` 一起执行
+- 阶段 0 设计文档与接口契约细则见 `doc-AGENTS.md`
+- 阶段 1 前端实现细则见 `frontend-AGENTS.md`
+- 阶段 2 后端实现细则见 `backend-AGENTS.md`
+- 阶段 3 联调与部署相关约束结合当前文件和 `infra-AGENTS.md` 一起执行
 
 ---
 
@@ -88,13 +88,13 @@
 4. 再阅读相关模块和现有实现
 5. 优先复用当前结构，再决定是否新增文件
 6. 不要每次预读所有文件，优先通过索引、目录和搜索定位命中的文件后再阅读
-7. 先读根文件中的子规则索引，再读命中的子 `AGENTS.md`，不要全量加载所有规则文件
+7. 先读根文件中的子规则索引，再读命中的子规则文件，不要全量加载所有规则文件
 
 ### 任务类型阅读策略
 
-- 前端任务优先阅读 `frontend/AGENTS.md`
-- 后端任务优先阅读 `backend/AGENTS.md`
-- 联调任务必须同时阅读根 `AGENTS.md`、`frontend/AGENTS.md`、`backend/AGENTS.md`、`infra/AGENTS.md`
+- 前端任务优先阅读 `frontend-AGENTS.md`
+- 后端任务优先阅读 `backend-AGENTS.md`
+- 联调任务必须同时阅读根 `AGENTS.md`、`frontend-AGENTS.md`、`backend-AGENTS.md`、`infra-AGENTS.md`
 - 若任务明显跨前后端，先拆成子任务再执行，不要把前后端实现混在一个步骤里
 
 进行前端开发时：
@@ -282,7 +282,7 @@
 - 当 AI 在同一类问题上连续出现两次错误时，必须触发一次简短回顾分析。
 - 回顾至少应说明：错误现象、根因、原规则缺口、后续如何避免再次发生。
 - 回顾结论必须落实到当前架构目录的 `AGENTS.md` 或对应子 `AGENTS.md` 中，不能只停留在对话说明。
-- 回顾分析的简短记录格式见 `doc/AGENTS.md`。
+- 回顾分析的简短记录格式见 `doc-AGENTS.md`。
 - 若本次回顾导致规则模板发生变更，必须同步新增一条 `devlog/` 记录。
 
 ---
