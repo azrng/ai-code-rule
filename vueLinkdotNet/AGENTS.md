@@ -557,7 +557,7 @@ API → Application → Domain ← Infrastructure
 ---
 
 ## 任务管理机制
-`TASK.md` 是唯一任务记录文件，用于记录具体任务内容，不负责承载规则解释。
+`TASK.md` 是唯一任务记录文件，默认只维护任务总表中的最小任务记录，不负责承载规则解释。
 
 ### 任务状态
 - `TODO`：未开始
@@ -669,8 +669,9 @@ API → Application → Domain ← Infrastructure
 - 禁止手动配置依赖注入，应使用标记接口方式（ITransientDependency/IScopedDependency/ISingletonDependency）
 - 禁止返回非 ResultModel 包装的响应格式
 - 禁止抛出非 Azrng 体系的自定义异常
+- 禁止在同一个 C# 源文件中声明多个顶层类型；一个 `.cs` 文件只允许包含一个顶层 `class`、`interface`、`abstract class`、`record`、`enum` 等定义。
 
----
+--- 
 
 ## 交付输出要求
 最终输出优先使用中文，并至少说明：

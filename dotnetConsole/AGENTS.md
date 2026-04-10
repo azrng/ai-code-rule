@@ -312,7 +312,7 @@ project-root/
 ---
 
 ## 任务管理机制
-`TASK.md` 是唯一任务记录文件，用于记录具体任务内容，不负责承载规则解释。
+`TASK.md` 是唯一任务记录文件，默认只维护任务总表中的最小任务记录，不负责承载规则解释。
 
 ### 任务状态
 - `TODO`：未开始
@@ -399,6 +399,7 @@ project-root/
 - 禁止绕过既有提交校验流程，如 `git commit --no-verify`
 - 禁止手动配置依赖注入，应使用标记接口方式（ITransientDependency/IScopedDependency/ISingletonDependency）
 - 禁止抛出非 Azrng 体系的自定义异常
+- 禁止在同一个 C# 源文件中声明多个顶层类型；一个 `.cs` 文件只允许包含一个顶层 `class`、`interface`、`abstract class`、`record`、`enum` 等定义。
 - 禁止使用 `Console.WriteLine` 输出业务信息，统一使用 logger
 - 禁止在代码中硬编码配置值
 - 禁止在异步方法中同步阻塞调用（如 `.Result`、`.Wait()`、`Thread.Sleep`）
