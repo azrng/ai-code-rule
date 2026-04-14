@@ -5,7 +5,8 @@
 - `AGENTS.md`：唯一协作规范来源，统一定义工作规则、任务机制、交付要求
 - `CLAUDE.md` / `GEMINI.md`：各 Agent 的入口说明文件，仅负责提醒先读取 `AGENTS.md`，不维护平行规则内容
 - `design-system.yaml`：设计 token 与 UI 规范
-- `TASK.md`：具体任务内容与任务进度
+- `TASK.md`：当前活跃任务与少量最近完成任务的最小记录
+- `TaskHistory.md`：归档历史 `DONE` 任务的最小记录
 
 ---
 
@@ -165,7 +166,8 @@ project-root/
 ├── CLAUDE.md
 ├── GEMINI.md
 ├── design-system.yaml
-└── TASK.md
+├── TASK.md
+└── TaskHistory.md
 ```
 
 ---
@@ -557,7 +559,7 @@ API → Application → Domain ← Infrastructure
 ---
 
 ## 任务管理机制
-`TASK.md` 是唯一任务记录文件，默认只维护任务总表中的最小任务记录，不负责承载规则解释。
+`TASK.md` 与 `TaskHistory.md` 共同组成任务记录文件：`TASK.md` 只维护活跃任务与少量最近完成任务的最小记录，`TaskHistory.md` 用于归档历史 `DONE` 任务，两者均不负责承载规则解释。
 
 ### 任务状态
 - `TODO`：未开始
@@ -574,6 +576,10 @@ API → Application → Domain ← Infrastructure
 5. 若任务无法继续，更新为 `BLOCKED` 并写明原因。
 6. 开发完成但仍需确认时，更新为 `REVIEW`。
 7. 验证完成并确认交付后，更新为 `DONE`。
+8. 当 `TASK.md` 中任务总数超过 30 条时，将最早完成的 `DONE` 任务迁移到 `TaskHistory.md`，直到 `TASK.md` 中任务数回落到 20 条以内。
+9. 归档时仅允许迁移 `DONE` 任务，`TODO`、`DOING`、`BLOCKED`、`REVIEW` 任务必须保留在 `TASK.md`。
+10. 归档任务时保留原任务 ID、任务信息与最近更新时间，并在 `TaskHistory.md` 中补充归档时间。
+11. 发生任务归档时，在 `doc/devlog/` 中补充一份简短归档说明，记录迁移范围与触发原因。
 
 ### 每个任务至少包含
 - 任务 ID
@@ -588,6 +594,7 @@ API → Application → Domain ← Infrastructure
 ### AI Agent 要求
 - 开始任务前先同步任务状态。
 - 开发过程中及时更新 `TASK.md`。
+- 触发归档阈值时同步维护 `TaskHistory.md`。
 - 范围变化时同步补充任务说明、验收标准和风险。
 - 每次开发完成后，都需要在 `doc/devlog/` 下新增一份本次开发简短说明的 Markdown 记录。
 ---

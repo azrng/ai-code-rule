@@ -5,7 +5,7 @@
 本仓库用于沉淀和维护不同技术架构下的 AI 协作开发规则模板。
 
 - 每个一级目录代表一种可独立复制出去使用的项目架构模板
-- 每个架构目录内通常包含 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`TASK.md`，部分目录还包含 `design-system.yaml`
+- 每个架构目录内通常包含 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`TASK.md`、`TaskHistory.md`，部分目录还包含 `design-system.yaml`
 - 后续新项目会按所选架构，从对应目录复制规则文件到目标项目中使用
 
 
