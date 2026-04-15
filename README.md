@@ -4,7 +4,7 @@
 
 ## 当前统一标准
 
-`nextFullstack` 目前是仓库内最先完成“轻量入口 + 按需子规则 + 月度归档机制”升级的标准模板，其它模板已按同一口径同步：
+`nextFullstack` 目前是仓库内最先完成”轻量入口 + 按需子规则 + 月度归档机制”升级的标准模板，其它模板已按同一口径同步：
 
 - 根 `AGENTS.md` 只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航
 - 高频子规则优先补齐 `阅读摘要`、`常见任务入口`、`提交前最小回归`
@@ -13,22 +13,56 @@
 
 ## 模板目录一览
 
-| 目录 | 项目类型 | 典型子规则 |
-| --- | --- | --- |
-| [dotnetConsole](dotnetConsole/) | .NET 控制台应用 | `application` / `doc` |
-| [dotnetCoreSingle](dotnetCoreSingle/) | .NET 单层 API 后端 | `backend` / `doc` / `infra` |
-| [dotnetLayered](dotnetLayered/) | .NET 分层 API 后端 | `backend` / `doc` / `infra` |
-| [dotnetBlazor](dotnetBlazor/) | .NET Blazor 全栈 Web | `ui` / `backend` / `doc` / `infra` |
-| [vueLinkdotNet](vueLinkdotNet/) | Vue + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` |
-| [reactLinkdotNet](reactLinkdotNet/) | React + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` |
-| [nextFullstack](nextFullstack/) | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` |
-| [python](python/) | Python API 后端 | `backend` / `doc` / `infra` |
-| [wpfExe](wpfExe/) | WPF Windows 桌面应用 | `ui` / `application` / `infrastructure` / `doc` |
-| [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` |
-| [vueWailsExe](vueWailsExe/) | Wails 桌面应用（Vue） | `frontend` / `backend` / `doc` / `infra` |
-| [reactWailsExe](reactWailsExe/) | Wails 桌面应用（React） | `frontend` / `backend` / `doc` / `infra` |
-| [reactTauriExe](reactTauriExe/) | Tauri 桌面应用（React） | `frontend` / `backend` / `doc` / `infra` |
-| [staticHtml](staticHtml/) | 纯静态页面 | `frontend` / `doc` |
+| 目录 | 项目类型 | 典型子规则 | 使用场景 |
+| --- | --- | --- | --- |
+| [dotnetConsole](dotnetConsole/) | .NET 控制台应用 | `application` / `doc` | CLI 工具、批处理服务、定时任务、数据迁移脚本、后台守护进程、交互式终端应用 |
+| [dotnetCoreSingle](dotnetCoreSingle/) | .NET 单层 API 后端 | `backend` / `doc` / `infra` | 中小型 REST API、微服务中的单一职责服务、内部工具 API、MVP 快速验证、Serverless 本地开发模拟 |
+| [dotnetLayered](dotnetLayered/) | .NET 分层 API 后端 | `backend` / `doc` / `infra` | 中大型业务系统（ERP/CRM/OA）、DDD 项目、高单元测试覆盖率系统、多人协作长期维护的核心业务 |
+| [dotnetBlazor](dotnetBlazor/) | .NET Blazor 全栈 Web | `ui` / `backend` / `doc` / `infra` | 企业内部管理系统、.NET 团队不想引入 JS 框架、实时交互仪表盘、已有 .NET 后端扩展 Web 界面 |
+| [vueLinkdotNet](vueLinkdotNet/) | Vue + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` | Vue 3 企业级 SPA、前后端团队独立开发、数据可视化运营后台、已有 .NET 后端重建 Vue 前端 |
+| [reactLinkdotNet](reactLinkdotNet/) | React + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` | React 18 企业应用、复杂表单/审批流系统、前后端团队独立开发、已有 .NET 后端选用 React 前端 |
+| [nextFullstack](nextFullstack/) | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | SaaS 平台、电商网站、SEO 敏感的公众网站、创业项目快速迭代、全栈一人搞定（仓库参考标准模板） |
+| [python](python/) | Python API 后端 | `backend` / `doc` / `infra` | AI/ML 模型推理服务、数据处理 API、与 .NET 配合的 Python 微服务、自动化运维接口、快速原型 API |
+| [wpfExe](wpfExe/) | WPF Windows 桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 工业控制/医疗/金融等 Windows 桌面终端、WinForms 迁移现代化、离线优先本地工具、硬件设备交互 |
+| [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 跨 Windows/macOS/Linux 的桌面工具、Linux 运维工具、WPF 跨平台迁移、嵌入式设备界面 |
+| [vueWailsExe](vueWailsExe/) | Wails 桌面应用（Vue + Go） | `frontend` / `backend` / `doc` / `infra` | 轻量桌面工具（替代 Electron）、Go 服务加桌面界面、需原生系统能力的 Vue 应用、本地数据管理 |
+| [reactWailsExe](reactWailsExe/) | Wails 桌面应用（React + Go） | `frontend` / `backend` / `doc` / `infra` | 同 vueWailsExe 但偏好 React 生态、已有 React 组件复用到桌面、Go CLI 工具加图形界面 |
+| [reactTauriExe](reactTauriExe/) | Tauri 桌面应用（React + Rust） | `frontend` / `backend` / `doc` / `infra` | 极致轻量桌面应用（几 MB 安装包）、安全敏感工具、Rust 高性能需求、嵌入式/IoT 配套工具 |
+| [staticHtml](staticHtml/) | 纯静态页面 | `frontend` / `doc` | 营销落地页、企业官网、静态文档站、HTML 邮件模板、微信 H5 活动页、设计稿交互原型 |
+
+## 模板选择决策指南
+
+根据项目特征快速定位对应模板：
+
+```
+项目有前端界面吗？
+├── 否 → 纯后端 API
+│   ├── .NET 技术栈
+│   │   ├── 无 Web 框架（CLI/批处理）→ dotnetConsole
+│   │   ├── 单层结构（所有代码在一个项目）→ dotnetCoreSingle
+│   │   └── 分层结构（Controller/Service/Repository 拆分）→ dotnetLayered
+│   └── Python 技术栈 → python
+│
+├── 是 → 前后端是否同框架？
+│   ├── 同框架（全栈）
+│   │   ├── Next.js → nextFullstack
+│   │   └── Blazor → dotnetBlazor
+│   │
+│   ├── 分离部署（前后端独立）
+│   │   ├── Vue + .NET → vueLinkdotNet
+│   │   └── React + .NET → reactLinkdotNet
+│   │
+│   └── 桌面应用
+│       ├── 仅 Windows
+│       │   └── WPF → wpfExe
+│       ├── 跨平台（原生 UI 框架）
+│       │   └── Avalonia → avaloniaExe
+│       ├── 跨平台（Web 技术驱动）
+│       │   ├── Wails + Vue → vueWailsExe
+│       │   ├── Wails + React → reactWailsExe
+│       │   └── Tauri + React → reactTauriExe
+│       └── 无框架（纯静态）→ staticHtml
+```
 
 ## 统一文件结构
 
