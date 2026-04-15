@@ -27,6 +27,7 @@
 | [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` |
 | [vueWailsExe](vueWailsExe/) | Wails 桌面应用（Vue） | `frontend` / `backend` / `doc` / `infra` |
 | [reactWailsExe](reactWailsExe/) | Wails 桌面应用（React） | `frontend` / `backend` / `doc` / `infra` |
+| [reactTauriExe](reactTauriExe/) | Tauri 桌面应用（React） | `frontend` / `backend` / `doc` / `infra` |
 | [staticHtml](staticHtml/) | 纯静态页面 | `frontend` / `doc` |
 
 ## 统一文件结构
