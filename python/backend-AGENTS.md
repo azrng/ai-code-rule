@@ -144,8 +144,7 @@ project/
 ├── AGENTS.md                   # AI 代理规则
 ├── CLAUDE.md                   # Claude 指针
 ├── GEMINI.md                   # Gemini 指针
-├── TASK.md                     # 当前任务记录
-└── TaskHistory.md              # 历史任务归档
+└── TASK.md                     # 当前任务记录
 ```
 
 ---

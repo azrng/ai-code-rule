@@ -76,8 +76,7 @@ project-root/
 ├── CLAUDE.md
 ├── GEMINI.md
 ├── design-system.yaml
-├── TASK.md
-└── TaskHistory.md
+└── TASK.md
 ```
 
 ---

@@ -35,7 +35,7 @@
 ---
 
 ## 任务管理机制
-`TASK.md` 与 `TaskHistory.md` 共同组成任务记录文件：`TASK.md` 只维护活跃任务与少量最近完成任务的最小记录，`TaskHistory.md` 用于归档历史 `DONE` 任务，两者均不负责承载规则解释。
+`TASK.md` 是唯一活动任务记录文件，较早的 `DONE` 任务统一归档到 `doc/task-archive/YYYY-MM.md`。
 
 ### 提交前最小回归
 - 修改 Dockerfile、Compose、启动命令、打包脚本或端口映射时：至少执行一次构建与启动验证

@@ -83,8 +83,7 @@ project-root/
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── GEMINI.md
-├── TASK.md
-└── TaskHistory.md
+└── TASK.md
 ```
 
 ---

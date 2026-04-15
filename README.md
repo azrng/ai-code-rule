@@ -10,7 +10,6 @@
 - 高频子规则优先补齐 `阅读摘要`、`常见任务入口`、`提交前最小回归`
 - `TASK.md` 只维护活动任务与最近少量 `DONE` 任务
 - 较早的 `DONE` 任务统一归档到 `doc/task-archive/YYYY-MM.md`
-- `TaskHistory.md` 仅保留兼容提示，不再作为主归档文件
 
 ## 模板目录一览
 
@@ -41,7 +40,6 @@
 ├── CLAUDE.md            # 指针文件：只提醒先读 AGENTS.md
 ├── GEMINI.md            # 指针文件：只提醒先读 AGENTS.md
 ├── TASK.md              # 活动任务主表，仅保留当前任务与最近少量 DONE
-├── TaskHistory.md       # 兼容提示文件，说明主归档已迁移到 doc/task-archive/
 ├── doc/
 │   ├── devlog/          # 每次规则或开发改动后的简短记录
 │   └── task-archive/    # 按月归档较早的 DONE 任务
