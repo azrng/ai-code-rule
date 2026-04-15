@@ -3,6 +3,10 @@
 ## 目标
 职责划分如下：
 - `AGENTS.md`：唯一协作规范来源，统一定义工作规则、任务机制、交付要求
+- `frontend-AGENTS.md`：Next.js 页面、组件、状态、路由、样式与前端测试规则
+- `backend-AGENTS.md`：Next.js Route Handlers、Server Actions、Prisma 与服务端测试规则
+- `doc-AGENTS.md`：设计文档、接口契约、设计系统与文档维护规则
+- `infra-AGENTS.md`：部署、端口、Docker 与交付链路规则
 - `CLAUDE.md` / `GEMINI.md`：各 Agent 的入口说明文件，仅负责提醒先读取 `AGENTS.md`，不维护平行规则内容
 - `design-system.yaml`：设计 token 与 UI 规范
 - `TASK.md`：当前活跃任务与少量最近完成任务的最小记录
@@ -22,6 +26,7 @@
 8. 用户指令始终优先于本文件内容。
 
 ---
+
 ## 注意事项
 1. 你需要先理解用户提出的业务需求和使用场景，再进行页面、数据模型与交互设计。
 2. 你需要根据功能需求设计多级菜单、权限边界和导航结构，管理员默认拥有全部菜单权限。
@@ -34,131 +39,36 @@
 
 ---
 
-## 技术栈
+## 子规则索引
 
-### 前端
-- Next.js（App Router）+ React + TypeScript
-- Tailwind CSS（唯一样式体系）
-- `next/font`（统一字体接入）
-- shadcn/ui + Radix UI（如仓库已使用则沿用；未使用时优先复用现有组件实现）
-- lucide-react（唯一图标库，尺寸统一 18-24px）
-- React Hook Form + Zod（表单与校验）
-- Zustand（仅用于客户端跨组件共享状态）
-
-### 服务端
-- Next.js Route Handlers（`app/api/**/route.ts`）
-- Next.js Server Actions（表单提交、状态变更、同站点业务写操作优先）
-- Prisma ORM
-- PostgreSQL
-- Zod（入参与出参校验）
-
-### 测试
-- Vitest + Testing Library（单元 / 组件测试）
-- Playwright（端到端 / smoke test）
-
-### 部署
-- Docker
-- Next.js standalone 输出
-- PostgreSQL
-
-### 默认端口
-| 服务 | 容器内端口 | 宿主机映射端口 |
-| ---- | ---------- | -------------- |
-| Next.js Web | 3000 | 3000 |
-| PostgreSQL | 5432 | 5432 |
-
-- 若宿主机端口冲突，优先调整 Compose 映射端口，容器内端口保持不变。
-- 浏览器端同站点请求优先使用相对地址 `/api`，禁止在客户端代码中硬编码完整后端地址。
-- 外部服务地址、数据库连接串、鉴权密钥等必须通过环境变量配置。
-
-### 设计系统
-- 所有视觉规范以 `design-system.yaml` 为唯一事实来源。
-- 优先复用项目已有组件、布局、样式变量与交互模式。
-- 禁止 inline style，禁止硬编码颜色、间距、圆角、阴影、断点。
-
-如仓库已经存在真实实现，以现有代码为准，不要强行重构或替换技术栈。
+| 文件 | 适用范围 | 何时阅读 |
+| --- | --- | --- |
+| `frontend-AGENTS.md` | Next.js 页面、组件、状态、路由、样式与前端测试规则 | 涉及前端实现、页面交互、前端 smoke test 时阅读 |
+| `backend-AGENTS.md` | Next.js Route Handlers、Server Actions、Prisma 与服务端测试规则 | 涉及后端接口、服务逻辑、数据访问、缓存、异常处理时阅读 |
+| `doc-AGENTS.md` | 设计文档、接口契约、设计系统与文档维护规则 | 涉及阶段 0 设计、接口契约、`design-system.yaml`、`requirement`、`devlog` 时阅读 |
+| `infra-AGENTS.md` | 部署、端口、Docker 与交付链路规则 | 涉及 Docker、端口、环境变量、部署链路时阅读 |
 
 ---
 
-## 推荐目录结构
-若仓库尚未形成稳定结构，可优先参考以下组织方式；若仓库已有实现，以现状为准，不强制迁移。
+## 子规则阅读顺序
 
-```text
-project-root/
-├─ app/
-│  ├─ (auth)/
-│  │  └─ login/
-│  │     └─ page.tsx
-│  ├─ (dashboard)/
-│  │  ├─ layout.tsx
-│  │  ├─ page.tsx
-│  │  └─ users/
-│  │     ├─ page.tsx
-│  │     └─ [id]/
-│  │        └─ page.tsx
-│  ├─ api/
-│  │  └─ users/
-│  │     └─ route.ts
-│  ├─ loading.tsx
-│  ├─ error.tsx
-│  ├─ not-found.tsx
-│  └─ globals.css
-├─ src/
-│  ├─ components/
-│  │  ├─ common/
-│  │  ├─ layout/
-│  │  ├─ charts/
-│  │  └─ ui/
-│  ├─ features/               # 按业务域组织的页面片段、表单、表格、查询区
-│  ├─ hooks/
-│  ├─ stores/                 # Zustand，仅客户端共享状态
-│  ├─ schemas/                # Zod schema
-│  ├─ lib/
-│  │  ├─ utils.ts
-│  │  ├─ auth/
-│  │  ├─ request/
-│  │  └─ permissions/
-│  ├─ server/
-│  │  ├─ db/
-│  │  ├─ repositories/
-│  │  ├─ services/
-│  │  ├─ actions/
-│  │  ├─ integrations/
-│  │  └─ errors/
-│  ├─ types/
-│  └─ config/
-├─ prisma/
-│  ├─ schema.prisma
-│  └─ migrations/
-├─ public/
-├─ doc/
-│  ├─ design/
-│  ├─ devlog/
-│  └─ requirement.md
-├─ middleware.ts
-├─ next.config.ts
-├─ Dockerfile
-├─ docker-compose.yml
-├─ .env.example
-├─ .gitignore
-├─ AGENTS.md
-├─ CLAUDE.md
-├─ GEMINI.md
-├─ design-system.yaml
-├─ TASK.md
-└─ TaskHistory.md
-```
+1. 先阅读当前文件，理解全局规则、阶段门控和交付要求。
+2. 涉及设计说明、契约或文档维护时，继续阅读 `doc-AGENTS.md`。
+3. 涉及页面、组件、交互、状态和样式时，继续阅读 `frontend-AGENTS.md`。
+4. 涉及接口、服务逻辑、数据访问、缓存和迁移时，继续阅读 `backend-AGENTS.md`。
+5. 涉及容器化、端口、部署链路时，补充阅读 `infra-AGENTS.md`。
 
 ---
 
-## 开发流程
+## 开发流程总览
 
 ### 总体阶段划分
-所有新功能开发必须严格经过以下四个阶段，阶段之间有明确门控条件，不满足条件不得进入下一阶段：
+
+所有新功能开发必须严格经历以下四个阶段，阶段之间有明确的门控条件，不满足条件不得进入下一阶段：
 
 ```text
 阶段 0          阶段 1            阶段 2                阶段 3
-设计文档   ->   页面与交互实现   ->   服务端与数据实现   ->   联调与交付
+设计文档   →   页面与交互实现   →   服务端与数据实现   →   联调与交付
 （用户确认）    （Claude Code）      （Codex）             （协作）
 ```
 
@@ -168,113 +78,32 @@ project-root/
 - 配置、环境变量、部署脚本调整
 - 单个字段的增删改（不涉及新页面或新业务流程）
 
----
-
-### 阶段 0 — 设计文档（新功能强制前置）
-**触发条件**：用户提出新功能需求  
-**执行方式**：由用户与 AI 协作产出，用户最终确认定稿  
-**产物**：`doc/design/设计文档.md`（全项目一份，新功能以新增章节方式补充）
-
-**设计文档必须包含以下四个部分**：
-| 部分 | 内容要求 |
-| ---- | -------- |
-| 架构设计 | 模块划分、服务边界、数据流向、缓存与权限方案 |
-| 功能需求 | 页面清单、功能点明细、业务规则、权限矩阵 |
-| 界面原型 | 每个页面的 ASCII 线框图，包含 loading / empty / error / no-permission 状态 |
-| 交互说明 | 操作流程、状态流转、边界场景、错误提示与恢复方式 |
-
-**门控规则**：
-- 用户明确确认设计文档后，才允许进入阶段 1
-- AI 在此阶段只输出文档内容，不编写实现代码
-
----
-
-### 阶段 1 — 页面与交互实现（Claude Code 主导）
-**触发条件**：用户发出“开始前端开发”或等价指令  
-**入场要求**：阶段 0 设计文档已确认
-
-**工作内容**：
-1. 基于 Next.js App Router 实现页面、布局、组件和导航结构
-2. 优先使用 Server Component 搭建页面骨架，必要时再下沉到 Client Component
-3. 阶段内允许使用 mock 数据、假接口或静态数据文件，但页面交互必须完整可演示
-4. 同步产出契约说明：字段定义、筛选条件、分页参数、表单校验规则、权限要求
-
-**产物**：
-- 可在浏览器中访问的页面
-- 基础交互与页面状态
-- 服务端开发所需的 schema / 契约说明
-
-**门控规则**：
-- 用户确认页面符合设计文档预期
-- 页面交互逻辑经手工 smoke test 验证通过
-- 满足以上条件后，才允许进入阶段 2
-
----
-
-### 阶段 2 — 服务端与数据实现（Codex 主导）
-**触发条件**：用户发出“开始后端开发”或等价指令  
-**入场要求**：页面结构已完成，schema 与契约清晰
-
-**工作内容**：
-1. 按 `Route Handler / Server Action -> Service -> Repository -> Prisma` 分层实现服务端能力
-2. 根据需求维护 Prisma schema、迁移脚本、种子数据与数据库约束
-3. 完成认证、鉴权、日志、缓存、分页、筛选、排序等服务端逻辑
-4. 每个核心能力都必须可通过页面、接口工具或测试独立验证
-
-**字段命名约定**：
-- TypeScript 类型与对象属性：camelCase
-- 路由参数与查询参数：camelCase
-- 数据库字段：snake_case（通过 Prisma `@map` / `@@map` 做映射）
-
-**门控规则**：
-- 核心服务与接口独立验证通过后，才允许进入阶段 3
-
----
-
-### 阶段 3 — 联调与交付
-**触发条件**：用户发出“开始联调”或等价指令  
-**入场要求**：页面和服务端逻辑均已完成独立验证
-
-**工作内容**：
-1. 用真实 Server Action、Route Handler 或数据库读写替换阶段 1 的 mock 数据
-2. 对齐鉴权、Cookie / Session、权限校验、错误结构、缓存刷新与重验证逻辑
-3. 验证关键业务路径：登录 -> 进入首页 -> 执行核心业务 -> 页面回显 -> 刷新保留结果 -> 退出
-4. 补充 `doc/devlog/` 记录，更新 `TASK.md` 状态
-
-**完成标志**：核心路径 smoke test 通过，文档与任务状态同步完成
-
----
-
-### 契约规范
-- **唯一事实来源**：`src/schemas/` 中的 Zod schema 与共享类型定义
-- **定义方式**：表单 schema、查询 schema、服务出参 schema 必须成对维护
-- **变更规则**：字段或行为变化时，必须同步更新 schema、类型、页面和测试
-- **接口选择原则**：
-  - 同站点表单提交、状态切换、管理后台操作：优先 Server Actions
-  - 需被外部系统访问、Webhook、文件流、第三方调用：使用 Route Handlers
-  - Server Component 内部取数：优先直接调用服务层，不要绕路请求自己的 `/api`
+- 阶段 0 设计文档与接口契约细则见 `doc-AGENTS.md`
+- 阶段 1 前端实现细则见 `frontend-AGENTS.md`
+- 阶段 2 后端实现细则见 `backend-AGENTS.md`
+- 阶段 3 联调与部署相关约束结合当前文件和 `infra-AGENTS.md` 一起执行
 
 ---
 
 ## 使用方式
 每个 AI Agent 在开始修改前都必须：
-1. 先阅读本文件，理解核心规则、阶段流程与约束
-2. 确认当前处于哪个开发阶段，检查入场条件是否满足
+1. 先阅读本文档，理解核心规则和流程
+2. 确认当前处于哪个开发阶段，检查该阶段的入场条件是否满足
 3. 再阅读 `design-system.yaml`
-4. 再阅读相关模块与现有实现
-5. 优先复用当前结构，再决定是否新增文件
+4. 再按任务命中范围阅读对应子规则文件
+5. 再阅读相关模块与现有实现
+6. 优先复用当前结构，再决定是否新增文件
+7. 不要每次预读所有文件，优先通过索引、目录和搜索定位命中的文件后再阅读
+8. 先读根文件中的子规则索引，再读命中的子规则文件，不要全量加载所有规则文件
 
-进行 Next.js 页面开发时：
-1. 优先判断页面是否应为 Server Component
-2. 只有在需要浏览器 API、事件处理、动画控制、表单本地状态时才添加 `use client`
-3. 优先使用 `loading.tsx`、`error.tsx`、`not-found.tsx` 等框架约定来承载页面状态
-4. 样式统一来自 `design-system.yaml` 与项目变量，禁止新增平行视觉体系
+### 任务类型阅读策略
 
-进行服务端开发时：
-1. Route Handler 和 Server Action 只负责入口编排、鉴权、校验、响应转换
-2. 业务逻辑必须下沉到 `src/server/services/`
-3. 数据访问统一收敛到 `src/server/repositories/` 或等价目录
-4. 所有数据库结构变更都必须同步 Prisma migration
+- 前端任务优先阅读 `frontend-AGENTS.md`
+- 后端任务优先阅读 `backend-AGENTS.md`
+- 设计文档、接口契约、设计系统、devlog 维护任务优先阅读 `doc-AGENTS.md`
+- Docker、Compose、环境变量、运行端口、发布验证任务优先阅读 `infra-AGENTS.md`
+- 联调任务必须同时阅读根 `AGENTS.md`、`frontend-AGENTS.md`、`backend-AGENTS.md`、`infra-AGENTS.md`
+- 若任务明显跨前后端，先拆成子任务再执行，不要把前后端实现混在一个步骤里
 
 ---
 
@@ -288,6 +117,8 @@ project-root/
 - 不要猜测问题，要实证排查：通过日志、断点、数据等实际证据定位原因，禁止凭猜测修改代码。
 - 所有改动都必须可说明、可验证、可交付。
 
+---
+
 ## 思考与实现原则
 - 先理解业务目标、用户角色、核心流程，再进行设计和开发。
 - 优先选择符合当前需求的最优可行方案，兼顾正确性、可维护性与实现成本。
@@ -296,6 +127,8 @@ project-root/
 - 代码实现应保持清晰、简洁、稳定，优先保证业务正确性、可读性和后续维护性。
 - 单个类、页面、组件、页面基类应保持职责单一，避免巨型文件和巨型类。发现文件持续膨胀、单类职责过多、阅读成本明显升高时，必须优先拆分为更小的组件、服务、辅助类或局部模块。禁止编写超大页面基类、超大工具类、超大 Service 类，禁止把多个无关职责长期堆在同一个类中。
 - 遇到需求不清、规则冲突或实现复杂度明显升高时，先说明判断与权衡，再继续执行。
+
+---
 
 ## 编码规则
 - 所有源码、配置、文档文件统一使用 `UTF-8` 编码。
@@ -306,217 +139,6 @@ project-root/
 - 如果编写注释（含代码注释、文档注释等），统一使用中文，不使用纯英文注释；必要的英文标识、协议字段名或框架关键字可保留原文。
 - 修改含中文内容后，必须重新读取一次并确认关键中文显示正常。
 ---
-
-## 前端规则
-
-### React / App Router 规范
-- 页面、布局、模板统一使用 App Router 目录规范
-- 默认使用 Server Component；只有需要交互时才使用 Client Component
-- `use client` 只写在最小必要边界，不要整页下沉为客户端组件
-- 表单优先使用 React Hook Form + Zod
-- 页面状态优先使用 `loading.tsx`、`error.tsx`、`not-found.tsx`
-- 复用逻辑使用 hooks，放在 `src/hooks/` 或按业务域收敛
-
-### 组件通信规范
-- 父传子：props
-- 子传父：回调函数
-- 跨组件共享的客户端状态：Zustand
-- 仅 UI 级共享配置（主题、弹窗容器、局部上下文）可使用 React Context
-- 避免 props drill 过深；但不要为了少量传值滥用全局状态
-
-### 路由管理规范
-- 页面路由即文件系统路由，目录命名必须表达业务语义
-- 页面跳转优先使用 `next/link`
-- 客户端跳转使用 `useRouter`（来自 `next/navigation`）
-- 服务端重定向优先使用 `redirect`
-- Route Group、Parallel Route、Intercepting Route 仅在明确有必要时使用
-
-### 状态管理规范
-- 服务端数据默认不存入 Zustand
-- Server Component 优先直接读取服务层结果
-- 客户端缓存若仓库已使用 TanStack Query，则沿用；否则按现有实现处理
-- Zustand 仅用于以下场景：
-  - 侧边栏折叠状态
-  - 全局筛选条件
-  - 通知、弹窗、轻量会话上下文
-  - 跨页面但不适合放入 URL 的纯客户端状态
-
-### 样式规则
-- 统一使用 Tailwind CSS 与设计 token
-- 字体统一通过 `next/font` 接入
-- 优先复用项目现有 `ui` 组件、`cn()`、`cva` 或等价封装
-- 禁止 inline style
-- 禁止硬编码颜色值、阴影值、圆角值、z-index、断点
-- 响应式遵循移动优先原则
-
-### 组件规则
-- 优先复用 `src/components/` 与 `src/features/` 现有组件
-- 只有确认存在复用价值时，才新增共享组件
-- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
-- 不要为单次需求过度抽象组件
-- 除非仓库已在使用，否则不要新增新的 UI 组件库
-
-### 请求与数据获取规则
-- Server Component 内禁止为了取同站点数据再请求自己的 `/api`
-- 页面读操作优先直接调用服务层函数
-- 浏览器端访问同站点接口统一使用相对地址 `/api`
-- 业务写操作优先 Server Action，成功后使用 `revalidatePath` / `revalidateTag`
-- 客户端不得直接持有数据库连接、服务端密钥或服务端专用环境变量
-
----
-
-## 服务端规则（Next.js Fullstack）
-
-### 分层依赖规则
-```text
-Route Handler / Server Action
-              ↓
-           Service
-              ↓
-         Repository
-              ↓
- Prisma / External Service
-```
-
-- `Route Handler / Server Action`：只处理入口层逻辑
-- `Service`：承载业务规则、权限校验、事务编排
-- `Repository`：承载数据库访问与查询拼装
-- `Prisma / Integrations`：承载具体技术实现
-
-### Route Handler 规则
-- 文件位置：`app/api/**/route.ts`
-- 只负责处理 HTTP method、参数解析、鉴权、响应码和响应结构
-- 不直接承载业务逻辑或复杂 Prisma 查询
-- 统一返回明确、稳定、可解析的 JSON 结构
-- 对外开放接口要显式处理 400 / 401 / 403 / 404 / 409 / 500 等状态
-
-### Server Action 规则
-- 文件位置建议：`src/server/actions/` 或贴近业务域组织
-- 适用于表单提交、状态切换、审核操作、增删改等同站点交互
-- 必须在入口处完成鉴权和 Zod 校验
-- 调用服务层后，按需执行 `revalidatePath` / `revalidateTag`
-- 不要在 Action 中混杂大量 UI 拼装逻辑
-
-### Service 层规则
-- Service 方法命名使用业务语义，如 `createOrder`、`approveRequest`
-- 业务校验、权限判断、去重判断、状态流转、事务边界放在 Service 层
-- 返回明确的类型结果，不返回未约束的 `any`
-- 对外部系统调用进行必要的超时、失败与重试控制
-
-### Repository / Prisma 规则
-- Prisma Client 统一从 `src/server/db/` 或等价目录导出
-- Prisma 查询不得出现在页面组件、hooks 或浏览器端代码中
-- 复杂查询、分页、排序、条件拼装收敛到 Repository 层
-- 数据库字段命名使用 snake_case，应用层使用 camelCase
-- Schema 变更后必须同步 migration、seed、类型与文档
-
-### 鉴权与权限规则
-- 粗粒度页面保护可放在 `middleware.ts`
-- 细粒度业务权限必须在 Service 层再次校验
-- 会话、Cookie、Token、用户身份解析统一在服务端处理
-- 客户端只能消费鉴权结果，不负责任何安全边界的最终判定
-
-### 缓存与重验证规则
-- 使用 Next.js 原生缓存能力时，必须显式说明缓存策略
-- 写操作后必须根据影响范围执行重验证
-- 不允许“提交成功但页面不刷新”的伪完成状态
-- 对权限相关、实时性强的数据默认谨慎缓存
-
-### 异常处理规范
-- 自定义业务异常统一收敛到 `src/server/errors/` 或等价目录
-- 区分校验错误、权限错误、资源不存在、状态冲突、系统异常
-- Route Handler / Server Action 负责把业务异常转换为稳定响应
-- 禁止把原始数据库异常直接透传给页面
-
-### 第三方集成规范
-- 邮件、短信、对象存储、Webhook、支付等第三方能力统一放在 `src/server/integrations/`
-- 第三方密钥只允许从服务端环境变量读取
-- 所有第三方调用都必须具备错误处理与日志
-
-### 数据库迁移规则
-- 使用 Prisma Migrate 管理数据库结构变更
-- 迁移脚本必须进入版本控制
-- 禁止只改 `schema.prisma` 不生成 migration
-- 涉及回填、数据修复时，应补充脚本或 devlog 说明
-
----
-
-## 测试规则
-
-### 总体要求
-- 影响行为的改动应优先补充或更新测试
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务路径，而不是只验证静态渲染
-
-### 前端测试
-- 组件测试优先使用 Vitest + Testing Library
-- 关键页面至少应完成一次手工或 Playwright smoke test
-- Client Component 的交互、校验、禁用态、错误态应有验证
-
-### 服务端测试
-- Service 测试：验证业务规则、权限校验、状态流转
-- Route Handler / Server Action 测试：验证输入、输出、状态码与异常分支
-- Repository 测试：验证查询条件、分页、排序、事务或数据库映射
-
-### 外部依赖与数据
-- 测试中不应真实调用第三方服务，统一使用 mock
-- 测试数据应最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态
-
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围与风险
-
----
-
-## Git 与提交流程
-
-### 分支命名
-- `feat/<desc>`：新功能
-- `fix/<desc>`：缺陷修复
-- `refactor/<desc>`：无行为变更的重构
-- `chore/<desc>`：工具、依赖、配置调整
-- `docs/<desc>`：仅文档变更
-
-### Commit 规范
-- 提交信息优先采用 Conventional Commits
-- 格式：`<type>(<scope>): <简短描述>`
-- 示例：
-  - `feat(next): add approval management board`
-  - `fix(auth): correct session refresh logic`
-  - `chore(prisma): add migration for audit log`
-
-### 交付前自查
-- 前端：`lint`、`typecheck`、`build`
-- 服务端：关键服务测试、接口测试或等价验证
-- 数据库：确认 Prisma schema 与 migration 已同步
-- 环境变量：新增项已同步到 `.env.example`
-- Docker：涉及构建链路时已完成镜像或容器验证
-
-### 提交触发规则
-- 每次修改完成后都应提交代码
-- 若生成了本地运行产物、缓存、测试数据库、构建产物或依赖目录，应同步检查并更新 `.gitignore`
-
----
-
-## Docker 规则
-
-### 总体要求
-- 优先复用现有 Dockerfile 与 Compose 链路
-- 生产镜像优先采用多阶段构建
-- Next.js 生产构建优先使用 standalone 输出
-- 不要把密钥写入镜像
-- 部署链路必须可追踪、可复现
-
-### Docker 交付规则
-- 只要本次任务新增或修改了 Dockerfile、`docker-compose.yml`、运行端口、环境变量或启动命令，完成实现后应主动执行一次构建与启动验证；若环境限制无法执行，必须明确说明
-- 容器化验证至少包括：
-  - 镜像构建是否成功
-  - Next.js 服务是否成功启动
-  - 数据库依赖是否可用
-  - 核心访问链路是否可用
-- 若发现端口冲突，不要直接停止未知本地进程；优先调整 Compose 映射端口，并同步更新文档和配置
 
 ---
 
@@ -561,50 +183,36 @@ Route Handler / Server Action
 - 每次开发完成后，都需要在 `doc/devlog/` 下新增一份本次开发简短说明的 Markdown 记录。
 ---
 
-## 设计系统文件规范
-`design-system.yaml` 是唯一设计系统文件，包含：
-- 品牌与产品风格意图
-- 颜色、排版、间距、圆角、阴影等 token
-- 布局与断点规则
-- Next.js 页面状态规范
-- 表单与反馈组件规则
-- 明确的 `do / dont`
-
 ---
 
-## 文档更新要求
-以下内容发生变化时，必须同步更新相关文档：
-- 命令、脚本或启动方式
-- 环境变量
-- 配置项
-- 构建、发布或部署流程
-- 数据库结构、迁移或初始化方式
-- 对外使用方式或接口约定
+## Git 与提交流程
 
-优先更新已有文档，不新增重复说明。
-每次开发完成后，必须在 `doc/devlog/` 下补充一份简短开发记录。
+### 分支命名
+- `feat/<desc>`：新功能
+- `fix/<desc>`：缺陷修复
+- `refactor/<desc>`：无行为变更的重构
+- `chore/<desc>`：工具、依赖、配置调整
+- `docs/<desc>`：仅文档变更
 
-### 文档目录约定
-- `doc/requirement.md`：需求文档。若文件已存在，AI 应基于用户新增需求进行补充或修订；若文件不存在，AI 必须根据用户输入先自动生成详细初稿。该文件仅承载业务需求，不写入设计说明或开发过程记录
-- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（如适用）与交互说明。由用户与 AI 协作产出，用户确认后作为开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
-- `doc/devlog/`：每次开发完成后的简短开发日志
+### Commit 规范
+- 提交信息优先采用 Conventional Commits
+- 格式：`<type>(<scope>): <简短描述>`
+- 示例：
+  - `feat(next): add approval management board`
+  - `fix(auth): correct session refresh logic`
+  - `chore(prisma): add migration for audit log`
 
-### requirement 要求
-- 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留“待补充”空壳。
-- 需求文档建议固定包含以下章节：项目背景、目标与范围、用户角色、页面或模块清单、核心业务流程、关键数据与字段、权限与可见范围、边界场景与异常、非功能要求、待确认项。
-- 自动生成需求文档时，优先写清业务事实、流程与边界，不提前写入技术实现方案。
+### 交付前自查
+- 前端：`lint`、`typecheck`、`build`
+- 服务端：关键服务测试、接口测试或等价验证
+- 数据库：确认 Prisma schema 与 migration 已同步
+- 环境变量：新增项已同步到 `.env.example`
+- Docker：涉及构建链路时已完成镜像或容器验证
 
-### devlog 要求
-- 文件目录：`doc/devlog/`
-- 文件格式：Markdown
-- 文件命名建议：`YYYY-MM-DD-HH-mm-ss-中文任务简述.md`
-- 文件名中的任务简述必须使用中文，不使用英文 slug、拼音缩写或中英混杂描述
-- 内容保持简短，至少包含：
-  - 本次目标
-  - 核心改动
-  - 修改文件
-  - 校验情况
-  - 风险或遗留项
+### 提交触发规则
+- 每次修改完成后都应提交代码
+- 若生成了本地运行产物、缓存、测试数据库、构建产物或依赖目录，应同步检查并更新 `.gitignore`
+
 ---
 
 ## 交付收口规范
@@ -616,6 +224,8 @@ Route Handler / Server Action
   4. 应用级 smoke test
   5. 文档、`TASK.md`、`doc/devlog/`、忽略文件更新
 - 若某项验证未执行，最终输出必须明确说明未执行项、原因、影响范围和建议下一步。
+---
+
 ---
 
 ## 常见禁止事项

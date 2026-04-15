@@ -3,6 +3,8 @@
 ## 目标
 职责划分如下：
 - `AGENTS.md`：唯一协作规范来源，统一定义工作规则、任务机制、交付要求
+- `application-AGENTS.md`：控制台技术栈、目录结构、命令/服务实现与测试规则
+- `doc-AGENTS.md`：需求记录、devlog 与文档维护规则
 - `CLAUDE.md` / `GEMINI.md`：各 Agent 的入口说明文件，仅负责提醒先读取 `AGENTS.md`，不维护平行规则内容
 - `TASK.md`：当前活跃任务与少量最近完成任务的最小记录
 - `TaskHistory.md`：归档历史 `DONE` 任务的最小记录
@@ -21,6 +23,7 @@
 8. 用户指令始终优先于本文件内容。
 
 ---
+
 ## 注意事项
 1. 你需要理解用户提出的需求的业务逻辑然后再做设计和开发
 2. 控制台应用必须能通过命令行参数独立运行，输出真实结果
@@ -29,88 +32,58 @@
 
 ---
 
-## 技术栈
+## 子规则索引
 
-### 运行时
-- .NET 10 (2025 年已发布正式版)
-- 控制台应用程序（Console App）
-
-### 核心库
-- `Azrng.Core`：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
-- `Azrng.Core.Json`：JSON 序列化（基于 System.Text.Json）
-
-### 命令行解析
-- `System.CommandLine`：微软官方命令行解析库
-- 支持子命令（verb/command）、选项（option）、参数（argument）
-- 支持帮助信息自动生成、参数校验、默认值
-
-### 依赖注入
-- `Microsoft.Extensions.DependencyInjection`：依赖注入容器
-- `Microsoft.Extensions.Configuration`：配置管理（支持 appsettings.json、环境变量、命令行参数）
-- `Microsoft.Extensions.Logging`：日志抽象
-- 使用 Azrng 标记接口方式：
-  - `ITransientDependency`：临时注入
-  - `IScopedDependency`：作用域注入
-  - `ISingletonDependency`：单例注入
-- 在 Program.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
-
-### 日志
-- `Serilog`：结构化日志
-- 输出到控制台和文件
-
-### 部署
-- 本地运行，无需 Docker
-- 支持发布为单文件（`dotnet publish -c Release`）
-
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+| 文件 | 适用范围 | 何时阅读 |
+| --- | --- | --- |
+| `application-AGENTS.md` | 控制台技术栈、目录结构、命令/服务实现与测试规则 | 涉及命令解析、Service、配置、日志、异常处理与测试时阅读 |
+| `doc-AGENTS.md` | 需求记录、devlog 与文档维护规则 | 涉及 `doc/requirement.md`、`doc/devlog/` 和文档维护时阅读 |
 
 ---
 
-## 推荐目录结构
-若仓库尚未形成稳定结构，可优先参考以下组织方式；若仓库已有实现，以现状为准，不强制迁移。
+## 子规则阅读顺序
+
+1. 先阅读当前文件，理解全局规则和交付要求。
+2. 涉及命令解析、Service、配置、日志、异常处理与测试时，继续阅读 `application-AGENTS.md`。
+3. 涉及需求记录、devlog 维护时，继续阅读 `doc-AGENTS.md`。
+
+---
+
+## 开发流程总览
+
+### 总体阶段划分
+
+控制台模板默认按以下顺序推进：
 
 ```text
-project-root/
-├── src/
-│   └── YourProject/                     # 控制台项目
-│       ├── Commands/                     # 命令处理（每个子命令一个类）
-│       ├── Services/                     # 业务服务接口与实现
-│       │   └── Interfaces/              # 服务接口定义
-│       ├── Models/                      # 数据模型
-│       │   ├── DTOs/                    # 数据传输对象
-│       │   └── Enums/                   # 枚举
-│       ├── Extensions/                  # 扩展方法
-│       ├── Helpers/                     # 工具类
-│       ├── Program.cs                   # 应用入口（参数解析 + 启动）
-│       ├── appsettings.json             # 配置文件
-│       └── YourProject.csproj
-├── tests/
-│   └── YourProject.Tests/               # 测试项目
-├── doc/
-│   ├── devlog/
-│   ├── design/
-│   └── requirement.md
-├── .gitignore
-├── AGENTS.md
-├── CLAUDE.md
-├── GEMINI.md
-├── TASK.md
-└── TaskHistory.md
+阶段 0          阶段 1          阶段 2
+需求确认   →   控制台实现   →   集成验证
+（用户确认）   （Codex）       （协作）
 ```
+
+**例外情况**（AI 自动判断，无需单独补设计说明）：
+- Bug 修复（功能行为不变，只修正错误）
+- 仅命令文案、帮助说明、轻量输出字段微调
+- 配置或日志格式调整
+
+- 实现细则见 `application-AGENTS.md`
+- 文档维护细则见 `doc-AGENTS.md`
 
 ---
 
 ## 使用方式
 每个 AI Agent 在开始修改前都必须：
 1. 先阅读本文档，理解核心规则和流程
-2. 再阅读相关模块和现有实现
-3. 优先复用当前结构，再决定是否新增文件
+2. 确认当前任务属于命令实现还是文档维护
+3. 再按任务命中范围阅读对应子规则文件
+4. 再阅读相关模块和现有实现
+5. 优先复用当前结构，再决定是否新增文件
+6. 不要每次预读所有文件，优先通过索引、目录和搜索定位命中的文件后再阅读
 
-进行控制台开发时：
-1. Program.cs 只负责参数解析和启动流程，业务逻辑放在 Service 中
-2. 每个子命令对应一个 Command 类，职责单一
-3. 服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口
-4. 异常处理使用 Azrng 异常体系
+### 任务类型阅读策略
+
+- 命令解析、Service、配置、日志、异常处理与测试任务优先阅读 `application-AGENTS.md`
+- 需求记录、devlog 维护任务优先阅读 `doc-AGENTS.md`
 
 ---
 
@@ -123,6 +96,8 @@ project-root/
 - 不要猜测问题，要实证排查：通过日志、断点、数据等实际证据定位原因，禁止凭猜测修改代码。
 - 所有改动都必须可说明、可验证。
 
+---
+
 ## 思考与实现原则
 - 先理解业务目标、用户角色、核心流程，再进行设计和开发。
 - 优先选择符合当前需求的最优可行方案，兼顾正确性、可维护性与实现成本。
@@ -131,6 +106,8 @@ project-root/
 - 代码实现应保持清晰、简洁、稳定，优先保证业务正确性、可读性和后续维护性。
 - 单个类、页面、组件、页面基类应保持职责单一，避免巨型文件和巨型类。发现文件持续膨胀、单类职责过多、阅读成本明显升高时，必须优先拆分为更小的组件、服务、辅助类或局部模块。禁止编写超大页面基类、超大工具类、超大 Service 类，禁止把多个无关职责长期堆在同一个类中。
 - 遇到需求不清、规则冲突或实现复杂度明显升高时，先说明判断与权衡，再继续执行。
+
+---
 
 ## 编码规则
 - 所有源码、配置、文档文件统一使用 `UTF-8` 编码。
@@ -141,178 +118,6 @@ project-root/
 - 如果编写注释（含代码注释、文档注释等），统一使用中文，不使用纯英文注释；必要的英文标识、协议字段名或框架关键字可保留原文。
 - 修改含中文内容后，必须重新读取一次并确认关键中文显示正常。
 ---
-
-## 控制台规则
-
-### Program.cs 规则
-- Program.cs 只负责三件事：构建配置、注册依赖、解析参数并调度命令
-- 禁止在 Program.cs 中编写业务逻辑
-- 使用 `System.CommandLine` 的 `RootCommand` 组织命令结构
-- 入口方法保持简洁，核心逻辑委托给 Command 类
-
-### 命令行参数规则
-- 使用 `System.CommandLine` 定义命令、选项和参数
-- 每个子命令（verb）对应一个 Command 类，放在 `Commands/` 目录
-- 选项命名使用 kebab-case（如 `--output-dir`、`--max-count`）
-- 必须为每个命令和选项提供描述（用于自动生成帮助信息）
-- 必要参数设为必填，可选参数提供合理默认值
-- 参数校验失败时输出清晰的错误提示和用法示例
-- 示例结构：
-  ```csharp
-  var rootCommand = new RootCommand("应用描述");
-  var command = new Command("action", "执行操作");
-  var option = new Option<string>("--name", "名称") { IsRequired = true };
-  command.AddOption(option);
-  command.SetHandler(async (name) => { /* 调用 Service */ }, option);
-  rootCommand.AddCommand(command);
-  return await rootCommand.InvokeAsync(args);
-  ```
-
-### Service 规则
-- 服务类实现接口，接口定义在 `Services/Interfaces/` 目录
-- 耗时操作必须是异步的（返回 `Task<T>`）
-- 使用 DTO 进行数据传递
-- 业务异常抛出继承自 Azrng 异常体系的自定义异常
-- 服务类实现标记接口（`ITransientDependency`/`IScopedDependency`/`ISingletonDependency`）以自动注册
-
-### 数据模型规则
-- DTO 按用途区分：输入参数、输出结果
-- 枚举放在 `Models/Enums/` 目录
-- 输出模型需考虑控制台展示友好性
-
-### 配置管理规则
-- 使用 `Microsoft.Extensions.Configuration` 管理配置
-- 配置来源优先级（高到低）：命令行参数 > 环境变量 > appsettings.json
-- 敏感配置（密钥、密码）禁止写入 appsettings.json，通过环境变量或用户机密传入
-- 配置项通过 Options 模式绑定到强类型类：
-  ```csharp
-  services.Configure<AppOptions>(configuration.GetSection("App"));
-  ```
-- 禁止在代码中硬编码配置值
-
-### 日志规范
-- 使用 `Microsoft.Extensions.Logging` 抽象，配合 Serilog 实现
-- Program.cs 启动时配置 Serilog：
-  ```csharp
-  Log.Logger = new LoggerConfiguration()
-      .ReadFrom.Configuration(configuration)
-      .WriteTo.Console()
-      .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day)
-      .CreateLogger();
-  ```
-- 日志级别：Verbose > Debug > Information > Warning > Error > Fatal
-- 正常业务流程使用 `Information` 级别
-- 可预期的业务异常使用 `Warning` 级别
-- 不可预期的系统异常使用 `Error` 级别
-- 禁止使用 `Console.WriteLine` 输出业务信息，统一使用 logger
-
-### 异常处理规范
-- 顶层捕获所有未处理异常，输出友好错误信息后以非零退出码退出
-- 业务异常继承 Azrng 异常体系：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `InternalServerException`：内部错误
-- Command 内捕获异常后决定退出码：
-  - 0：成功
-  - 1：一般错误
-  - 2：参数错误
-- 示例：
-  ```csharp
-  try
-  {
-      await service.DoWorkAsync();
-      return 0;
-  }
-  catch (ParameterException ex)
-  {
-      logger.LogWarning(ex, "参数错误");
-      return 2;
-  }
-  catch (Exception ex)
-  {
-      logger.LogError(ex, "执行失败");
-      return 1;
-  }
-  ```
-
-### 依赖注入规范
-- 服务类必须实现以下接口之一：
-  - `ITransientDependency`：每次请求创建新实例
-  - `IScopedDependency`：每个作用域内单例
-  - `ISingletonDependency`：应用程序生命周期单例
-- Command 通过构造函数注入服务（在 SetHandler 中手动创建作用域解析）
-- 禁止使用静态服务定位器 pattern
-- 禁止手动在 Program.cs 中逐一注册服务，应使用 `RegisterBusinessServices` 批量扫描注册
-
-### 退出码规范
-| 退出码 | 含义 |
-|--------|------|
-| 0 | 成功 |
-| 1 | 一般错误 |
-| 2 | 参数错误 |
-
-- 每个命令执行完毕必须返回明确的退出码
-- 主入口将退出码传递给 `Environment.Exit`
-
-### 字段命名约定
-- C# 属性：PascalCase
-- 命令行选项：kebab-case（`--output-dir`）
-- JSON 配置键：camelCase
-
----
-
-## 测试规则
-
-### 总体要求
-- 影响行为的改动应优先补充或更新测试
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为
-
-### 测试分类
-- 测试框架：xUnit + Moq
-- Service 测试：验证业务逻辑分支，使用 mock 隔离依赖
-- Command 测试：验证参数解析、退出码、输出结果
-- 集成测试：验证完整命令行执行流程
-
-### 外部依赖与数据
-- 测试中不要真实调用第三方服务，统一使用 mock
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态
-
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
-
----
-
-## Git 与提交流程
-
-### 分支命名
-- `feat/<desc>`：新功能
-- `fix/<desc>`：缺陷修复
-- `refactor/<desc>`：无行为变更的重构
-- `chore/<desc>`：工具、依赖、配置调整
-- `docs/<desc>`：仅文档变更
-
-### Commit 规范
-- 提交信息优先采用 Conventional Commits：
-  - `<type>(<scope>): <简短描述>`
-- 示例：
-  - `feat(command): add export sub-command`
-  - `fix(args): correct default value handling`
-  - `chore(dotnet): pin NuGet package version`
-
-### 交付前自查
-- 编译（`dotnet build`）
-- 测试（`dotnet test`）
-- 命令行参数解析验证（`dotnet run -- --help`）
-- 新增环境变量已同步更新相关文档
-
-### 提交触发规则
-- 每次修改完后都必须提交代码
-- 若本次开发生成了本地运行产物、缓存、构建产物或依赖目录，应同步检查并更新 `.gitignore`
 
 ---
 
@@ -357,39 +162,35 @@ project-root/
 - 每次开发完成后，都需要在 `doc/devlog/` 下新增一份本次开发简短说明的 Markdown 记录。
 ---
 
-## 文档更新要求
-以下内容发生变化时，必须同步更新相关文档：
-- 命令、脚本或启动方式
-- 环境变量
-- 配置项
-- 构建、发布或部署流程
-- 数据库结构、迁移或初始化方式
-- 对外使用方式或接口约定
+---
 
-优先更新已有文档，不新增重复说明。
-每次开发完成后，必须在 `doc/devlog/` 下补充一份简短开发记录。
+## Git 与提交流程
 
-### 文档目录约定
-- `doc/requirement.md`：需求文档。若文件已存在，AI 应基于用户新增需求进行补充或修订；若文件不存在，AI 必须根据用户输入先自动生成详细初稿。该文件仅承载业务需求，不写入设计说明或开发过程记录
-- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（如适用）与交互说明。由用户与 AI 协作产出，用户确认后作为开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
-- `doc/devlog/`：每次开发完成后的简短开发日志
+### 分支命名
+- `feat/<desc>`：新功能
+- `fix/<desc>`：缺陷修复
+- `refactor/<desc>`：无行为变更的重构
+- `chore/<desc>`：工具、依赖、配置调整
+- `docs/<desc>`：仅文档变更
 
-### requirement 要求
-- 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留“待补充”空壳。
-- 需求文档建议固定包含以下章节：项目背景、目标与范围、用户角色、页面或模块清单、核心业务流程、关键数据与字段、权限与可见范围、边界场景与异常、非功能要求、待确认项。
-- 自动生成需求文档时，优先写清业务事实、流程与边界，不提前写入技术实现方案。
+### Commit 规范
+- 提交信息优先采用 Conventional Commits：
+  - `<type>(<scope>): <简短描述>`
+- 示例：
+  - `feat(command): add export sub-command`
+  - `fix(args): correct default value handling`
+  - `chore(dotnet): pin NuGet package version`
 
-### devlog 要求
-- 文件目录：`doc/devlog/`
-- 文件格式：Markdown
-- 文件命名建议：`YYYY-MM-DD-HH-mm-ss-中文任务简述.md`
-- 文件名中的任务简述必须使用中文，不使用英文 slug、拼音缩写或中英混杂描述
-- 内容保持简短，至少包含：
-  - 本次目标
-  - 核心改动
-  - 修改文件
-  - 校验情况
-  - 风险或遗留项
+### 交付前自查
+- 编译（`dotnet build`）
+- 测试（`dotnet test`）
+- 命令行参数解析验证（`dotnet run -- --help`）
+- 新增环境变量已同步更新相关文档
+
+### 提交触发规则
+- 每次修改完后都必须提交代码
+- 若本次开发生成了本地运行产物、缓存、构建产物或依赖目录，应同步检查并更新 `.gitignore`
+
 ---
 
 ## 交付收口规范
@@ -401,6 +202,8 @@ project-root/
   4. 应用级 smoke test
   5. 文档、`TASK.md`、`doc/devlog/`、忽略文件更新
 - 若某项验证未执行，最终输出必须明确说明未执行项、原因、影响范围和建议下一步。
+---
+
 ---
 
 ## 常见禁止事项

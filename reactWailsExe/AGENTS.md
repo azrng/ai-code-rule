@@ -3,6 +3,10 @@
 ## 目标
 职责划分如下：
 - `AGENTS.md`：唯一协作规范来源，统一定义工作规则、任务机制、交付要求
+- `frontend-AGENTS.md`：React 页面、组件、状态、路由、样式与前端测试规则
+- `backend-AGENTS.md`：Go/Wails 后端、绑定暴露、分层实现与后端测试规则
+- `doc-AGENTS.md`：设计文档、设计系统与文档维护规则
+- `infra-AGENTS.md`：构建、发布、运行环境与交付链路规则
 - `CLAUDE.md` / `GEMINI.md`：各 Agent 的入口说明文件，仅负责提醒先读取 `AGENTS.md`，不维护平行规则内容
 - `design-system.yaml`：设计 token 与 UI 规范
 - `TASK.md`：当前活跃任务与少量最近完成任务的最小记录
@@ -22,6 +26,7 @@
 8. 用户指令始终优先于本文件内容。
 
 ---
+
 ## 注意事项
 1. 你需要理解用户提出的需求的业务逻辑然后再做设计和开发
 2. 你需要根据设计的功能需求设计多级的菜单，管理员默认有所有菜单权限
@@ -29,113 +34,39 @@
 4. 所有的功能至少要确保能够完成基本的流程操作，功能的按钮必须都是可以交互的，界面的内容尽量多填充一些信息
 5. 整体系统需要有一个登录页面，并要有默认应用图标，登录页面，登录系统左上角应该有应用图标和应用名称。
 6. 系统涉及时能够有一些酷炫的动效，需要符合医疗行业的审美要求，界面简洁大方，操作流程清晰易懂。
-7.  如系统内所有设计到变更、新增、删除等业务逻辑，必须能够真实生效的，而不是假的交互，确保浏览器刷新页面后能看到生效后的内容
-8.  由于此系统的功能模块较多，实现的时候先把系统的框架搭起来，然后按照一个一个子模块的方式来实现，而不是一下子实现全部功能
+7. 如系统内所有涉及到变更、新增、删除等业务逻辑，必须能够真实生效的，而不是假的交互，确保浏览器刷新页面后能看到生效后的内容
+8. 由于此系统的功能模块较多，实现的时候先把系统的框架搭起来，然后按照一个一个子模块的方式来实现，而不是一下子实现全部功能
 
 ---
 
-## 技术栈
+## 子规则索引
 
-### 前端
-- React 18 + TypeScript + Vite
-- Ant Design 5 组件库（antd）
-- Ant Design Icons（@ant-design/icons，唯一图标库）
-- React Router 6（路由管理）
-- Zustand（全局状态管理：用户信息、权限、通知等跨组件共享状态）
-- Axios（HTTP 客户端，仅用于外部 API 调用）
-
-### 后端
-- Go + Wails v3
-- 标准分层架构：`Handler → Service → Repository → Model`
-- ORM：GORM
-- 数据库：SQLite（本地默认）
-
-### 前后端通信
-- **Wails 原生绑定**：Go 方法通过 `wails:generate` 暴露给前端 JS/TS 调用
-- 禁止使用 HTTP 请求与 Go 后端通信（Wails 不是 B/S 架构）
-- 如需调用外部 API，使用 Axios 通过前端发起
-
-### 部署
-- 仅 Windows 平台
-- 使用 `wails build` 生成 Windows 可执行文件
-
-### 设计系统
-- 使用 Ant Design 主题系统（ConfigProvider + Design Token），所有视觉规范在 `design-system.yaml` 中定义
-- 优先使用 Ant Design 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
-
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+| 文件 | 适用范围 | 何时阅读 |
+| --- | --- | --- |
+| `frontend-AGENTS.md` | 前端页面、组件、状态、路由、样式与前端测试规则 | 涉及视图实现、页面交互、前端 smoke test 时阅读 |
+| `backend-AGENTS.md` | Go/Wails 后端、绑定暴露、分层实现与后端测试规则 | 涉及 Go Handler、Service、Repository、Wails 绑定、数据库时阅读 |
+| `doc-AGENTS.md` | 设计文档、设计系统与文档维护规则 | 涉及阶段 0 设计、`design-system.yaml`、`doc/requirement.md`、`doc/devlog/` 时阅读 |
+| `infra-AGENTS.md` | 构建、发布、运行环境与交付链路规则 | 涉及打包、发布、运行环境、版本回滚与交付验证时阅读 |
 
 ---
 
-## 推荐目录结构
-若仓库尚未形成稳定结构，可优先参考以下组织方式；若仓库已有实现，以现状为准，不强制迁移。
+## 子规则阅读顺序
 
-```text
-project-root/
-├── frontend/
-│   ├── src/
-│   │   ├── api/               # 外部 API 请求模块（仅用于外部服务调用）
-│   │   ├── components/
-│   │   │   ├── common/        # 通用业务组件
-│   │   │   └── layout/        # 布局组件
-│   │   ├── pages/             # 页面级组件（按业务域拆分）
-│   │   ├── router/
-│   │   │   ├── index.tsx       # 路由配置
-│   │   │   └── routes.tsx      # 路由定义
-│   │   ├── stores/            # Zustand stores（按业务域拆分）
-│   │   ├── hooks/             # 自定义 Hooks（useXxx）
-│   │   ├── types/             # TypeScript 类型定义
-│   │   ├── utils/             # 纯工具函数
-│   │   ├── bindings/          # Wails 自动生成的 Go 绑定类型声明
-│   │   ├── config/
-│   │   │   └── antd-theme.ts   # Ant Design 主题配置
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── wails.js               # Wails 自动生成的绑定入口
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
-├── backend/                   # Go 后端
-│   ├── app.go                 # Wails 应用入口
-│   ├── main.go                # 程序入口
-│   ├── handler/               # 处理器层（对应前端调用入口）
-│   │   └── handler.go
-│   ├── service/               # 业务逻辑层
-│   │   └── service.go
-│   ├── repository/            # 数据访问层
-│   │   └── repository.go
-│   ├── model/                 # 数据模型层
-│   │   ├── entity.go          # GORM 实体定义
-│   │   └── dto.go             # 数据传输对象
-│   ├── database/              # 数据库配置与初始化
-│   │   └── database.go
-│   ├── go.mod
-│   └── go.sum
-├── doc/
-│   ├── devlog/
-│   ├── design/
-│   └── requirement.md
-├── build/                     # Wails 构建配置
-│   └── windows/               # Windows 图标等资源
-├── wails.json                 # Wails 项目配置
-├── .gitignore
-├── AGENTS.md
-├── CLAUDE.md
-├── GEMINI.md
-├── design-system.yaml
-├── TASK.md
-└── TaskHistory.md
-```
+1. 先阅读当前文件，理解全局规则、阶段门控和交付要求。
+2. 涉及设计说明、设计系统或文档维护时，继续阅读 `doc-AGENTS.md`。
+3. 涉及页面、组件、状态、路由、样式和交互时，继续阅读 `frontend-AGENTS.md`。
+4. 涉及 Go Handler、Service、Repository、Wails 绑定、数据库时，继续阅读 `backend-AGENTS.md`。
+5. 涉及构建、发布、运行环境、版本回滚时，补充阅读 `infra-AGENTS.md`。
 
 ---
 
-## 开发流程
+## 开发流程总览
 
 ### 总体阶段划分
 
 所有新功能开发必须严格经历以下四个阶段，阶段之间有明确的门控条件，不满足条件不得进入下一阶段：
 
-```
+```text
 阶段 0          阶段 1          阶段 2          阶段 3
 设计文档   →   视图实现   →   Go 后端实现  →   绑定联调
 （用户确认）   （Claude Code）  （Codex）       （协作）
@@ -147,89 +78,10 @@ project-root/
 - 配置、环境变量、构建脚本调整
 - 单个字段的增删（不涉及新页面或新业务流程）
 
----
-
-### 阶段 0 — 设计文档（新功能强制前置）
-
-**触发条件**：用户提出新功能需求
-
-**执行方式**：由用户与 AI 对话协作产出，用户最终确认定稿
-
-**产物**：`doc/design/设计文档.md`（全项目一份，新功能以新章节追加，不新建文件）
-
-**文档必须包含以下四个部分**：
-
-| 部分     | 内容要求                                                       |
-| -------- | -------------------------------------------------------------- |
-| 架构设计 | 模块划分、数据流向、涉及的技术决策说明                         |
-| 功能需求 | 页面列表、功能点明细、业务规则、权限矩阵                       |
-| 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / empty / error） |
-| 交互说明 | 操作流程、状态流转、边界场景、错误处理方式                     |
-
-**门控规则**：
-- 用户明确确认设计文档后，才允许进入阶段 1
-- AI 在此阶段只输出文档内容，不写任何实现代码
-
----
-
-### 阶段 1 — 视图实现（Claude Code 主导）
-
-**触发条件**：用户发出「开始视图开发」指令
-
-**入场要求**：阶段 0 设计文档已由用户确认
-
-**工作内容**：
-1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 和 Ant Design 规范
-2. 数据层使用 mock（静态 mock 数据），不依赖真实 Go 后端绑定
-3. 同步输出接口需求说明，供 Go 后端开发参考
-
-**产物**：
-- 可在浏览器中运行的前端页面（通过 `wails dev` 预览）
-- 接口需求说明（用于 Go 后端开发）
-
-**门控规则**：
-- 用户确认视图页面符合设计文档预期
-- 前端页面交互逻辑已验证通过
-- 满足以上两点后，才允许进入阶段 2
-
----
-
-### 阶段 2 — Go 后端实现（Codex 主导）
-
-**触发条件**：用户发出「开始后端开发」指令
-
-**入场要求**：前端页面已完成，接口需求已明确
-
-**工作内容**：
-1. 按照接口需求实现 Go Handler/Service/Repository
-2. Handler 方法需要标记 `//export` 注释以暴露给前端
-3. 运行 `wails generate module` 重新生成前端绑定
-4. 涉及数据库结构变更时，使用 GORM AutoMigrate
-
-**Go 方法导出规范**：
-- 需要暴露给前端的方法必须在 App 结构体上定义
-- 方法首字母大写（Go 导出规则）
-- 方法参数和返回值必须是可序列化类型（string、int、struct、slice 等）
-- 返回 error 时，前端会收到 JS Error 对象
-
-**门控规则**：
-- 核心方法独立测试通过后，才允许进入阶段 3
-
----
-
-### 阶段 3 — 绑定联调
-
-**触发条件**：用户发出「开始联调」指令
-
-**入场要求**：视图页面和 Go 后端均已独立完成验证
-
-**工作内容**：
-1. 运行 `wails generate module` 生成最新绑定
-2. 前端替换 mock 数据，改为调用 Wails 绑定方法
-3. 对齐异常处理：Go error 与前端 message / notification 展示逻辑匹配
-4. 执行核心业务路径 smoke test（至少覆盖：登录 → 核心操作 → 数据回显 → 退出）
-
-**完成标志**：核心路径 smoke test 通过，`doc/devlog/` 已补充本阶段记录
+- 阶段 0 设计文档细则见 `doc-AGENTS.md`
+- 阶段 1 视图实现细则见 `frontend-AGENTS.md`
+- 阶段 2 Go 后端实现细则见 `backend-AGENTS.md`
+- 阶段 3 绑定联调与发布约束结合当前文件和 `infra-AGENTS.md` 一起执行
 
 ---
 
@@ -238,26 +90,20 @@ project-root/
 1. 先阅读本文档，理解核心规则和流程
 2. 确认当前处于哪个开发阶段，检查该阶段的入场条件是否满足
 3. 再阅读 `design-system.yaml`
-4. 再阅读相关模块和现有实现
-5. 优先复用当前结构，再决定是否新增文件
+4. 再按任务命中范围阅读对应子规则文件
+5. 再阅读相关模块和现有实现
+6. 优先复用当前结构，再决定是否新增文件
+7. 不要每次预读所有文件，优先通过索引、目录和搜索定位命中的文件后再阅读
+8. 先读根文件中的子规则索引，再读命中的子规则文件，不要全量加载所有规则文件
 
-进行前端开发时：
-1. `design-system.yaml` 是颜色、间距、圆角、排版、页面状态、组件使用规则的参考依据
-2. 优先使用 Ant Design 组件，样式通过 ConfigProvider 主题定制和 Design Token 控制
-3. 图标统一使用 @ant-design/icons，尺寸 16-24px
-4. 全局状态（用户、权限、通知等）使用 Zustand store
-5. 组件本地状态使用 React Hooks（useState、useReducer、useMemo、useCallback、useEffect）
+### 任务类型阅读策略
 
-进行 Go 后端开发时：
-1. 保持 `Handler → Service → Repository → Model` 分层
-2. Handler 层只做参数校验和转发，不写业务逻辑
-3. 需要暴露给前端的方法必须在 App 结构体上定义
-4. 修改 Go 方法签名后必须运行 `wails generate module` 更新绑定
-
-进行部署改动时：
-1. 优先复用现有 wails.json 构建配置
-2. 发布版本必须可追踪
-3. 清理旧版本前要保留可回滚版本
+- 视图任务优先阅读 `frontend-AGENTS.md`
+- Go 后端、Wails 绑定、数据库任务优先阅读 `backend-AGENTS.md`
+- 设计文档、设计系统、devlog 维护任务优先阅读 `doc-AGENTS.md`
+- 构建、发布、运行环境与回滚验证任务优先阅读 `infra-AGENTS.md`
+- 联调任务必须同时阅读根 `AGENTS.md`、`frontend-AGENTS.md`、`backend-AGENTS.md`、`infra-AGENTS.md`
+- 若任务明显跨视图与后端绑定，先拆成子任务再执行，不要把不同关注面的实现混在一个步骤里
 
 ---
 
@@ -270,6 +116,8 @@ project-root/
 - 不要猜测问题，要实证排查：通过日志、断点、数据等实际证据定位原因，禁止凭猜测修改代码。
 - 所有改动都必须可说明、可验证。
 
+---
+
 ## 思考与实现原则
 - 先理解业务目标、用户角色、核心流程，再进行设计和开发。
 - 优先选择符合当前需求的最优可行方案，兼顾正确性、可维护性与实现成本。
@@ -279,6 +127,8 @@ project-root/
 - 单个类、页面、组件、页面基类应保持职责单一，避免巨型文件和巨型类。发现文件持续膨胀、单类职责过多、阅读成本明显升高时，必须优先拆分为更小的组件、服务、辅助类或局部模块。禁止编写超大页面基类、超大工具类、超大 Service 类，禁止把多个无关职责长期堆在同一个类中。
 - 遇到需求不清、规则冲突或实现复杂度明显升高时，先说明判断与权衡，再继续执行。
 
+---
+
 ## 编码规则
 - 所有源码、配置、文档文件统一使用 `UTF-8` 编码。
 - 读取或修改含中文文件时，若出现乱码，先判断是终端显示问题还是文件编码损坏；未确认前禁止覆盖原文件。
@@ -287,189 +137,12 @@ project-root/
 - PowerShell 命令不接受 `&&`，禁止使用；需要连续执行时改为分步执行或使用 PowerShell 兼容写法。
 - 如果编写注释（含代码注释、文档注释、Go doc 注释等），统一使用中文，不使用纯英文注释；必要的英文标识、协议字段名或框架关键字可保留原文。
 - 修改含中文内容后，必须重新读取一次并确认关键中文显示正常。
----
-
-## 前端规则
-
-### React Hooks 规范
-- 函数组件 + Hooks 是唯一写法，禁止 class 组件
-- 响应式数据使用 `useState`，复杂状态使用 `useReducer`
-- 计算属性使用 `useMemo`，回调缓存使用 `useCallback`
-- 副作用使用 `useEffect`，清理逻辑在返回函数中处理
-- 可复用逻辑封装为自定义 Hook（`useXxx`），放在 `hooks/` 目录
-
-### 组件通信规范
-- **父传子**：通过 Props 传递，子组件只读不可修改
-- **子传父**：通过回调函数 Props（`onXxx` 命名）
-- **跨级传值**：优先使用 Zustand，其次使用 React Context
-- **兄弟组件**：通过共同父组件或 Zustand 中转
-- 避免直接修改 props，需要双向绑定时使用受控组件模式（value + onChange）
-
-### 路由管理规范
-- 路由配置集中放在 `src/router/routes.tsx`
-- 使用 React Router 6 的 `createBrowserRouter` + `RouterProvider`
-- 路由守卫通过 `loader` 函数或 `ProtectedRoute` 包裹组件实现
-- 路由跳转使用 `useNavigate()` hook
-- 获取路由参数使用 `useParams()` 和 `useSearchParams()`
-- 路由命名使用有意义的路径（如 `/users/list`、`/users/detail/:id`）
-
-### Zustand 状态管理规范
-- Store 按业务域拆分，放在 `src/stores/` 目录
-- 使用 `create` 函数定义 store
-- Store 命名：`use[Domain]Store`（如 `useUserStore`、`usePermissionStore`）
-- 修改 store 状态直接通过 set 方法，推荐使用 immer 中间件简化不可变更新
-- 异步操作直接在 store actions 或组件中通过 async/await 处理
-
-### Wails 绑定调用规范
-- 通过 `src/bindings/` 下自动生成的模块调用 Go 方法
-- 绑定方法返回 Promise，必须使用 `await` 或 `.then()/.catch()` 处理
-- 禁止绕过 Wails 绑定直接通过 HTTP 请求与 Go 后端通信
-- 绑定方法调用应封装在 hooks 或 store 中，不直接散落在页面组件内
-- 修改 Go 方法签名后必须重新运行 `wails generate module`
-
-### 样式规则
-- 优先使用 Ant Design 组件内置样式和 Design Token
-- 自定义样式使用 CSS Modules 或全局 CSS，变量来自 `design-system.yaml`
-- 禁止 inline style，禁止硬编码颜色值（如 `#1677ff`）
-- 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
-- Wails 窗口为固定大小，不需要考虑移动端响应式
-
-### 组件规则
-- 优先复用 `src/components/` 下已有组件，禁止重复创建
-- 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象
-- 页面状态必须完整：`loading`（Spin / Skeleton）、`empty`（Empty）、`error`（Result）、`no-permission`
-- 除非仓库已在使用，否则不要引入新的组件库或样式体系
-
-### 外部 API 请求规则
-- 仅在需要调用外部服务时使用 Axios
-- 禁止使用 Axios 调用本机 Go 后端（必须通过 Wails 绑定）
-- Axios 实例统一配置，拦截器处理错误
-- API 函数命名规范：`getXxx`、`createXxx`、`updateXxx`、`deleteXxx`
-
----
-
-## Go 后端规则
-
-### 分层架构
-```
-Handler → Service → Repository → Model
-```
-- `Handler`：参数校验、调用 Service、返回结果
-- `Service`：业务逻辑处理
-- `Repository`：数据访问
-- `Model`：GORM 实体与 DTO
-
-### Handler 层规则
-- Handler 方法定义在 App 结构体上（Wails 绑定要求）
-- 只做参数校验和转发，不写业务逻辑
-- 方法命名使用 PascalCase
-- 参数和返回值必须是可序列化类型
-- 错误通过返回 error 传递
-
-### Service 层规则
-- 服务方法接收接口（非 struct），方便测试
-- 服务方法必须是幂等的，相同输入得到相同输出
-- 业务错误返回自定义错误类型
-- 禁止在 Service 中直接操作数据库
-
-### Repository 层规则
-- 使用 GORM 进行数据访问
-- 数据库连接通过依赖注入传入
-- 涉及事务时使用 `db.Transaction()`
-- 复杂查询使用 GORM Scope 封装
-
-### Model 层规则
-- GORM 实体使用 struct tag 定义字段映射
-- 表名使用 snake_case
-- 软删除使用 `gorm.DeletedAt`
-- 公共字段（ID、创建时间、更新时间）提取为 BaseModel
-
-### 数据库规则
-- 使用 GORM AutoMigrate 管理表结构
-- 数据库文件默认存储在应用数据目录
-- 禁止硬编码数据库连接字符串
-- 所有查询必须使用参数化查询（GORM 自动处理）
-
-### Wails 绑定规则
-- 暴露给前端的方法必须有 Go doc 注释，注释内容统一使用中文
-- 方法签名变更后必须运行 `wails generate module`
-- 前端 `src/bindings/` 目录下的文件由 Wails 自动生成，禁止手动修改
-- 方法参数不支持 chan、func、unsafe.Pointer 等类型
-
----
-
-## 测试规则
-
-### 总体要求
-- 测试暂时不作为强制要求
-- 若补充测试，应覆盖真实业务行为
-
-### Go 后端测试（可选）
-- 使用标准 `testing` 包
-- Service 层测试 mock Repository
-- Repository 层测试使用 SQLite 内存数据库
-
-### 前端测试（可选）
-- 暂时不考虑单元测试
-- 但必须进行手动 smoke test 验证核心功能
-
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
-
----
-
-## Git 与提交流程
-
-### 分支命名
-- `feat/<desc>`：新功能
-- `fix/<desc>`：缺陷修复
-- `refactor/<desc>`：无行为变更的重构
-- `chore/<desc>`：工具、依赖、配置调整
-- `docs/<desc>`：仅文档变更
-
-### Commit 规范
-- 提交信息优先采用 Conventional Commits：
-  - `<type>(<scope>): <简短描述>`
-- 示例：
-  - `feat(auth): add login handler`
-  - `fix(frontend): correct table pagination reset`
-  - `chore(wails): update build config`
-
-### 交付前自查
-- 前端：类型检查（tsc）、构建（npm run build）
-- 后端：编译（`go build`）、`wails generate module`
-- 涉及数据库结构变更时已确认 GORM AutoMigrate
-- 新增环境变量已同步更新相关文档
-
-### 提交触发规则
-- 每次修改完后都必须提交代码
-- 若仓库尚未初始化为可用 Git 工作区，最终说明中必须明确写明无法执行提交校验
-- 若本次开发生成了本地运行产物、缓存、测试数据库、构建产物或依赖目录，应同步检查并更新 `.gitignore`
-
----
-
-## 发布规则
-- 优先复用现有 `wails.json` 构建配置
-- 仅支持 Windows 平台发布
-- 使用 `wails build -platform windows/amd64` 构建可执行文件
-- 不要把密钥写入配置文件
-- 发布链路要可追踪
-- 清理旧版本时要保留最小回滚窗口
-
-### 发布交付规则
-- 只要本次任务涉及发布配置、版本号和构建命令，完成实现后应主动执行一次构建验证
-- 若因环境限制无法执行，必须明确说明
-- 发布验证至少包括：
-  - 构建是否成功
-  - 应用是否成功启动
-  - 关键功能是否处于可用状态
 
 ---
 
 ## 任务管理机制
 `TASK.md` 与 `TaskHistory.md` 共同组成任务记录文件：`TASK.md` 只维护活跃任务与少量最近完成任务的最小记录，`TaskHistory.md` 用于归档历史 `DONE` 任务，两者均不负责承载规则解释。
+
 ### 任务状态
 - `TODO`：未开始
 - `DOING`：进行中
@@ -506,55 +179,37 @@ Handler → Service → Repository → Model
 - 触发归档阈值时同步维护 `TaskHistory.md`。
 - 范围变化时同步补充任务说明、验收标准和风险。
 - 每次开发完成后，都需要在 `doc/devlog/` 下新增一份本次开发简短说明的 Markdown 记录。
----
-
-## 设计系统文件规范
-`design-system.yaml` 是唯一设计系统文件，包含：
-- 品牌与产品风格意图
-- 语义化颜色 token
-- 排版 token
-- 间距、圆角、阴影 token
-- 布局规则
-- Ant Design 主题配置映射
-- 页面状态规范
-- 组件使用规则
-- 明确的 `do / dont` 规则
 
 ---
 
-## 文档更新要求
-以下内容发生变化时，必须同步更新相关文档：
-- 命令、脚本或启动方式
-- 环境变量
-- 配置项
-- 构建、发布或部署流程
-- 数据库结构、迁移或初始化方式
-- 对外使用方式或接口约定
+## Git 与提交流程
 
-优先更新已有文档，不新增重复说明。
-每次开发完成后，必须在 `doc/devlog/` 下补充一份简短开发记录。
+### 分支命名
+- `feat/<desc>`：新功能
+- `fix/<desc>`：缺陷修复
+- `refactor/<desc>`：无行为变更的重构
+- `chore/<desc>`：工具、依赖、配置调整
+- `docs/<desc>`：仅文档变更
 
-### 文档目录约定
-- `doc/requirement.md`：需求文档。若文件已存在，AI 应基于用户新增需求进行补充或修订；若文件不存在，AI 必须根据用户输入先自动生成详细初稿。该文件仅承载业务需求，不写入设计说明或开发过程记录
-- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、界面原型（如适用）与交互说明。由用户与 AI 协作产出，用户确认后作为开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
-- `doc/devlog/`：每次开发完成后的简短开发日志
+### Commit 规范
+- 提交信息优先采用 Conventional Commits：
+  - `<type>(<scope>): <简短描述>`
+- 示例：
+  - `feat(auth): add login handler`
+  - `fix(frontend): correct table pagination reset`
+  - `chore(wails): update build config`
 
-### requirement 要求
-- 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留“待补充”空壳。
-- 需求文档建议固定包含以下章节：项目背景、目标与范围、用户角色、页面或模块清单、核心业务流程、关键数据与字段、权限与可见范围、边界场景与异常、非功能要求、待确认项。
-- 自动生成需求文档时，优先写清业务事实、流程与边界，不提前写入技术实现方案。
+### 交付前自查
+- 前端：类型检查（tsc）、构建（npm run build）
+- 后端：编译（`go build`）、`wails generate module`
+- 涉及数据库结构变更时已确认 GORM AutoMigrate
+- 新增环境变量已同步更新相关文档
 
-### devlog 要求
-- 文件目录：`doc/devlog/`
-- 文件格式：Markdown
-- 文件命名建议：`YYYY-MM-DD-HH-mm-ss-中文任务简述.md`
-- 文件名中的任务简述必须使用中文，不使用英文 slug、拼音缩写或中英混杂描述
-- 内容保持简短，至少包含：
-  - 本次目标
-  - 核心改动
-  - 修改文件
-  - 校验情况
-  - 风险或遗留项
+### 提交触发规则
+- 每次修改完后都必须提交代码
+- 若仓库尚未初始化为可用 Git 工作区，最终说明中必须明确写明无法执行提交校验
+- 若本次开发生成了本地运行产物、缓存、测试数据库、构建产物或依赖目录，应同步检查并更新 `.gitignore`
+
 ---
 
 ## 交付收口规范
@@ -566,6 +221,7 @@ Handler → Service → Repository → Model
   4. 应用级 smoke test
   5. 文档、`TASK.md`、`doc/devlog/`、忽略文件更新
 - 若某项验证未执行，最终输出必须明确说明未执行项、原因、影响范围和建议下一步。
+
 ---
 
 ## 常见禁止事项
@@ -575,11 +231,6 @@ Handler → Service → Repository → Model
 - 禁止在 Service 层直接操作数据库，应通过 Repository
 - 禁止在异步代码中使用阻塞式等待
 - 禁止绕过既有提交校验流程，如 `git commit --no-verify`
-- 禁止使用 inline style
-- 禁止硬编码颜色值（如 `#1677ff`）、间距值
-- 禁止使用 @ant-design/icons 以外的图标库
-- 禁止使用 Zustand 以外的全局状态管理库（Redux、MobX、Recoil 等）
-- 禁止使用 class 组件，必须使用函数组件 + Hooks
 - 禁止在 Go 方法中使用不可序列化的类型作为参数或返回值
 - 禁止跨平台构建，仅支持 Windows
 

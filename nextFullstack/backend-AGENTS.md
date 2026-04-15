@@ -1,0 +1,143 @@
+# AGENTS.md
+
+## 适用范围
+
+- 作用域：Next.js Route Handlers、Server Actions、Prisma 与服务端测试规则
+- 触发场景：涉及后端接口、服务逻辑、数据访问、缓存、异常处理时阅读
+
+---
+
+## 技术栈
+
+### 服务端
+- Next.js Route Handlers（`app/api/**/route.ts`）
+- Next.js Server Actions（表单提交、状态变更、同站点业务写操作优先）
+- Prisma ORM
+- PostgreSQL
+- Zod（入参与出参校验）
+
+### 测试
+- Vitest + Testing Library（单元 / 组件测试）
+- Playwright（端到端 / smoke test）
+
+---
+
+### 阶段 2 — 服务端与数据实现（Codex 主导）
+**触发条件**：用户发出“开始后端开发”或等价指令  
+**入场要求**：页面结构已完成，schema 与契约清晰
+
+**工作内容**：
+1. 按 `Route Handler / Server Action -> Service -> Repository -> Prisma` 分层实现服务端能力
+2. 根据需求维护 Prisma schema、迁移脚本、种子数据与数据库约束
+3. 完成认证、鉴权、日志、缓存、分页、筛选、排序等服务端逻辑
+4. 每个核心能力都必须可通过页面、接口工具或测试独立验证
+
+**字段命名约定**：
+- TypeScript 类型与对象属性：camelCase
+- 路由参数与查询参数：camelCase
+- 数据库字段：snake_case（通过 Prisma `@map` / `@@map` 做映射）
+
+**门控规则**：
+- 核心服务与接口独立验证通过后，才允许进入阶段 3
+
+---
+
+## 服务端规则（Next.js Fullstack）
+
+### 分层依赖规则
+```text
+Route Handler / Server Action
+              ↓
+           Service
+              ↓
+         Repository
+              ↓
+ Prisma / External Service
+```
+
+- `Route Handler / Server Action`：只处理入口层逻辑
+- `Service`：承载业务规则、权限校验、事务编排
+- `Repository`：承载数据库访问与查询拼装
+- `Prisma / Integrations`：承载具体技术实现
+
+### Route Handler 规则
+- 文件位置：`app/api/**/route.ts`
+- 只负责处理 HTTP method、参数解析、鉴权、响应码和响应结构
+- 不直接承载业务逻辑或复杂 Prisma 查询
+- 统一返回明确、稳定、可解析的 JSON 结构
+- 对外开放接口要显式处理 400 / 401 / 403 / 404 / 409 / 500 等状态
+
+### Server Action 规则
+- 文件位置建议：`src/server/actions/` 或贴近业务域组织
+- 适用于表单提交、状态切换、审核操作、增删改等同站点交互
+- 必须在入口处完成鉴权和 Zod 校验
+- 调用服务层后，按需执行 `revalidatePath` / `revalidateTag`
+- 不要在 Action 中混杂大量 UI 拼装逻辑
+
+### Service 层规则
+- Service 方法命名使用业务语义，如 `createOrder`、`approveRequest`
+- 业务校验、权限判断、去重判断、状态流转、事务边界放在 Service 层
+- 返回明确的类型结果，不返回未约束的 `any`
+- 对外部系统调用进行必要的超时、失败与重试控制
+
+### Repository / Prisma 规则
+- Prisma Client 统一从 `src/server/db/` 或等价目录导出
+- Prisma 查询不得出现在页面组件、hooks 或浏览器端代码中
+- 复杂查询、分页、排序、条件拼装收敛到 Repository 层
+- 数据库字段命名使用 snake_case，应用层使用 camelCase
+- Schema 变更后必须同步 migration、seed、类型与文档
+
+### 鉴权与权限规则
+- 粗粒度页面保护可放在 `middleware.ts`
+- 细粒度业务权限必须在 Service 层再次校验
+- 会话、Cookie、Token、用户身份解析统一在服务端处理
+- 客户端只能消费鉴权结果，不负责任何安全边界的最终判定
+
+### 缓存与重验证规则
+- 使用 Next.js 原生缓存能力时，必须显式说明缓存策略
+- 写操作后必须根据影响范围执行重验证
+- 不允许“提交成功但页面不刷新”的伪完成状态
+- 对权限相关、实时性强的数据默认谨慎缓存
+
+### 异常处理规范
+- 自定义业务异常统一收敛到 `src/server/errors/` 或等价目录
+- 区分校验错误、权限错误、资源不存在、状态冲突、系统异常
+- Route Handler / Server Action 负责把业务异常转换为稳定响应
+- 禁止把原始数据库异常直接透传给页面
+
+### 第三方集成规范
+- 邮件、短信、对象存储、Webhook、支付等第三方能力统一放在 `src/server/integrations/`
+- 第三方密钥只允许从服务端环境变量读取
+- 所有第三方调用都必须具备错误处理与日志
+
+### 数据库迁移规则
+- 使用 Prisma Migrate 管理数据库结构变更
+- 迁移脚本必须进入版本控制
+- 禁止只改 `schema.prisma` 不生成 migration
+- 涉及回填、数据修复时，应补充脚本或 devlog 说明
+
+---
+
+## 测试规则
+
+### 总体要求
+- 影响行为的改动应优先补充或更新测试
+- 若本次改动未补测试，必须在最终说明中写明原因和风险
+- 测试应覆盖真实业务路径，而不是只验证静态渲染
+
+### 服务端测试
+- Service 测试：验证业务规则、权限校验、状态流转
+- Route Handler / Server Action 测试：验证输入、输出、状态码与异常分支
+- Repository 测试：验证查询条件、分页、排序、事务或数据库映射
+
+### 外部依赖与数据
+- 测试中不应真实调用第三方服务，统一使用 mock
+- 测试数据应最小化、可读、可重复执行
+- 不要让测试依赖本地人工状态
+
+### 无法执行测试时
+- 必须说明未执行的测试类型
+- 必须说明未执行原因
+- 必须说明潜在影响范围与风险
+
+---

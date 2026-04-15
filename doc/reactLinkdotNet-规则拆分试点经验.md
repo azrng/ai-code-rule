@@ -40,12 +40,24 @@
 - `dotnetCoreSingle`
 - `dotnetLayered`
 - `dotnetBlazor`
+- `dotnetConsole`
+- `nextFullstack`
+- `python`
+- `reactWailsExe`
+- `staticHtml`
+- `vueLinkdotNet`
+- `vueWailsExe`
+- `wpfExe`
 
 其中：
 
 - `reactLinkdotNet`、`dotnetBlazor` 这类存在明显“界面 / 服务 / 文档 / 基础设施”边界的模板，适合拆成 4 个或更多子规则
 - `dotnetCoreSingle`、`dotnetLayered` 这类后端主导模板，更适合拆成 `backend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`
 - `avaloniaExe` 这类桌面端模板，可以按 `ui-AGENTS.md`、`application-AGENTS.md`、`infrastructure-AGENTS.md`、`doc-AGENTS.md` 拆分
+- `wpfExe` 与 `avaloniaExe` 一样，适合沿用 `ui-AGENTS.md`、`application-AGENTS.md`、`infrastructure-AGENTS.md`、`doc-AGENTS.md` 的桌面端拆分方式
+- `nextFullstack`、`vueLinkdotNet`、`reactWailsExe`、`vueWailsExe` 这类同时具备界面与服务边界的模板，适合拆成 `frontend-AGENTS.md`、`backend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`
+- `python` 这类后端模板，适合拆成 `backend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`
+- `dotnetConsole`、`staticHtml` 这类关注面相对收敛的模板，不需要为了拆分而硬凑 4 个文件，可按 `application/frontend + doc` 的最小可用结构拆分
 
 ---
 
@@ -235,9 +247,13 @@
 如果后续要继续拆分新的模板，可以直接套用以下默认策略：
 
 - Web 前后端分离模板：`frontend-AGENTS.md` + `backend-AGENTS.md` + `doc-AGENTS.md` + `infra-AGENTS.md`
+- Next.js 全栈 / Wails 前后端协作模板：`frontend-AGENTS.md` + `backend-AGENTS.md` + `doc-AGENTS.md` + `infra-AGENTS.md`
 - 单体 Web API 模板：`backend-AGENTS.md` + `doc-AGENTS.md` + `infra-AGENTS.md`
 - 分层后端模板：`backend-AGENTS.md` + `doc-AGENTS.md` + `infra-AGENTS.md`
 - 桌面端模板：`ui-AGENTS.md` + `application-AGENTS.md` + `infrastructure-AGENTS.md` + `doc-AGENTS.md`
 - Blazor 一体化模板：`ui-AGENTS.md` + `backend-AGENTS.md` + `doc-AGENTS.md` + `infra-AGENTS.md`
+- Python 后端模板：`backend-AGENTS.md` + `doc-AGENTS.md` + `infra-AGENTS.md`
+- 控制台模板：`application-AGENTS.md` + `doc-AGENTS.md`
+- 纯静态页面模板：`frontend-AGENTS.md` + `doc-AGENTS.md`
 
 这份文档后续不再只代表 `reactLinkdotNet` 单个模板，而是作为当前这一轮规则拆分的通用经验基线。

@@ -7,10 +7,9 @@
 | 目录 | 项目类型 | 技术栈 |
 |------|----------|--------|
 | [dotnetConsole](dotnetConsole/) | .NET 控制台应用 | .NET 10 + System.CommandLine + Serilog + 依赖注入 |
-| [dotnetCore](dotnetCore/) | .NET 单层 API 后端 | .NET 10 + ASP.NET Core Web API + EF Core + Swagger |
+| [dotnetCoreSingle](dotnetCoreSingle/) | .NET 单层 API 后端 | .NET 10 + ASP.NET Core Web API + EF Core + Swagger |
 | [dotnetLayered](dotnetLayered/) | .NET 分层 API 后端 | .NET 10 + ASP.NET Core Web API（9 项目分层架构）+ EF Core |
 | [dotnetBlazor](dotnetBlazor/) | .NET Blazor 全栈 Web | .NET 10 + Blazor Server + BootstrapBlazor (Bootstrap 5) |
-| [frontBackend](frontBackend/) | 前后端分离 Web 应用 | Vue 3 + Element Plus + TypeScript + .NET Web API |
 | [vueLinkdotNet](vueLinkdotNet/) | Vue + .NET 前后端分离 | Vue 3 + Element Plus + TypeScript + .NET Web API（Clean Architecture） |
 | [reactLinkdotNet](reactLinkdotNet/) | React + .NET 前后端分离 | React 18 + Ant Design 5 + TypeScript + Zustand + .NET Web API（Clean Architecture） |
 | [nextFullstack](nextFullstack/) | Next.js 全栈 Web 应用 | Next.js (App Router) + React + TypeScript + Tailwind CSS + shadcn/ui |
@@ -28,6 +27,7 @@
 ```
 <规则目录>/
 ├── AGENTS.md            # 核心规则文档（所有 AI 代理的唯一规则来源）
+├── *-AGENTS.md          # 按作用域拆分的子规则文件（按需存在，如 frontend/backend/doc/infra/ui/application 等）
 ├── CLAUDE.md            # Claude 代理指针文件（内容：AGENTS.md）
 ├── GEMINI.md            # Gemini 代理指针文件（内容：AGENTS.md）
 ├── TASK.md              # 当前任务记录（活跃任务与少量最近完成任务）
@@ -38,6 +38,7 @@
 ### 各文件职责
 
 - **AGENTS.md** — 定义技术栈、项目结构、开发规则、测试规范、Git 提交规范、Docker 规范、任务管理机制、禁止事项等。是 AI 代理工作的唯一规则来源。
+- **`*-AGENTS.md`** — 按前端、后端、文档、基础设施、UI、应用层等作用域拆分的细则文件，命名统一为 `<scope>-AGENTS.md`。
 - **CLAUDE.md / GEMINI.md** — 指针文件，内容为 `AGENTS.md`，确保不同 AI 工具读取同一份规则。
 - **TASK.md** — 记录当前活跃任务与少量最近完成任务的最小记录，与规则文档分离。任务状态包括：`TODO`、`DOING`、`BLOCKED`、`REVIEW`、`DONE`。
 - **TaskHistory.md** — 归档历史 `DONE` 任务的最小记录，保留原任务 ID 与归档时间。
