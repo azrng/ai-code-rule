@@ -31,7 +31,10 @@
 ├── CLAUDE.md            # Claude 代理指针文件（内容：AGENTS.md）
 ├── GEMINI.md            # Gemini 代理指针文件（内容：AGENTS.md）
 ├── TASK.md              # 当前任务记录（活跃任务与少量最近完成任务）
-├── TaskHistory.md       # 历史任务归档（已完成任务）
+├── TaskHistory.md       # 兼容提示文件（提示主归档迁移到 doc/task-archive/）
+├── doc/
+│   ├── task-archive/    # 按月归档较早的 DONE 任务
+│   └── devlog/          # 开发记录目录
 └── design-system.yaml   # 设计系统文件（视觉 Token 与 UI 规范，部分目录包含）
 ```
 
@@ -40,8 +43,9 @@
 - **AGENTS.md** — 定义技术栈、项目结构、开发规则、测试规范、Git 提交规范、Docker 规范、任务管理机制、禁止事项等。是 AI 代理工作的唯一规则来源。
 - **`*-AGENTS.md`** — 按前端、后端、文档、基础设施、UI、应用层等作用域拆分的细则文件，命名统一为 `<scope>-AGENTS.md`。
 - **CLAUDE.md / GEMINI.md** — 指针文件，内容为 `AGENTS.md`，确保不同 AI 工具读取同一份规则。
-- **TASK.md** — 记录当前活跃任务与少量最近完成任务的最小记录，与规则文档分离。任务状态包括：`TODO`、`DOING`、`BLOCKED`、`REVIEW`、`DONE`。
-- **TaskHistory.md** — 归档历史 `DONE` 任务的最小记录，保留原任务 ID 与归档时间。
+- **TASK.md** — 记录当前仍需关注的任务与最近少量已完成任务，任务状态包括：`TODO`、`DOING`、`BLOCKED`、`REVIEW`、`DONE`。
+- **TaskHistory.md** — 兼容提示文件，说明主归档已迁移到 `doc/task-archive/YYYY-MM.md`。
+- **doc/task-archive/** — 按月归档较早的 `DONE` 任务，避免 `TASK.md` 持续膨胀。
 - **design-system.yaml** — 定义颜色、排版、间距、组件规范等视觉 Token，是 UI 开发的唯一设计依据（部分目录包含此文件）。
 
 ## 使用方式
@@ -49,7 +53,7 @@
 1. 根据项目技术栈选择对应的规则目录
 2. 将规则目录中的文件复制到项目根目录
 3. AI 代理启动后会自动读取 `CLAUDE.md` / `GEMINI.md`，进而加载 `AGENTS.md` 中的规则
-4. 开发过程中通过 `TASK.md` 追踪当前任务，并通过 `TaskHistory.md` 保留历史已完成任务
+4. 开发过程中通过 `TASK.md` 追踪当前任务，通过 `doc/task-archive/` 按月归档较早的 `DONE` 任务
 
 ## 共同规则
 

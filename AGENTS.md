@@ -5,7 +5,7 @@
 本仓库用于沉淀和维护不同技术架构下的 AI 协作开发规则模板。
 
 - 每个一级目录代表一种可独立复制出去使用的项目架构模板
-- 每个架构目录内通常包含 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`TASK.md`、`TaskHistory.md`，并会按需要补充 `frontend-AGENTS.md`、`backend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`、`ui-AGENTS.md`、`application-AGENTS.md`、`infrastructure-AGENTS.md` 等子规则文件；部分目录还包含 `design-system.yaml`
+- 每个架构目录内通常包含 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`TASK.md`、`TaskHistory.md`，并会按需要补充 `frontend-AGENTS.md`、`backend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`、`ui-AGENTS.md`、`application-AGENTS.md`、`infrastructure-AGENTS.md` 等子规则文件；迁移到轻量化入口后，较早的 `DONE` 任务归档统一放在模板目录内的 `doc/task-archive/`，`TaskHistory.md` 仅保留兼容提示；部分目录还包含 `design-system.yaml`
 - 通用执行约束需在各架构模板间保持一致；Windows / PowerShell 场景下统一禁止使用 `&&` 链式命令
 - 通用注释口径需在各架构模板间保持一致：如果编写注释（含代码注释、文档注释、XML 注释、Go doc 注释等），统一使用中文，不使用纯英文注释
 - 通用拆分口径需在各架构模板间保持一致：单个类、页面、组件、页面基类应保持职责单一，避免巨型文件和巨型类。发现文件持续膨胀、单类职责过多、阅读成本明显升高时，必须优先拆分为更小的组件、服务、辅助类或局部模块。禁止编写超大页面基类、超大工具类、超大 Service 类，禁止把多个无关职责长期堆在同一个类中。

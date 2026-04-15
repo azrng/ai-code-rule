@@ -7,7 +7,7 @@
 - `doc-AGENTS.md`：需求记录、devlog 与文档维护规则
 - `CLAUDE.md` / `GEMINI.md`：各 Agent 的入口说明文件，仅负责提醒先读取 `AGENTS.md`，不维护平行规则内容
 - `TASK.md`：当前活跃任务与少量最近完成任务的最小记录
-- `TaskHistory.md`：归档历史 `DONE` 任务的最小记录
+- `TaskHistory.md`：兼容提示文件，提示主归档已迁移到 `doc/task-archive/`
 
 ---
 
@@ -122,7 +122,7 @@
 ---
 
 ## 任务管理机制
-`TASK.md` 与 `TaskHistory.md` 共同组成任务记录文件：`TASK.md` 只维护活跃任务与少量最近完成任务的最小记录，`TaskHistory.md` 用于归档历史 `DONE` 任务，两者均不负责承载规则解释。
+`TASK.md` 与 `doc/task-archive/` 共同组成任务记录体系：`TASK.md` 只维护当前仍需关注的任务与少量最近完成任务的最小记录，较早的 `DONE` 任务按月归档到 `doc/task-archive/YYYY-MM.md`；`TaskHistory.md` 仅保留兼容提示，不再作为主归档文件。
 
 ### 任务状态
 - `TODO`：未开始
@@ -139,10 +139,10 @@
 5. 若任务无法继续，更新为 `BLOCKED` 并写明原因。
 6. 开发完成但仍需确认时，更新为 `REVIEW`。
 7. 验证完成并确认交付后，更新为 `DONE`。
-8. 当 `TASK.md` 中任务总数超过 30 条时，将最早完成的 `DONE` 任务迁移到 `TaskHistory.md`，直到 `TASK.md` 中任务数回落到 20 条以内。
+8. 当 `TASK.md` 中任务总数超过 20 条，或 `DONE` 任务超过 10 条时，将较早完成的 `DONE` 任务迁移到对应月份的 `doc/task-archive/YYYY-MM.md`。
 9. 归档时仅允许迁移 `DONE` 任务，`TODO`、`DOING`、`BLOCKED`、`REVIEW` 任务必须保留在 `TASK.md`。
-10. 归档任务时保留原任务 ID、任务信息与最近更新时间，并在 `TaskHistory.md` 中补充归档时间。
-11. 发生任务归档时，在 `doc/devlog/` 中补充一份简短归档说明，记录迁移范围与触发原因。
+10. 归档任务时保留原任务 ID、任务信息与最近更新时间，并在归档文件中补充 `归档日期`。
+11. `TaskHistory.md` 仅保留兼容提示；发生任务归档时，在 `doc/devlog/` 中补充一份简短归档说明，记录迁移范围与触发原因。
 
 ### 每个任务至少包含
 - 任务 ID
@@ -157,7 +157,7 @@
 ### AI Agent 要求
 - 开始任务前先同步任务状态。
 - 开发过程中及时更新 `TASK.md`。
-- 触发归档阈值时同步维护 `TaskHistory.md`。
+- 触发归档阈值时同步维护 `doc/task-archive/`，并确认 `TaskHistory.md` 的兼容提示仍然有效。
 - 范围变化时同步补充任务说明、验收标准和风险。
 - 每次开发完成后，都需要在 `doc/devlog/` 下新增一份本次开发简短说明的 Markdown 记录。
 ---
