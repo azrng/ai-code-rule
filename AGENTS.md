@@ -6,6 +6,7 @@
 
 - 每个一级目录代表一种可独立复制出去使用的项目架构模板
 - 每个架构目录内通常包含 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`TASK.md`、`TaskHistory.md`，部分目录还包含 `design-system.yaml`
+- 通用执行约束需在各架构模板间保持一致；Windows / PowerShell 场景下统一禁止使用 `&&` 链式命令
 - 后续新项目会按所选架构，从对应目录复制规则文件到目标项目中使用
 
 
