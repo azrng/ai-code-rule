@@ -2,8 +2,19 @@
 
 ## 适用范围
 
-- 作用域：Next.js Route Handlers、Server Actions、Prisma 与服务端测试规则
-- 触发场景：涉及后端接口、服务逻辑、数据访问、缓存、异常处理时阅读
+- 作用域：Route Handlers、Server Actions、Service、Repository、Prisma、缓存、鉴权与服务端测试
+- 触发场景：涉及服务端逻辑、数据库、缓存、权限、异常处理时阅读
+
+### 阅读摘要
+- 建议阅读：改接口、改 Server Action、改 Service、改 Repository、改 Prisma、改鉴权与服务端测试
+- 可先跳过：纯页面样式、纯文档整理、仅 Docker 或端口调整
+- 优先查看：`阶段 2`、`服务端规则`、`测试规则`
+
+### 常见任务入口
+- 改接口响应或状态码：先看 `Route Handler 规则`、`异常处理规范`
+- 改表单提交或状态切换：先看 `Server Action 规则`、`缓存与重验证规则`
+- 改业务逻辑或权限：先看 `Service 层规则`、`鉴权与权限规则`
+- 改查询、分页、Prisma：先看 `Repository / Prisma 规则`、`提交前最小回归`
 
 ---
 
@@ -16,33 +27,28 @@
 - PostgreSQL
 - Zod（入参与出参校验）
 
-### 测试
-- Vitest + Testing Library（单元 / 组件测试）
-- Playwright（端到端 / smoke test）
+如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
 
 ---
 
-### 阶段 2 — 服务端与数据实现（Codex 主导）
-**触发条件**：用户发出“开始后端开发”或等价指令  
+## 阶段 2 — 服务端与数据实现
+
+**触发条件**：用户发出“开始后端开发”或等价指令
+
 **入场要求**：页面结构已完成，schema 与契约清晰
 
 **工作内容**：
-1. 按 `Route Handler / Server Action -> Service -> Repository -> Prisma` 分层实现服务端能力
-2. 根据需求维护 Prisma schema、迁移脚本、种子数据与数据库约束
-3. 完成认证、鉴权、日志、缓存、分页、筛选、排序等服务端逻辑
-4. 每个核心能力都必须可通过页面、接口工具或测试独立验证
-
-**字段命名约定**：
-- TypeScript 类型与对象属性：camelCase
-- 路由参数与查询参数：camelCase
-- 数据库字段：snake_case（通过 Prisma `@map` / `@@map` 做映射）
+1. 按 `Route Handler / Server Action -> Service -> Repository -> Prisma` 分层实现服务端能力。
+2. 根据需求维护 Prisma schema、迁移脚本、种子数据与数据库约束。
+3. 完成认证、鉴权、日志、缓存、分页、筛选、排序等服务端逻辑。
+4. 每个核心能力都必须可通过页面、接口工具或测试独立验证。
 
 **门控规则**：
-- 核心服务与接口独立验证通过后，才允许进入阶段 3
+- 核心服务与接口独立验证通过后，才允许进入阶段 3。
 
 ---
 
-## 服务端规则（Next.js Fullstack）
+## 服务端规则
 
 ### 分层依赖规则
 ```text
@@ -54,11 +60,6 @@ Route Handler / Server Action
               ↓
  Prisma / External Service
 ```
-
-- `Route Handler / Server Action`：只处理入口层逻辑
-- `Service`：承载业务规则、权限校验、事务编排
-- `Repository`：承载数据库访问与查询拼装
-- `Prisma / Integrations`：承载具体技术实现
 
 ### Route Handler 规则
 - 文件位置：`app/api/**/route.ts`
@@ -110,20 +111,16 @@ Route Handler / Server Action
 - 第三方密钥只允许从服务端环境变量读取
 - 所有第三方调用都必须具备错误处理与日志
 
-### 数据库迁移规则
-- 使用 Prisma Migrate 管理数据库结构变更
-- 迁移脚本必须进入版本控制
-- 禁止只改 `schema.prisma` 不生成 migration
-- 涉及回填、数据修复时，应补充脚本或 devlog 说明
-
 ---
 
 ## 测试规则
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务路径，而不是只验证静态渲染
+### 提交前最小回归
+- 默认执行：`lint`、`typecheck`
+- Service 改动：至少补一项业务规则、权限判断或状态流转验证
+- Route Handler / Server Action 改动：至少补一项输入输出、状态码或异常分支验证
+- Repository / Prisma 改动：至少补一项查询结果、分页排序、事务或 migration 同步验证
+- 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调或脚本验证替代，但必须能证明核心逻辑真实生效
 
 ### 服务端测试
 - Service 测试：验证业务规则、权限校验、状态流转
@@ -141,3 +138,5 @@ Route Handler / Server Action
 - 必须说明潜在影响范围与风险
 
 ---
+
+文件结束。
