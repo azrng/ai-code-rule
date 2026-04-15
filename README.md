@@ -1,70 +1,69 @@
 # AI Code Rule
 
-为不同技术栈的项目提供统一的 AI 代理开发规范。每个目录对应一种项目类型，包含完整的规则文件、设计系统和任务管理机制。
+用于沉淀和维护不同技术架构下的 AI 协作开发规则模板。每个一级目录都可以独立复制到目标项目中使用。
 
-## 规则目录一览
+## 当前统一标准
 
-| 目录 | 项目类型 | 技术栈 |
-|------|----------|--------|
-| [dotnetConsole](dotnetConsole/) | .NET 控制台应用 | .NET 10 + System.CommandLine + Serilog + 依赖注入 |
-| [dotnetCoreSingle](dotnetCoreSingle/) | .NET 单层 API 后端 | .NET 10 + ASP.NET Core Web API + EF Core + Swagger |
-| [dotnetLayered](dotnetLayered/) | .NET 分层 API 后端 | .NET 10 + ASP.NET Core Web API（9 项目分层架构）+ EF Core |
-| [dotnetBlazor](dotnetBlazor/) | .NET Blazor 全栈 Web | .NET 10 + Blazor Server + BootstrapBlazor (Bootstrap 5) |
-| [vueLinkdotNet](vueLinkdotNet/) | Vue + .NET 前后端分离 | Vue 3 + Element Plus + TypeScript + .NET Web API（Clean Architecture） |
-| [reactLinkdotNet](reactLinkdotNet/) | React + .NET 前后端分离 | React 18 + Ant Design 5 + TypeScript + Zustand + .NET Web API（Clean Architecture） |
-| [nextFullstack](nextFullstack/) | Next.js 全栈 Web 应用 | Next.js (App Router) + React + TypeScript + Tailwind CSS + shadcn/ui |
-| [python](python/) | Python API 后端 | Python 3.12+ + FastAPI + Pydantic V2 + SQLAlchemy 2.0 (async) |
-| [wpfExe](wpfExe/) | WPF Windows 桌面应用 | .NET 10 + WPF + WPF UI + CommunityToolkit.Mvvm + Dapper/SQLite |
-| [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | .NET 10 + Avalonia 11 + Ursa.Avalonia + CommunityToolkit.Mvvm + Dapper/SQLite |
-| [vueWailsExe](vueWailsExe/) | Wails 桌面应用（Vue） | Vue 3 + Element Plus + Go/Wails |
-| [reactWailsExe](reactWailsExe/) | Wails 桌面应用（React） | React 18 + Ant Design 5 + Zustand + Go/Wails |
-| [staticHtml](staticHtml/) | 纯静态页面 | HTML5 + Bootstrap 5 + Chart.js + Vanilla JS (ES6+) |
+`nextFullstack` 目前是仓库内最先完成“轻量入口 + 按需子规则 + 月度归档机制”升级的标准模板，其它模板已按同一口径同步：
 
-## 文件结构说明
+- 根 `AGENTS.md` 只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航
+- 高频子规则优先补齐 `阅读摘要`、`常见任务入口`、`提交前最小回归`
+- `TASK.md` 只维护活动任务与最近少量 `DONE` 任务
+- 较早的 `DONE` 任务统一归档到 `doc/task-archive/YYYY-MM.md`
+- `TaskHistory.md` 仅保留兼容提示，不再作为主归档文件
 
-每个规则目录遵循统一的文件组织模式：
+## 模板目录一览
 
-```
-<规则目录>/
-├── AGENTS.md            # 核心规则文档（所有 AI 代理的唯一规则来源）
-├── *-AGENTS.md          # 按作用域拆分的子规则文件（按需存在，如 frontend/backend/doc/infra/ui/application 等）
-├── CLAUDE.md            # Claude 代理指针文件（内容：AGENTS.md）
-├── GEMINI.md            # Gemini 代理指针文件（内容：AGENTS.md）
-├── TASK.md              # 当前任务记录（活跃任务与少量最近完成任务）
-├── TaskHistory.md       # 兼容提示文件（提示主归档迁移到 doc/task-archive/）
+| 目录 | 项目类型 | 典型子规则 |
+| --- | --- | --- |
+| [dotnetConsole](dotnetConsole/) | .NET 控制台应用 | `application` / `doc` |
+| [dotnetCoreSingle](dotnetCoreSingle/) | .NET 单层 API 后端 | `backend` / `doc` / `infra` |
+| [dotnetLayered](dotnetLayered/) | .NET 分层 API 后端 | `backend` / `doc` / `infra` |
+| [dotnetBlazor](dotnetBlazor/) | .NET Blazor 全栈 Web | `ui` / `backend` / `doc` / `infra` |
+| [vueLinkdotNet](vueLinkdotNet/) | Vue + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` |
+| [reactLinkdotNet](reactLinkdotNet/) | React + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` |
+| [nextFullstack](nextFullstack/) | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` |
+| [python](python/) | Python API 后端 | `backend` / `doc` / `infra` |
+| [wpfExe](wpfExe/) | WPF Windows 桌面应用 | `ui` / `application` / `infrastructure` / `doc` |
+| [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` |
+| [vueWailsExe](vueWailsExe/) | Wails 桌面应用（Vue） | `frontend` / `backend` / `doc` / `infra` |
+| [reactWailsExe](reactWailsExe/) | Wails 桌面应用（React） | `frontend` / `backend` / `doc` / `infra` |
+| [staticHtml](staticHtml/) | 纯静态页面 | `frontend` / `doc` |
+
+## 统一文件结构
+
+每个模板目录都遵循“根入口 + 子规则 + 任务主表 + 月度归档”的组织方式：
+
+```text
+<模板目录>/
+├── AGENTS.md            # 轻量入口：全局规则、阶段门控、任务机制、子规则导航
+├── *-AGENTS.md          # 按作用域拆分的子规则文件，如 frontend / backend / doc / infra / ui / application
+├── CLAUDE.md            # 指针文件：只提醒先读 AGENTS.md
+├── GEMINI.md            # 指针文件：只提醒先读 AGENTS.md
+├── TASK.md              # 活动任务主表，仅保留当前任务与最近少量 DONE
+├── TaskHistory.md       # 兼容提示文件，说明主归档已迁移到 doc/task-archive/
 ├── doc/
-│   ├── task-archive/    # 按月归档较早的 DONE 任务
-│   └── devlog/          # 开发记录目录
-└── design-system.yaml   # 设计系统文件（视觉 Token 与 UI 规范，部分目录包含）
+│   ├── devlog/          # 每次规则或开发改动后的简短记录
+│   └── task-archive/    # 按月归档较早的 DONE 任务
+└── design-system.yaml   # 设计系统文件，按模板需要存在
 ```
-
-### 各文件职责
-
-- **AGENTS.md** — 定义技术栈、项目结构、开发规则、测试规范、Git 提交规范、Docker 规范、任务管理机制、禁止事项等。是 AI 代理工作的唯一规则来源。
-- **`*-AGENTS.md`** — 按前端、后端、文档、基础设施、UI、应用层等作用域拆分的细则文件，命名统一为 `<scope>-AGENTS.md`。
-- **CLAUDE.md / GEMINI.md** — 指针文件，内容为 `AGENTS.md`，确保不同 AI 工具读取同一份规则。
-- **TASK.md** — 记录当前仍需关注的任务与最近少量已完成任务，任务状态包括：`TODO`、`DOING`、`BLOCKED`、`REVIEW`、`DONE`。
-- **TaskHistory.md** — 兼容提示文件，说明主归档已迁移到 `doc/task-archive/YYYY-MM.md`。
-- **doc/task-archive/** — 按月归档较早的 `DONE` 任务，避免 `TASK.md` 持续膨胀。
-- **design-system.yaml** — 定义颜色、排版、间距、组件规范等视觉 Token，是 UI 开发的唯一设计依据（部分目录包含此文件）。
 
 ## 使用方式
 
-1. 根据项目技术栈选择对应的规则目录
-2. 将规则目录中的文件复制到项目根目录
-3. AI 代理启动后会自动读取 `CLAUDE.md` / `GEMINI.md`，进而加载 `AGENTS.md` 中的规则
-4. 开发过程中通过 `TASK.md` 追踪当前任务，通过 `doc/task-archive/` 按月归档较早的 `DONE` 任务
+1. 根据项目技术栈选择对应模板目录。
+2. 将该目录中的规则文件复制到目标项目根目录。
+3. 开始协作时先读根 `AGENTS.md`，再根据任务命中对应子规则，不默认预读全部文件。
+4. 开发过程中通过 `TASK.md` 维护活动任务，通过 `doc/task-archive/` 按月归档较早的 `DONE` 任务。
 
 ## 共同规则
 
-所有规则目录共享以下核心原则：
+所有模板共享以下基础约束：
 
-- **先理解，再修改** — 不盲目动手，先理解业务逻辑和现有代码
-- **先复用，再新增** — 优先复用已有组件和模式，避免重复创建
-- **交付必须可直接使用** — 不能只停留在演示层，所有交互必须真实生效
-- **不做无关重构** — 不做与当前任务无关的代码改动
-- **不要猜测问题，要实证排查** — 遇到问题时通过日志、断点、数据等实际证据定位原因，禁止凭猜测修改代码
-- **如果编写注释则统一使用中文** — 包含代码注释、文档注释和框架要求的注释，不使用纯英文注释；必要的英文标识或关键字可保留原文
-- **类、页面、组件要避免膨胀** — 单个类、页面、组件、页面基类应保持职责单一，避免巨型文件和巨型类；发现职责过多或阅读成本明显升高时，必须优先拆分
-- **PowerShell 命令禁止使用 `&&`** — Windows / PowerShell 场景不接受 `&&`，需要连续执行时请拆分为多条命令或改用兼容写法
-- **每次改动后必须提交** — 通过 Git 追踪所有变更
+- 先理解，再修改；不要基于猜测直接改代码或规则
+- 先复用，再新增；避免无关重构和重复体系
+- 交付必须真实可用；涉及新增、修改、删除的业务逻辑不能停留在伪交互层面
+- 能验证的地方优先验证；无法验证时必须说明原因、影响与建议下一步
+- 如果编写注释，统一使用中文
+- 单个类、页面、组件、页面基类应保持职责单一，避免持续膨胀
+- Windows / PowerShell 场景下禁止使用 `&&` 链式命令
+- 修改规则模板后，必须在根目录 `doc/devlog/` 下新增一份简短变更记录
