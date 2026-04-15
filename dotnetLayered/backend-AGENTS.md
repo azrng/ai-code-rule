@@ -243,7 +243,7 @@ IDomain（领域接口）──依赖──▶ Core
 - 服务注册：`services.AddDefaultSwaggerGen(title: "项目名称", showJwtToken: true)`。
 - 中间件启用：`app.UseDefaultSwagger(onlyDevelopmentEnabled: true)`。
 - 项目必须启用 XML 文档生成：`<GenerateDocumentationFile>true</GenerateDocumentationFile>`。
-- Controller 和公开方法必须添加 XML 注释，Swagger 会自动展示。
+- Controller 和公开方法必须添加 XML 注释，Swagger 会自动展示；XML 注释内容统一使用中文。
 - 接口需通过 Swagger UI 独立验证，确保请求 / 响应结构正确。
 
 ### 数据库迁移规则

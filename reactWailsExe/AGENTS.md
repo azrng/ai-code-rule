@@ -284,6 +284,7 @@ project-root/
 - 禁止使用可能隐式改变编码的方式直接改写源码文件，如 shell 重定向、`Out-File`、`Set-Content`。
 - Windows / PowerShell 下读取中文文件时，必须显式使用 `UTF-8`。
 - PowerShell 命令不接受 `&&`，禁止使用；需要连续执行时改为分步执行或使用 PowerShell 兼容写法。
+- 如果编写注释（含代码注释、文档注释、Go doc 注释等），统一使用中文，不使用纯英文注释；必要的英文标识、协议字段名或框架关键字可保留原文。
 - 修改含中文内容后，必须重新读取一次并确认关键中文显示正常。
 ---
 
@@ -389,7 +390,7 @@ Handler → Service → Repository → Model
 - 所有查询必须使用参数化查询（GORM 自动处理）
 
 ### Wails 绑定规则
-- 暴露给前端的方法必须有 Go doc 注释
+- 暴露给前端的方法必须有 Go doc 注释，注释内容统一使用中文
 - 方法签名变更后必须运行 `wails generate module`
 - 前端 `src/bindings/` 目录下的文件由 Wails 自动生成，禁止手动修改
 - 方法参数不支持 chan、func、unsafe.Pointer 等类型
