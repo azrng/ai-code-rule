@@ -1,3 +1,10 @@
+---
+rule_id: ui-agents
+version: 1.2.0
+last_updated: 2026-04-16
+dependencies: [agents-root]
+---
+
 # AGENTS.md
 
 ## 适用范围
@@ -55,6 +62,19 @@
 - Wpf.Ui 内置 Fluent 主题，在此基础上扩展自定义样式
 
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+
+**技术债务评估框架**：
+- **沿用现有实现**：代码可正常运行、无明显性能问题、维护成本可接受、团队熟悉度高
+- **必须重构**：存在安全漏洞、严重影响性能、阻碍新功能开发、维护成本过高
+- **可选重构**：代码风格不一致、存在更好的替代方案、但不紧急
+- **禁止重构**：仅为个人偏好、追赶技术潮流、非关键路径的过度优化
+
+**重构决策流程**：
+1. 先评估现有代码的技术债务等级（高 / 中 / 低）。
+2. 判断重构的紧急程度和业务价值。
+3. 评估重构风险和工作量。
+4. 高风险或大规模重构需先与团队确认。
+
 
 ---
 
@@ -157,7 +177,7 @@ project-root/
 - 优先使用 Wpf.Ui 控件（ui:Button、ui:TextBox、ui:DataGrid 等），必要时使用 WPF 原生控件
 
 ### MVVM 模式规则
-- **ViewModel 基类**：所有 ViewModel 必须继承 `ObservableObject` (CommunityToolkit.Mvvm)
+- **ViewModel 基类**：所有 ViewModel 最终都必须继承 `ObservableObject`（CommunityToolkit.Mvvm）；若项目已有 `BaseViewModel`，应由基类继承 `ObservableObject` 后统一复用
 - **属性通知**：使用 `[ObservableProperty]` 特性自动生成 INotifyPropertyChanged
 - **命令定义**：使用 `[RelayCommand]` 特性生成 ICommand，禁止手动创建 RelayCommand
 - **消息传递**：ViewModel 间通信使用 `IMessenger` (CommunityToolkit.Mvvm)

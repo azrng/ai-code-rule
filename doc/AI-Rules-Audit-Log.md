@@ -30,6 +30,17 @@
 | `nextFullstack` | `已完成` | 完成首次全面审查与修复 |
 | `avaloniaExe` | `已完成` | 已完成首轮审查与规则修复 |
 | `dotnetLayered` | `已完成` | 已完成首轮审查与规则修复 |
+| `dotnetBlazor` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `dotnetConsole` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `dotnetCoreSingle` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `python` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `reactLinkdotNet` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `reactTauriExe` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `reactWailsExe` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `vueLinkdotNet` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `vueWailsExe` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `wpfExe` | `已完成` | 已完成第二批全面审查与规则修复 |
+| `staticHtml` | `已完成` | 已完成第二批全面审查与规则修复 |
 
 ### `nextFullstack`
 
@@ -138,6 +149,65 @@
 #### 当前子任务状态
 - `已完成`
 
+### 第二批未审查模板
+
+#### 修改时间
+- 2026-04-16 14:25
+
+#### 修改文件夹
+- `dotnetBlazor`
+- `dotnetConsole`
+- `dotnetCoreSingle`
+- `python`
+- `reactLinkdotNet`
+- `reactTauriExe`
+- `reactWailsExe`
+- `vueLinkdotNet`
+- `vueWailsExe`
+- `wpfExe`
+- `staticHtml`
+
+#### 审查范围
+- **审查文件**：各目录根 `AGENTS.md`、所有 `*-AGENTS.md` 子规则、`CLAUDE.md`、`GEMINI.md`
+- **审查重点**：结构解析失败风险、阶段门控逻辑矛盾、模糊指令量化、技术债务决策框架缺失
+- **审查方法**：对照 `nextFullstack`、`avaloniaExe`、`dotnetLayered` 已完成审查口径，按模板类型分组搜索旧表述并批量修复
+
+#### 发现的问题
+1. **结构解析失败风险**：第二批目录中的规则入口、子规则和入口提示文件普遍缺少 YAML front matter，缺少 `rule_id`、`version`、`last_updated`、`dependencies` 元数据。
+2. **模糊指令问题**：根 `AGENTS.md` 中缺少“简单问题”“单点低风险改动”“微小调整”“高风险内容”“BLOCKED”“REVIEW”等判断标准定义，任务状态缺少触发条件。
+3. **逻辑矛盾问题**：多个根 `AGENTS.md` 仍同时保留“新功能默认按以上阶段推进，不满足入场条件不得跳阶段”和“可跳过阶段 0 的情况”，例外条件表达不一致。
+4. **决策框架缺失**：多个前端、后端、应用层、基础设施子规则缺少统一技术债务评估框架，容易把“沿用现状”和“需要重构”混为个人偏好判断。
+5. **逻辑歧义问题**：`wpfExe/ui-AGENTS.md` 的 ViewModel 基类要求未明确允许通过公共基类间接继承 `ObservableObject`。
+
+#### 修复的问题
+1. **结构解析失败风险**：为第二批目录中根规则、子规则、`CLAUDE.md`、`GEMINI.md` 统一补充 YAML front matter，并将 `version` 更新为 `1.2.0`、`last_updated` 更新为 `2026-04-16`。
+2. **模糊指令问题**：在根 `AGENTS.md` 中补充判断标准定义、任务状态触发条件，并同步补齐提交触发规则。
+3. **逻辑矛盾问题**：将阶段门控统一改为“新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0”，并补充“除上述场景外，各阶段必须满足入场条件后方可进入下一阶段”。
+4. **决策框架缺失**：为非文档类实现子规则统一补充技术选择原则、技术债务评估框架与重构决策流程。
+5. **逻辑歧义问题**：在 `wpfExe/ui-AGENTS.md` 中明确 ViewModel 可通过 `BaseViewModel` 间接继承 `ObservableObject`。
+
+#### 修改的文件
+- `dotnetBlazor/AGENTS.md`、`dotnetBlazor/ui-AGENTS.md`、`dotnetBlazor/backend-AGENTS.md`、`dotnetBlazor/infra-AGENTS.md`、`dotnetBlazor/doc-AGENTS.md`、`dotnetBlazor/CLAUDE.md`、`dotnetBlazor/GEMINI.md`
+- `dotnetConsole/AGENTS.md`、`dotnetConsole/application-AGENTS.md`、`dotnetConsole/doc-AGENTS.md`、`dotnetConsole/CLAUDE.md`、`dotnetConsole/GEMINI.md`
+- `dotnetCoreSingle/AGENTS.md`、`dotnetCoreSingle/backend-AGENTS.md`、`dotnetCoreSingle/infra-AGENTS.md`、`dotnetCoreSingle/doc-AGENTS.md`、`dotnetCoreSingle/CLAUDE.md`、`dotnetCoreSingle/GEMINI.md`
+- `python/AGENTS.md`、`python/backend-AGENTS.md`、`python/infra-AGENTS.md`、`python/doc-AGENTS.md`、`python/CLAUDE.md`、`python/GEMINI.md`
+- `reactLinkdotNet/AGENTS.md`、`reactLinkdotNet/frontend-AGENTS.md`、`reactLinkdotNet/backend-AGENTS.md`、`reactLinkdotNet/infra-AGENTS.md`、`reactLinkdotNet/doc-AGENTS.md`、`reactLinkdotNet/CLAUDE.md`、`reactLinkdotNet/GEMINI.md`
+- `reactTauriExe/AGENTS.md`、`reactTauriExe/frontend-AGENTS.md`、`reactTauriExe/backend-AGENTS.md`、`reactTauriExe/infra-AGENTS.md`、`reactTauriExe/doc-AGENTS.md`、`reactTauriExe/CLAUDE.md`、`reactTauriExe/GEMINI.md`
+- `reactWailsExe/AGENTS.md`、`reactWailsExe/frontend-AGENTS.md`、`reactWailsExe/backend-AGENTS.md`、`reactWailsExe/infra-AGENTS.md`、`reactWailsExe/doc-AGENTS.md`、`reactWailsExe/CLAUDE.md`、`reactWailsExe/GEMINI.md`
+- `vueLinkdotNet/AGENTS.md`、`vueLinkdotNet/frontend-AGENTS.md`、`vueLinkdotNet/backend-AGENTS.md`、`vueLinkdotNet/infra-AGENTS.md`、`vueLinkdotNet/doc-AGENTS.md`、`vueLinkdotNet/CLAUDE.md`、`vueLinkdotNet/GEMINI.md`
+- `vueWailsExe/AGENTS.md`、`vueWailsExe/frontend-AGENTS.md`、`vueWailsExe/backend-AGENTS.md`、`vueWailsExe/infra-AGENTS.md`、`vueWailsExe/doc-AGENTS.md`、`vueWailsExe/CLAUDE.md`、`vueWailsExe/GEMINI.md`
+- `wpfExe/AGENTS.md`、`wpfExe/ui-AGENTS.md`、`wpfExe/application-AGENTS.md`、`wpfExe/infrastructure-AGENTS.md`、`wpfExe/doc-AGENTS.md`、`wpfExe/CLAUDE.md`、`wpfExe/GEMINI.md`
+- `staticHtml/AGENTS.md`、`staticHtml/frontend-AGENTS.md`、`staticHtml/doc-AGENTS.md`、`staticHtml/CLAUDE.md`、`staticHtml/GEMINI.md`
+
+#### 验证情况
+- 已搜索确认第二批目录中不再残留“新功能默认按以上阶段推进”“不满足入场条件不得跳阶段”的旧矛盾表述。
+- 已搜索确认第二批目录根 `AGENTS.md` 均包含判断标准定义、任务状态触发条件和提交触发规则。
+- 已搜索确认第二批目录非文档类实现子规则均包含技术债务评估框架。
+- 已抽样回读 `dotnetBlazor/AGENTS.md`、`vueLinkdotNet/backend-AGENTS.md`、`wpfExe/application-AGENTS.md`、`dotnetBlazor/infra-AGENTS.md`，确认中文显示和章节结构正常。
+
+#### 当前子任务状态
+- `已完成`
+
 ---
 
 ## 2026-04-16：自动提交触发规则
@@ -147,7 +217,7 @@
 | 文件夹名称 | 当前子任务状态 | 备注 |
 |-----------|----------------|------|
 | `nextFullstack` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
-| `dotnetBlazor` | `已完成` | 已补充自动提交触发规则；模板整体仍待全面审查 |
+| `dotnetBlazor` | `已完成` | 已补充自动提交触发规则；全面审查已在同日后续任务完成 |
 | `dotnetLayered` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
 | `avaloniaExe` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
 

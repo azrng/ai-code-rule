@@ -1,3 +1,10 @@
+---
+rule_id: doc-agents
+version: 1.2.0
+last_updated: 2026-04-16
+dependencies: [agents-root]
+---
+
 # AGENTS.md
 
 ## 适用范围
