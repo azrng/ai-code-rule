@@ -217,9 +217,19 @@
 | 文件夹名称 | 当前子任务状态 | 备注 |
 |-----------|----------------|------|
 | `nextFullstack` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
-| `dotnetBlazor` | `已完成` | 已补充自动提交触发规则；全面审查已在同日后续任务完成 |
 | `dotnetLayered` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
 | `avaloniaExe` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `dotnetBlazor` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `dotnetConsole` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `dotnetCoreSingle` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `python` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `reactLinkdotNet` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `reactTauriExe` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `reactWailsExe` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `vueLinkdotNet` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `vueWailsExe` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `wpfExe` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
+| `staticHtml` | `已完成` | 已补充自动提交触发规则并完成回读校验 |
 
 ### `nextFullstack`
 
@@ -292,6 +302,25 @@
 
 #### 验证情况
 - 已回读 `avaloniaExe/AGENTS.md`，确认中文显示、章节结构与新增规则位置正常。
+
+#### 当前子任务状态
+- `已完成`
+
+### 第二批同步目录
+
+#### 修改原因
+- `dotnetConsole`、`dotnetCoreSingle`、`python`、`reactLinkdotNet`、`reactTauriExe`、`reactWailsExe`、`vueLinkdotNet`、`vueWailsExe`、`wpfExe`、`staticHtml` 已在全面审查与修复中补齐自动提交触发规则，但本专题记录尚未同步列出，导致审计日志与实际规则文件状态不一致。
+
+#### 主要修改内容
+- 在上述 10 个模板根 `AGENTS.md` 中均补齐“提交触发规则”，明确“代码、配置或规则改动完成 + 完成本次所需验证 + `TASK.md` 对应任务状态更新为 `DONE`”后默认自动提交。
+- 在上述 10 个模板根 `AGENTS.md` 的“交付收口”中均补充“满足‘提交触发规则’时完成自动提交”，让交付闭环与 Commit 规范保持一致。
+
+#### 补充约束
+- 自动提交前必须确认 `doc/devlog/` 已补充，且提交信息符合当前模板的 `Commit 规范`。
+- 若验证未完成、任务状态未更新、存在明确阻塞，或用户明确要求暂不提交，则不得自动提交。
+
+#### 验证情况
+- 已搜索所有模板根 `AGENTS.md`，确认 `nextFullstack`、`avaloniaExe`、`dotnetBlazor`、`dotnetConsole`、`dotnetCoreSingle`、`dotnetLayered`、`python`、`reactLinkdotNet`、`reactTauriExe`、`reactWailsExe`、`vueLinkdotNet`、`vueWailsExe`、`wpfExe`、`staticHtml` 均包含“提交触发规则”和“满足‘提交触发规则’时完成自动提交”。
 
 #### 当前子任务状态
 - `已完成`
