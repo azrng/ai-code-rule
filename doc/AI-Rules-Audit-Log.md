@@ -17,7 +17,7 @@
 | `dotnetBlazor` | - | `未审查` | `0%` | 待安排审查 |
 | `dotnetConsole` | - | `未审查` | `0%` | 待安排审查 |
 | `dotnetCoreSingle` | - | `未审查` | `0%` | 待安排审查 |
-| `dotnetLayered` | - | `未审查` | `0%` | 待安排审查 |
+| `dotnetLayered` | `2026-04-16` | `已完成` | `100%` | 已完成首轮审查与规则修复 |
 | `python` | - | `未审查` | `0%` | 待安排审查 |
 | `reactLinkdotNet` | - | `未审查` | `0%` | 待安排审查 |
 | `reactTauriExe` | - | `未审查` | `0%` | 待安排审查 |
@@ -124,6 +124,53 @@
 
 ### 状态更新
 将状态跟踪表中 `avaloniaExe` 的状态更新为 `已完成`
+
+---
+
+## 2026-04-16：dotnetLayered 文件夹规则审查
+
+### 审查范围
+- **审查文件**：AGENTS.md、backend-AGENTS.md、doc-AGENTS.md、infra-AGENTS.md、CLAUDE.md、GEMINI.md
+- **审查重点**：逻辑矛盾、模糊指令、结构解析失败风险
+- **审查方法**：对照 `nextFullstack` 与 `avaloniaExe` 已修复口径，逐项检查元数据、阶段门控、量化标准与技术债务决策表述
+
+### 发现的问题
+1. **结构解析失败风险**：根规则、子规则与入口文件均未采用 YAML front matter，且多个文件仍以统一 H1 `# AGENTS.md` 起始，缺少 AI 解析所需的唯一标识、版本信息和依赖关系。
+2. **模糊指令问题**：根 `AGENTS.md` 中“简单问题”“单点低风险改动”“BLOCKED”“REVIEW”“高风险内容”等关键判断标准未量化，任务状态也只有枚举没有触发条件，容易导致不同 AI 执行口径漂移。
+3. **逻辑矛盾问题**：根 `AGENTS.md` 先写“新功能默认按以上阶段推进，不满足入场条件不得跳阶段”，随后又列出“可跳过阶段 0 的情况”，属于同一段落内的直接冲突，缺少统一的例外条件表达方式。
+4. **决策框架缺失**：`backend-AGENTS.md` 与 `infra-AGENTS.md` 只有“不要强行重构或替换技术栈”这类原则性表述，缺少统一的技术债务评估框架，难以在沿用、必须重构、可选重构、禁止重构之间做出一致判断。
+
+### 需修复的文件
+- `dotnetLayered/AGENTS.md`
+- `dotnetLayered/backend-AGENTS.md`
+- `dotnetLayered/doc-AGENTS.md`
+- `dotnetLayered/infra-AGENTS.md`
+- `dotnetLayered/CLAUDE.md`
+- `dotnetLayered/GEMINI.md`
+
+### 状态更新
+将状态跟踪表中 `dotnetLayered` 的状态更新为 `已审查待修复`
+
+---
+
+## 2026-04-16：dotnetLayered 文件夹规则修复
+
+### 修复的问题
+1. **结构解析失败风险**：为 `AGENTS.md`、`backend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 统一补充 YAML front matter，增加 `rule_id`、`version`、`last_updated`、`dependencies` 元数据。
+2. **模糊指令问题**：在根 `AGENTS.md` 中补充“简单问题”“单点低风险改动”“微小调整”“高风险内容”“BLOCKED”“REVIEW”等量化定义，并新增任务状态触发条件说明。
+3. **逻辑矛盾问题**：将阶段门控调整为“完整流程 + 可跳过阶段 0 的例外场景 + 例外约束条件”的一致表述。
+4. **决策框架缺失**：在 `backend-AGENTS.md` 与 `infra-AGENTS.md` 中统一补充技术债务评估框架与重构决策流程。
+
+### 修改的文件
+- `dotnetLayered/AGENTS.md`
+- `dotnetLayered/backend-AGENTS.md`
+- `dotnetLayered/doc-AGENTS.md`
+- `dotnetLayered/infra-AGENTS.md`
+- `dotnetLayered/CLAUDE.md`
+- `dotnetLayered/GEMINI.md`
+
+### 状态更新
+将状态跟踪表中 `dotnetLayered` 的状态更新为 `已完成`
 
 ---
 
