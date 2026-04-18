@@ -22,6 +22,7 @@
 | [vueLinkdotNet](vueLinkdotNet/) | Vue + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` | Vue 3 企业级 SPA、前后端团队独立开发、数据可视化运营后台、已有 .NET 后端重建 Vue 前端 |
 | [reactLinkdotNet](reactLinkdotNet/) | React + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` | React 18 企业应用、复杂表单/审批流系统、前后端团队独立开发、已有 .NET 后端选用 React 前端 |
 | [nextFullstack](nextFullstack/) | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | SaaS 平台、电商网站、SEO 敏感的公众网站、创业项目快速迭代、全栈一人搞定（仓库参考标准模板） |
+| [generalProject](generalProject/) | 通用项目协作模板 | `frontend` / `backend` / `doc` / `infra` | 尚未最终确定技术栈的新项目、需要先统一 AI 协作口径再细化实现方案的项目、希望尽量少预设框架约束的通用业务项目 |
 | [python](python/) | Python API 后端 | `backend` / `doc` / `infra` | AI/ML 模型推理服务、数据处理 API、与 .NET 配合的 Python 微服务、自动化运维接口、快速原型 API |
 | [wpfExe](wpfExe/) | WPF Windows 桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 工业控制/医疗/金融等 Windows 桌面终端、WinForms 迁移现代化、离线优先本地工具、硬件设备交互 |
 | [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 跨 Windows/macOS/Linux 的桌面工具、Linux 运维工具、WPF 跨平台迁移、嵌入式设备界面 |
@@ -46,7 +47,8 @@
 ├── 是 → 前后端是否同框架？
 │   ├── 同框架（全栈）
 │   │   ├── Next.js → nextFullstack
-│   │   └── Blazor → dotnetBlazor
+│   │   ├── Blazor → dotnetBlazor
+│   │   └── 尚未锁定具体技术栈，先要通用协作规则 → generalProject
 │   │
 │   ├── 分离部署（前后端独立）
 │   │   ├── Vue + .NET → vueLinkdotNet
