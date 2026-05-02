@@ -1,0 +1,293 @@
+# 设计与组件规则的唯一事实来源。
+# 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
+# 技术栈：.NET MAUI + XAML + Syncfusion.Maui.Toolkit + CommunityToolkit.Mvvm
+
+meta:
+  name: "MAUI 移动端设计系统"
+  version: "1.0.0"
+  status: "启用中"
+  owners:
+    - "design"
+    - "mobile"
+  tech_stack:
+    framework: ".NET MAUI"
+    ui: "XAML"
+    target_platforms:
+      - "Android"
+      - "iOS"
+      - "Windows（按需）"
+    mvvm: "CommunityToolkit.Mvvm"
+    toolkit: "Syncfusion.Maui.Toolkit（开源免费，优先使用）"
+    icons: "Font Image Source（MAUI 内置）"
+    local_db: "SQLite"
+  usage:
+    read_order:
+      - "在进行任何 UI 改动前阅读本文件"
+      - "然后查看现有 ResourceDictionary、控件、页面布局和字体配置"
+      - "最后再开始新增页面、控件或状态逻辑"
+    principles:
+      - "优先复用已有控件、样式和资源"
+      - "优先使用语义化 token，不直接写视觉常量"
+      - "移动端优先，保证触摸目标和可读性"
+      - "页面状态必须完整，不交付半成品视图"
+
+product:
+  style_keywords:
+    - "现代"
+    - "简洁"
+    - "流畅"
+    - "易用"
+    - "原生感"
+  ui_goal:
+    - "遵循 Material Design（Android）和 Human Interface Guidelines（iOS）的设计语言"
+    - "信息层级清晰，操作确定性高"
+    - "重要状态一眼可辨，表单与列表操作成本低"
+    - "触摸友好，关键操作区域满足最小触摸目标要求"
+    - "动效克制自然，不制造分散注意力的装饰"
+
+tokens:
+  colors:
+    primary:
+      light: "#2E8BFF"
+      dark: "#5AAFFF"
+      container_light: "#D9EEFF"
+      container_dark: "#004C99"
+    secondary:
+      light: "#22A97E"
+      dark: "#4EC89D"
+      container_light: "#D9F6EE"
+      container_dark: "#005237"
+    success:
+      light: "#1CBD5D"
+      dark: "#3DDA76"
+      container_light: "#DCFBE6"
+      container_dark: "#005228"
+    warning:
+      light: "#EA9B12"
+      dark: "#F8B72B"
+      container_light: "#FEEFC8"
+      container_dark: "#7A4500"
+    error:
+      light: "#F0445E"
+      dark: "#FF6E83"
+      container_light: "#FFE0E4"
+      container_dark: "#93001A"
+    gray:
+      50: "#F8FAFC"
+      100: "#F1F5F9"
+      200: "#E2E8F0"
+      300: "#CBD5E1"
+      400: "#94A3B8"
+      500: "#64748B"
+      600: "#475569"
+      700: "#334155"
+      800: "#1E293B"
+      900: "#0F172A"
+
+  semantic:
+    text:
+      primary: "AppTextColor（gray-900）"
+      secondary: "AppTextSecondaryColor（gray-600）"
+      muted: "AppTextMutedColor（gray-500）"
+      disabled: "AppTextDisabledColor（gray-400）"
+      inverse: "AppTextInverseColor（white）"
+      link: "AppTextLinkColor（primary）"
+    background:
+      page: "AppBackgroundColor（gray-50）"
+      card: "AppCardBackgroundColor（white）"
+      surface: "AppSurfaceColor（gray-100）"
+      active: "AppActiveBackgroundColor（primary container）"
+      brand: "AppBrandBackgroundColor（primary）"
+    border:
+      default: "AppBorderColor（gray-200）"
+      strong: "AppBorderStrongColor（gray-300）"
+      focus: "AppBorderFocusColor（primary）"
+    status:
+      success_bg: "AppSuccessBgColor（success container）"
+      success_text: "AppSuccessTextColor（success）"
+      warning_bg: "AppWarningBgColor（warning container）"
+      warning_text: "AppWarningTextColor（warning）"
+      error_bg: "AppErrorBgColor（error container）"
+      error_text: "AppErrorTextColor（error）"
+
+  typography:
+    font_family:
+      default: "系统默认字体（MAUI 自动映射平台原生字体）"
+      mono: "等宽字体（Consolas / Menlo）"
+    font_size:
+      caption: "12"
+      body: "14"
+      subhead: "16"
+      title: "18"
+      headline: "22"
+      display: "28"
+    font_weight:
+      regular: "Normal"
+      medium: "Medium"
+      semibold: "SemiBold"
+      bold: "Bold"
+    line_height:
+      tight: "1.25"
+      normal: "1.5"
+      relaxed: "1.7"
+
+  spacing:
+    base_unit: "4"
+    scale:
+      xs: "4"
+      sm: "8"
+      md: "12"
+      base: "16"
+      lg: "20"
+      xl: "24"
+      xxl: "32"
+      xxxl: "48"
+    page_padding: "16（水平）"
+    section_gap: "24"
+    item_gap: "12"
+    card_padding: "16"
+    card_radius: "12"
+
+  radius:
+    sm: "6"
+    md: "10"
+    lg: "14"
+    xl: "20"
+    full: "28（胶囊形）"
+
+  shadow:
+    sm: "0 2 8 rgba(0,0,0,0.08)"
+    md: "0 4 16 rgba(0,0,0,0.10)"
+    lg: "0 8 32 rgba(0,0,0,0.14)"
+
+  touch_target:
+    minimum_ios: "44x44"
+    minimum_android: "48x48"
+    recommended: "48x48"
+    button_height: "44"
+    input_height: "44"
+    bar_height: "48"
+    icon_size: "24"
+
+  safe_area:
+    top: "遵循平台状态栏高度"
+    bottom: "遵循平台导航栏 / Home Indicator 高度"
+    rule: "使用 MAUI Shell 的 SafeArea 设置自动处理"
+
+mobile_patterns:
+  navigation:
+    shell: "优先使用 MAUI Shell 导航（Flyout + Tabs）"
+    tab_bar: "底部标签栏最多 5 个标签"
+    modal: "使用模态页面用于创建、编辑、确认等独立流程"
+    back: "系统返回按钮由平台自动管理，无需自定义"
+  list:
+    component: "CollectionView 优先，避免 ListView 已知性能问题"
+    pull_to_refresh: "使用 Syncfusion PullToRefresh 控件实现下拉刷新"
+    load_more: "长列表支持增量加载或分页"
+    swipe_action: "列表项支持滑动操作（删除、标记等）"
+    empty_state: "空列表必须显示引导性空状态"
+  form:
+    label_position: "标签在输入框上方"
+    validation: "实时校验 + 提交校验双阶段"
+    error_display: "输入框下方红色错误文案"
+    submit_button: "固定在底部或键盘上方"
+    keyboard_type: "根据输入内容设置合适的 Keyboard 类型（数字、邮箱等）"
+  feedback:
+    loading: "使用 ActivityIndicator 或骨架屏"
+    toast: "使用 CommunityToolkit.Maui.Snackbar 短时反馈"
+    alert: "确认操作使用 DisplayAlert"
+    empty: "说明当前为空的原因，并给出引导动作"
+    error: "错误信息可读、可恢复，提供重试或返回路径"
+  gesture:
+    tap: "主要交互方式"
+    swipe: "列表项操作、页面切换"
+    pinch: "图片缩放（按需）"
+    long_press: "上下文菜单、快捷操作（按需）"
+
+page_states:
+  required:
+    - "loading"
+    - "empty"
+    - "error"
+    - "no-permission"
+  guidance:
+    loading:
+      implementation: "使用 ActivityIndicator 或骨架屏，避免页面空白"
+    empty:
+      implementation: "说明当前为空的原因，并提供引导操作按钮"
+    error:
+      implementation: "错误信息可读、可恢复，提供重试或返回按钮"
+    no_permission:
+      implementation: "明确提示权限不足，不暴露内部实现细节"
+
+component_rules:
+  reuse_first: true
+  file_placement:
+    pages: "路由页面、弹窗页面"
+    controls: "自定义控件、转换器"
+    resources: "样式、颜色、字体、尺寸资源"
+    viewmodels: "ViewModel"
+    models: "实体、DTO、枚举"
+  naming:
+    pages: "PascalCase，以 Page 结尾"
+    controls: "PascalCase，以 Control / View 结尾"
+    converters: "PascalCase，以 Converter 结尾"
+    viewmodels: "PascalCase，以 ViewModel 结尾"
+    resources: "PascalCase key"
+  rules:
+    - "优先复用项目已有控件、转换器和样式"
+    - "共享控件必须具备明确复用价值"
+    - "避免为单页面需求抽出无边界的大而全控件"
+
+form_rules:
+  layout:
+    label_position: "标签在输入框上方"
+    field_gap: "12"
+    section_gap: "24"
+    submit_position: "页面底部或键盘上方固定"
+  validation:
+    strategy: "实时 + 提交双阶段校验"
+    error_style: "输入框下方文字提示 + 边框颜色变化"
+  submit_behavior:
+    loading: "提交按钮 disabled + ActivityIndicator"
+    success: "反馈成功并刷新受影响数据"
+    failure: "保留用户输入并提示可恢复原因"
+    keyboard_dismiss: "提交前收起键盘"
+
+responsive:
+  principle: "移动端优先，竖屏为主"
+  common_patterns:
+    phone_portrait: "单列布局，全宽组件"
+    phone_landscape: "双列或横向滚动布局"
+    tablet: "多列布局，利用宽屏空间"
+  rules:
+    - "关键操作必须可单手完成"
+    - "触摸目标不小于 44x44"
+    - "文字不小于 12sp"
+    - "使用 Grid 的 Auto / Star 布局适配不同尺寸"
+
+platform_adaptation:
+  principle: "使用 MAUI 跨平台能力统一体验，平台差异收敛到样式和布局层"
+  rules:
+    - "使用 OnPlatform / OnIdiom 处理必要的平台差异"
+    - "平台差异逻辑优先在 XAML 资源层处理"
+    - "不使用 #if 编译指令在共享代码中写平台分支"
+    - "遵循各平台的人机交互指南"
+
+do:
+  - "优先使用 Syncfusion.Maui.Toolkit 控件，不满足需求时再使用 MAUI 内置控件"
+  - "优先复用 token、样式、资源和现有控件"
+  - "保持页面状态完整：loading / empty / error / no-permission"
+  - "使用语义化资源名称，而不是视觉硬编码"
+  - "确保触摸目标满足最小尺寸要求"
+  - "使用 x:DataType 启用编译时绑定"
+  - "列表页面支持下拉刷新"
+
+dont:
+  - "不要在控件属性中直接硬编码颜色、间距、圆角"
+  - "不要在 Code-behind 中编写业务逻辑"
+  - "不要在共享代码中使用 #if 平台编译指令"
+  - "不要使用静态全局类存储业务状态"
+  - "不要交付没有 loading / empty / error 状态的页面"
+  - "不要为了单次需求额外引入新的样式体系或控件库"
+  - "不要使用 ListView（优先使用 CollectionView）"
