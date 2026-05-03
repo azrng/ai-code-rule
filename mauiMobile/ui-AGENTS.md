@@ -171,6 +171,12 @@ src/AppName/
 - 主题、语言等低频全局配置才放入应用级资源或全局上下文
 - 页面生命周期事件（`OnNavigatedTo`、`OnNavigatedFrom`）中只做初始化和清理，不承载业务逻辑
 
+### 主题规则
+- 默认使用浅色主题，深色主题仅在项目明确要求时扩展
+- 若支持深色模式，所有颜色必须通过 `design-system.yaml` 中的语义化 token 引用，禁止在 XAML 或代码中硬编码颜色值
+- 主题切换通过 `Application.Current.UserAppTheme` 控制，不自建主题切换机制
+- 页面中任何视觉状态（含弹窗、Loading、Error 页面）必须同时验证浅色与深色下的可读性
+
 ---
 
 ## 测试规则

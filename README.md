@@ -26,6 +26,7 @@
 | [python](python/) | Python API 后端 | `backend` / `doc` / `infra` | AI/ML 模型推理服务、数据处理 API、与 .NET 配合的 Python 微服务、自动化运维接口、快速原型 API |
 | [wpfExe](wpfExe/) | WPF Windows 桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 工业控制/医疗/金融等 Windows 桌面终端、WinForms 迁移现代化、离线优先本地工具、硬件设备交互 |
 | [avaloniaExe](avaloniaExe/) | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 跨 Windows/macOS/Linux 的桌面工具、Linux 运维工具、WPF 跨平台迁移、嵌入式设备界面 |
+| [mauiMobile](mauiMobile/) | .NET MAUI 移动端应用 | `ui` / `application` / `infrastructure` / `doc` | 跨 Android/iOS 的移动应用、企业移动办公、数据采集与巡检、已有 .NET 后端扩展移动端、轻量级消费者 App |
 | [vueWailsExe](vueWailsExe/) | Wails 桌面应用（Vue + Go） | `frontend` / `backend` / `doc` / `infra` | 轻量桌面工具（替代 Electron）、Go 服务加桌面界面、需原生系统能力的 Vue 应用、本地数据管理 |
 | [reactWailsExe](reactWailsExe/) | Wails 桌面应用（React + Go） | `frontend` / `backend` / `doc` / `infra` | 同 vueWailsExe 但偏好 React 生态、已有 React 组件复用到桌面、Go CLI 工具加图形界面 |
 | [reactTauriExe](reactTauriExe/) | Tauri 桌面应用（React + Rust） | `frontend` / `backend` / `doc` / `infra` | 极致轻量桌面应用（几 MB 安装包）、安全敏感工具、Rust 高性能需求、嵌入式/IoT 配套工具 |
@@ -54,6 +55,9 @@
 │   │   ├── Vue + .NET → vueLinkdotNet
 │   │   └── React + .NET → reactLinkdotNet
 │   │
+│   ├── 移动端应用
+│       └── .NET MAUI → mauiMobile
+│
 │   └── 桌面应用
 │       ├── 仅 Windows
 │       │   └── WPF → wpfExe
