@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.2.0
-last_updated: 2026-04-16
+version: 1.3.0
+last_updated: 2026-05-19
 dependencies: [agents-root]
 ---
 
@@ -50,6 +50,14 @@ dependencies: [agents-root]
 2. 判断重构的紧急程度和业务价值。
 3. 评估重构风险和工作量。
 4. 高风险或大规模重构需先与团队确认。
+
+---
+
+## 主动建议规则
+- 发现业务逻辑放错层、ViewModel 与 Service 职责混杂、DTO 契约不稳定、结果包装不一致或异常处理不统一时，应主动提醒
+- 发现状态流转、命令执行、消息传递或业务规则可能影响既有流程、用户可见结果或数据一致性时，必须先说明风险，不得直接扩大修改
+- 发现可以复用既有 ViewModel 基类、Service、DTO、映射逻辑、结果包装、异常体系或 `IMessenger` 消息类型时，应优先建议复用
+- 不确定业务规则、状态含义、DTO 字段语义或外部服务行为时，应先查证或列为待确认项，禁止按通用经验补写规则
 
 ---
 
