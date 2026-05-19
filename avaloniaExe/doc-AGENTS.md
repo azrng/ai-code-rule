@@ -1,11 +1,11 @@
 ---
 rule_id: doc-agents
-version: 1.3.0
+version: 1.3.1
 last_updated: 2026-05-19
 dependencies: [agents-root]
 ---
 
-# AGENTS.md
+# 文档规则
 
 ## 适用范围
 
@@ -70,6 +70,7 @@ dependencies: [agents-root]
 - **定义时机**：阶段 1 视图实现时同步产出，阶段 2 严格按其实现业务逻辑。
 - **变更规则**：DTO 变更时，必须先修改契约类，再同步修改 ViewModel、Service、Repository 映射和相关文档。
 - **文件结构建议**：按业务域拆分 DTO，避免单文件堆叠所有契约。
+- **回退规则**：后续阶段发现 DTO 缺口时，按根 `AGENTS.md` 的纠错与回退机制回到契约变更流程，不在实现层绕过契约。
 
 ---
 
@@ -111,7 +112,7 @@ dependencies: [agents-root]
 ### devlog 要求
 - 文件目录：`doc/devlog/`
 - 文件格式：Markdown
-- 文件命名建议：`YYYY-MM-DD-HH-mm-ss-中文任务简述.md`
+- 文件命名建议：`YYYY-MM-DD-HH-mm-中文任务简述.md`
 - 文件名中的任务简述必须使用中文，不使用英文 slug、拼音缩写或中英混杂描述
 - 内容保持简短，至少包含：
   - 本次目标
@@ -121,7 +122,7 @@ dependencies: [agents-root]
   - 风险或遗留项
 
 ### 回顾分析记录格式
-- 适用场景：同类错误连续出现两次后，触发简短回顾分析时使用
+- 适用场景：同类问题因规则缺口在同一任务中连续两次阻塞交付，或跨任务重复出现后，触发简短回顾分析时使用
 - 内容保持简短，建议至少包含：
   - 错误现象
   - 触发场景
@@ -136,6 +137,12 @@ dependencies: [agents-root]
 - 仅归档 `DONE` 任务，不归档 `TODO`、`DOING`、`BLOCKED`、`REVIEW`
 - 归档文件建议保留原任务表字段，并可增加 `归档日期`
 - `TASK.md` 中应保留归档索引，指向对应月度归档文件
+- 归档操作步骤：
+  1. 只筛选可归档的 `DONE` 任务，不处理仍需关注的任务。
+  2. 将较早的 `DONE` 任务迁入对应月份的 `doc/task-archive/YYYY-MM.md`。
+  3. `TASK.md` 仅保留当前任务、待确认任务、阻塞任务与最近少量已完成任务。
+  4. 若新增了归档文件，补充到 `TASK.md` 的归档索引。
+  5. 归档完成后，同步补一条 `doc/devlog/` 记录。
 
 ---
 
