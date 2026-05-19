@@ -112,7 +112,7 @@ dependencies: [agents-root]
 ### devlog 要求
 - 文件目录：`doc/devlog/`
 - 文件格式：Markdown
-- 文件命名建议：`YYYY-MM-DD-HH-mm-中文任务简述.md`
+- 文件命名建议：`YYYY-MM-DD-HHmmss-中文任务简述.md`
 - 文件名中的任务简述必须使用中文，不使用英文 slug、拼音缩写或中英混杂描述
 - 内容保持简短，至少包含：
   - 本次目标
