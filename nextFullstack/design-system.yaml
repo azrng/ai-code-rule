@@ -28,9 +28,9 @@ meta:
     env_rule: "外部服务地址通过环境变量配置，禁止在客户端硬编码"
   usage:
     read_order:
-      - "在进行任何 UI 改动前阅读本文件"
+      - "先阅读 AGENTS.md，按根规则命中前端子规则"
+      - "命中 frontend-AGENTS.md 后再阅读本文件"
       - "然后查看现有布局、ui 组件、tailwind 配置和字体配置"
-      - "最后再开始新增页面、组件或状态逻辑"
     principles:
       - "优先复用已有布局、组件和 token"
       - "优先使用语义化 token，不直接写视觉常量"
