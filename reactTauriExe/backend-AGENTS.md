@@ -1,11 +1,11 @@
 ---
 rule_id: backend-agents
-version: 1.2.0
-last_updated: 2026-04-16
+version: 1.3.1
+last_updated: 2026-05-19
 dependencies: [agents-root]
 ---
 
-# AGENTS.md
+# 后端规则
 
 ## 适用范围
 
@@ -48,6 +48,12 @@ dependencies: [agents-root]
   - 已证明 Command / plugin 无法满足能力要求
 
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+
+## 主动建议规则
+- 发现 Tauri Command 与 Rust 服务职责混杂、SQLite 访问封装不一致或错误处理缺失时，应主动提醒
+- 发现接口契约、绑定结构体、SQLite 表结构或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
+- 发现可以复用既有 Tauri Command、Rust 服务、SQLite 访问封装或错误处理封装时，应优先建议复用
+- 不确定业务规则、数据含义或系统能力边界时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 **技术债务评估框架**：
 - **沿用现有实现**：代码可正常运行、无明显性能问题、维护成本可接受、团队熟悉度高
