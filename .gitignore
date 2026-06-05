@@ -350,5 +350,6 @@ docs/
 .claude
 .codex
 .dotnet-cli
+.codegraph
 
 NUL
