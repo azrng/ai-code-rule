@@ -60,23 +60,6 @@ dependencies: []
 
 ---
 
-## 技术栈
-
-### 前端
-- Flutter + Dart
-- Material 3（Flutter 内置）
-- Riverpod（状态管理）
-- GoRouter（路由管理）
-- Dio / http（HTTP 客户端）
-- sqflite（本地数据库）
-
-### 设计系统
-- 使用 `design-system.yaml` 中定义的设计 token
-- 样式必须使用 Flutter ThemeData + Material 3 Token，禁止硬编码颜色、间距、圆角
-- 主题定制统一通过 `ThemeData` + `ColorScheme` 配置
-
----
-
 ## 子规则索引
 
 | 文件 | 适用范围 | 何时阅读 |
