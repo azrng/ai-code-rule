@@ -1,1 +1,8 @@
-请先阅读 `AGENTS.md` 了解项目全局规则、开发阶段、任务管理与交付要求，再根据任务类型阅读对应子规则文件。
+---
+rule_id: claude-entry
+version: 1.3.1
+last_updated: 2026-06-05
+dependencies: [agents-root]
+---
+
+开始任何分析、设计、编码或文档修改前，先阅读 `AGENTS.md`。

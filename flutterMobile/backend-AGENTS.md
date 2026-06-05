@@ -1,11 +1,11 @@
 ---
 rule_id: backend-agents
-version: 1.0.0
+version: 1.3.1
 last_updated: 2026-06-05
 dependencies: [agents-root]
 ---
 
-# AGENTS.md
+# 基础设施规则
 
 ## 适用范围
 
@@ -67,7 +67,6 @@ final itemListProvider = AsyncNotifierProvider.autoDispose<ItemListNotifier, Lis
 });
 ```
 
-### 技术选择原则
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
 
 **技术债务评估框架**：
@@ -81,6 +80,14 @@ final itemListProvider = AsyncNotifierProvider.autoDispose<ItemListNotifier, Lis
 2. 判断重构的紧急程度和业务价值。
 3. 评估重构风险和工作量。
 4. 高风险或大规模重构需先与团队确认。
+
+---
+
+## 主动建议规则
+- 发现业务逻辑放错层、Repository 与 Service 职责混杂、数据访问不一致或异常处理不一致时，应主动提醒
+- 发现数据模型、存储结构、配置策略或平台服务可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
+- 发现可以复用既有 Repository、数据访问封装、DTO、校验器或错误处理封装时，应优先建议复用
+- 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 ---
 

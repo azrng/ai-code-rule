@@ -1,11 +1,11 @@
 ---
 rule_id: ui-agents
-version: 1.0.0
+version: 1.3.1
 last_updated: 2026-06-05
 dependencies: [agents-root]
 ---
 
-# AGENTS.md
+# 界面规则
 
 ## 适用范围
 
@@ -41,7 +41,6 @@ dependencies: [agents-root]
 - 颜色通过 `Theme.of(context).colorScheme` 获取
 - 主题定制统一通过 `ThemeData` + `ColorScheme` 配置
 
-### 技术选择原则
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
 
 **技术债务评估框架**：
@@ -55,6 +54,14 @@ dependencies: [agents-root]
 2. 判断重构的紧急程度和业务价值。
 3. 评估重构风险和工作量。
 4. 高风险或大规模重构需先与团队确认。
+
+---
+
+## 主动建议规则
+- 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点
+- 发现样式与 `design-system.yaml`、现有主题或组件库冲突时，应先说明差异和影响，不直接引入平行视觉体系
+- 发现可以复用已有 Widget、Provider、Service、工具函数时，应优先建议复用
+- 不确定组件行为、路由规则、状态管理模式或设计 token 时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验硬编码
 
 ---
 
@@ -87,7 +94,7 @@ lib/
 
 ---
 
-## 阶段 1 — 视图实现（Claude Code 主导）
+### 阶段 1 — 视图实现（界面实现角色主导）
 
 **触发条件**：用户发出「开始视图开发」指令
 
