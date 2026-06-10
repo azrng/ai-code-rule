@@ -5,6 +5,8 @@
 | 文件夹名称 | 当前子任务状态 | 备注 |
 |-----------|----------------|------|
 | `dotnetLayered` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新 |
+| `dotnetCoreSingle` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新 |
+| `dotnetBlazor` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新 |
 
 ### 修改原因
 
