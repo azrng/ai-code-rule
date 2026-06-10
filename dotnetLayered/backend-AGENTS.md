@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.4.0
+version: 1.5.0
 last_updated: 2026-06-10
 dependencies: [agents-root]
 ---
@@ -64,10 +64,6 @@ dependencies: [agents-root]
 - ORM：Entity Framework Core，通过 `Common.EFCore` 系列包访问
 - 测试环境可使用 `Common.EFCore.InMemory` 内存数据库
 
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
-
 ---
 
 ## 主动建议规则
@@ -94,39 +90,6 @@ src/
 ├── YourProject.Storage/
 └── YourProject.Service/
 ```
-
-### 分层依赖关系
-
-```text
-Core（基础层，无依赖）
-  │
-  ▼
-IDomain（领域接口）──依赖──▶ Core
-  │
-  ├──▶ Adapter（适配器）──依赖──▶ IDomain
-  ├──▶ EntityFramework（数据访问）──依赖──▶ IDomain
-  │
-  ├──▶ Domain（领域实现）──依赖──▶ IDomain + Adapter + EntityFramework
-  │
-  ├──▶ IApplication（应用接口）──依赖──▶ IDomain + Adapter
-  │
-  ├──▶ Application（应用实现）──依赖──▶ IApplication + Domain
-  │
-  ├──▶ Storage（存储层）──依赖──▶ Core + IDomain + EntityFramework
-  │
-  └──▶ Service（宿主层）──依赖──▶ Application + Domain + Storage
-```
-
-### 分层依赖规则
-- **Core**：最底层，无任何内部项目依赖，提供公共基础设施
-- **IDomain**：依赖 Core，定义领域接口和实体
-- **Adapter**：依赖 IDomain，封装外部服务调用
-- **EntityFramework**：依赖 IDomain，实现数据访问
-- **Domain**：依赖 IDomain + Adapter + EntityFramework，实现核心业务逻辑
-- **IApplication**：依赖 IDomain + Adapter，定义应用服务接口
-- **Application**：依赖 IApplication + Domain，实现应用服务
-- **Storage**：依赖 Core + IDomain + EntityFramework，处理文件存储
-- **Service**：宿主层，依赖 Application + Domain + Storage，组合所有层
 
 ### 各层职责
 
@@ -323,5 +286,3 @@ IDomain（领域接口）──依赖──▶ Core
 - 必须说明潜在影响范围和风险。
 
 ---
-
-文件结束。

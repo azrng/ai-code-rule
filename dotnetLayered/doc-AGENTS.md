@@ -1,6 +1,6 @@
 ---
 rule_id: doc-agents
-version: 1.4.0
+version: 1.5.0
 last_updated: 2026-06-10
 dependencies: [agents-root]
 ---
@@ -100,5 +100,3 @@ dependencies: [agents-root]
 
 
 ---
-
-文件结束。

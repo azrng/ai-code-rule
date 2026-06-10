@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.4.0
+version: 1.5.0
 last_updated: 2026-06-10
 dependencies: [agents-root]
 ---
@@ -30,10 +30,6 @@ dependencies: [agents-root]
 - 默认部署方式：Docker + Docker Compose
 - 生产镜像优先采用多阶段构建
 - 部署链路要可追踪，可定位到镜像版本和配置来源
-
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
 
 ---
 
@@ -88,5 +84,3 @@ dependencies: [agents-root]
 - 若本次改动同时影响应用访问链路，应至少补一次核心链路检查
 
 ---
-
-文件结束。
