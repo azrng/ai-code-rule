@@ -7,6 +7,8 @@
 | `dotnetLayered` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新、第一批简化（减少 62 行）、代码审查修复（恢复判断标准定义、依赖列、技术选择原则） |
 | `dotnetCoreSingle` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新、补充技术选择原则（版本升级至 1.5.0） |
 | `dotnetBlazor` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新、补充技术选择原则（版本升级至 1.5.0） |
+| `avaloniaExe` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
+| `reactLinkdotNet` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 
 ### 修改原因
 
@@ -44,6 +46,13 @@
 - `dotnetLayered/doc-AGENTS.md`
 - `dotnetLayered/TASK.md`
 - 删除 `dotnetLayered/doc/task-archive/` 目录
+- `avaloniaExe/AGENTS.md`
+- `avaloniaExe/doc-AGENTS.md`
+- `avaloniaExe/TASK.md`
+- 删除 `avaloniaExe/doc/task-archive/` 目录
+- `reactLinkdotNet/AGENTS.md`
+- `reactLinkdotNet/doc-AGENTS.md`
+- `reactLinkdotNet/TASK.md`
 
 ### 当前子任务状态
 
