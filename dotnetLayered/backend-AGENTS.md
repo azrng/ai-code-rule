@@ -93,17 +93,17 @@ src/
 
 ### 各层职责
 
-| 层 | 项目 | 职责 | 禁止 |
-| --- | --- | --- | --- |
-| 基础层 | Core | 公共 DTO、工具类、安全、缓存配置 | 禁止依赖任何业务层 |
-| 领域接口 | IDomain | 实体定义、领域服务接口、仓储接口 | 禁止依赖 Adapter / EntityFramework / Domain |
-| 适配器 | Adapter | 外部 HTTP 服务调用、第三方 SDK 封装 | 禁止依赖 Domain / Application |
-| 数据访问 | EntityFramework | DbContext、数据库迁移、EF Core 配置 | 禁止依赖 Domain / Application |
-| 领域实现 | Domain | 核心业务逻辑，编排 Adapter 和数据访问 | 禁止依赖 IApplication / Application |
-| 应用接口 | IApplication | 应用服务接口定义、CQRS 请求 / 响应 | 禁止依赖 Domain / Application |
-| 应用实现 | Application | 应用服务实现、业务流程编排 | 禁止依赖 Service |
-| 存储 | Storage | 文件上传下载、对象存储操作 | 禁止依赖 Application / Service |
-| 宿主层 | Service | Controller、中间件、DI 注册、配置 | 禁止包含业务逻辑 |
+| 层 | 项目 | 职责 | 依赖 | 禁止 |
+| --- | --- | --- | --- | --- |
+| 基础层 | Core | 公共 DTO、工具类、安全、缓存配置 | 无 | 禁止依赖任何业务层 |
+| 领域接口 | IDomain | 实体定义、领域服务接口、仓储接口 | Core | 禁止依赖 Adapter / EntityFramework / Domain |
+| 适配器 | Adapter | 外部 HTTP 服务调用、第三方 SDK 封装 | Core, IDomain | 禁止依赖 Domain / Application |
+| 数据访问 | EntityFramework | DbContext、数据库迁移、EF Core 配置 | Core, IDomain | 禁止依赖 Domain / Application |
+| 领域实现 | Domain | 核心业务逻辑，编排 Adapter 和数据访问 | IDomain, Adapter, EntityFramework | 禁止依赖 IApplication / Application |
+| 应用接口 | IApplication | 应用服务接口定义、CQRS 请求 / 响应 | Core, IDomain | 禁止依赖 Domain / Application |
+| 应用实现 | Application | 应用服务实现、业务流程编排 | IApplication, Domain | 禁止依赖 Service |
+| 存储 | Storage | 文件上传下载、对象存储操作 | Core | 禁止依赖 Application / Service |
+| 宿主层 | Service | Controller、中间件、DI 注册、配置 | Application, Storage | 禁止包含业务逻辑 |
 
 ---
 
