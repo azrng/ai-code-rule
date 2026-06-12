@@ -9,6 +9,7 @@
 | `dotnetBlazor` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新、补充技术选择原则（版本升级至 1.5.0） |
 | `avaloniaExe` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 | `reactLinkdotNet` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
+| `staticHtml` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 
 ### 修改原因
 
@@ -53,6 +54,12 @@
 - `reactLinkdotNet/AGENTS.md`
 - `reactLinkdotNet/doc-AGENTS.md`
 - `reactLinkdotNet/TASK.md`
+- `staticHtml/AGENTS.md`
+- `staticHtml/doc-AGENTS.md`
+- `staticHtml/frontend-AGENTS.md`
+- `staticHtml/TASK.md`
+- 删除 `staticHtml/doc/task-archive/` 目录
+- 删除 `staticHtml/doc/devlog/` 目录
 
 ### 当前子任务状态
 

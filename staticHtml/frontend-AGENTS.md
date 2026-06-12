@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.3.1
-last_updated: 2026-05-19
+version: 1.4.0
+last_updated: 2026-06-10
 dependencies: [agents-root]
 ---
 
@@ -118,7 +118,6 @@ project-root/
 │   ├── images/              # 图片资源
 │   └── favicon.ico          # 应用图标
 ├── doc/
-│   ├── devlog/
 │   ├── design/
 │   └── requirement.md
 ├── AGENTS.md
@@ -488,7 +487,7 @@ project-root/
 ---
 
 ## 任务管理机制
-`TASK.md` 是唯一活动任务记录文件，较早的 `DONE` 任务统一归档到 `doc/task-archive/YYYY-MM.md`。
+`TASK.md` 是唯一活动任务记录文件，只维护当前仍需关注的任务与最近 5 条已完成任务。
 
 ### 任务状态
 - `TODO`：未开始
@@ -505,25 +504,17 @@ project-root/
 5. 若任务无法继续，更新为 `BLOCKED` 并写明原因。
 6. 开发完成但仍需确认时，更新为 `REVIEW`。
 7. 验证完成并确认交付后，更新为 `DONE`。
-8. 当 `TASK.md` 中任务总数超过 20 条、`DONE` 任务超过 10 条，或完成阶段性里程碑 / 自然月切换时，将较早完成的 `DONE` 任务迁移到对应月份的 `doc/task-archive/YYYY-MM.md`。
-9. 归档时仅允许迁移 `DONE` 任务，`TODO`、`DOING`、`BLOCKED`、`REVIEW` 任务必须保留在 `TASK.md`。
-10. 归档任务时保留原任务 ID、任务信息与最近更新时间，并在归档文件中补充 `归档日期`。
-11. 发生任务归档时，在 `doc/devlog/` 中补充一份简短归档说明，记录迁移范围与触发原因，并在 `TASK.md` 中保留归档索引。
+8. `DONE` 任务超过 5 条时，自动删除最早的 `DONE` 任务。
+9. 不再使用 `doc/task-archive/` 归档。
 
 ### 每个任务至少包含
 - 任务 ID
 - 任务名称
-- 任务目标
-- 当前阶段
-- 负责人 AI
 - 任务状态
-- 优先级
 - 最近更新时间
 
 ### AI Agent 要求
 - 开始任务前先同步任务状态。
 - 开发过程中及时更新 `TASK.md`。
-- 触发归档阈值时同步维护 `doc/task-archive/` 与 `TASK.md` 中的归档索引。
 - 范围变化时同步补充任务说明、验收标准和风险。
-- 每次开发完成后，都需要在 `doc/devlog/` 下新增一份本次开发简短说明的 Markdown 记录。
 ---
