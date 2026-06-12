@@ -10,6 +10,7 @@
 | `avaloniaExe` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 | `reactLinkdotNet` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 | `staticHtml` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
+| `flutterMobile` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 
 ### 修改原因
 
@@ -60,6 +61,11 @@
 - `staticHtml/TASK.md`
 - 删除 `staticHtml/doc/task-archive/` 目录
 - 删除 `staticHtml/doc/devlog/` 目录
+- `flutterMobile/AGENTS.md`
+- `flutterMobile/doc-AGENTS.md`
+- `flutterMobile/TASK.md`
+- 删除 `flutterMobile/doc/task-archive/` 目录
+- 删除 `flutterMobile/doc/devlog/` 目录
 
 ### 当前子任务状态
 
