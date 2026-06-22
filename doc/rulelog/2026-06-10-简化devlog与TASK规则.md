@@ -13,9 +13,16 @@
 | `flutterMobile` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 | `nextFullstack` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 | `python` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
+| `wpfExe` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
+| `vueWailsExe` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
+| `vueLinkdotNet` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
+| `reactWailsExe` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
+| `reactTauriExe` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
+| `mauiMobile` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
+| `dotnetConsole` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
+| `generalProject` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.5.0） |
 
 ### 修改原因
-
 - devlog 目录有 58 个独立变更记录文件，占用大量上下文（约 221KB）
 - git 提交日志已足够清晰，包含任务、阶段、原因、变更、风险、关联、AI 等字段
 - TASK.md 结构冗余，大部分文件显示"当前无任务"
@@ -79,6 +86,30 @@
 - `python/TASK.md`
 - 删除 `python/doc/task-archive/` 目录
 - 删除 `python/doc/devlog/` 目录
+- `wpfExe/AGENTS.md`
+- `wpfExe/doc-AGENTS.md`
+- `wpfExe/TASK.md`
+- `vueWailsExe/AGENTS.md`
+- `vueWailsExe/doc-AGENTS.md`
+- `vueWailsExe/TASK.md`
+- `vueLinkdotNet/AGENTS.md`
+- `vueLinkdotNet/doc-AGENTS.md`
+- `vueLinkdotNet/TASK.md`
+- `reactWailsExe/AGENTS.md`
+- `reactWailsExe/doc-AGENTS.md`
+- `reactWailsExe/TASK.md`
+- `reactTauriExe/AGENTS.md`
+- `reactTauriExe/doc-AGENTS.md`
+- `reactTauriExe/TASK.md`
+- `mauiMobile/AGENTS.md`
+- `mauiMobile/doc-AGENTS.md`
+- `mauiMobile/TASK.md`
+- `dotnetConsole/AGENTS.md`
+- `dotnetConsole/doc-AGENTS.md`
+- `dotnetConsole/TASK.md`
+- `generalProject/AGENTS.md`
+- `generalProject/doc-AGENTS.md`
+- `generalProject/TASK.md`
 
 ### 当前子任务状态
 
