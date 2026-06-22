@@ -187,7 +187,6 @@ dependencies: []
 - `TASK.md` 默认只保留：`TODO`、`DOING`、`BLOCKED`、`REVIEW`，以及最近 5 条 `DONE` 任务
 - `BLOCKED`、`REVIEW` 任务不得删除，避免仍需处理的事项从主表消失
 - `DONE` 任务超过 5 条时，自动删除最早的 `DONE` 任务
-- 不再使用 `doc/task-archive/` 归档
 
 ### 文档同步要求
 - 命令、脚本、环境变量、启动方式、数据结构或对外接口约定发生变化时，必须同步更新相关文档
