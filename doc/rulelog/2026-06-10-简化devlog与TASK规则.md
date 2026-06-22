@@ -11,6 +11,8 @@
 | `reactLinkdotNet` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 | `staticHtml` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 | `flutterMobile` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
+| `nextFullstack` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
+| `python` | `已完成` | 已完成 devlog 移除、TASK 精简、规则更新（版本升级至 1.4.0） |
 
 ### 修改原因
 
@@ -66,6 +68,17 @@
 - `flutterMobile/TASK.md`
 - 删除 `flutterMobile/doc/task-archive/` 目录
 - 删除 `flutterMobile/doc/devlog/` 目录
+- `nextFullstack/AGENTS.md`
+- `nextFullstack/doc-AGENTS.md`
+- `nextFullstack/TASK.md`
+- 删除 `nextFullstack/doc/task-archive/` 目录
+- 删除 `nextFullstack/doc/devlog/` 目录
+- `python/AGENTS.md`
+- `python/doc-AGENTS.md`
+- `python/backend-AGENTS.md`
+- `python/TASK.md`
+- 删除 `python/doc/task-archive/` 目录
+- 删除 `python/doc/devlog/` 目录
 
 ### 当前子任务状态
 

@@ -165,9 +165,8 @@ project/
 │   └── e2e/
 ├── doc/                        # 文档目录
 │   ├── requirement.md          # 需求文档
-│   ├── design/                 # 设计文档
-│   │   └── 设计文档.md
-│   └── devlog/                 # 开发日志
+│   └── design/                 # 设计文档
+│       └── 设计文档.md
 ├── .env.example                # 环境变量示例
 ├── pyproject.toml              # 项目配置（PEP 621）
 ├── uv.lock                    # uv 锁文件（自动生成）
