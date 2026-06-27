@@ -19,6 +19,7 @@
 - `wpfExe`
 - `staticHtml`
 - `generalProject`
+- `electronDotNetExe`
 
 ---
 
@@ -36,6 +37,7 @@
 - [2026-05-19 多模板规则治理优化](rulelog/2026-05-19-12-00-avaloniaExe规则治理优化.md)
 - [2026-06-10 简化 devlog 与 TASK 规则](rulelog/2026-06-10-简化devlog与TASK规则.md)
 - [2026-06-27 reactLinkdotNet 规则一致性修复](rulelog/2026-06-27-reactLinkdotNet规则一致性修复.md)
+- [2026-06-27 新增 electronDotNetExe 模板](rulelog/2026-06-27-新增electronDotNetExe模板.md)
 
 ---
 
