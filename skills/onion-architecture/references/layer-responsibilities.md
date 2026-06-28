@@ -43,9 +43,9 @@ public class CreateProductRequest
 ```
 
 ### IDomain（领域契约层）
-**放**：实体（继承 `IdentityOperatorStatusEntity`）、EFCore 配置类（`IEntityTypeConfiguration<T>`）。
-**不放**：DbContext、业务逻辑、DTO。
-**包引用**：`Common.EFCore`（取基类 + 配置基类 + `IdHelper`）。
+**放**：实体（继承 `IdentityOperatorStatusEntity`）。**EFCore 配置类不在这层——放 EntityFramework 层**（见下）。
+**不放**：DbContext、业务逻辑、DTO、EFCore 配置类。
+**包引用**：`Common.EFCore`（取实体基类 + `IdHelper`）。
 
 实体示例：
 ```csharp
@@ -65,25 +65,6 @@ public class Product : IdentityOperatorStatusEntity   // Id + 审计 + 软删除
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public int Status { get; set; } = 1;
-}
-```
-
-配置类示例：
-```csharp
-using Azrng.EFCore.EntityTypeConfigurations;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-namespace App.IDomain.EntityTypeConfigurations;
-
-public class ProductConfiguration : EntityTypeConfigurationIdentityOperatorStatus<Product>
-{
-    public override void Configure(EntityTypeBuilder<Product> builder)
-    {
-        base.Configure(builder);   // 必调：主键/审计列/表名/时间类型
-        builder.Property(x => x.Name).HasMaxLength(100).IsRequired().HasComment("商品名称");
-        builder.Property(x => x.Price).HasComment("价格");
-    }
 }
 ```
 
@@ -315,21 +296,51 @@ public class XxxAppService
 > **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用领域适配器一层（直接调通用 `IHttpHelper`），复杂/协议多变时才拆出 `IXxxHttpClient` 层。
 
 ### EntityFramework（基础设施-数据）
-**放**：`DbContext`（继承 `Azrng.EFCore.PostgresSql.BaseDbContext`，自动扫描 IDomain 的配置类）。
-**不放**：业务逻辑、实体定义（实体在 IDomain）、配置类（配置在 IDomain）。
+**放**：`DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移。
+**不放**：业务逻辑、实体定义（实体在 IDomain）。
 **依赖**：Core、IDomain；包引用 `Common.EFCore` + provider 包。
 
+配置类示例（`{Entity}Etc.cs`，继承配置基类，设表名/列名/查询过滤）：
 ```csharp
-using Azrng.EFCore.PostgresSql;
+using Azrng.EFCore.EntityTypeConfigurations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using App.IDomain.Entities;
+
+namespace App.EntityFramework;
+
+public class ProductEtc : EntityTypeConfigurationIdentityOperatorStatus<Product, long>
+{
+    public override void Configure(EntityTypeBuilder<Product> builder)
+    {
+        base.Configure(builder);                          // 必调：主键/审计列/时间类型
+        builder.ToTable("product");                       // 表名
+        builder.HasQueryFilter(x => !x.Deleted);          // 软删除全局过滤
+        builder.Property(x => x.Name).HasMaxLength(100).IsRequired().HasComment("商品名称");
+        builder.Property(x => x.Price).HasComment("价格");
+    }
+}
+```
+
+DbContext（继承 `DbContext`，`OnModelCreating` 里扫描当前程序集的 Etc 配置）：
+```csharp
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using App.IDomain.Entities;
 
 namespace App.EntityFramework;
 
-public class AppDbContext : BaseDbContext   // 自动 ApplyConfigurationsFromAssembly
+public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
     public DbSet<Product> Products { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasDefaultSchema("public");
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());  // 扫描本程序集的 *Etc 配置
+        base.OnModelCreating(modelBuilder);
+    }
 }
 ```
 
@@ -457,10 +468,10 @@ Storage           → Core                                   ← 可选
 |---|---|---|---|
 | 1 | `Core/Models/OrderDto.cs` | Core | `OrderDto`/`CreateOrderRequest`；列表 Request 继承 `GetPageRequest` |
 | 2 | `IDomain/Entities/Order.cs` | IDomain | 实体 + `SetCreator` |
-| 3 | `IDomain/EntityTypeConfigurations/OrderConfiguration.cs` | IDomain | 配置类 |
+| 3 | `EntityFramework/OrderEtc.cs` | EntityFramework | EFCore 配置类（表名/列名/查询过滤） |
 | 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，无 IResultModel） |
 | 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `NotFoundException.ThrowIfNull`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
 | 6 | `Service/Controllers/OrderController.cs` | Service | 瘦控制器，一行转发 `Task<T>`（不写 `Ok()`） |
 | 7 | `Service/Program.cs` | Service | 已有 `RegisterBusinessServices("App.*.dll")` + `AddMvcResultPackFilter` + `AddMvcModelVerifyFilter` + `app.UseGlobalException()`，实现 `IScopedDependency` 即自动注册，无需改 |
 
-DbContext 无需改动（`BaseDbContext` 自动扫描新配置）。若用 SQL 脚本迁移，加 `Service/MigrationSql/x.x.x.sql`。
+新增实体在 DbContext 加 `DbSet` + 写 `{Entity}Etc.cs` 配置类，`ApplyConfigurationsFromAssembly` 自动扫描。若用 SQL 脚本迁移，装 `Azrng.SqlMigration` 包 + 加 `Service/MigrationSql/x.x.x.sql`（详见 azrng-efcore「SQL 脚本迁移」）。

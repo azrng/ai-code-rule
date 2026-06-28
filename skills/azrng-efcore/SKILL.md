@@ -56,7 +56,7 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 // .AddUnitOfWork<AppDbContext>();
 ```
 
-> 自定义 DbContext 时不要忘记重写 `OnModelCreating` 调用 `ApplyConfigurationsFromAssembly`，或继承 `BaseDbContext`（自动应用所有 `IEntityTypeConfiguration`）。详见 references/entities-and-context.md。
+> 自定义 DbContext 时重写 `OnModelCreating`，调 `ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `*Etc` 配置类；加 `HasDefaultSchema(...)` 设默认 schema。详见 references/entities-and-context.md。
 
 ### 3. 定义实体
 
@@ -84,7 +84,7 @@ public class User : IdentityOperatorStatusEntity   // Id+审计+软删除/禁用
 }
 ```
 
-> 配套写 `IEntityTypeConfiguration<T>` 配置类（继承包的配置基类）+ DbContext 继承 `BaseDbContext`，三者完整套路见 references/entities-and-context.md。
+> 配套在 EntityFramework 层写 `{Entity}Etc.cs` 配置类（继承包的配置基类 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）+ DbContext 用 `ApplyConfigurationsFromAssembly` 扫描，完整套路见 references/entities-and-context.md。
 
 **时间字段统一用无时区值**：`DateTime.Now.ToUnspecifiedDateTime()`，配合 `IsUnTimeZoneDateTime()` 列声明。完整基类对照与选择见 references/entities-and-context.md。
 
@@ -166,10 +166,40 @@ public async Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListReques
 
 > `RefAsync<T>`（`using Azrng.Core.CommonDto;`）有到 `T` 的隐式转换，`new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。分页在 AppService 的整体编排（含全局返回包装）见 onion-architecture skill「分页查询最佳实践」。
 
+## SQL 脚本迁移（Azrng.SqlMigration）
+
+数据库 schema 变更用 SQL 脚本版本化管理（不走 EF Core 的 Code-First Migrations）。装 `Azrng.SqlMigration` 包，应用启动时自动按版本顺序执行未应用的脚本，已执行的记在版本日志表、不重复跑。
+
+**安装**（Service 项目）：
+```bash
+dotnet add package Azrng.SqlMigration
+```
+
+**注册**（Program.cs）：`AddSqlMigrationService(名字, 配置)` 链 `.AddAutoMigration()`（启动自动执行）：
+```csharp
+using Azrng.SqlMigration;
+using Npgsql;
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+var migrationSqlPath = Path.Combine(builder.Environment.ContentRootPath, "MigrationSql");
+
+builder.Services.AddSqlMigrationService("default", config =>
+{
+    config.Schema = "public";                  // 数据库 schema
+    config.VersionPrefix = string.Empty;       // SQL 文件版本前缀（默认 "version"）
+    config.SqlRootPath = migrationSqlPath;     // SQL 脚本目录（Service/MigrationSql）
+    config.ConnectionBuilder = _ => new NpgsqlConnection(connectionString);
+}).AddAutoMigration();                         // ← 启动时自动跑未应用的脚本
+```
+
+**SQL 脚本约定**：放 `Service/MigrationSql/`，文件名 = `VersionPrefix + 版本号 + 描述.sql`（如 `1.0.0_init.sql`、`1.1.0_add_user_phone.sql`），按版本号顺序执行。
+
+> 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
+
 ## 决策指引（AI 必读）
 
 - **选 provider**：按目标数据库选包，注入方式几乎一致（仅连接串与可选 builder 委托不同）。对照表见 references/providers.md。
-- **要不要 BaseDbContext**：实体用了配置类（`IEntityTypeConfiguration`）就继承 `BaseDbContext`（自动加载配置）；否则普通 DbContext 手写 `OnModelCreating`。
+- **DbContext 怎么扫描配置类**：继承普通 `DbContext`，在 `OnModelCreating` 里 `modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `{Entity}Etc.cs` 配置类；再 `modelBuilder.HasDefaultSchema(...)` 设默认 schema。
 - **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤（包不自动全局过滤）。
 - **遇到 PostgreSQL 时间报错**：先看 references/postgres-time-pitfall.md —— 这是本系列包最常见的崩溃根因，三层（模型/赋值/DDL）必须一致。
 

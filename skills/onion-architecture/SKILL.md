@@ -31,11 +31,11 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 | 项目 | 角色 | 可依赖 | 典型内容 |
 |---|---|---|---|
 | **Core** | 最内核，纯契约/契约数据 | 仅 NuGet 基础包 | DTO、Request/Response、枚举、常量 |
-| **IDomain** | 领域契约层 | Core | 实体（Entity）、EFCore 配置类（EntityTypeConfigurations） |
+| **IDomain** | 领域契约层 | Core | 实体（Entity） |
 | **IApplication** | 应用契约层 | Core, IDomain | AppService 接口（`I*AppService`） |
 | **Domain** | 领域实现层 | IDomain, Adapter, EntityFramework | 领域服务实现（`{X}DomainService`）：封装可复用公共领域操作，可注入 IBaseRepository 写库；纯 CRUD 可空 |
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
-| **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`（继承 `BaseDbContext`）、迁移相关 |
+| **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
 | **Service** | 入口/组装层 | Application, Storage | `Controllers`、`Program.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ HttpClient 实现（`Adapter/Service/`、`Adapter/HttpWebClient/`），屏蔽 HTTP/SDK 细节（可选） |
 | **Storage** | 存储适配 | Core | 文件/对象存储封装（可选） |
@@ -48,7 +48,7 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 一行转发返回值。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验、不写 `Ok()`/`return ResultModel`**。
 3. **应用编排 vs 领域操作分层**：`AppService`（应用层）承担**用例编排**——接 DTO → 调领域服务/仓储/适配器 → 返回 DTO + 实体↔DTO 映射；**可复用的公共领域操作下沉到 DomainService**（领域层），如「发会话消息」「读系统配置」这类被多个 AppService 复用的操作。**AppService 和 DomainService 都可注入 `IBaseRepository<T>` / `IUnitOfWork` 做数据访问**（并非 AppService 独占）。判断：单一用例、不复用 → 直接写在 AppService；多 AppService 复用 / 稳定领域概念 → 抽 DomainService。详见「领域服务 DomainService」。
 4. **DTO 放 Core 或 IApplication**：通用业务 DTO/Request/Response 放 `Core/Models`，跨层共享（接口、实现、控制器都用）。不要在控制器内 inline 定义请求类。仅服务内部用、与某 AppService 强绑定的 DTO（如 `LoginResultDto`）可放 `IApplication/{Module}/`。
-5. **实体+配置在 IDomain**：实体继承 `Azrng.EFCore.Entities.IdentityOperatorStatusEntity`；配套配置类放 `IDomain/EntityTypeConfigurations/`（详见 azrng-efcore skill）。
+5. **实体在 IDomain、配置在 EntityFramework**：实体（继承 `IdentityOperatorStatusEntity`）放 `IDomain/Entities/`；EFCore 配置类（`{Entity}Etc.cs`，继承 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）放 **EntityFramework 层**，`Configure` 里设表名/列名/查询过滤；DbContext 用 `ApplyConfigurationsFromAssembly(当前程序集)` 扫描它们（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
 
@@ -255,6 +255,7 @@ public class ConversationService : IConversationAppService
 - **接口放 IDomain/Adapter/（不放 Core）**：这样 AppService/DomainService 只依赖 IDomain 就能用 Adapter，而 HttpClient/SDK 等**实现细节留在 Adapter 项目**，依赖方向正确（外层 Adapter 实现内层 IDomain 接口；IDomain 不依赖 Adapter）。`Adapter.csproj` 只引用 `IDomain`。
 - **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 IDomain；`Ho`（HTTP 传输对象）在 Adapter。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。
 - 实现（`{X}Adapter`、`XxxHttpClient`）都标 `IScopedDependency`，经 `RegisterBusinessServices` 自动注册；底层 HttpClient 还可配 `IHttpClientFactory` / 框架的 `AddHttpClientService`。
+- **`IHttpHelper` 来自 `Common.HttpClients` 包**：Adapter 项目（或 Core）安装 `dotnet add package Common.HttpClients`（参考项目用 v2.0.0，按需选版本）后即可注入 `IHttpHelper` 做统一 HTTP 调用（GetAsync/PostAsync 等）。
 - **简单场景可只用一层**（领域适配器直接调通用 `IHttpHelper`），外部调用复杂、协议多变时才拆出 `IXxxHttpClient` 层。
 
 ```csharp
@@ -297,12 +298,12 @@ public class XxxAppService
 
 1. **Core/Models/ProductDto.cs** — 定义 `ProductDto` / `CreateProductRequest` / `UpdateProductRequest`。**列表查询的 Request 继承 `GetPageRequest`**（见分页最佳实践）。
 2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，业务属性 + 构造函数 `SetCreator("system")`。
-3. **IDomain/EntityTypeConfigurations/ProductConfiguration.cs** — 继承 `EntityTypeConfigurationIdentityOperatorStatus<Product>`，`base.Configure(builder)` 后配业务列。
+3. **EntityFramework/ProductEtc.cs** — EFCore 配置类，继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤（`ToTable`/`HasColumnName`/`HasQueryFilter`）。
 4. **IApplication/Product/IProductAppService.cs** — 接口，方法签名用 Core 的 DTO，**返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）**。
 5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency` 接口（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD。**成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`**；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。
 6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发（`return _appService.XxxAsync(...)`）。无需手写 `AddScoped`（扫描注册自动完成）。
 
-> 数据库表随实体自动映射（`BaseDbContext` 扫描配置类），无需手改 DbContext；如用 SQL 脚本迁移，在 `Service/MigrationSql/` 增版本脚本。
+> 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/MigrationSql/` 增版本脚本。
 
 ## 命名约定
 
@@ -312,7 +313,7 @@ public class XxxAppService
 | 应用服务实现 | `{Entity}AppService` | Application |
 | 控制器 | `{Entity}Controller` | Service/Controllers |
 | 实体 | 单数 `{Entity}` | IDomain/Entities |
-| 配置类 | `{Entity}Configuration` | IDomain/EntityTypeConfigurations |
+| 配置类 | `{Entity}Etc` | EntityFramework |
 | DbContext | `{Solution}DbContext` | EntityFramework |
 
 ## 何时该拆/不该拆（决策速查）

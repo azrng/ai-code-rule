@@ -51,35 +51,27 @@ entity.SetDisabled(true, "operator");// Disabled=指定值 + 调 SetUpdater
 
 ## 4. DbContext 写法
 
-### 方式 A：继承 BaseDbContext（推荐，自动加载配置）
+DbContext 放 **EntityFramework 层**，继承普通 `DbContext`，在 `OnModelCreating` 里扫描**本程序集**的 `{Entity}Etc` 配置类（配置类与 DbContext 同在 EntityFramework 程序集，才能被扫到）：
 ```csharp
-using Azrng.EFCore.PostgresSql;   // 按数据库引入对应 provider 的 BaseDbContext
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 
-public class AppDbContext : BaseDbContext
-{
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Order> Orders { get; set; }
-}
-```
-`BaseDbContext.OnModelCreating` 会扫描所有程序集里实现 `IEntityTypeConfiguration` 且实体继承 `IEntity` 的配置并应用。
-
-### 方式 B：普通 DbContext 手写
-```csharp
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
     public DbSet<User> Users { get; set; }
+    public DbSet<Order> Orders { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        modelBuilder.HasDefaultSchema("public");
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());  // 扫描本程序集的 *Etc 配置
         base.OnModelCreating(modelBuilder);
     }
 }
 ```
 
-> 实体**未**用配置类、且继承 `IEntity`（空基类）时，需自行处理列映射（如 `[Table]/[Column]` 特性或 `IsSnakeCaseNaming`）。`IsSnakeCaseNaming` 默认 true（蛇形命名）。
+> 也可继承 `BaseDbContext`（自动应用所有 `IEntityTypeConfiguration`），但本项目约定用上面的显式 `ApplyConfigurationsFromAssembly` + `{Entity}Etc` 配置类放 EntityFramework 层。
 
 ## 5. 配置类（EntityTypeConfiguration 基类）
 
@@ -94,21 +86,24 @@ public class AppDbContext : DbContext
 
 命名空间 `Azrng.EFCore.EntityTypeConfigurations`。
 
+配置类命名 `{Entity}Etc.cs`（后缀 **Etc**，不是 `Configuration`），放 **EntityFramework 层**根目录（与 DbContext 同程序集，才能被 `ApplyConfigurationsFromAssembly` 扫到）：
 ```csharp
 using Azrng.EFCore.EntityTypeConfigurations;
-using Azrng.EFCore.Extensions;    // IsUnTimeZoneDateTime
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using App.IDomain.Entities;
 
-public class UserConfiguration : EntityTypeConfigurationIdentityOperator<User, long>
+namespace App.EntityFramework;   // ← 放 EntityFramework 层
+
+public class UserEtc : EntityTypeConfigurationIdentityOperatorStatus<User, long>
 {
     public override void Configure(EntityTypeBuilder<User> builder)
     {
-        base.Configure(builder);   // 必调：应用主键/审计/列名
+        base.Configure(builder);   // 必调：主键/审计/列名/时间类型
+        builder.ToTable("user");
+        builder.HasQueryFilter(x => !x.Deleted);          // 软删除全局过滤
         builder.Property(x => x.Account).IsRequired().HasMaxLength(50).HasComment("账号");
         builder.HasIndex(x => x.Account).IsUnique();
-        // 自定义业务时间列显式无时区化（审计字段基类已处理）
-        // builder.Property(x => x.LastLogin).IsUnTimeZoneDateTime();
     }
 }
 ```
