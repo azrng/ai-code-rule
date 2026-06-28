@@ -23,6 +23,7 @@ IEntity                       （空标记接口/基类，所有实体可继承�
 ```
 
 > 命名空间 `Azrng.EFCore.Entities`。`IdentityBaseEntity`/`IdentityOperatorEntity`/`IdentityOperatorStatusEntity`（无泛型）= 其 `<long>` 版本，构造时自动 `Id = IdHelper.GetLongId()`。
+> `IdHelper` 来自 `IdHelper` 包（命名空间 `Coldairarrow.Util`），经 `Common.EFCore` 传递引用可达——**实体项目引用 `Common.EFCore` 即可，无需单独装 `IdHelper`**；实体构造一般也不用显式调（基类已设）。同理 `ToUnspecifiedDateTime()`（`Azrng.Core.Extension`）也经 `Common.EFCore → Azrng.Core` 传递可达。
 
 ## 2. 各基类字段对照
 

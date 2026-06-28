@@ -330,6 +330,16 @@ public class XxxAppService
 
 ## 依赖注入与中间件装配（Program.cs）
 
+**Service.csproj 需引用的包**（下面装配代码会用到，漏装则编译不过）：
+
+| 包 | 提供 |
+|---|---|
+| `Azrng.AspNetCore.Core` | 全局包装三件套（`AddMvcResultPackFilter`/`AddMvcModelVerifyFilter`）、`RegisterBusinessServices`（自动注册）、`app.UseGlobalException`（异常中间件） |
+| provider 包（如 `Npgsql.EntityFrameworkCore.PostgreSQL`） | `AddEntityFramework<TDbContext>` |
+| `Azrng.SqlMigration` | `AddSqlMigrationService`（SQL 迁移，按需） |
+| `Azrng.AspNetCore.Authentication.JwtBearer` | JWT 认证（按需） |
+| `Swashbuckle.AspNetCore` | Swagger（按需） |
+
 实体框架注入一次（详见 azrng-efcore skill）。AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。
 
 ```csharp
