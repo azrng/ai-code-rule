@@ -109,7 +109,7 @@ public interface IProductAppService
 ```
 
 ### Application（应用实现层）
-**放**：`*AppService` 实现，注入 `IBaseRepository<T>` / `IUnitOfWork`，承担**全部数据访问与业务逻辑**（校验、编排、事务、实体↔DTO 映射）。实现类标 `IScopedDependency` 触发自动注册。
+**放**：`*AppService` 实现，承担**用例编排**（接 DTO → 调领域服务/仓储/适配器 → 返回 DTO）、实体↔DTO 映射、事务编排。**可注入 `IBaseRepository<T>` / `IUnitOfWork` 做数据访问**（并非 AppService 独占——DomainService 也会注入仓储）。实现类标 `IScopedDependency` 触发自动注册。
 **不放**：HTTP 概念、`HttpContext`、`Ok()`、路由。
 **依赖**：IApplication（+ 间接 Domain/EntityFramework）。
 **按需引包**（只有 AppService 真用到时才加，引在 Application.csproj）：
@@ -230,6 +230,51 @@ await _unitOfWork.CommitTransactionAsync(async () =>
 
 > 需要原生 SQL / `FOR UPDATE` 行锁时（如并发扣库存/抢购），AppService 注入 DbContext 直接用 `_dbContext.Database.BeginTransactionAsync()` + `FromSqlInterpolated`。这是少数 DbContext 可跨层注入 AppService 的合理场景。分页/条件查询扩展（`ToPageListAsync`/`WhereIfNotNullOrWhiteSpace`/`PagedBy` 等）完整签名见 azrng-efcore skill。
 
+### Domain（领域服务层）
+**放**：`*DomainService` 实现，封装**可复用的公共领域操作**——被多个 AppService 复用、或承载稳定的多实体领域规则/数据访问的操作（如「发会话消息」「读系统配置」「指标计算」）。**DomainService 可注入 `IBaseRepository<T>` / `IUnitOfWork` 自己读写数据**（Domain 项目依赖 EntityFramework），也可注入 Adapter/缓存等。实现类标 `IScopedDependency` 触发自动注册。
+**不放**：HTTP 概念、DTO 映射（那是 AppService 的活）——DomainService 只返回/接收领域对象（Entity/Bo）。
+**依赖**：IDomain、EntityFramework、Adapter。
+**结对**：接口 `I{X}DomainService` 在 `IDomain/{Module}/`，实现 `{X}DomainService : IScopedDependency, I{X}DomainService` 在 `Domain/{Module}/`（与 AppService 的 IApplication/Application 结对方式一致）。**AppService 注入 `I{X}DomainService` 调用它**。
+
+```csharp
+// IDomain/SessionManager/ISessionDomainService.cs —— 接口，返回领域对象（Entity/Bo），不出现 DTO
+public interface ISessionDomainService
+{
+    Task<string> SendSessionMessageAsync(SendSessionMessageBo dto);
+    Task<ChatMemoryEntity> GetChatMemoryAsync(string messageId);
+}
+
+// Domain/SessionManager/SessionDomainService.cs —— 实现：注入多个仓储，做跨实体的领域编排（自己写库）
+public class SessionDomainService : IScopedDependency, ISessionDomainService
+{
+    private readonly IBaseRepository<ChatSessionEntity> _sessionRepository;
+    private readonly IBaseRepository<ChatMessageEntity> _chatMessageRepository;
+    public SessionDomainService(IBaseRepository<ChatSessionEntity> sessionRepository,
+                                IBaseRepository<ChatMessageEntity> chatMessageRepository)
+    { /* ... */ }
+
+    public async Task<string> SendSessionMessageAsync(SendSessionMessageBo dto)
+    {
+        var sessionId = await StartSessionAsync(...);        // 领域规则：会话不存在才创建
+        await _chatMessageRepository.AddAsync(new ChatMessageEntity(...), true);  // 自己写库
+        return sessionId;
+    }
+}
+
+// Application/ConversationService.cs —— AppService 编排：注入并调用 DomainService，做 DTO 映射
+public class ConversationService : IConversationAppService
+{
+    private readonly ISessionDomainService _sessionDomainService;   // 复用的公共操作
+    public async Task<SendResultDto> SendAsync(SendRequest req)
+    {
+        var sessionId = await _sessionDomainService.SendSessionMessageAsync(MapToBo(req));  // 调领域服务
+        return new SendResultDto { SessionId = sessionId };                                  // DTO 映射在 AppService
+    }
+}
+```
+
+> **什么时候抽 DomainService**：操作只被一个 AppService 用、不会复用 → 直接写在那个 AppService；**多个 AppService 都要用同一段操作**（参考项目里 `ISystemConfigDomainService` 被 5+ 个 AppService 共用）→ 抽成 DomainService 避免重复。纯 CRUD 项目 Domain 层可空。
+
 ### EntityFramework（基础设施-数据）
 **放**：`DbContext`（继承 `Azrng.EFCore.PostgresSql.BaseDbContext`，自动扫描 IDomain 的配置类）。
 **不放**：业务逻辑、实体定义（实体在 IDomain）、配置类（配置在 IDomain）。
@@ -343,7 +388,7 @@ HTTP 200 { isSuccess:true, code:"200", data:{ rows:[...], pageInfo:{ pageIndex, 
 Core              → (无项目引用)
 IDomain           → Core
 IApplication      → Core, IDomain
-Domain            → IDomain, EntityFramework, Adapter    ← 可选，多数项目空
+Domain            → IDomain, EntityFramework, Adapter    ← 纯 CRUD 可空，有复用操作则建
 Application       → IApplication, Domain
 EntityFramework   → Core, IDomain
 Service           → Application, Storage

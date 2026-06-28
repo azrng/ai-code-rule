@@ -17,7 +17,7 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
                 ├─────────────────────────────────────────┤
                 │  Application（应用服务实现：业务编排）      │  ← IApplication 的实现
                 ├─────────────────────────────────────────┤
-                │  Domain（领域服务实现，可选）               │  ← IDomain 的实现（多数项目可空）
+                │  Domain（领域服务实现：可复用公共操作）               │  ← IDomain 的实现（按需）
                 ├─────────────────────────────────────────┤
                 │  EntityFramework / Storage（DbContext/存储）│
                 ├─────────────────────────────────────────┤
@@ -33,8 +33,8 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 | **Core** | 最内核，纯契约/契约数据 | 仅 NuGet 基础包 | DTO、Request/Response、枚举、常量 |
 | **IDomain** | 领域契约层 | Core | 实体（Entity）、EFCore 配置类（EntityTypeConfigurations） |
 | **IApplication** | 应用契约层 | Core, IDomain | AppService 接口（`I*AppService`） |
-| **Domain** | 领域实现层（可选） | IDomain, Adapter, EntityFramework | 领域服务实现；多数 CRUD 项目此层可空 |
-| **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`），业务编排、调用仓储 |
+| **Domain** | 领域实现层 | IDomain, Adapter, EntityFramework | 领域服务实现（`{X}DomainService`）：封装可复用公共领域操作，可注入 IBaseRepository 写库；纯 CRUD 可空 |
+| **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`（继承 `BaseDbContext`）、迁移相关 |
 | **Service** | 入口/组装层 | Application, Storage | `Controllers`、`Program.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | Core, IDomain | 第三方 API 封装、外部协议适配（可选） |
@@ -46,7 +46,7 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 
 1. **依赖单向向内**：外层引用内层，内层绝不引用外层。`Core` 不引用任何项目；`Service` 引用 `Application`（不直接引用 `IBaseRepository`）。
 2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 一行转发返回值。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验、不写 `Ok()`/`return ResultModel`**。
-3. **查询/写库在 Application 层**：`AppService` 注入 `IBaseRepository<T>` / `IUnitOfWork`，承担所有数据访问与业务逻辑。
+3. **应用编排 vs 领域操作分层**：`AppService`（应用层）承担**用例编排**——接 DTO → 调领域服务/仓储/适配器 → 返回 DTO + 实体↔DTO 映射；**可复用的公共领域操作下沉到 DomainService**（领域层），如「发会话消息」「读系统配置」这类被多个 AppService 复用的操作。**AppService 和 DomainService 都可注入 `IBaseRepository<T>` / `IUnitOfWork` 做数据访问**（并非 AppService 独占）。判断：单一用例、不复用 → 直接写在 AppService；多 AppService 复用 / 稳定领域概念 → 抽 DomainService。详见「领域服务 DomainService」。
 4. **DTO 放 Core 或 IApplication**：通用业务 DTO/Request/Response 放 `Core/Models`，跨层共享（接口、实现、控制器都用）。不要在控制器内 inline 定义请求类。仅服务内部用、与某 AppService 强绑定的 DTO（如 `LoginResultDto`）可放 `IApplication/{Module}/`。
 5. **实体+配置在 IDomain**：实体继承 `Azrng.EFCore.Entities.IdentityOperatorStatusEntity`；配套配置类放 `IDomain/EntityTypeConfigurations/`（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
@@ -143,10 +143,6 @@ public Task<OrderDto> Get(long id) => _orderAppService.GetAsync(id);
 public Task<long> Create([FromBody] CreateOrderRequest req) => _orderAppService.CreateAsync(req);
 ```
 
-### 关于 `IResultModel<T>`（历史/迁移期）
-
-历史代码里 AppService 返回 `Task<IResultModel<T>>`、手动 `ResultModel<T>.Success(dto)` / `ResultModel<T>.Error(msg, code)`。这套**仍能工作**（过滤器对已是 `IResultModel` 的返回值不重复包装），所以迁移期两种模式可共存、不冲突。但新代码统一用全局包装：更省事、控制器/AppService 都是一行转发，错误靠异常自然冒泡。逐步把旧的 `IResultModel`/`Task<object>` 手动包装替换掉即可。
-
 ## 分页查询最佳实践
 
 列表查询**不要手写 `CountAsync()` + `Skip().Take().ToListAsync()`**，也不要自定义 `{ List, Total }` 响应类。用框架的一套：请求继承 `GetPageRequest` + 链式条件 + `ToPageListAsync` + 返回 `GetQueryPageResult<T>`。
@@ -191,6 +187,58 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 > 返回的 `GetQueryPageResult<Dto>` 经全局包装过滤器自动包成 `ResultModel<GetQueryPageResult<EmployeeDto>>(success)`，前端拿到 `{ isSuccess, data: { rows:[...], pageInfo:{ pageIndex, pageSize, total, totalPage } } }`。
 > 分页/条件扩展 API 的完整签名（`PagedBy`、`WhereIfNotNull<T,F>`、`WhereAny` 等）见 azrng-efcore skill「分页/条件查询扩展」。
 
+## 领域服务 DomainService（可复用公共操作）
+
+当一段领域操作**会被多个 AppService 复用**，或封装**稳定的多实体领域规则/数据访问**时，不要在每个 AppService 里重复写——抽成 DomainService。典型：会话消息收发、系统配置读写、指标计算、同义词管理等“公共能力”。
+
+**结对模式**（与 AppService 一致：接口在 `I*`、实现在无前缀项目）：
+
+| | 位置 | 命名 |
+|---|---|---|
+| 接口 | `IDomain/{Module}/` | `I{X}DomainService` |
+| 实现 | `Domain/{Module}/` | `{X}DomainService : IScopedDependency, I{X}DomainService` |
+
+**关键点**：
+- DomainService **可注入 `IBaseRepository<T>` / `IUnitOfWork` 自己读写数据**（`Domain` 项目依赖 `EntityFramework`），也可注入 Adapter/缓存等——**数据访问并非 AppService 独占**。
+- AppService 注入 `I{X}DomainService` 调用它，自己只做用例编排 + 实体↔DTO 映射。
+- DomainService 返回领域对象（Entity/Bo），**不碰 HTTP 与 DTO 映射**（那是 AppService 的活）；同样标 `IScopedDependency` 自动注册。
+
+```csharp
+// IDomain/SessionManager/ISessionDomainService.cs —— 接口，返回领域对象（Entity/Bo），不出现 DTO
+public interface ISessionDomainService
+{
+    Task<string> SendSessionMessageAsync(SendSessionMessageBo dto);
+    Task<ChatMemoryEntity> GetChatMemoryAsync(string messageId);
+}
+
+// Domain/SessionManager/SessionDomainService.cs —— 实现：注入多个仓储，做跨实体的领域编排（自己写库）
+public class SessionDomainService : IScopedDependency, ISessionDomainService
+{
+    private readonly IBaseRepository<ChatSessionEntity> _sessionRepository;
+    private readonly IBaseRepository<ChatMessageEntity> _chatMessageRepository;
+    // ...构造注入...
+    public async Task<string> SendSessionMessageAsync(SendSessionMessageBo dto)
+    {
+        var sessionId = await StartSessionAsync(...);          // 领域规则：会话不存在才创建
+        await _chatMessageRepository.AddAsync(new ChatMessageEntity(...), true);  // 自己写库
+        return sessionId;
+    }
+}
+
+// Application/ConversationService.cs —— AppService 编排：注入并调用 DomainService + DTO 映射
+public class ConversationService : IConversationAppService
+{
+    private readonly ISessionDomainService _sessionDomainService;
+    public async Task<SendResultDto> SendAsync(SendRequest req)
+    {
+        var sessionId = await _sessionDomainService.SendSessionMessageAsync(MapToBo(req));  // 调公共领域操作
+        return new SendResultDto { SessionId = sessionId };                                  // DTO 映射在 AppService
+    }
+}
+```
+
+> **判断门槛**：操作只被**一个 AppService 用、不会复用**时，直接写在那个 AppService 里即可，不必提前抽 DomainService（避免过度设计）。复用真正出现、或领域规则变复杂时再下沉——`ISystemConfigDomainService` 就是后来被 5+ 个 AppService 共用才抽出来的。
+
 ## 新增一个完整 CRUD 功能的标准流程
 
 以"商品(Product)管理"为例，自内向外依次落地 6 处（`App` 代表你的解决方案名，`Product` 代表业务实体——替换成实际的即可）：
@@ -217,7 +265,7 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 ## 何时该拆/不该拆（决策速查）
 
-- **业务逻辑该去 Application 还是 Domain？** 纯 CRUD + 简单校验 → Application 层 `AppService` 直接搞定。涉及多实体复杂领域规则、可复用的领域计算 → 抽到 Domain 层 `DomainService`，Application 调用它。多数业务系统 Domain 层可空。
+- **一段操作该放 AppService 还是 DomainService？** 只服务单一用例、不会被别处复用 → 直接写在 AppService。**被多个 AppService 复用，或封装稳定的多实体领域规则/数据访问**（如「发会话消息」「读系统配置」）→ 抽成 DomainService（接口 `I{X}DomainService` 在 IDomain，实现 `{X}DomainService : IScopedDependency` 在 Domain），AppService 注入它调用。DomainService 也会注入 `IBaseRepository`/Adapter 自己读写数据——**数据访问并非 AppService 独占**。详见「领域服务 DomainService」。
 - **DTO 还是实体？** 跨层传输/对外暴露用 DTO（Core）。DB 持久化用实体（IDomain）。**永远不要把实体直接返回给前端**（暴露审计字段、耦合存储结构），在 AppService 里映射成 DTO。
 - **返回类型怎么写？** 首选**全局包装**：AppService 返回 `Task<T>`，成功返业务对象、失败 `throw ParameterException`/`LogicBusinessException`，资源不存在 `NotFoundException.ThrowIfNull`，由 `AddMvcResultPackFilter` + `app.UseGlobalException()` 统一包装。**前提是异常中间件已装配**（否则失败返 500）。列表查询返回 `Task<GetQueryPageResult<Dto>>`。详见「全局返回包装」「分页查询最佳实践」。`Task<IResultModel<T>>` 手动包装为历史写法，新代码别再用。
 - **列表查询怎么写？** 用分页四件套（`GetPageRequest` + `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`），**别手写 Count + Skip/Take、别自定义 `{List,Total}` 响应类**。
