@@ -183,20 +183,9 @@ await _repo.UpdateAsync(entity, submit: true);
 
 #### 返回值与错误处理（全局包装模式）
 
-AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：
+AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：成功 `return dto;`、资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`、参数/业务校验失败 `throw new ParameterException(msg)`（也可是 `LogicBusinessException`）、无权限 `throw new ForbiddenException(msg)`。
 
-| 业务场景 | 写法 | 经 `app.UseGlobalException()` 映射为 |
-|---|---|---|
-| 成功（有数据） | `return dto;` | `ResultModel<T>(data, true, "success", "200")`（过滤器包装） |
-| 成功（无数据，如删除） | 无 `return`（void） | `ResultModel(true, "成功")`（过滤器包 EmptyResult） |
-| 参数/业务校验失败 | `throw new ParameterException(msg);` | `ResultModel(false, msg, "400")` + HTTP 400 |
-| 业务规则不满足 | `throw new LogicBusinessException(msg);` | `ResultModel(false, msg, "400")` + HTTP 400 |
-| 资源不存在 | `NotFoundException.ThrowIfNull(entity, "记录不存在");` | `ResultModel(false, msg, "404")` + HTTP 404 |
-| 无权限 | `throw new ForbiddenException(msg);` | `ResultModel(false, msg, "401")` + HTTP 401 |
-
-> **别用抛异常表达"业务校验失败"是旧观念**——在本架构里恰恰相反：`ParameterException` 就是给"业务校验失败/参数错误"用的，全局异常中间件（`app.UseGlobalException()`）把它映射成 400 失败结果。这套要工作，**异常中间件必须在 Program.cs 管道最外层装配**，否则抛出的异常会变成裸 500。
-
-> **关于 `IResultModel<T>`（历史/迁移期）**：旧代码里 AppService 返回 `Task<IResultModel<T>>`、手动 `ResultModel<T>.Success/Error`。它仍能工作（过滤器对已是 `IResultModel` 的返回值不重复包装），迁移期可与全局包装共存。但新代码统一用全局包装：更省事、控制器/AppService 一行转发。逐步替换即可。
+> 业务异常 → 结果映射表、三件套装配、`IResultModel<T>` 迁移期说明见 `SKILL.md → 全局返回包装`。这套要工作，**异常中间件 `app.UseGlobalException()` 必须在 Program.cs 管道最外层装配**，否则抛出的异常会变成裸 500。
 
 需要多步原子写时用 `IUnitOfWork.CommitTransactionAsync`（自动开/提交/回滚事务，传入业务委托）：
 ```csharp
@@ -381,22 +370,7 @@ public class ProductController(IProductAppService productAppService) : Controlle
 }
 ```
 
-Program.cs 装配（全局包装三件套 + 异常中间件）：
-```csharp
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllers();
-builder.Services.AddMvcResultPackFilter("/swagger");   // ① 成功返回值包装
-builder.Services.AddMvcModelVerifyFilter();            // ② 模型校验统一结果
-// ... AddEntityFramework / RegisterBusinessServices / 认证 等 ...
-
-var app = builder.Build();
-app.UseGlobalException();   // ③ 异常中间件（最外层）：业务异常 → 统一失败结果。缺它则抛异常变 500
-app.UseCors();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-app.Run();
-```
+Program.cs 装配（全局包装三件套 + 异常中间件 + 自动注册）见 `SKILL.md → 全局返回包装 → Program.cs 装配` 与 `SKILL.md → 依赖注入与中间件装配`。
 
 > 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/code/data）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
 

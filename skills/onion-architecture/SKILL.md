@@ -7,6 +7,8 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 
 指导在 Azrng 系列解决方案里正确分层：哪一层放什么、层间依赖方向、项目结对（接口/实现）、典型 CRUD 功能落点，以及贯穿所有 AppService 的两条横切约定——**全局返回包装**与**分页查询**。
 
+> 本文件是**决策入口与规则总览**；各层完整代码示例、跨层数据流、`.csproj` 依赖详见 `references/layer-responsibilities.md`。
+
 ## 分层全景
 
 依赖**由外向内**，内层不得引用外层。`Core` 是最内核（零业务依赖），`Service` 是最外层（组装+入口）。
@@ -79,7 +81,7 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 
 > 默认按真实 HTTP 状态码返回（400/404/401/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
 
-### Program.cs 装配（标准模板）
+### Program.cs 装配（标准模板，三件套都在这里）
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
@@ -105,7 +107,7 @@ app.Run();
 
 > **最常见的坑**：只注册了 `AddMvcResultPackFilter` 却忘了 `app.UseGlobalException()`——此时 AppService 抛 `ParameterException` 无人接住，业务失败会返回 HTTP 500，前端拿不到统一失败结构。三件套必须齐备。
 
-### AppService 写法（全局包装模式）
+### AppService / 控制器写法（全局包装模式）
 
 ```csharp
 // 接口（IApplication）：返回裸 Task<T>，不出现 IResultModel
@@ -142,6 +144,8 @@ public Task<OrderDto> Get(long id) => _orderAppService.GetAsync(id);
 [HttpPost]
 public Task<long> Create([FromBody] CreateOrderRequest req) => _orderAppService.CreateAsync(req);
 ```
+
+> 关于 `IResultModel<T>`（历史/迁移期）：旧代码里 AppService 返回 `Task<IResultModel<T>>`、手动 `ResultModel<T>.Success/Error`，仍能工作（过滤器不重复包装），迁移期可与全局包装共存。但新代码统一用全局包装：更省事、控制器/AppService 一行转发。逐步替换即可。
 
 ## 分页查询最佳实践
 
@@ -203,39 +207,7 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 - AppService 注入 `I{X}DomainService` 调用它，自己只做用例编排 + 实体↔DTO 映射。
 - DomainService 返回领域对象（Entity/Bo），**不碰 HTTP 与 DTO 映射**（那是 AppService 的活）；同样标 `IScopedDependency` 自动注册。
 
-```csharp
-// IDomain/SessionManager/ISessionDomainService.cs —— 接口，返回领域对象（Entity/Bo），不出现 DTO
-public interface ISessionDomainService
-{
-    Task<string> SendSessionMessageAsync(SendSessionMessageBo dto);
-    Task<ChatMemoryEntity> GetChatMemoryAsync(string messageId);
-}
-
-// Domain/SessionManager/SessionDomainService.cs —— 实现：注入多个仓储，做跨实体的领域编排（自己写库）
-public class SessionDomainService : IScopedDependency, ISessionDomainService
-{
-    private readonly IBaseRepository<ChatSessionEntity> _sessionRepository;
-    private readonly IBaseRepository<ChatMessageEntity> _chatMessageRepository;
-    // ...构造注入...
-    public async Task<string> SendSessionMessageAsync(SendSessionMessageBo dto)
-    {
-        var sessionId = await StartSessionAsync(...);          // 领域规则：会话不存在才创建
-        await _chatMessageRepository.AddAsync(new ChatMessageEntity(...), true);  // 自己写库
-        return sessionId;
-    }
-}
-
-// Application/ConversationService.cs —— AppService 编排：注入并调用 DomainService + DTO 映射
-public class ConversationService : IConversationAppService
-{
-    private readonly ISessionDomainService _sessionDomainService;
-    public async Task<SendResultDto> SendAsync(SendRequest req)
-    {
-        var sessionId = await _sessionDomainService.SendSessionMessageAsync(MapToBo(req));  // 调公共领域操作
-        return new SendResultDto { SessionId = sessionId };                                  // DTO 映射在 AppService
-    }
-}
-```
+> 完整代码示例（接口/实现/AppService 调用三方结对）见 `references/layer-responsibilities.md → Domain 层`。
 
 > **判断门槛**：操作只被**一个 AppService 用、不会复用**时，直接写在那个 AppService 里即可，不必提前抽 DomainService（避免过度设计）。复用真正出现、或领域规则变复杂时再下沉——`ISystemConfigDomainService` 就是后来被 5+ 个 AppService 共用才抽出来的。
 
@@ -258,83 +230,31 @@ public class ConversationService : IConversationAppService
 - **`IHttpHelper` 来自 `Common.HttpClients` 包**：Adapter 项目（或 Core）安装 `dotnet add package Common.HttpClients`（参考项目用 v2.0.0，按需选版本）后即可注入 `IHttpHelper` 做统一 HTTP 调用（GetAsync/PostAsync 等）。
 - **简单场景可只用一层**（领域适配器直接调通用 `IHttpHelper`），外部调用复杂、协议多变时才拆出 `IXxxHttpClient` 层。
 
-```csharp
-// IDomain/Adapter/ISmsAdapter.cs —— 接口在 IDomain，用 Bo，不暴露 HttpClient
-public interface ISmsAdapter
-{
-    Task<bool> SendAsync(SendSmsBo bo);
-}
-
-// Adapter/Service/SmsAdapter.cs —— 实现：标 IScopedDependency，Bo→Ho 转换，调下层 HttpClient
-public class SmsAdapter : IScopedDependency, ISmsAdapter
-{
-    private readonly ISmsHttpClient _smsHttpClient;
-    public SmsAdapter(ISmsHttpClient smsHttpClient) => _smsHttpClient = smsHttpClient;
-    public Task<bool> SendAsync(SendSmsBo bo)
-        => _smsHttpClient.SendAsync(new SendSmsRequestHo { Phone = bo.Phone, Content = bo.Content });
-}
-
-// Adapter/HttpWebClient/SmsHttpClient.cs —— 真实 HTTP 调用，输入/输出用 Ho
-public class SmsHttpClient : IScopedDependency, ISmsHttpClient
-{
-    private readonly IHttpHelper _httpHelper;
-    public SmsHttpClient(IHttpHelper httpHelper, IHttpClientFactory factory) => _httpHelper = httpHelper;
-    public Task<bool> SendAsync(SendSmsRequestHo req)
-        => _httpHelper.PostAsync<bool>("https://sms.example.com/send", req);
-}
-
-// Application/XxxAppService.cs —— 业务层只依赖 IDomain 里的接口，不碰 HttpClient
-public class XxxAppService
-{
-    private readonly ISmsAdapter _smsAdapter;   // 依赖接口，外部协议升级只改 Adapter
-}
-```
+> 完整代码示例（接口/两层实现/AppService 调用）见 `references/layer-responsibilities.md → Adapter 层`。
 
 > **判断门槛**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（接口 `I{X}Adapter` 在 IDomain，实现+HttpClient 在 Adapter），业务层只依赖接口。
 
 ## JSON 序列化（IJsonSerializer）
 
-需要 JSON 序列化时，统一注入 `IJsonSerializer` 接口，**不要在各处直接用 `JsonSerializer`/`JsonConvert`**——底层切换 STJ↔Newtonsoft 只改一处。
+需要 JSON 序列化时，统一注入 `IJsonSerializer`（`Azrng.Core.IJsonSerializer`），**不要在各处直接用 `JsonSerializer`/`JsonConvert`**——底层切换 STJ↔Newtonsoft 只改一处。API：`ToJson<T>(obj)`、`ToObject<T>(json)`、`Clone<T>(obj)`（深拷贝）、`ToList<T>(json)`。
 
-**接口**（`Azrng.Core.IJsonSerializer`，经依赖链传递可达）：`ToJson<T>(obj)`、`ToObject<T>(json)`、`Clone<T>(obj)`（深拷贝）、`ToList<T>(json)`。
+- 实现 + 注册：`Azrng.Core.Json`（System.Text.Json 实现 `SysTextJsonSerializer`，推荐、AOT 友好）或 `Azrng.Core.NewtonsoftJson`（`NewtonsoftJsonSerializer`，兼容旧代码）。Service 项目装实现包后 `builder.Services.ConfigureDefaultJson();`（`using Azrng.Core.Json;`）注册。
+- 默认配置（`DefaultJsonSerializerOptions`）：驼峰命名、不转义中文（`UnsafeRelaxedJsonEscaping`）、内置 Enum/DateTime/Long→String 等转换器。
 
-**实现 + 注册**：
-- `Azrng.Core.Json`（System.Text.Json 实现，`SysTextJsonSerializer`）— 推荐，AOT 友好。
-- `Azrng.Core.NewtonsoftJson`（Newtonsoft 实现，`NewtonsoftJsonSerializer`）— 兼容旧代码。
-
-Service 项目装实现包后，Program.cs 注册（`using Azrng.Core.Json;`）：
-```csharp
-builder.Services.ConfigureDefaultJson();   // 注册 IJsonSerializer → SysTextJsonSerializer + 默认选项
-// 可自定义：builder.Services.ConfigureDefaultJson(opt => opt.JsonSerializeOptions.WriteIndented = true);
-```
-
-**默认配置**（`DefaultJsonSerializerOptions`）：驼峰命名（`CamelCase`）、不转义中文（`UnsafeRelaxedJsonEscaping`）、内置 Enum/DateTime/Long→String 等转换器。
-
-**用法**（业务层注入接口，不依赖实现）：
-```csharp
-public class BiAdapter : IScopedDependency, IBiAdapter
-{
-    private readonly IJsonSerializer _jsonSerializer;
-    public BiAdapter(IJsonSerializer jsonSerializer) => _jsonSerializer = jsonSerializer;
-
-    public T? Parse<T>(string json) => _jsonSerializer.ToObject<T>(json);   // 不关心底层是 STJ 还是 Newtonsoft
-}
-```
-
-> 业务层依赖 `IJsonSerializer` 接口；切换底层只改 Service 项目装的实现包 + 注册（`ConfigureDefaultJson` 或 Newtonsoft 对应注册），不波及业务。
+> 业务层依赖 `IJsonSerializer` 接口；切换底层只改 Service 项目装的实现包 + 注册，不波及业务。
 
 ## 新增一个完整 CRUD 功能的标准流程
 
-以"商品(Product)管理"为例，自内向外依次落地 6 处（`App` 代表你的解决方案名，`Product` 代表业务实体——替换成实际的即可）：
+以"商品(Product)管理"为例，自内向外依次落地（详版含每步完整代码见 `references/layer-responsibilities.md → 完整功能落点速查`）：
 
-1. **Core/Models/ProductDto.cs** — 定义 `ProductDto` / `CreateProductRequest` / `UpdateProductRequest`。**列表查询的 Request 继承 `GetPageRequest`**（见分页最佳实践）。
-2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，业务属性 + 构造函数 `SetCreator("system")`。
-3. **EntityFramework/ProductEtc.cs** — EFCore 配置类，继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤（`ToTable`/`HasColumnName`/`HasQueryFilter`）。
-4. **IApplication/Product/IProductAppService.cs** — 接口，方法签名用 Core 的 DTO，**返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）**。
-5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency` 接口（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD。**成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`**；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。
-6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发（`return _appService.XxxAsync(...)`）。无需手写 `AddScoped`（扫描注册自动完成）。
+1. **Core/Models/ProductDto.cs** — `ProductDto` / `CreateProductRequest` / `UpdateProductRequest`；列表 Request 继承 `GetPageRequest`。
+2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，构造函数 `SetCreator("system")`。
+3. **EntityFramework/ProductEtc.cs** — 配置类继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤。
+4. **IApplication/Product/IProductAppService.cs** — 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）。
+5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。
+6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发。无需手写 `AddScoped`（扫描注册自动完成）。
 
-> 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/MigrationSql/` 增版本脚本。
+> 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/MigrationSql/` 增版本脚本（详见 azrng-efcore skill）。
 
 ## 命名约定
 
@@ -349,30 +269,16 @@ public class BiAdapter : IScopedDependency, IBiAdapter
 
 ## 何时该拆/不该拆（决策速查）
 
-- **一段操作该放 AppService 还是 DomainService？** 只服务单一用例、不会被别处复用 → 直接写在 AppService。**被多个 AppService 复用，或封装稳定的多实体领域规则/数据访问**（如「发会话消息」「读系统配置」）→ 抽成 DomainService（接口 `I{X}DomainService` 在 IDomain，实现 `{X}DomainService : IScopedDependency` 在 Domain），AppService 注入它调用。DomainService 也会注入 `IBaseRepository`/Adapter 自己读写数据——**数据访问并非 AppService 独占**。详见「领域服务 DomainService」。
-- **DTO 还是实体？** 跨层传输/对外暴露用 DTO（Core）。DB 持久化用实体（IDomain）。**永远不要把实体直接返回给前端**（暴露审计字段、耦合存储结构），在 AppService 里映射成 DTO。
-- **返回类型怎么写？** 首选**全局包装**：AppService 返回 `Task<T>`，成功返业务对象、失败 `throw ParameterException`/`LogicBusinessException`，资源不存在 `NotFoundException.ThrowIfNull`，由 `AddMvcResultPackFilter` + `app.UseGlobalException()` 统一包装。**前提是异常中间件已装配**（否则失败返 500）。列表查询返回 `Task<GetQueryPageResult<Dto>>`。详见「全局返回包装」「分页查询最佳实践」。`Task<IResultModel<T>>` 手动包装为历史写法，新代码别再用。
-- **列表查询怎么写？** 用分页四件套（`GetPageRequest` + `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`），**别手写 Count + Skip/Take、别自定义 `{List,Total}` 响应类**。
+只列**决策增量**——基础规则见上方「核心规则」，分页/全局包装写法见对应章节。
+
+- **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数纯 CRUD 项目初期 Domain/Adapter/Storage 可空，出现对应需求（复用操作 / 外部调用 / 文件存储）再建。
 - **读取用 `Entities` 还是 `EntitiesNoTacking`？** 只读查询默认 `EntitiesNoTacking`（不带追踪、更快）；读出来还要改并回写才用 `Entities`。
 - **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
-- **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数纯 CRUD 项目初期 Domain/Adapter/Storage 可空，出现对应需求（复用操作 / 外部调用 / 文件存储）再建。
-- **调用外部系统（第三方 API/微服务/SDK）还是本系统数据库？** 本系统数据库 → AppService/DomainService 直接注入 `IBaseRepository`；**外部系统 → 走 Adapter**（接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现+HttpClient 在 `Adapter/`），业务层只依赖接口。详见「外部适配器 Adapter」。
 - **控制器能不能调多个 AppService？** 可以，但要警惕——若一个请求要协调多个服务完成一个事务，说明该把编排逻辑下沉到一个 AppService（用 `IUnitOfWork` 包事务），控制器只调这一个。
 
 ## 依赖注入与中间件装配（Program.cs）
 
-**Service.csproj 需引用的包**（下面装配代码会用到，漏装则编译不过）：
-
-| 包 | 提供 |
-|---|---|
-| `Azrng.AspNetCore.Core` | 全局包装三件套（`AddMvcResultPackFilter`/`AddMvcModelVerifyFilter`）、`RegisterBusinessServices`（自动注册）、`app.UseGlobalException`（异常中间件） |
-| provider 包（如 `Npgsql.EntityFrameworkCore.PostgreSQL`） | `AddEntityFramework<TDbContext>` |
-| `Azrng.SqlMigration` | `AddSqlMigrationService`（SQL 迁移，按需） |
-| `Azrng.AspNetCore.Authentication.JwtBearer` | JWT 认证（按需） |
-| `Swashbuckle.AspNetCore` | Swagger（按需） |
-| `Azrng.Core.Json` | `ConfigureDefaultJson` + `IJsonSerializer`（STJ 实现，按需） |
-
-实体框架注入一次（详见 azrng-efcore skill）。AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。
+AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。完整 Program.cs 装配代码（含三件套）见上方「全局返回包装 → Program.cs 装配」。
 
 ```csharp
 builder.Services.AddEntityFramework<AppDbContext>(o =>
@@ -383,10 +289,6 @@ builder.Services.AddEntityFramework<AppDbContext>(o =>
 
 // 扫描匹配程序集，把实现 IScope/Transient/SingletonDependency 的类自动注册
 builder.Services.RegisterBusinessServices("App.*.dll");
-
-// 全局返回包装三件套（成功包装 + 模型校验）
-builder.Services.AddMvcResultPackFilter("/swagger");
-builder.Services.AddMvcModelVerifyFilter();
 ```
 
 AppService 实现类标接口即可被扫到（无需手写 `AddScoped`）：
@@ -397,33 +299,19 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 { /* ... */ }
 ```
 
-中间件管道（`var app = builder.Build();` 之后）——**异常中间件必须最先注册（最外层）**：
-```csharp
-app.UseGlobalException();   // 最外层：兜底所有业务异常 → 统一失败结果
-app.UseCors();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-```
-
 > 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
+> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、provider 包（如 `Npgsql.EntityFrameworkCore.PostgreSQL`，提供 `AddEntityFramework<TDbContext>`）、按需 `Azrng.SqlMigration`（SQL 迁移）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Swashbuckle.AspNetCore`（Swagger）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）。
 
-## 常见反模式（必须避免）
+## 常见反模式（最易踩）
 
 | 反模式 | 正确做法 |
 |---|---|
-| 控制器注入 `IBaseRepository<T>` 写查询 | 查询移到 AppService，控制器只调 AppService |
-| 控制器里 `return Ok(result)` 或手动 `return ResultModel.Success(...)` | 一行转发 `return _appService.XxxAsync(...)`，由全局包装过滤器自动包装 |
-| AppService 成功 `return ResultModel<T>.Success(dto)` 手动包装（新代码） | 全局包装：直接 `return dto`（`IResultModel` 手动包装为历史写法） |
-| AppService 业务失败 `return ResultModel.Error(msg)`（新代码） | `throw new ParameterException(msg)`，由异常中间件映射（手动 Error 为历史写法） |
-| AppService 抛 `ParameterException` 但未注册 `app.UseGlobalException()` | 必须装配异常中间件，否则业务失败返 500 |
-| AppService 用 `try/catch` 吞异常、绕过校验掩盖问题 | 业务失败直接抛对应业务异常，让中间件统一处理 |
+| 控制器注入 `IBaseRepository<T>` 写查询 / 写业务校验 | 查询和校验移到 AppService，控制器只一行转发 |
 | 列表查询手写 `CountAsync()` + `Skip().Take()` + 自定义 `{List,Total}` 类 | 用分页四件套（`ToPageListAsync` + `GetQueryPageResult<T>`） |
-| 实体直接作为 API 返回值 | AppService 映射成 Core 的 DTO 再返回 |
-| 在 Core 引用 EFCore/HttpContext | Core 零基础设施依赖，只放纯数据契约 |
-| AppService 里写 `SELECT *` 原生 SQL 拼 UI | 用 `IBaseRepository.Entities/EntitiesNoTacking` + LINQ |
+| 实体直接作为 API 返回值 | AppService 映射成 Core 的 DTO 再返回；实体只在 AppService↔DbContext 间流动 |
 | 新功能不建接口直接写实现类 | 先 `I*AppService` 接口，控制器依赖接口 |
-| 业务校验写在控制器 | 校验下沉到 AppService，失败抛 `ParameterException` |
+
+> 遇到存量项目未遵循上述约定（如用 Newtonsoft、自研 ResultFilter、`QueryableWhereIf`），按现有代码风格走、不强行改写可工作代码；新增功能才按本指南。
 
 ## 深入参考
 
