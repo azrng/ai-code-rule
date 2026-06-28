@@ -47,21 +47,21 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 1. **依赖单向向内**：外层引用内层，内层绝不引用外层。`Core` 不引用任何项目；`Service` 引用 `Application`（不直接引用 `IBaseRepository`）。
 2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 返回业务对象。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验**。
 3. **查询/写库在 Application 层**：`AppService` 注入 `IBaseRepository<T>` / `IUnitOfWork`，承担所有数据访问与业务逻辑。
-4. **DTO 在 Core**：请求/响应/传输对象统一放 `Core/Models`，供接口、实现、控制器、AppService 共享。不要在控制器内 inline 定义请求类。
+4. **DTO 放 Core 或 IApplication**：通用业务 DTO/Request/Response 放 `Core/Models`，跨层共享（接口、实现、控制器都用）。不要在控制器内 inline 定义请求类。仅服务内部用、与某 AppService 强绑定的 DTO（如 `LoginResultDto`）可放 `IApplication/{Module}/`。
 5. **实体+配置在 IDomain**：实体继承 `Azrng.EFCore.Entities.IdentityOperatorStatusEntity`；配套配置类放 `IDomain/EntityTypeConfigurations/`（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
-7. **返回值靠全局包装**：控制器方法直接 `return 业务对象`（项目已注册 `AddMvcResultPackFilter` 全局包装为 `ResultModel`），错误路径 `return ResultModel.Error(msg, code)`，不用 `Ok(...)`。
+7. **返回值用 `IResultModel<T>`**：AppService 方法返回 `Task<IResultModel<T>>`，成功 `return ResultModel<T>.Success(dto)`、失败 `return ResultModel<T>.Error(msg, code)`——强类型、可读、错误信息带进统一结果体。控制器直接 `return` 该结果，不用 `Ok(...)`，也无需全局包装器二次包裹（`IResultModel` 本身就是对外契约）。详见「决策速查」返回类型条。
 
 ## 新增一个完整 CRUD 功能的标准流程
 
-以"电影(Movie)管理"为例，自内向外依次落地 6 处：
+以"商品(Product)管理"为例，自内向外依次落地 6 处（`App` 代表你的解决方案名，`Product` 代表业务实体——替换成实际的即可）：
 
-1. **Core/Models/MovieDto.cs** — 定义 `MovieDto` / `MovieListRequest` / `MovieListResponse` / `CreateMovieRequest` / `UpdateMovieRequest`。
-2. **IDomain/Entities/Movie.cs** — 实体继承 `IdentityOperatorStatusEntity`，业务属性 + 构造函数 `SetCreator("system")`。
-3. **IDomain/EntityTypeConfigurations/MovieConfiguration.cs** — 继承 `EntityTypeConfigurationIdentityOperatorStatus<Movie>`，`base.Configure(builder)` 后配业务列。
-4. **IApplication/MovieManager/IMovieAppService.cs** — 接口，方法签名用 Core 的 DTO。
-5. **Application/MovieManager/MovieAppService.cs** — 实现，注入 `IBaseRepository<Movie>`，写查询/校验/CRUD；成功返回 DTO，失败 `ResultModel.Error(...)`。
-6. **Service/Controllers/MovieController.cs** — 注入 `IMovieAppService`，每个 action 一行转发；并在 `Program.cs` `AddScoped<IMovieAppService, MovieAppService>()`。
+1. **Core/Models/ProductDto.cs** — 定义 `ProductDto` / `ProductListRequest` / `ProductListResponse` / `CreateProductRequest` / `UpdateProductRequest`。
+2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，业务属性 + 构造函数 `SetCreator("system")`。
+3. **IDomain/EntityTypeConfigurations/ProductConfiguration.cs** — 继承 `EntityTypeConfigurationIdentityOperatorStatus<Product>`，`base.Configure(builder)` 后配业务列。
+4. **IApplication/Product/IProductAppService.cs** — 接口，方法签名用 Core 的 DTO，返回 `Task<IResultModel<T>>`。
+5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency` 接口（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `ResultModel<T>.Success(dto)`，失败 `ResultModel<T>.Error(msg, code)`。
+6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发（`return _appService.XxxAsync(...)`）。无需手写 `AddScoped`（扫描注册自动完成）。
 
 > 数据库表随实体自动映射（`BaseDbContext` 扫描配置类），无需手改 DbContext；如用 SQL 脚本迁移，在 `Service/MigrationSql/` 增版本脚本。
 
@@ -80,34 +80,43 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 
 - **业务逻辑该去 Application 还是 Domain？** 纯 CRUD + 简单校验 → Application 层 `AppService` 直接搞定。涉及多实体复杂领域规则、可复用的领域计算 → 抽到 Domain 层 `DomainService`，Application 调用它。多数业务系统 Domain 层可空。
 - **DTO 还是实体？** 跨层传输/对外暴露用 DTO（Core）。DB 持久化用实体（IDomain）。**永远不要把实体直接返回给前端**（暴露审计字段、耦合存储结构），在 AppService 里映射成 DTO。
+- **返回类型怎么写？** 优先 `Task<IResultModel<T>>`：成功 `ResultModel<T>.Success(dto)`、失败 `ResultModel<T>.Error(msg, code)`，类型安全且错误信息进统一结果体（这是项目演进后的首选模式）。历史代码里有两种过渡写法可容忍但新代码别再用：① `Task<object>`（成功返 DTO、失败返 `ResultModel.Error`，丢失泛型）；② 纯成功路径直接返 `Task<T>`（无错误通道，靠全局过滤器包装）。**不要用抛异常表达业务校验失败**；资源确实不存在（如按 id 查不到）可用框架的 `NotFoundException.ThrowIfNull`。详见 references/layer-responsibilities.md「返回类型与结果模型」。
+- **读取用 `Entities` 还是 `EntitiesNoTacking`？** 只读查询默认 `EntitiesNoTacking`（不带追踪、更快）；读出来还要改并回写才用 `Entities`。
+- **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
 - **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数 CRUD 项目 Domain/Adapter/Storage 留空（占位 `Class1.cs`）即可。
 - **控制器能不能调多个 AppService？** 可以，但要警惕——若一个请求要协调多个服务完成一个事务，说明该把编排逻辑下沉到一个 AppService（用 `IUnitOfWork` 包事务），控制器只调这一个。
 
 ## 依赖注入装配（Program.cs）
 
-实体框架注入一次（详见 azrng-efcore skill），AppService 逐个 `AddScoped`：
+实体框架注入一次（详见 azrng-efcore skill）。AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。
 
 ```csharp
-builder.Services.AddEntityFramework<MovieManageDbContext>(o =>
+builder.Services.AddEntityFramework<AppDbContext>(o =>
 {
     o.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
     o.Schema = "public";
 });
 
-// 每个 AppService 一行注册（接口→实现，Scoped）
-builder.Services.AddScoped<IMovieAppService, MovieAppService>();
-builder.Services.AddScoped<ICategoryAppService, CategoryAppService>();
-// ...
+// 扫描匹配程序集，把实现 IScope/Transient/SingletonDependency 的类自动注册
+builder.Services.RegisterBusinessServices("App.*.dll");
 ```
 
-> 不自动扫描注入，保持显式注册（可追溯）。控制器由 `AddControllers()` 自动发现，无需注册。
+AppService 实现类标接口即可被扫到（无需手写 `AddScoped`）：
+```csharp
+using Azrng.Core.DependencyInjection;
+
+public class ProductAppService : IScopedDependency, IProductAppService  // ← IScopedDependency 触发自动注册
+{ /* ... */ }
+```
+
+> 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
 
 ## 常见反模式（必须避免）
 
 | 反模式 | 正确做法 |
 |---|---|
 | 控制器注入 `IBaseRepository<T>` 写查询 | 查询移到 AppService，控制器只调 AppService |
-| 控制器里 `return Ok(result)` | 直接 `return result`（全局 `ResultPackFilter` 已包装） |
+| 控制器里 `return Ok(result)` | 直接 `return result`（`IResultModel<T>` 已是统一结果契约，无需包装） |
 | 实体直接作为 API 返回值 | AppService 映射成 Core 的 DTO 再返回 |
 | 在 Core 引用 EFCore/HttpContext | Core 零基础设施依赖，只放纯数据契约 |
 | AppService 里写 `SELECT *` 原生 SQL 拼 UI | 用 `IBaseRepository.Entities/EntitiesNoTacking` + LINQ |
