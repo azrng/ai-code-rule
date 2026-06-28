@@ -120,6 +120,52 @@ try {
 
 三种事务方式对比见 references/repository-and-unitofwork.md。
 
+## 分页与条件查询扩展（常用）
+
+列表查询不要手写 `CountAsync()` + `Skip().Take()`，用框架的分页/条件扩展。扩展分属两个命名空间，按需 `using`。
+
+**条件筛选**（`Azrng.Core.Extension`，`using Azrng.Core.Extension;`）——替代手写 `if (...) query = query.Where(...)`：
+
+| 扩展 | 用途 |
+|---|---|
+| `.WhereIfNotNullOrWhiteSpace(string? value, predicate)` | 值非空/非空白才 Where（列表筛选最常用） |
+| `.WhereIfNotNull<T,F>(F? value, predicate)` | 值非 null 才 Where（值类型/对象筛选） |
+| `.WhereIfTrue(bool condition, predicate)` / `.QueryableWhereIf(...)` | 任意布尔条件才 Where |
+| `.WhereAny(params predicates)` | 多条件 OR 查询 |
+
+**分页**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）——一次完成 Count + Skip/Take：
+
+```csharp
+// 推荐：传 GetPageRequest + RefAsync<int> 接收总数，内部一次 Count + 分页
+var total = new RefAsync<int>();
+var list = await query.ToPageListAsync(request, total);   // request: GetPageRequest
+
+// 也可只取一页、不要总数：
+var page  = await query.ToPageListAsync(request);          // 不算 total
+var page2 = await query.ToPageListAsync(pageIndex, pageSize);
+```
+
+> `ToPageListAsync` 来自 `Common.EFCore`（`Azrng.EFCore.Extensions`）；`PagedBy(GetPageRequest)` 只分页不算总数（来自 `Azrng.Core.Extension`），用于已单独算过总数的场景。
+
+**分页结果模型**（`Azrng.Core.Results`，`using Azrng.Core.Results;`）——`GetQueryPageResult<T>`，含 `Rows`(List<T>) + `PageInfo`(PageIndex/PageSize/Total/TotalPage)：
+
+```csharp
+// request 继承 GetPageRequest（自带 PageIndex/PageSize，using Azrng.Core.Requests）
+public async Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListRequest request)
+{
+    var total = new RefAsync<int>();
+    var list = await _repo.EntitiesNoTacking.Where(p => !p.Deleted)
+        .WhereIfNotNullOrWhiteSpace(request.Name, p => p.Name.Contains(request.Name!))
+        .OrderByDescending(p => p.CreateTime)
+        .Select(p => new ProductDto { /* ... */ })
+        .ToPageListAsync(request, total);
+
+    return new GetQueryPageResult<ProductDto>(list, new GetQueryPageResult(request, total));
+}
+```
+
+> `RefAsync<T>`（`using Azrng.Core.CommonDto;`）有到 `T` 的隐式转换，`new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。分页在 AppService 的整体编排（含全局返回包装）见 onion-architecture skill「分页查询最佳实践」。
+
 ## 决策指引（AI 必读）
 
 - **选 provider**：按目标数据库选包，注入方式几乎一致（仅连接串与可选 builder 委托不同）。对照表见 references/providers.md。

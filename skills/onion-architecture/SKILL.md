@@ -1,11 +1,11 @@
 ---
 name: onion-architecture
-description: Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Use when adding a new feature, deciding which project a class belongs in, wiring dependency-injection in Program.cs, creating a new AppService/Controller/Entity/Configuration, or reviewing where business logic vs data-access vs DTOs should live. Triggers on questions like "这个类该放哪一层", "新建一个 XXX 功能", "控制器太胖怎么拆", or confusion about IApplication vs Application / IDomain vs Domain project pairs.
+description: Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers the two cross-cutting conventions every AppService follows — global result-packing (success returns Task<T>, business failure throws ParameterException, packed by AddMvcResultPackFilter + app.UseGlobalException) and paged queries (GetPageRequest + WhereIfNotNullOrWhiteSpace + ToPageListAsync + GetQueryPageResult<T>). Use when adding a new feature, deciding which project a class belongs in, wiring DI / middleware in Program.cs, creating a new AppService/Controller/Entity/Configuration, or reviewing where business logic vs data-access vs DTOs should live. Triggers on questions like "这个类该放哪一层", "新建一个 XXX 功能", "控制器太胖怎么拆", "接口返回值怎么写 / 要不要包 IResultModel", "分页查询怎么写", or confusion about IApplication vs Application / IDomain vs Domain project pairs.
 ---
 
 # 洋葱架构（Onion / Clean Architecture）分层指南
 
-指导在 Azrng 系列解决方案里正确分层：哪一层放什么、层间依赖方向、项目结对（接口/实现）、典型 CRUD 功能落点。
+指导在 Azrng 系列解决方案里正确分层：哪一层放什么、层间依赖方向、项目结对（接口/实现）、典型 CRUD 功能落点，以及贯穿所有 AppService 的两条横切约定——**全局返回包装**与**分页查询**。
 
 ## 分层全景
 
@@ -36,7 +36,7 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 | **Domain** | 领域实现层（可选） | IDomain, Adapter, EntityFramework | 领域服务实现；多数 CRUD 项目此层可空 |
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`），业务编排、调用仓储 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`（继承 `BaseDbContext`）、迁移相关 |
-| **Service** | 入口/组装层 | Application, Storage | `Controllers`、`Program.cs`（DI 装配）、中间件、配置 |
+| **Service** | 入口/组装层 | Application, Storage | `Controllers`、`Program.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | Core, IDomain | 第三方 API 封装、外部协议适配（可选） |
 | **Storage** | 存储适配 | Core | 文件/对象存储封装（可选） |
 
@@ -45,22 +45,161 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 ## 核心规则（AI 必读）
 
 1. **依赖单向向内**：外层引用内层，内层绝不引用外层。`Core` 不引用任何项目；`Service` 引用 `Application`（不直接引用 `IBaseRepository`）。
-2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 返回业务对象。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验**。
+2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 一行转发返回值。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验、不写 `Ok()`/`return ResultModel`**。
 3. **查询/写库在 Application 层**：`AppService` 注入 `IBaseRepository<T>` / `IUnitOfWork`，承担所有数据访问与业务逻辑。
 4. **DTO 放 Core 或 IApplication**：通用业务 DTO/Request/Response 放 `Core/Models`，跨层共享（接口、实现、控制器都用）。不要在控制器内 inline 定义请求类。仅服务内部用、与某 AppService 强绑定的 DTO（如 `LoginResultDto`）可放 `IApplication/{Module}/`。
 5. **实体+配置在 IDomain**：实体继承 `Azrng.EFCore.Entities.IdentityOperatorStatusEntity`；配套配置类放 `IDomain/EntityTypeConfigurations/`（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
-7. **返回值用 `IResultModel<T>`**：AppService 方法返回 `Task<IResultModel<T>>`，成功 `return ResultModel<T>.Success(dto)`、失败 `return ResultModel<T>.Error(msg, code)`——强类型、可读、错误信息带进统一结果体。控制器直接 `return` 该结果，不用 `Ok(...)`，也无需全局包装器二次包裹（`IResultModel` 本身就是对外契约）。详见「决策速查」返回类型条。
+7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
+
+## 全局返回包装（三件套 + Program.cs 装配）
+
+这是本架构的**统一对外结果契约**：所有 action 返回值最终都是 `{ isSuccess, code, message, data }` 形态的 `ResultModel`，但**业务代码不手动包装**——靠框架三件套自动完成。
+
+### 三件套（来自 `Azrng.AspNetCore.Core`，缺一不可）
+
+| 件 | 注册 | 负责路径 | 行为 |
+|---|---|---|---|
+| 返回值包装过滤器 `CustomResultPackFilter` | `services.AddMvcResultPackFilter("/swagger")` | **成功路径** | action 返回值**非 `IResultModel`** → 包成 `ResultModel<T>(data, true, "success", "200")`；`EmptyResult`→`ResultModel(true,"成功")`；已是 `IResultModel` 则**不重复包装**；`[NoWrapper]` 特性或忽略前缀跳过 |
+| 模型校验过滤器 `ModelVerifyFilter` | `services.AddMvcModelVerifyFilter()` | **模型校验失败** | 把 `ModelState` 错误转成 `ResultModel(false,"参数格式不正确","400", errors)` |
+| 全局异常中间件 `CustomExceptionMiddleware` | `app.UseGlobalException()` | **业务异常 / 未处理异常** | catch 异常，按类型映射成 `ResultModel(false, msg, code)`（见下表） |
+
+> **成功路径靠过滤器，失败路径靠异常中间件**——这是全局包装的核心。两者必须都装配，否则失败抛异常会变成裸 500。
+
+### 业务异常 → 结果映射（`CustomExceptionMiddleware`）
+
+| 业务场景 | 抛什么（`Azrng.Core.Exceptions`） | HTTP 状态码 | ErrorCode |
+|---|---|---|---|
+| 参数错误 / 业务校验失败 | `throw new ParameterException(msg)` | 400 | `"400"` |
+| 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"400"` |
+| 资源不存在（按 id 查不到） | `NotFoundException.ThrowIfNull(entity, "记录不存在")` | 404 | `"404"` |
+| 无权限 / 鉴权失败 | `throw new ForbiddenException(msg)` | 401 | `"401"` |
+| 服务器内部错误 | `throw new InternalServerException(msg)` | 500 | `"500"` |
+| 其他未处理异常 | （任何 `Exception`） | 500 | `"500"` |
+
+> 默认按真实 HTTP 状态码返回（400/404/401/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
+
+### Program.cs 装配（标准模板）
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+// ① 成功路径包装（"/swagger" 等前缀不包装）
+builder.Services.AddMvcResultPackFilter("/swagger");
+// ② 模型校验失败统一结果
+builder.Services.AddMvcModelVerifyFilter();
+// ... AddEntityFramework / RegisterBusinessServices / 认证 等 ...
+
+var app = builder.Build();
+
+// ③ 全局异常中间件：必须放在管道最外层（最早），才能兜住后续所有中间件/控制器抛出的异常
+app.UseGlobalException();
+
+app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+```
+
+> **最常见的坑**：只注册了 `AddMvcResultPackFilter` 却忘了 `app.UseGlobalException()`——此时 AppService 抛 `ParameterException` 无人接住，业务失败会返回 HTTP 500，前端拿不到统一失败结构。三件套必须齐备。
+
+### AppService 写法（全局包装模式）
+
+```csharp
+// 接口（IApplication）：返回裸 Task<T>，不出现 IResultModel
+public interface IOrderAppService
+{
+    Task<OrderDto> GetAsync(long id);                 // 成功返 DTO
+    Task<long> CreateAsync(CreateOrderRequest req);   // 成功返 id
+    Task DeleteAsync(long id);                        // 无返回数据
+}
+
+// 实现（Application）：成功直接 return；失败 throw 业务异常（不要手写 ResultModel.Error）
+public async Task<OrderDto> GetAsync(long id)
+{
+    var order = await _repository.EntitiesNoTacking.FirstOrDefaultAsync(x => x.Id == id);
+    NotFoundException.ThrowIfNull(order, "订单不存在");   // 资源不存在 → 404
+    return new OrderDto { /* 实体→DTO 映射 */ };
+}
+
+public async Task<long> CreateAsync(CreateOrderRequest req)
+{
+    if (req.Amount <= 0)
+        throw new ParameterException("金额必须大于 0");   // 业务校验失败 → 400
+    var order = new Order { /* ... */ };
+    await _repository.AddAsync(order, submit: true);
+    return order.Id;                                     // 成功 → 过滤器包成 ResultModel<long>(success)
+}
+```
+
+```csharp
+// 控制器（Service）：一行转发，不写 Ok() / 不写 ResultModel
+[HttpGet("{id}")]
+public Task<OrderDto> Get(long id) => _orderAppService.GetAsync(id);
+
+[HttpPost]
+public Task<long> Create([FromBody] CreateOrderRequest req) => _orderAppService.CreateAsync(req);
+```
+
+### 关于 `IResultModel<T>`（历史/迁移期）
+
+历史代码里 AppService 返回 `Task<IResultModel<T>>`、手动 `ResultModel<T>.Success(dto)` / `ResultModel<T>.Error(msg, code)`。这套**仍能工作**（过滤器对已是 `IResultModel` 的返回值不重复包装），所以迁移期两种模式可共存、不冲突。但新代码统一用全局包装：更省事、控制器/AppService 都是一行转发，错误靠异常自然冒泡。逐步把旧的 `IResultModel`/`Task<object>` 手动包装替换掉即可。
+
+## 分页查询最佳实践
+
+列表查询**不要手写 `CountAsync()` + `Skip().Take().ToListAsync()`**，也不要自定义 `{ List, Total }` 响应类。用框架的一套：请求继承 `GetPageRequest` + 链式条件 + `ToPageListAsync` + 返回 `GetQueryPageResult<T>`。
+
+### 四件套
+
+| 角色 | 类型/API | 命名空间（using） |
+|---|---|---|
+| 分页请求基类（带 `PageIndex`/`PageSize`） | `GetPageRequest` | `Azrng.Core.Requests` |
+| 条件筛选（值非空才 Where，替代手写 `if`） | `IQueryable<T>.WhereIfNotNullOrWhiteSpace(value, predicate)` | `Azrng.Core.Extension` |
+| 一次完成 Count + 分页 | `IQueryable<T>.ToPageListAsync(GetPageRequest, RefAsync<int>)` | `Azrng.EFCore.Extensions` |
+| 总数引用容器 | `RefAsync<int>` | `Azrng.Core.CommonDto` |
+| 分页结果（`Rows` + `PageInfo`） | `GetQueryPageResult<T>` | `Azrng.Core.Results` |
+
+### 标准写法（AppService）
+
+```csharp
+// 1) 请求类继承 GetPageRequest，只声明业务筛选字段（PageIndex/PageSize 由基类提供）
+public class EmployeeListRequest : GetPageRequest
+{
+    public string? Username { get; set; }
+    public string? Role { get; set; }
+}
+
+// 2) AppService：链式 WhereIfNotNullOrWhiteSpace + ToPageListAsync，返回 GetQueryPageResult<Dto>
+public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequest request)
+{
+    var total = new RefAsync<int>();                 // 接收总数
+    var list = await _repository.EntitiesNoTacking.Where(e => !e.Deleted)
+        .WhereIfNotNullOrWhiteSpace(request.Username, t => t.Username.Contains(request.Username!))
+        .WhereIfNotNullOrWhiteSpace(request.Role, t => t.Role == request.Role)
+        .OrderByDescending(e => e.CreateTime)
+        .Select(t => new EmployeeDto { Id = t.Id, Username = t.Username, /* ... */ })
+        .ToPageListAsync(request, total);            // 内部一次 Count + Skip/Take
+
+    return new GetQueryPageResult<EmployeeDto>(list, new GetQueryPageResult(request, total));
+    // 或等价的四参构造：new GetQueryPageResult<EmployeeDto>(list, request.PageIndex, request.PageSize, total);
+}
+```
+
+> `RefAsync<T>` 有到 `T` 的隐式转换，所以 `new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。
+> 返回的 `GetQueryPageResult<Dto>` 经全局包装过滤器自动包成 `ResultModel<GetQueryPageResult<EmployeeDto>>(success)`，前端拿到 `{ isSuccess, data: { rows:[...], pageInfo:{ pageIndex, pageSize, total, totalPage } } }`。
+> 分页/条件扩展 API 的完整签名（`PagedBy`、`WhereIfNotNull<T,F>`、`WhereAny` 等）见 azrng-efcore skill「分页/条件查询扩展」。
 
 ## 新增一个完整 CRUD 功能的标准流程
 
 以"商品(Product)管理"为例，自内向外依次落地 6 处（`App` 代表你的解决方案名，`Product` 代表业务实体——替换成实际的即可）：
 
-1. **Core/Models/ProductDto.cs** — 定义 `ProductDto` / `ProductListRequest` / `ProductListResponse` / `CreateProductRequest` / `UpdateProductRequest`。
+1. **Core/Models/ProductDto.cs** — 定义 `ProductDto` / `CreateProductRequest` / `UpdateProductRequest`。**列表查询的 Request 继承 `GetPageRequest`**（见分页最佳实践）。
 2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，业务属性 + 构造函数 `SetCreator("system")`。
 3. **IDomain/EntityTypeConfigurations/ProductConfiguration.cs** — 继承 `EntityTypeConfigurationIdentityOperatorStatus<Product>`，`base.Configure(builder)` 后配业务列。
-4. **IApplication/Product/IProductAppService.cs** — 接口，方法签名用 Core 的 DTO，返回 `Task<IResultModel<T>>`。
-5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency` 接口（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `ResultModel<T>.Success(dto)`，失败 `ResultModel<T>.Error(msg, code)`。
+4. **IApplication/Product/IProductAppService.cs** — 接口，方法签名用 Core 的 DTO，**返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）**。
+5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency` 接口（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD。**成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`**；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。
 6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发（`return _appService.XxxAsync(...)`）。无需手写 `AddScoped`（扫描注册自动完成）。
 
 > 数据库表随实体自动映射（`BaseDbContext` 扫描配置类），无需手改 DbContext；如用 SQL 脚本迁移，在 `Service/MigrationSql/` 增版本脚本。
@@ -80,13 +219,14 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 
 - **业务逻辑该去 Application 还是 Domain？** 纯 CRUD + 简单校验 → Application 层 `AppService` 直接搞定。涉及多实体复杂领域规则、可复用的领域计算 → 抽到 Domain 层 `DomainService`，Application 调用它。多数业务系统 Domain 层可空。
 - **DTO 还是实体？** 跨层传输/对外暴露用 DTO（Core）。DB 持久化用实体（IDomain）。**永远不要把实体直接返回给前端**（暴露审计字段、耦合存储结构），在 AppService 里映射成 DTO。
-- **返回类型怎么写？** 优先 `Task<IResultModel<T>>`：成功 `ResultModel<T>.Success(dto)`、失败 `ResultModel<T>.Error(msg, code)`，类型安全且错误信息进统一结果体（这是项目演进后的首选模式）。历史代码里有两种过渡写法可容忍但新代码别再用：① `Task<object>`（成功返 DTO、失败返 `ResultModel.Error`，丢失泛型）；② 纯成功路径直接返 `Task<T>`（无错误通道，靠全局过滤器包装）。**不要用抛异常表达业务校验失败**；资源确实不存在（如按 id 查不到）可用框架的 `NotFoundException.ThrowIfNull`。详见 references/layer-responsibilities.md「返回类型与结果模型」。
+- **返回类型怎么写？** 首选**全局包装**：AppService 返回 `Task<T>`，成功返业务对象、失败 `throw ParameterException`/`LogicBusinessException`，资源不存在 `NotFoundException.ThrowIfNull`，由 `AddMvcResultPackFilter` + `app.UseGlobalException()` 统一包装。**前提是异常中间件已装配**（否则失败返 500）。列表查询返回 `Task<GetQueryPageResult<Dto>>`。详见「全局返回包装」「分页查询最佳实践」。`Task<IResultModel<T>>` 手动包装为历史写法，新代码别再用。
+- **列表查询怎么写？** 用分页四件套（`GetPageRequest` + `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`），**别手写 Count + Skip/Take、别自定义 `{List,Total}` 响应类**。
 - **读取用 `Entities` 还是 `EntitiesNoTacking`？** 只读查询默认 `EntitiesNoTacking`（不带追踪、更快）；读出来还要改并回写才用 `Entities`。
 - **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
 - **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数 CRUD 项目 Domain/Adapter/Storage 留空（占位 `Class1.cs`）即可。
 - **控制器能不能调多个 AppService？** 可以，但要警惕——若一个请求要协调多个服务完成一个事务，说明该把编排逻辑下沉到一个 AppService（用 `IUnitOfWork` 包事务），控制器只调这一个。
 
-## 依赖注入装配（Program.cs）
+## 依赖注入与中间件装配（Program.cs）
 
 实体框架注入一次（详见 azrng-efcore skill）。AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。
 
@@ -99,6 +239,10 @@ builder.Services.AddEntityFramework<AppDbContext>(o =>
 
 // 扫描匹配程序集，把实现 IScope/Transient/SingletonDependency 的类自动注册
 builder.Services.RegisterBusinessServices("App.*.dll");
+
+// 全局返回包装三件套（成功包装 + 模型校验）
+builder.Services.AddMvcResultPackFilter("/swagger");
+builder.Services.AddMvcModelVerifyFilter();
 ```
 
 AppService 实现类标接口即可被扫到（无需手写 `AddScoped`）：
@@ -109,6 +253,15 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 { /* ... */ }
 ```
 
+中间件管道（`var app = builder.Build();` 之后）——**异常中间件必须最先注册（最外层）**：
+```csharp
+app.UseGlobalException();   // 最外层：兜底所有业务异常 → 统一失败结果
+app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+```
+
 > 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
 
 ## 常见反模式（必须避免）
@@ -116,14 +269,19 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 | 反模式 | 正确做法 |
 |---|---|
 | 控制器注入 `IBaseRepository<T>` 写查询 | 查询移到 AppService，控制器只调 AppService |
-| 控制器里 `return Ok(result)` | 直接 `return result`（`IResultModel<T>` 已是统一结果契约，无需包装） |
+| 控制器里 `return Ok(result)` 或手动 `return ResultModel.Success(...)` | 一行转发 `return _appService.XxxAsync(...)`，由全局包装过滤器自动包装 |
+| AppService 成功 `return ResultModel<T>.Success(dto)` 手动包装（新代码） | 全局包装：直接 `return dto`（`IResultModel` 手动包装为历史写法） |
+| AppService 业务失败 `return ResultModel.Error(msg)`（新代码） | `throw new ParameterException(msg)`，由异常中间件映射（手动 Error 为历史写法） |
+| AppService 抛 `ParameterException` 但未注册 `app.UseGlobalException()` | 必须装配异常中间件，否则业务失败返 500 |
+| AppService 用 `try/catch` 吞异常、绕过校验掩盖问题 | 业务失败直接抛对应业务异常，让中间件统一处理 |
+| 列表查询手写 `CountAsync()` + `Skip().Take()` + 自定义 `{List,Total}` 类 | 用分页四件套（`ToPageListAsync` + `GetQueryPageResult<T>`） |
 | 实体直接作为 API 返回值 | AppService 映射成 Core 的 DTO 再返回 |
 | 在 Core 引用 EFCore/HttpContext | Core 零基础设施依赖，只放纯数据契约 |
 | AppService 里写 `SELECT *` 原生 SQL 拼 UI | 用 `IBaseRepository.Entities/EntitiesNoTacking` + LINQ |
 | 新功能不建接口直接写实现类 | 先 `I*AppService` 接口，控制器依赖接口 |
-| 业务校验写在控制器 | 校验下沉到 AppService，返回 `ResultModel.Error` |
+| 业务校验写在控制器 | 校验下沉到 AppService，失败抛 `ParameterException` |
 
 ## 深入参考
 
-- **各层职责详细对照 + 跨层数据流 + 完整代码示例**：见 references/layer-responsibilities.md
-- **数据访问（仓储/工作单元/实体基类/配置类/DbContext）细节**：用 azrng-efcore skill
+- **各层职责详细对照 + 跨层数据流 + 完整代码示例（全局包装 / 分页写法）**：见 references/layer-responsibilities.md
+- **数据访问（仓储/工作单元/实体基类/配置类/DbContext + 分页条件扩展 API）细节**：用 azrng-efcore skill

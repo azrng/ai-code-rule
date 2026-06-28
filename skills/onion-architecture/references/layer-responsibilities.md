@@ -13,9 +13,11 @@
 ### Core（内核，零业务依赖）
 **放**：DTO、Request/Response、枚举、常量、通用结果类型。纯 POCO，不引用任何项目，不引用 EFCore/HttpContext 等基础设施。
 **不放**：实体、业务逻辑、数据访问、任何 `using` 基础设施包。
-**包引用**：仅 `Azrng.Core`（取 `ResultModel` 等）等基础类库。
+**包引用**：仅 `Azrng.Core`（取 `GetPageRequest`/`ResultModel` 等）等基础类库。
 
 ```csharp
+using Azrng.Core.Requests;   // GetPageRequest
+
 namespace App.Core.Models;
 
 public class ProductDto
@@ -27,11 +29,16 @@ public class ProductDto
     public DateTime CreateTime { get; set; }
 }
 
-public class ProductListRequest
+// 分页请求：继承 GetPageRequest，免手写 PageIndex/PageSize 字段
+public class ProductListRequest : GetPageRequest
 {
-    public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 10;
     public string? Name { get; set; }
+}
+
+public class CreateProductRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
 }
 ```
 
@@ -84,18 +91,20 @@ public class ProductConfiguration : EntityTypeConfigurationIdentityOperatorStatu
 **放**：`I*AppService` 接口，方法签名用 Core 的 DTO。是控制器唯一依赖的契约。
 **不放**：实现、仓储、实体直接暴露（接口参数/返回一律 DTO）。
 **依赖**：Core、IDomain。
+**返回类型**：**全局包装模式**——方法返回 `Task<T>` / `Task<GetQueryPageResult<T>>`，**不出现 `IResultModel`**。
 
 ```csharp
-using Azrng.Core.Results;
+using Azrng.Core.Results;            // GetQueryPageResult<T>
 using App.Core.Models;
 
 namespace App.IApplication.Product;
 
 public interface IProductAppService
 {
-    Task<IResultModel<ProductListResponse>> GetListAsync(ProductListRequest request);
-    Task<IResultModel<ProductDto>> CreateAsync(CreateProductRequest request);
-    Task<IResultModel> DeleteAsync(long id);
+    Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListRequest request);  // 分页查询
+    Task<ProductDto> GetAsync(long id);          // 成功返 DTO，资源不存在由实现抛 NotFoundException
+    Task<long> CreateAsync(CreateProductRequest request);   // 成功返 id，校验失败由实现抛 ParameterException
+    Task DeleteAsync(long id);                    // 无返回数据
 }
 ```
 
@@ -104,15 +113,22 @@ public interface IProductAppService
 **不放**：HTTP 概念、`HttpContext`、`Ok()`、路由。
 **依赖**：IApplication（+ 间接 Domain/EntityFramework）。
 **按需引包**（只有 AppService 真用到时才加，引在 Application.csproj）：
-- `Azrng.Core` — `ResultModel`/`IResultModel`、`IScopedDependency`、`ToUnspecifiedDateTime()`、`NotFoundException`（几乎总要）
+- `Azrng.Core` — `IScopedDependency`、`ParameterException`/`NotFoundException`（异常）、`WhereIfNotNullOrWhiteSpace`（`Azrng.Core.Extension`）、`GetQueryPageResult`（`Azrng.Core.Results`）、`RefAsync`（`Azrng.Core.CommonDto`）、`ToUnspecifiedDateTime()`（几乎总要）
+- `Azrng.EFCore`（`Common.EFCore`）— `IBaseRepository`/`IUnitOfWork`、`ToPageListAsync`（`Azrng.EFCore.Extensions`）
+- `Microsoft.EntityFrameworkCore` — `FirstOrDefaultAsync`/`CountAsync`/`ToListAsync` 等异步扩展
 - `Azrng.AspNetCore.Authentication.JwtBearer` — 登录/鉴权 AppService 注入 `IBearerAuthService` 生成 token
 - `Azrng.DistributeLock.Core` — 并发控制 AppService 注入 `ILockProvider`
-- `Microsoft.EntityFrameworkCore`（经 `Common.EFCore` 传递可达）— `CountAsync`/`ToListAsync`/`Skip`/`Take` 等异步扩展
+
+**核心约定（全局包装模式）**：成功直接 `return` 业务对象；**业务校验/规则失败 `throw new ParameterException(msg)`**；资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`。**不要手写 `ResultModel.Success/Error`**（那是历史写法）。
 
 ```csharp
-using Azrng.Core.DependencyInjection;   // IScopedDependency
-using Azrng.Core.Results;                // ResultModel<T>、IResultModel<T>
-using Azrng.EFCore;
+using Azrng.Core.CommonDto;            // RefAsync
+using Azrng.Core.DependencyInjection;  // IScopedDependency
+using Azrng.Core.Exceptions;           // ParameterException, NotFoundException
+using Azrng.Core.Extension;            // WhereIfNotNullOrWhiteSpace
+using Azrng.Core.Results;              // GetQueryPageResult
+using Azrng.EFCore;                    // IBaseRepository
+using Azrng.EFCore.Extensions;         // ToPageListAsync
 using Microsoft.EntityFrameworkCore;
 using App.Core.Models;
 using App.IApplication.Product;
@@ -128,48 +144,44 @@ public class ProductAppService : IScopedDependency, IProductAppService
     public ProductAppService(IBaseRepository<Product> productRepository)
         => _productRepository = productRepository;
 
-    public async Task<IResultModel<ProductListResponse>> GetListAsync(ProductListRequest request)
+    // 分页查询：链式 WhereIfNotNullOrWhiteSpace + ToPageListAsync（一次 Count+分页），返回 GetQueryPageResult<Dto>
+    public async Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListRequest request)
     {
-        // 查询用 EntitiesNoTacking（只读、不加 ChangeTracker，更快）
-        var query = _productRepository.EntitiesNoTacking.Where(p => !p.Deleted);
-        if (!string.IsNullOrWhiteSpace(request.Name))
-            query = query.Where(p => p.Name.Contains(request.Name!));
-
-        var total = await query.CountAsync();
-        var list = await query.OrderByDescending(p => p.CreateTime)
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToListAsync();
-
-        return ResultModel<ProductListResponse>.Success(new ProductListResponse
-        {
-            // 实体 → DTO 映射（不暴露审计字段给前端）
-            List = list.Select(p => new ProductDto
+        var total = new RefAsync<int>();
+        var list = await _productRepository.EntitiesNoTacking.Where(p => !p.Deleted)
+            .WhereIfNotNullOrWhiteSpace(request.Name, p => p.Name.Contains(request.Name!))
+            .OrderByDescending(p => p.CreateTime)
+            .Select(p => new ProductDto
             {
                 Id = p.Id, Name = p.Name, Price = p.Price,
                 Status = p.Status, CreateTime = p.CreateTime
-            }).ToList(),
-            Total = total
-        });
+            })
+            .ToPageListAsync(request, total);
+
+        return new GetQueryPageResult<ProductDto>(list, new GetQueryPageResult(request, total));
     }
 
-    public async Task<IResultModel<ProductDto>> CreateAsync(CreateProductRequest request)
+    public async Task<ProductDto> GetAsync(long id)
     {
-        // 业务校验下沉到此处，不在控制器；失败返 ResultModel<T>.Error
+        var product = await _productRepository.EntitiesNoTacking.FirstOrDefaultAsync(p => p.Id == id);
+        NotFoundException.ThrowIfNull(product, "商品不存在");   // 资源不存在 → 由异常中间件映射成 404
+        return new ProductDto { Id = product.Id, Name = product.Name, Price = product.Price, Status = product.Status };
+    }
+
+    public async Task<long> CreateAsync(CreateProductRequest request)
+    {
+        // 业务校验下沉到此处，不在控制器；失败抛 ParameterException → 由异常中间件映射成 400
         if (request.Price < 0)
-            return ResultModel<ProductDto>.Error("价格不能为负", "400");
+            throw new ParameterException("价格不能为负");
 
         var product = new Product { Name = request.Name, Price = request.Price };
-        // 写操作用 AddAsync(entity, submit: true) 立即提交
-        await _productRepository.AddAsync(product, submit: true);
-        return ResultModel<ProductDto>.Success(
-            new ProductDto { Id = product.Id, Name = product.Name, Price = product.Price, Status = product.Status });
+        await _productRepository.AddAsync(product, submit: true);   // submit:true 立即提交
+        return product.Id;   // 成功 → 全局包装过滤器自动包成 ResultModel<long>(success)
     }
 
-    public async Task<IResultModel> DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        await _productRepository.DeleteAsync(p => p.Id == id);
-        return ResultModel.Success();
+        await _productRepository.DeleteAsync(p => p.Id == id);   // 无返回值 → 过滤器包成 ResultModel(true,"成功")
     }
 }
 ```
@@ -188,29 +200,22 @@ entity.Status = 0;
 await _repo.UpdateAsync(entity, submit: true);
 ```
 
-#### 返回类型与结果模型（`IResultModel<T>`）
-AppService 方法返回统一用结果模型，**首选泛型 `Task<IResultModel<T>>`**：成功 `ResultModel<T>.Success(dto)`、失败 `ResultModel<T>.Error(msg, code)`。这样错误信息进统一结果体，类型安全，前端结构一致，也无需全局过滤器二次包裹（`IResultModel` 本身即对外契约）。
+#### 返回值与错误处理（全局包装模式）
 
-```csharp
-// 首选：带数据的成功/失败 → Task<IResultModel<T>>
-public Task<IResultModel<LoginResultDto>> LoginAsync(LoginRequest request)
-{
-    var user = /* ...查库... */;
-    if (user == null)
-        return ResultModel<LoginResultDto>.Error("用户名或密码错误", "400");
-    // ... 校验密码、生成 token ...
-    return ResultModel<LoginResultDto>.Success(new LoginResultDto { /* ... */ });
-}
+AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：
 
-// 无返回数据的操作（删除/重置）→ Task<IResultModel>，成功 ResultModel.Success()
-public Task<IResultModel> DeleteAsync(long id) { /* ... */ return ResultModel.Success(); }
-```
+| 业务场景 | 写法 | 经 `app.UseGlobalException()` 映射为 |
+|---|---|---|
+| 成功（有数据） | `return dto;` | `ResultModel<T>(data, true, "success", "200")`（过滤器包装） |
+| 成功（无数据，如删除） | 无 `return`（void） | `ResultModel(true, "成功")`（过滤器包 EmptyResult） |
+| 参数/业务校验失败 | `throw new ParameterException(msg);` | `ResultModel(false, msg, "400")` + HTTP 400 |
+| 业务规则不满足 | `throw new LogicBusinessException(msg);` | `ResultModel(false, msg, "400")` + HTTP 400 |
+| 资源不存在 | `NotFoundException.ThrowIfNull(entity, "记录不存在");` | `ResultModel(false, msg, "404")` + HTTP 404 |
+| 无权限 | `throw new ForbiddenException(msg);` | `ResultModel(false, msg, "401")` + HTTP 401 |
 
-**过渡期可容忍、但新代码别再用**的两种旧写法（项目历史代码里有，迁移时逐步替换）：
-- `Task<object>`：成功返 DTO、失败返 `ResultModel.Error`，丢失泛型与类型信息。
-- 纯成功路径直接返 `Task<T>`：无错误通道，靠全局 `ResultPackFilter` 包装（过滤器存在时才成立）。
+> **别用抛异常表达"业务校验失败"是旧观念**——在本架构里恰恰相反：`ParameterException` 就是给"业务校验失败/参数错误"用的，全局异常中间件（`app.UseGlobalException()`）把它映射成 400 失败结果。这套要工作，**异常中间件必须在 Program.cs 管道最外层装配**，否则抛出的异常会变成裸 500。
 
-> **别用抛异常表达"业务校验失败"**（异常是给意外错误用的）。但"资源确实不存在"（如按 id 查记录拿不到）属合理的异常路径，用框架异常：`Azrng.Core.Exceptions.NotFoundException.ThrowIfNull(entity, "记录不存在")`——它有明确语义，全局异常处理可映射成 404。
+> **关于 `IResultModel<T>`（历史/迁移期）**：旧代码里 AppService 返回 `Task<IResultModel<T>>`、手动 `ResultModel<T>.Success/Error`。它仍能工作（过滤器对已是 `IResultModel` 的返回值不重复包装），迁移期可与全局包装共存。但新代码统一用全局包装：更省事、控制器/AppService 一行转发。逐步替换即可。
 
 需要多步原子写时用 `IUnitOfWork.CommitTransactionAsync`（自动开/提交/回滚事务，传入业务委托）：
 ```csharp
@@ -223,7 +228,7 @@ await _unitOfWork.CommitTransactionAsync(async () =>
 // 第二个参数可传 IsolationLevel（默认 ReadCommitted）；委托抛异常自动回滚
 ```
 
-> 需要原生 SQL / `FOR UPDATE` 行锁时（如并发扣库存/抢购），AppService 注入 DbContext 直接用 `_dbContext.Database.BeginTransactionAsync()` + `FromSqlInterpolated`。这是少数 DbContext 可跨层注入 AppService 的合理场景。
+> 需要原生 SQL / `FOR UPDATE` 行锁时（如并发扣库存/抢购），AppService 注入 DbContext 直接用 `_dbContext.Database.BeginTransactionAsync()` + `FromSqlInterpolated`。这是少数 DbContext 可跨层注入 AppService 的合理场景。分页/条件查询扩展（`ToPageListAsync`/`WhereIfNotNullOrWhiteSpace`/`PagedBy` 等）完整签名见 azrng-efcore skill。
 
 ### EntityFramework（基础设施-数据）
 **放**：`DbContext`（继承 `Azrng.EFCore.PostgresSql.BaseDbContext`，自动扫描 IDomain 的配置类）。
@@ -249,11 +254,10 @@ public class AppDbContext : BaseDbContext   // 自动 ApplyConfigurationsFromAss
 **不放**：EF 查询、业务校验、`IBaseRepository` 注入。
 **依赖**：Application（+ Storage/EntityFramework 经传递可达）。
 
-控制器（瘦）——直接转发 AppService 返回的 `IResultModel<T>`，不包 `Ok()`：
+控制器（瘦）——**一行转发** AppService 返回值，不写 `Ok()`、不写 `ResultModel`（全局包装过滤器自动包装）：
 ```csharp
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Azrng.Core.Results;
 using App.Core.Models;
 using App.IApplication.Product;
 
@@ -265,20 +269,41 @@ namespace App.Service.Controllers;
 public class ProductController(IProductAppService productAppService) : ControllerBase
 {
     [HttpGet("list")]
-    public Task<IResultModel<ProductListResponse>> GetList([FromQuery] ProductListRequest request)
-        => productAppService.GetListAsync(request);   // 一行转发
+    public Task<GetQueryPageResult<ProductDto>> GetList([FromQuery] ProductListRequest request)
+        => productAppService.GetListAsync(request);   // 一行转发，过滤器自动包成 ResultModel
+
+    [HttpGet("{id}")]
+    public Task<ProductDto> Get(long id)
+        => productAppService.GetAsync(id);
 
     [HttpPost]
-    public Task<IResultModel<ProductDto>> Create([FromBody] CreateProductRequest request)
+    public Task<long> Create([FromBody] CreateProductRequest request)
         => productAppService.CreateAsync(request);
 
     [HttpDelete("{id}")]
-    public Task<IResultModel> Delete(long id)
+    public Task Delete(long id)
         => productAppService.DeleteAsync(id);
 }
 ```
 
-> 控制器直接转发 AppService 返回的 `IResultModel<T>`，无需 `Ok()` 包装——`IResultModel` 本身就是对外的统一结果契约（含 isSuccess/code/data）。错误路径在 AppService 里 `return ResultModel<T>.Error(msg, code)`。
+Program.cs 装配（全局包装三件套 + 异常中间件）：
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers();
+builder.Services.AddMvcResultPackFilter("/swagger");   // ① 成功返回值包装
+builder.Services.AddMvcModelVerifyFilter();            // ② 模型校验统一结果
+// ... AddEntityFramework / RegisterBusinessServices / 认证 等 ...
+
+var app = builder.Build();
+app.UseGlobalException();   // ③ 异常中间件（最外层）：业务异常 → 统一失败结果。缺它则抛异常变 500
+app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+```
+
+> 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/code/data）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
 
 ---
 
@@ -288,22 +313,25 @@ public class ProductController(IProductAppService productAppService) : Controlle
 HTTP GET /api/product/list?name=xx
   │
   ▼
-[Service] ProductController.GetList(ProductListRequest)   ← 仅接参数
+[Service] ProductController.GetList(ProductListRequest)   ← 仅接参数、一行转发
   │  调用接口
   ▼
 [Application] ProductAppService.GetListAsync              ← 业务+查询在这里
-  │  注入 IBaseRepository<Product>
+  │  注入 IBaseRepository<Product>；WhereIfNotNullOrWhiteSpace + ToPageListAsync
   ▼
 [EntityFramework] IBaseRepository → DbContext → PostgreSQL   ← 基础设施
   │  返回 Product 实体（带审计字段）
   ▼
 [Application] 实体 → ProductDto 映射（剥掉审计字段）   ← 边界转换
-  │  返回 IResultModel<ProductListResponse>（ResultModel<T>.Success(...)）
+  │  返回 GetQueryPageResult<ProductDto>（裸业务对象，非 IResultModel）
   ▼
-[Service] 控制器 return IResultModel<ProductListResponse>（一行转发）
+[Service] 控制器 return GetQueryPageResult<ProductDto>（一行转发）
+  │  CustomResultPackFilter 自动包装
   ▼
-HTTP 200 { isSuccess, code, data: { list, total } }
+HTTP 200 { isSuccess:true, code:"200", data:{ rows:[...], pageInfo:{ pageIndex, pageSize, total, totalPage } } }
 ```
+
+失败路径（如 `CreateAsync` 校验不通过）：AppService `throw new ParameterException("价格不能为负")` → 冒泡穿过控制器 → 被 `app.UseGlobalException()` 捕获 → 映射成 `HTTP 400 { isSuccess:false, code:"400", message:"价格不能为负" }`。
 
 **关键边界**：实体只在 `AppService ↔ DbContext` 之间流动；**出了 AppService 一律是 DTO**。控制器和前端永远看不到实体。
 
@@ -343,12 +371,12 @@ Storage           → Core                                   ← 可选
 
 | 步骤 | 文件 | 层 | 内容 |
 |---|---|---|---|
-| 1 | `Core/Models/OrderDto.cs` | Core | `OrderDto`/`OrderListRequest`/`CreateOrderRequest` |
+| 1 | `Core/Models/OrderDto.cs` | Core | `OrderDto`/`CreateOrderRequest`；列表 Request 继承 `GetPageRequest` |
 | 2 | `IDomain/Entities/Order.cs` | IDomain | 实体 + `SetCreator` |
 | 3 | `IDomain/EntityTypeConfigurations/OrderConfiguration.cs` | IDomain | 配置类 |
-| 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口 |
-| 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务（自动注册，免手写 AddScoped） |
-| 6 | `Service/Controllers/OrderController.cs` | Service | 瘦控制器，转发 `IResultModel<T>` |
-| 7 | `Service/Program.cs` | Service | 已有 `RegisterBusinessServices("App.*.dll")`，实现 `IScopedDependency` 即自动注册，无需改 |
+| 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，无 IResultModel） |
+| 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `NotFoundException.ThrowIfNull`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
+| 6 | `Service/Controllers/OrderController.cs` | Service | 瘦控制器，一行转发 `Task<T>`（不写 `Ok()`） |
+| 7 | `Service/Program.cs` | Service | 已有 `RegisterBusinessServices("App.*.dll")` + `AddMvcResultPackFilter` + `AddMvcModelVerifyFilter` + `app.UseGlobalException()`，实现 `IScopedDependency` 即自动注册，无需改 |
 
 DbContext 无需改动（`BaseDbContext` 自动扫描新配置）。若用 SQL 脚本迁移，加 `Service/MigrationSql/x.x.x.sql`。
