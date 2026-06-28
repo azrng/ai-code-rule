@@ -138,7 +138,13 @@ var dt = await _unitOfWork.SqlQueryDataTableAsync("SELECT account, create_time F
 通过 `GetPageSortRequest`/`GetPageRequest`（`Azrng.Core.Requests`）+ `GetPageListAsync`，或对 IQueryable 用 `ToPageListAsync` 扩展：
 
 ```csharp
-var req = new GetPageRequest { PageIndex = 1, PageSize = 20, OrderField = "CreateTime", OrderType = "desc" };
+// GetPageRequest 只有 PageIndex/PageSize/Keyword；需要排序用子类 GetPageSortRequest.SortContents
+var req = new GetPageSortRequest
+{
+    PageIndex = 1,
+    PageSize = 20,
+    SortContents = new[] { new SortContent("CreateTime", SortEnum.Desc) }
+};
 var page = await _repo.GetPageListAsync(_repo.Entities.Where(x => !x.Deleted), req);
 // page.List / page.Total
 ```

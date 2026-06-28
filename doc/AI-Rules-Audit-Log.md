@@ -38,6 +38,7 @@
 - [2026-06-10 简化 devlog 与 TASK 规则](rulelog/2026-06-10-简化devlog与TASK规则.md)
 - [2026-06-27 reactLinkdotNet 规则一致性修复](rulelog/2026-06-27-reactLinkdotNet规则一致性修复.md)
 - [2026-06-27 新增 electronDotNetExe 模板](rulelog/2026-06-27-新增electronDotNetExe模板.md)
+- [2026-06-28 azrng-efcore 分页示例与实体基类描述修复](rulelog/2026-06-28-azrng-efcore分页与实体基类描述修复.md)
 
 ---
 

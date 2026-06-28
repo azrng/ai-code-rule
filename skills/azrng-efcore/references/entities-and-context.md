@@ -13,7 +13,7 @@
 ## 1. 实体基类继承体系
 
 ```
-IEntity                       （空标记接口/基类，所有实体可继承）
+IEntity                       （空基类 class，所有实体可继承；非接口）
 └─ IdentityBaseEntity         （long 主键，构造时生成雪花 Id）
    └─ IdentityBaseEntity<TKey>
 └─ IdentityOperatorEntity     （+ 审计：Creator/CreateTime/Updater/UpdateTime）
