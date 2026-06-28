@@ -292,6 +292,37 @@ public class XxxAppService
 
 > **判断门槛**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（接口 `I{X}Adapter` 在 IDomain，实现+HttpClient 在 Adapter），业务层只依赖接口。
 
+## JSON 序列化（IJsonSerializer）
+
+需要 JSON 序列化时，统一注入 `IJsonSerializer` 接口，**不要在各处直接用 `JsonSerializer`/`JsonConvert`**——底层切换 STJ↔Newtonsoft 只改一处。
+
+**接口**（`Azrng.Core.IJsonSerializer`，经依赖链传递可达）：`ToJson<T>(obj)`、`ToObject<T>(json)`、`Clone<T>(obj)`（深拷贝）、`ToList<T>(json)`。
+
+**实现 + 注册**：
+- `Azrng.Core.Json`（System.Text.Json 实现，`SysTextJsonSerializer`）— 推荐，AOT 友好。
+- `Azrng.Core.NewtonsoftJson`（Newtonsoft 实现，`NewtonsoftJsonSerializer`）— 兼容旧代码。
+
+Service 项目装实现包后，Program.cs 注册（`using Azrng.Core.Json;`）：
+```csharp
+builder.Services.ConfigureDefaultJson();   // 注册 IJsonSerializer → SysTextJsonSerializer + 默认选项
+// 可自定义：builder.Services.ConfigureDefaultJson(opt => opt.JsonSerializeOptions.WriteIndented = true);
+```
+
+**默认配置**（`DefaultJsonSerializerOptions`）：驼峰命名（`CamelCase`）、不转义中文（`UnsafeRelaxedJsonEscaping`）、内置 Enum/DateTime/Long→String 等转换器。
+
+**用法**（业务层注入接口，不依赖实现）：
+```csharp
+public class BiAdapter : IScopedDependency, IBiAdapter
+{
+    private readonly IJsonSerializer _jsonSerializer;
+    public BiAdapter(IJsonSerializer jsonSerializer) => _jsonSerializer = jsonSerializer;
+
+    public T? Parse<T>(string json) => _jsonSerializer.ToObject<T>(json);   // 不关心底层是 STJ 还是 Newtonsoft
+}
+```
+
+> 业务层依赖 `IJsonSerializer` 接口；切换底层只改 Service 项目装的实现包 + 注册（`ConfigureDefaultJson` 或 Newtonsoft 对应注册），不波及业务。
+
 ## 新增一个完整 CRUD 功能的标准流程
 
 以"商品(Product)管理"为例，自内向外依次落地 6 处（`App` 代表你的解决方案名，`Product` 代表业务实体——替换成实际的即可）：
@@ -339,6 +370,7 @@ public class XxxAppService
 | `Azrng.SqlMigration` | `AddSqlMigrationService`（SQL 迁移，按需） |
 | `Azrng.AspNetCore.Authentication.JwtBearer` | JWT 认证（按需） |
 | `Swashbuckle.AspNetCore` | Swagger（按需） |
+| `Azrng.Core.Json` | `ConfigureDefaultJson` + `IJsonSerializer`（STJ 实现，按需） |
 
 实体框架注入一次（详见 azrng-efcore skill）。AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。
 

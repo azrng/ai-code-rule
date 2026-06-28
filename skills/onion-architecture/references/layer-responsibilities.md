@@ -93,12 +93,12 @@ public interface IProductAppService
 **放**：`*AppService` 实现，承担**用例编排**（接 DTO → 调领域服务/仓储/适配器 → 返回 DTO）、实体↔DTO 映射、事务编排。**可注入 `IBaseRepository<T>` / `IUnitOfWork` 做数据访问**（并非 AppService 独占——DomainService 也会注入仓储）。实现类标 `IScopedDependency` 触发自动注册。
 **不放**：HTTP 概念、`HttpContext`、`Ok()`、路由。
 **依赖**：IApplication（+ 间接 Domain/EntityFramework）。
-**按需引包**（只有 AppService 真用到时才加，引在 Application.csproj）：
-- `Azrng.Core` — `IScopedDependency`、`ParameterException`/`NotFoundException`（异常）、`WhereIfNotNullOrWhiteSpace`（`Azrng.Core.Extension`）、`GetQueryPageResult`（`Azrng.Core.Results`）、`RefAsync`（`Azrng.Core.CommonDto`）、`ToUnspecifiedDateTime()`（几乎总要）
-- `Azrng.EFCore`（`Common.EFCore`）— `IBaseRepository`/`IUnitOfWork`、`ToPageListAsync`（`Azrng.EFCore.Extensions`）
-- `Microsoft.EntityFrameworkCore` — `FirstOrDefaultAsync`/`CountAsync`/`ToListAsync` 等异步扩展
-- `Azrng.AspNetCore.Authentication.JwtBearer` — 登录/鉴权 AppService 注入 `IBearerAuthService` 生成 token
-- `Azrng.DistributeLock.Core` — 并发控制 AppService 注入 `ILockProvider`
+**包引用**：核心包经依赖链**传递可达**，多数无需在 Application.csproj 显式声明：
+- **传递可达**（经 `Application → IApplication → IDomain → Common.EFCore → Azrng.Core / Microsoft.EntityFrameworkCore`，无需显式引）：`IBaseRepository`/`IUnitOfWork`/`ToPageListAsync`（Common.EFCore）、`FirstOrDefaultAsync`/`CountAsync`/`ToListAsync`（Microsoft.EntityFrameworkCore）、`IScopedDependency`/`ParameterException`/`NotFoundException`/`WhereIfNotNullOrWhiteSpace`/`GetQueryPageResult`/`RefAsync`/`ToUnspecifiedDateTime()`（Azrng.Core）。
+  > 实测 `MovieManage.Application` 只显式引 `Azrng.Core`（可选，为注释清晰）、`JwtBearer`、`DistributeLock.Core`；synyi 的 Application 甚至一个 Azrng 包都不显式引（全靠传递）。
+- **按需显式引**（独立功能包，不在传递链，AppService 真用到才加）：
+  - `Azrng.AspNetCore.Authentication.JwtBearer` — 登录/鉴权 AppService 注入 `IBearerAuthService` 生成 token
+  - `Azrng.DistributeLock.Core` — 并发控制 AppService 注入 `ILockProvider`
 
 **核心约定（全局包装模式）**：成功直接 `return` 业务对象；**业务校验/规则失败 `throw new ParameterException(msg)`**；资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`。**不要手写 `ResultModel.Success/Error`**（那是历史写法）。
 
