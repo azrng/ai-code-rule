@@ -37,10 +37,10 @@ description: Guide for using the Azrng Common.EFCore family of NuGet packages to
 
 ### 2. 注入（Program.cs）
 
-provider 包的 `AddEntityFramework<TDbContext>` 扩展在 `Microsoft.Extensions.DependencyInjection` 命名空间下，注册 DbContext + 仓储 + 工作单元。按需追加 `.AddUnitOfWork<TDbContext>()`。
+provider 包的 `AddEntityFramework<TDbContext>` 扩展在 `Microsoft.Extensions.DependencyInjection` 命名空间下，自动注册 DbContext + `IBaseRepository<T>` + 非泛型 `IUnitOfWork`。**仅当**要用泛型 `IUnitOfWork<TDbContext>`（多上下文场景）时才追加 `.AddUnitOfWork<TDbContext>()`（来自 `Azrng.EFCore` 基础包）。
 
 ```csharp
-using Azrng.EFCore;                       // AddUnitOfWork
+using Azrng.EFCore;                       // AddUnitOfWork（仅泛型版本需要）
 // 按数据库引入 provider 命名空间（AddEntityFramework<T> 来自它）
 // PostgreSQL 无需显式 using（扩展在 Microsoft.Extensions.DependencyInjection）
 
@@ -51,27 +51,40 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
     config.WorkId = 1;                    // 分布式 Id 生成机器号
     config.IsSnakeCaseNaming = true;      // 是否蛇形命名（默认 true）
     config.UseOldUpdateColumn = false;    // 是否用旧字段名 creator/modifyer/modify_time
-}).AddUnitOfWork<AppDbContext>();
+});
+// 多数场景到此即可，注入 IUnitOfWork 直接用。多 DbContext 时才追加：
+// .AddUnitOfWork<AppDbContext>();
 ```
 
 > 自定义 DbContext 时不要忘记重写 `OnModelCreating` 调用 `ApplyConfigurationsFromAssembly`，或继承 `BaseDbContext`（自动应用所有 `IEntityTypeConfiguration`）。详见 references/entities-and-context.md。
 
 ### 3. 定义实体
 
-优先用包提供的基类，自动带主键（long，IdHelper 雪花 ID）和审计字段：
+优先用包提供的基类，自动带主键（long，IdHelper 雪花 ID）和审计字段。基类无参构造函数已自动 `Id = IdHelper.GetLongId()`，业务实体只需在构造函数里 `SetCreator` 填审计信息：
 
 ```csharp
 using Azrng.EFCore.Entities;
-using Azrng.Core.Extension;   // ToUnspecifiedDateTime
+using Coldairarrow.Util;        // IdHelper
+using Azrng.Core.Extension;    // ToUnspecifiedDateTime
 
 public class User : IdentityOperatorStatusEntity   // Id+审计+软删除/禁用
 {
     public string Account { get; set; } = string.Empty;
 
-    public User() { }   // EF 需要
-    public User(string account) { Account = account; SetCreator("system"); }
+    public User()
+    {
+        Id = IdHelper.GetLongId();   // 可省略（基类已设），显式写更清晰
+        SetCreator("system");
+    }
+
+    public User(string account) : this()   // 链式调无参构造
+    {
+        Account = account;
+    }
 }
 ```
+
+> 配套写 `IEntityTypeConfiguration<T>` 配置类（继承包的配置基类）+ DbContext 继承 `BaseDbContext`，三者完整套路见 references/entities-and-context.md。
 
 **时间字段统一用无时区值**：`DateTime.Now.ToUnspecifiedDateTime()`，配合 `IsUnTimeZoneDateTime()` 列声明。完整基类对照与选择见 references/entities-and-context.md。
 
