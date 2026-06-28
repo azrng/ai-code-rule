@@ -275,6 +275,45 @@ public class ConversationService : IConversationAppService
 
 > **什么时候抽 DomainService**：操作只被一个 AppService 用、不会复用 → 直接写在那个 AppService；**多个 AppService 都要用同一段操作**（参考项目里 `ISystemConfigDomainService` 被 5+ 个 AppService 共用）→ 抽成 DomainService 避免重复。纯 CRUD 项目 Domain 层可空。
 
+### Adapter（外部适配器层）
+**放**：外部系统调用的封装——`I{X}Adapter`（领域适配器）实现 + `IXxxHttpClient`（HTTP 客户端）实现。屏蔽第三方 API / 微服务 / SDK 的 HTTP/协议细节，对内暴露领域语义方法。
+**不放**：业务规则、用例编排（那是 AppService/DomainService 的活）；把 HttpClient/URL 直接暴露给业务层。
+**依赖**：IDomain（+ 第三方 SDK 包）。`Adapter.csproj` 只引用 `IDomain`。
+**结对 + 两层**（复杂外部调用推荐）：
+- 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Service/`，方法用 **Bo**（`IDomain/Adapter/{模块}/`）。
+- HTTP 客户端：接口 `IXxxHttpClient` 在 `Adapter/HttpWebClient/`，实现 `XxxHttpClient : IScopedDependency, IXxxHttpClient`，用 **Ho**（`Adapter/Ho/{模块}/`），注入 `IHttpHelper` / `IHttpClientFactory` 做真实 HTTP 调用。
+
+```csharp
+// IDomain/Adapter/ISmsAdapter.cs —— 接口在 IDomain，用 Bo，不暴露 HttpClient
+public interface ISmsAdapter { Task<bool> SendAsync(SendSmsBo bo); }
+
+// Adapter/Service/SmsAdapter.cs —— 实现：标 IScopedDependency，做 Bo→Ho 转换，调下层 HttpClient
+public class SmsAdapter : IScopedDependency, ISmsAdapter
+{
+    private readonly ISmsHttpClient _client;
+    public SmsAdapter(ISmsHttpClient client) => _client = client;
+    public Task<bool> SendAsync(SendSmsBo bo)
+        => _client.SendAsync(new SendSmsRequestHo { Phone = bo.Phone, Content = bo.Content });
+}
+
+// Adapter/HttpWebClient/SmsHttpClient.cs —— 真实 HTTP 调用，输入/输出用 Ho
+public class SmsHttpClient : IScopedDependency, ISmsHttpClient
+{
+    private readonly IHttpHelper _httpHelper;
+    public SmsHttpClient(IHttpHelper httpHelper) => _httpHelper = httpHelper;
+    public Task<bool> SendAsync(SendSmsRequestHo req)
+        => _httpHelper.PostAsync<bool>("https://sms.example.com/send", req);
+}
+
+// Application/XxxAppService.cs —— 业务层只依赖 IDomain 里的接口
+public class XxxAppService
+{
+    private readonly ISmsAdapter _smsAdapter;   // 依赖接口；外部协议升级只改 Adapter
+}
+```
+
+> **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用领域适配器一层（直接调通用 `IHttpHelper`），复杂/协议多变时才拆出 `IXxxHttpClient` 层。
+
 ### EntityFramework（基础设施-数据）
 **放**：`DbContext`（继承 `Azrng.EFCore.PostgresSql.BaseDbContext`，自动扫描 IDomain 的配置类）。
 **不放**：业务逻辑、实体定义（实体在 IDomain）、配置类（配置在 IDomain）。

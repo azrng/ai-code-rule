@@ -37,7 +37,7 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`（继承 `BaseDbContext`）、迁移相关 |
 | **Service** | 入口/组装层 | Application, Storage | `Controllers`、`Program.cs`（DI 装配 + 中间件管道）、配置 |
-| **Adapter** | 外部适配器 | Core, IDomain | 第三方 API 封装、外部协议适配（可选） |
+| **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ HttpClient 实现（`Adapter/Service/`、`Adapter/HttpWebClient/`），屏蔽 HTTP/SDK 细节（可选） |
 | **Storage** | 存储适配 | Core | 文件/对象存储封装（可选） |
 
 > **接口/实现结对**：`I*` 项目只有抽象，对应无前缀项目是实现。`IApplication`/`Application`、`IDomain`/`Domain` 总是成对出现。控制器永远只依赖 `I*AppService`，不依赖实现。
@@ -239,6 +239,58 @@ public class ConversationService : IConversationAppService
 
 > **判断门槛**：操作只被**一个 AppService 用、不会复用**时，直接写在那个 AppService 里即可，不必提前抽 DomainService（避免过度设计）。复用真正出现、或领域规则变复杂时再下沉——`ISystemConfigDomainService` 就是后来被 5+ 个 AppService 共用才抽出来的。
 
+## 外部适配器 Adapter（封装第三方/外部系统调用）
+
+调用**外部系统**（第三方 API、其他微服务、SDK、外部协议）时，用 Adapter 层封装——把 HTTP/协议细节屏蔽在 Adapter 内，对内暴露领域语义方法，让 AppService/DomainService 依赖**接口**而非具体 HttpClient。
+
+### 两层结构（复杂外部调用推荐）
+
+| 层 | 接口位置 | 实现位置 | 数据对象 | 职责 |
+|---|---|---|---|---|
+| 领域适配器 `I{X}Adapter` | `IDomain/Adapter/` | `Adapter/Service/` | **Bo**（`IDomain/Adapter/{模块}/`） | 对外领域语义方法、Bo↔Ho 转换 |
+| HTTP 客户端 `IXxxHttpClient` | `Adapter/HttpWebClient/` | `Adapter/HttpWebClient/` | **Ho**（`Adapter/Ho/{模块}/`） | 真实 HTTP 调用（URL/token/序列化） |
+
+### 关键点
+
+- **接口放 IDomain/Adapter/（不放 Core）**：这样 AppService/DomainService 只依赖 IDomain 就能用 Adapter，而 HttpClient/SDK 等**实现细节留在 Adapter 项目**，依赖方向正确（外层 Adapter 实现内层 IDomain 接口；IDomain 不依赖 Adapter）。`Adapter.csproj` 只引用 `IDomain`。
+- **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 IDomain；`Ho`（HTTP 传输对象）在 Adapter。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。
+- 实现（`{X}Adapter`、`XxxHttpClient`）都标 `IScopedDependency`，经 `RegisterBusinessServices` 自动注册；底层 HttpClient 还可配 `IHttpClientFactory` / 框架的 `AddHttpClientService`。
+- **简单场景可只用一层**（领域适配器直接调通用 `IHttpHelper`），外部调用复杂、协议多变时才拆出 `IXxxHttpClient` 层。
+
+```csharp
+// IDomain/Adapter/ISmsAdapter.cs —— 接口在 IDomain，用 Bo，不暴露 HttpClient
+public interface ISmsAdapter
+{
+    Task<bool> SendAsync(SendSmsBo bo);
+}
+
+// Adapter/Service/SmsAdapter.cs —— 实现：标 IScopedDependency，Bo→Ho 转换，调下层 HttpClient
+public class SmsAdapter : IScopedDependency, ISmsAdapter
+{
+    private readonly ISmsHttpClient _smsHttpClient;
+    public SmsAdapter(ISmsHttpClient smsHttpClient) => _smsHttpClient = smsHttpClient;
+    public Task<bool> SendAsync(SendSmsBo bo)
+        => _smsHttpClient.SendAsync(new SendSmsRequestHo { Phone = bo.Phone, Content = bo.Content });
+}
+
+// Adapter/HttpWebClient/SmsHttpClient.cs —— 真实 HTTP 调用，输入/输出用 Ho
+public class SmsHttpClient : IScopedDependency, ISmsHttpClient
+{
+    private readonly IHttpHelper _httpHelper;
+    public SmsHttpClient(IHttpHelper httpHelper, IHttpClientFactory factory) => _httpHelper = httpHelper;
+    public Task<bool> SendAsync(SendSmsRequestHo req)
+        => _httpHelper.PostAsync<bool>("https://sms.example.com/send", req);
+}
+
+// Application/XxxAppService.cs —— 业务层只依赖 IDomain 里的接口，不碰 HttpClient
+public class XxxAppService
+{
+    private readonly ISmsAdapter _smsAdapter;   // 依赖接口，外部协议升级只改 Adapter
+}
+```
+
+> **判断门槛**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（接口 `I{X}Adapter` 在 IDomain，实现+HttpClient 在 Adapter），业务层只依赖接口。
+
 ## 新增一个完整 CRUD 功能的标准流程
 
 以"商品(Product)管理"为例，自内向外依次落地 6 处（`App` 代表你的解决方案名，`Product` 代表业务实体——替换成实际的即可）：
@@ -271,7 +323,8 @@ public class ConversationService : IConversationAppService
 - **列表查询怎么写？** 用分页四件套（`GetPageRequest` + `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`），**别手写 Count + Skip/Take、别自定义 `{List,Total}` 响应类**。
 - **读取用 `Entities` 还是 `EntitiesNoTacking`？** 只读查询默认 `EntitiesNoTacking`（不带追踪、更快）；读出来还要改并回写才用 `Entities`。
 - **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
-- **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数 CRUD 项目 Domain/Adapter/Storage 留空（占位 `Class1.cs`）即可。
+- **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数纯 CRUD 项目初期 Domain/Adapter/Storage 可空，出现对应需求（复用操作 / 外部调用 / 文件存储）再建。
+- **调用外部系统（第三方 API/微服务/SDK）还是本系统数据库？** 本系统数据库 → AppService/DomainService 直接注入 `IBaseRepository`；**外部系统 → 走 Adapter**（接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现+HttpClient 在 `Adapter/`），业务层只依赖接口。详见「外部适配器 Adapter」。
 - **控制器能不能调多个 AppService？** 可以，但要警惕——若一个请求要协调多个服务完成一个事务，说明该把编排逻辑下沉到一个 AppService（用 `IUnitOfWork` 包事务），控制器只调这一个。
 
 ## 依赖注入与中间件装配（Program.cs）
