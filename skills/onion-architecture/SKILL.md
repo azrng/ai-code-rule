@@ -1,13 +1,14 @@
 ---
 name: onion-architecture
-description: Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers the two cross-cutting conventions every AppService follows — global result-packing (success returns Task<T>, business failure throws ParameterException, packed by AddMvcResultPackFilter + app.UseGlobalException) and paged queries (GetPageRequest + WhereIfNotNullOrWhiteSpace + ToPageListAsync + GetQueryPageResult<T>). Use when adding a new feature, deciding which project a class belongs in, wiring DI / middleware in Program.cs, creating a new AppService/Controller/Entity/Configuration, or reviewing where business logic vs data-access vs DTOs should live. Triggers on questions like "这个类该放哪一层", "新建一个 XXX 功能", "控制器太胖怎么拆", "接口返回值怎么写 / 要不要包 IResultModel", "分页查询怎么写", or confusion about IApplication vs Application / IDomain vs Domain project pairs.
+version: 1.0.0
+description: Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers global result-packing, paged queries, code placement, necessary Chinese comments, and DTO/Request/Response/BO/HO file organization. Use when adding a feature, deciding which project a class belongs in, wiring DI / middleware in Program.cs, creating an AppService/Controller/Entity/Configuration, splitting DTO/BO/HO classes into files, adding XML comments, or reviewing where business logic vs data-access vs DTOs should live. Triggers on questions like "这个类该放哪一层", "新建一个 XXX 功能", "控制器太胖怎么拆", "接口返回值怎么写 / 要不要包 IResultModel", "分页查询怎么写", "补充注释", "DTO 要不要拆文件", or confusion about IApplication vs Application / IDomain vs Domain project pairs.
 ---
 
 # 洋葱架构（Onion / Clean Architecture）分层指南
 
 指导在 Azrng 系列解决方案里正确分层：哪一层放什么、层间依赖方向、项目结对（接口/实现）、典型 CRUD 功能落点，以及贯穿所有 AppService 的两条横切约定——**全局返回包装**与**分页查询**。
 
-> 本文件是**决策入口与规则总览**；各层完整代码示例、跨层数据流、`.csproj` 依赖详见 `references/layer-responsibilities.md`。
+> 本文件是**决策入口与规则总览**；各层完整代码示例、跨层数据流、`.csproj` 依赖详见 `references/layer-responsibilities.md`；中文注释与契约类拆分细则详见 `references/code-style-and-file-organization.md`。
 
 ## 分层全景
 
@@ -53,6 +54,8 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 5. **实体在 IDomain、配置在 EntityFramework**：实体（继承 `IdentityOperatorStatusEntity`）放 `IDomain/Entities/`；EFCore 配置类（`{Entity}Etc.cs`，继承 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）放 **EntityFramework 层**，`Configure` 里设表名/列名/查询过滤；DbContext 用 `ApplyConfigurationsFromAssembly(当前程序集)` 扫描它们（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
+8. **必要中文注释**：公开 Controller action、AppService 接口方法、Adapter 接口方法、外部系统边界、复杂业务分支、敏感字段处理和 SQL 表字段说明，应补简短中文注释；不要给自解释赋值、简单 return、普通属性堆无意义注释。
+9. **公开契约类默认按类拆分**：DTO、Request、Response、BO、HO、Options、Result 等公开契约类默认一个类一个文件；不要长期堆在 `Dtos.cs`、`Models.cs`、`Bo.cs` 这类大杂烩文件。强绑定的私有/internal 辅助类型、局部 mapping extension、极小测试夹具可例外。
 
 ## 全局返回包装（三件套 + Program.cs 装配）
 
@@ -316,4 +319,5 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 ## 深入参考
 
 - **各层职责详细对照 + 跨层数据流 + 完整代码示例（全局包装 / 分页写法）**：见 references/layer-responsibilities.md
+- **中文注释规范 + DTO/BO/HO 文件拆分 + 敏感字段/SQL 说明规则**：见 references/code-style-and-file-organization.md
 - **数据访问（仓储/工作单元/实体基类/配置类/DbContext + 分页条件扩展 API）细节**：用 azrng-efcore skill
