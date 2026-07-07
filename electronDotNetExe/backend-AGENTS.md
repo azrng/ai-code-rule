@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.3.1
-last_updated: 2026-06-27
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -142,6 +142,7 @@ IPC Handler / Event（JSON-RPC method）
 - 返回明确的类型结果，不返回未约束的 `JsonElement` / `object`
 - 涉及耗时操作时显式处理超时、取消（`CancellationToken`）、失败重试或幂等
 - 若需要跨多个仓储或能力协作，由 Service 负责组织，不把编排逻辑散到 Handler
+- 禁止在 IPC Handler、Service、Repository、DTO、Model 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数
 
 ### Repository / 数据访问规则
 - 数据访问不得出现在 IPC handler 或前端代码中
@@ -173,6 +174,13 @@ IPC Handler / Event（JSON-RPC method）
 - 若仓库已经通过 TS 类型生成或共享 schema 维护契约，优先沿用，不重复造一套平行定义
 - 新增或修改 method 时，同步更新前端 IPC 封装层与文档
 
+### 代码组织规范
+- 一个文件只放一个主类型：IPC Handler、Service、Repository、DTO、Model、Error 等，默认一个类一个文件，文件名与类名一致。
+- DTO / Model 目录组织：放 `Models/`，按业务域或类型分子目录，DTO 一类一文件，不合并到 `Dtos.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Models.cs` 长期堆放多个 DTO / Model；把 IPC Handler 专用 request 内联写在 Handler 文件里；JSON-RPC 协议类型与业务模型混在同一文件。
+
 ### 异常处理规范
 - 自定义业务异常统一收敛到 `Errors/`
 - 区分参数错误、权限错误、资源不存在、状态冲突、系统异常
@@ -183,6 +191,14 @@ IPC Handler / Event（JSON-RPC method）
 - 不要默认把桌面应用实现成“前端 + 本地 HTTP 服务”的双套架构
 - 不要在没有必要时把简单本地 CRUD 设计成过度复杂的微服务式模块
 - 不要为了“看起来像 Web 后端”而引入多余的本地网关层
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - IPC Handler 方法（前端可见契约）：说明 method 用途、关键参数、返回结果。
+  - Service 核心方法：说明该能力做什么，不写实现细节。
+- 优先补行内注释的位置：权限校验、状态流转、事务边界、超时 / 重试 / 幂等等复杂分支，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
