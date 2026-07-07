@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.3.1
-last_updated: 2026-05-19
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -143,6 +143,13 @@ API → Application → Domain ← Infrastructure
 - 仓储实现依赖注入，遵循仓储模式
 - 外部服务（邮件、文件存储等）实现在此层
 
+### 代码组织规范
+- 一个文件只放一个主类型：Controller、Service 接口与实现、Entity、值对象、DTO 等，默认一个类一个文件，文件名与类名一致。
+- DTO 目录组织：应用层 DTO 放 `Application/DTOs/{业务域}/`，Request 与 Response 各自独立文件；领域事件放 `Domain/Events/`，不合并到 `Dtos.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；业务逻辑放到 Infrastructure。
+
 ### 数据访问规则
 - 使用 Entity Framework Core 进行数据访问
 - DbContext 通过构造函数注入
@@ -190,6 +197,15 @@ API → Application → Domain ← Infrastructure
 - 应用启动时自动执行迁移（可选配置）
 - 回滚脚本必须与正向脚本配套提供
 - 每次迁移后更新数据库版本记录表
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - Controller action：说明接口用途、关键参数、返回结果。
+  - Application 层服务接口与核心实现方法：说明应用能力，不写实现细节。
+  - Domain 核心业务规则方法：说明规则意图。
+- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
