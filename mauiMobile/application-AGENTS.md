@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.3.1
-last_updated: 2026-05-19
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -69,6 +69,19 @@ src/AppName/
     └── DTOs/                  # 数据传输对象
 ```
 
+### 目录职责映射
+
+按职责将类放到对应目录，文件命名与类名保持一致；View（`.xaml`）的组织见 `ui-AGENTS.md`。
+
+| 目录 | 放什么类 | 命名约定 |
+| --- | --- | --- |
+| `ViewModels/Base/` | ViewModel 基类 | `*ViewModelBase.cs` |
+| `ViewModels/[Module]/`、`ViewModels/Dialogs/` | 模块 / 对话框 ViewModel（状态 + 命令编排） | `{名称}ViewModel.cs` |
+| `Services/Interfaces/` | 服务接口 | `I{业务域}Service.cs` |
+| `Services/Implementations/` | 服务实现 | `{业务域}Service.cs` |
+| `Models/Entities/` | 数据实体，一类一文件 | `{实体名}.cs` |
+| `Models/DTOs/` | DTO（视图与业务层契约），一类一文件 | `{名称}Dto.cs` |
+
 ---
 
 ## 阶段 2 — 业务逻辑实现（业务实现角色主导）
@@ -121,6 +134,13 @@ src/AppName/
 - 若仓库已有真实实体或 DTO 结构，优先沿用现状，不为模板强行改名或重组
 - 数据转换规则应集中放在 Service 或明确的映射层，不散落在 View 或 Repository 调用点
 
+### 代码组织规范
+- 一个文件只放一个主类型：ViewModel、Service 接口与实现、Entity、DTO 等，默认一个类一个文件，文件名与类名一致。
+- DTO 目录组织：DTO 放 `Models/DTOs/`，一类一文件，不合并到 `Dtos.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Dtos.cs` 长期堆放多个 DTO；把 ViewModel 专用模型内联写在 ViewModel 文件里；业务逻辑塞进 View。
+
 ### 统一结果包装
 - 服务层方法返回值统一使用项目既有的结果包装类型（如 `ResultModel<T>`）
 - 成功响应：`ResultModel<T>.Success(data)`
@@ -142,6 +162,14 @@ src/AppName/
 - 后台返回前台时，应根据业务需要刷新关键数据
 - 网络状态变化时，应通过 `Connectivity.Current` 监听并给出适当提示
 - 权限请求（相机、位置、存储等）必须在真正需要时才请求，禁止启动时一次性全部请求
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - ViewModel 公共命令与关键属性：说明用户操作意图与可观察状态。
+  - Service 接口方法与核心实现方法：说明该能力做什么，不写实现细节。
+- 优先补行内注释的位置：复杂状态流转、命令分支、外部调用编排，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
