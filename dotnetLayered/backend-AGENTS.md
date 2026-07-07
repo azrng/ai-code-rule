@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.5.0
-last_updated: 2026-06-10
+version: 1.6.0
+last_updated: 2026-07-07
 dependencies: [agents-root]
 ---
 
@@ -105,6 +105,25 @@ src/
 | 存储 | Storage | 文件上传下载、对象存储操作 | Core | 禁止依赖 Application / Service |
 | 宿主层 | Service | Controller、中间件、DI 注册、配置 | Application, Storage | 禁止包含业务逻辑 |
 
+### 层内目录组织
+
+各层内部按业务域与类型组织；公开契约类（DTO、实体、接口等）默认一个类一个文件，文件名与类名一致。
+
+| 类型 | 所在层 / 目录 | 命名约定 |
+| --- | --- | --- |
+| 应用服务接口 | `IApplication/{业务域}/` | `I{业务域}AppService.cs` |
+| 应用层 DTO（请求 / 响应 / 查询） | `IApplication/{业务域}/Dto/` | `CreateOrderRequest.cs`、`OrderDetailResponse.cs` |
+| 领域服务接口 | `IDomain/{业务域}/` | `I{业务域}DomainService.cs` |
+| 实体 / 值对象 | `IDomain/{业务域}/` | `{实体名}.cs` |
+| 仓储接口 | `IDomain/{业务域}/` | `I{实体名}Repository.cs` |
+| EF Core 实体配置 | `EntityFramework/Configurations/` | `{实体名}Configuration.cs` |
+| DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
+| 数据库迁移脚本 | `EntityFramework/Migrations/` | 按版本号命名 |
+| 外部服务调用 / 第三方封装 | `Adapter/{业务域}/` | `{名称}Adapter.cs` |
+| 通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
+| 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
+| Controller / 中间件 / DI 注册 | `Service/` | `{资源}Controller.cs` 等 |
+
 ---
 
 ## 阶段 1 — 后端实现
@@ -137,6 +156,7 @@ src/
 - 统一使用 `ActionResult<T>` 或 `IActionResult` 返回类型。
 - 所有响应统一使用 `ResultModel<T>` 包装。
 - DI 注册、中间件配置、Swagger 配置等都在此层完成。
+- 禁止在 Controller、AppService、DomainService、Repository、Entity、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
 
 ### IApplication（应用接口层）规则
 - 按业务域拆分接口文件夹（如 `UserManager/`、`OrderManager/`）。
@@ -183,9 +203,16 @@ src/
 - 提供安全相关的配置和工具。
 - 禁止依赖任何业务层项目。
 
+### 代码组织规范
+- 一个文件只放一个主类型：实体、DTO、Request、Response、领域服务接口、仓储接口等公开契约类，默认一个类一个文件，文件名与类名一致。
+- DTO 目录组织：应用层 DTO 放 `IApplication/{业务域}/Dto/`，Request 与 Response 各自独立文件；通用 DTO 放 Core 层对应目录，不合并到 `Dtos.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；跨层把多个不相关类型塞进同一文件。
+
 ### 数据模型规则
 - 实体类继承自 Azrng 基类（包含 Id、创建时间等公共属性）。
-- DTO 按用途区分：查询参数、创建请求、更新请求、响应结果。
+- DTO 按用途区分（查询参数、创建请求、更新请求、响应结果），文件组织见 `代码组织规范`。
 - 接口层（IApplication / IDomain）只定义 DTO 和接口，不包含实现。
 - 禁止在 DTO 中暴露数据库内部字段。
 
@@ -236,6 +263,7 @@ src/
 - 中间件启用：`app.UseDefaultSwagger(onlyDevelopmentEnabled: true)`。
 - 项目必须启用 XML 文档生成：`<GenerateDocumentationFile>true</GenerateDocumentationFile>`。
 - Controller 和公开方法必须添加 XML 注释，Swagger 会自动展示；XML 注释内容统一使用中文。
+- AppService / DomainService 核心方法与 IApplication / IDomain 接口方法按 `代码注释规范` 补 XML 注释（不依赖 Swagger 自动展示，但需保证可读与可维护）。
 - 接口需通过 Swagger UI 独立验证，确保请求 / 响应结构正确。
 
 ### 数据库迁移规则
@@ -250,6 +278,15 @@ src/
 - C# 属性：PascalCase
 - JSON 输出：camelCase（通过 `System.Text.Json` 配置自动转换）
 - 数据库字段：snake_case（通过 EF Core 命名约定配置）
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - Controller action：说明接口用途、关键参数、返回结果（Swagger 会消费这些说明）。
+  - IApplication / IDomain 接口方法：说明应用能力或领域能力，不写实现细节。
+  - Application / Domain 核心实现方法：说明该能力做什么。
+- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
