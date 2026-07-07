@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.4.0
-last_updated: 2026-06-10
+version: 1.5.0
+last_updated: 2026-07-07
 dependencies: [agents-root]
 ---
 
@@ -152,10 +152,19 @@ project-root/
 - 使用 DTO 进行数据传递，不直接暴露实体。
 - 业务异常抛出继承自 Azrng 异常体系的自定义异常。
 - 服务类实现标记接口（`ITransientDependency` / `IScopedDependency` / `ISingletonDependency`）以自动注册。
+- 禁止在 Controller、Service、Repository、Entity、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
+
+### 代码组织规范
+- 一个文件只放一个主类型：Entity、DTO、Request、Response、ViewModel、枚举等公开契约类，默认一个类一个文件，文件名与类名一致。
+- DTO 目录组织：请求 / 响应 / 查询参数按业务域归入 `Models/DTOs/{业务域}/`，Request 与 Response 分别独立文件，不合并到 `Dtos.cs` 或 `{模块}Dto.cs`。
+  - 命名示例：`{业务域}/CreateOrderRequest.cs`、`{业务域}/OrderDetailResponse.cs`、`{业务域}/OrderQuery.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里。
 
 ### 数据模型规则
 - 实体类继承自 Azrng 基类（包含 Id、创建时间等公共属性）。
-- DTO 按用途区分：查询参数、创建请求、更新请求、响应结果。
+- DTO 按用途区分（查询参数、创建请求、更新请求、响应结果），文件组织见 `代码组织规范`。
 - 枚举放在 `Models/Enums/` 目录。
 - 禁止在 DTO 中暴露数据库内部字段。
 
@@ -222,12 +231,21 @@ project-root/
 - 中间件启用：`app.UseDefaultSwagger(onlyDevelopmentEnabled: true)`。
 - 项目必须启用 XML 文档生成：`<GenerateDocumentationFile>true</GenerateDocumentationFile>`。
 - Controller 和公开方法必须添加 XML 注释，Swagger 会自动展示；XML 注释内容统一使用中文。
+- Service / Repository 的核心方法与接口方法按 `代码注释规范` 补 XML 注释（不依赖 Swagger 自动展示，但需保证可读与可维护）。
 - 接口需通过 Swagger UI 独立验证，确保请求 / 响应结构正确。
 
 ### 字段命名约定
 - C# 属性：PascalCase
 - JSON 输出：camelCase（通过 `System.Text.Json` 配置自动转换）
 - 数据库字段：snake_case（通过 EF Core 命名约定配置）
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - Controller action：说明接口用途、关键参数、返回结果（Swagger 会消费这些说明）。
+  - Service 接口方法与 Service 核心实现方法：说明该能力做什么，不写实现细节。
+- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
