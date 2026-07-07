@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.5.0
+version: 1.5.1
 last_updated: 2026-07-07
 dependencies: [agents-root]
 ---
@@ -115,6 +115,25 @@ project-root/
 │   └── YourProject.Tests/
 └── ...
 ```
+
+### 目录职责映射
+
+按业务职责将类放到对应目录，文件命名与类名保持一致；与本文件 `代码组织规范`、`Service 规则`、`数据模型规则` 中的目录约定保持统一。
+
+| 目录 | 放什么类 | 命名约定 |
+| --- | --- | --- |
+| `Controllers/` | API 控制器，仅做 HTTP 编排，不含业务逻辑 | `{资源}Controller.cs` |
+| `Services/` | 业务服务实现（应用逻辑、状态流转、权限判断） | `{业务域}Service.cs` |
+| `Services/Interfaces/` | 服务接口 | `I{业务域}Service.cs` |
+| `Models/Entities/` | EF Core 实体，一个实体一个文件 | `{实体名}.cs` |
+| `Models/DTOs/{业务域}/` | 请求 / 响应 / 查询参数 DTO，Request 与 Response 各自独立文件 | `CreateOrderRequest.cs`、`OrderDetailResponse.cs`、`OrderQuery.cs` |
+| `Models/Enums/` | 枚举；跨模块复用的单独成文件，仅服务单个 DTO 的可随主类型 | `{枚举名}.cs` |
+| `Data/Context/` | DbContext | `{项目名}DbContext.cs` |
+| `Data/Configurations/` | EF Core 实体配置（字段映射、索引、关系） | `{实体名}Configuration.cs` |
+| `Middleware/` | 中间件 | `{名称}Middleware.cs` |
+| `Filters/` | 动作过滤器、自定义特性 | `{名称}Attribute.cs` / `{名称}Filter.cs` |
+| `Extensions/` | 扩展方法、DI 注册扩展 | `{类型}Extensions.cs` |
+| `Migrations/` | 数据库迁移脚本，必须幂等、可重复执行 | 按版本号命名 |
 
 ---
 
