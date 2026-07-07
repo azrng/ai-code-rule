@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.4.0
-last_updated: 2026-06-10
+version: 1.5.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -91,6 +91,24 @@ src/
     └── Services/
 ```
 
+### 层内目录组织
+
+各层内部按职责与类型组织；公开契约类（DTO、实体、接口等）默认一个类一个文件，文件名与类名一致。
+
+| 类型 | 所在层 / 目录 | 命名约定 |
+| --- | --- | --- |
+| Controller（如提供 API） | `Web/Controllers/` | `{资源}Controller.cs` |
+| Razor 组件 / 页面 | `Web/Pages/`、`Web/Components/`（UI 细节见 `ui-AGENTS.md`） | `{名称}.razor` |
+| 应用服务接口 | `Application/Interfaces/` | `I{业务域}Service.cs` |
+| 应用层 DTO | `Application/DTOs/{业务域}/` | `CreateOrderRequest.cs`、`OrderDetailResponse.cs` |
+| 应用服务实现 | `Application/Services/` | `{业务域}Service.cs` |
+| 实体 | `Domain/Entities/` | `{实体名}.cs` |
+| 值对象（record） | `Domain/ValueObjects/` | `{名称}.cs` |
+| 枚举 | `Domain/Enums/` | `{枚举名}.cs` |
+| DbContext / EF 配置 | `Infrastructure/Data/` | `{项目名}DbContext.cs`、`{实体名}Configuration.cs` |
+| 外部服务实现 | `Infrastructure/Services/` | `{名称}Service.cs` |
+| 迁移脚本（如使用数据库） | `Infrastructure/Migrations/` | 按版本号命名 |
+
 ---
 
 ## 阶段 2 — 服务逻辑与数据访问
@@ -135,11 +153,19 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 服务方法必须是异步的（返回 `Task<T>`）。
 - 使用 DTO 进行数据传递，不直接暴露 Domain 实体。
 - 业务异常抛出继承自 `BaseException` 的自定义异常。
+- 禁止在 Controller、Service、Domain 实体、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
 
 ### Domain 层规则
 - 实体类继承自基类（包含 Id、创建时间等公共属性）。
 - 值对象使用 record 类型，实现值相等比较。
 - 禁止依赖外部库，保持纯净。
+
+### 代码组织规范
+- 一个文件只放一个主类型：实体、值对象、DTO、Service 接口与实现等公开契约类，默认一个类一个文件，文件名与类名一致。
+- DTO 目录组织：应用层 DTO 放 `Application/DTOs/{业务域}/`，Request 与 Response 各自独立文件；通用 DTO 放 Domain 层对应目录，不合并到 `Dtos.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；把业务逻辑塞回 Razor 组件。
 
 ### 数据访问规则（可选）
 - 使用 Entity Framework Core 进行数据访问。
@@ -184,6 +210,15 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 迁移脚本放在 `Migrations/` 目录，按版本号命名。
 - 迁移脚本必须幂等，可重复执行。
 - 回滚脚本必须与正向脚本配套提供。
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - Controller action（如提供 API）：说明接口用途、关键参数、返回结果。
+  - Application 层服务接口与核心实现方法：说明应用能力，不写实现细节。
+  - Domain 核心业务规则方法：说明规则意图。
+- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
