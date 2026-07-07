@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.3.1
-last_updated: 2026-05-19
+version: 1.4.0
+last_updated: 2026-07-07
 dependencies: [agents-root]
 ---
 
@@ -114,6 +114,21 @@ project-root/
 └── TASK.md
 ```
 
+### 目录职责映射
+
+按职责将类放到对应目录，文件命名与类名保持一致。
+
+| 目录 | 放什么类 | 命名约定 |
+| --- | --- | --- |
+| `Commands/` | 命令处理（每个子命令一个类），仅做参数解析与 Service 调度 | `{动词}{资源}Command.cs`（如 `ExportOrderCommand.cs`） |
+| `Services/` | 业务服务实现（业务逻辑、外部调用编排） | `{业务域}Service.cs` |
+| `Services/Interfaces/` | 服务接口 | `I{业务域}Service.cs` |
+| `Models/DTOs/` | 输入参数 / 输出结果 DTO，一类一文件 | `{名称}Input.cs`、`{名称}Result.cs` |
+| `Models/Enums/` | 枚举；跨命令复用的单独成文件 | `{枚举名}.cs` |
+| `Extensions/` | 扩展方法、DI 注册扩展 | `{类型}Extensions.cs` |
+| `Helpers/` | 工具类（纯函数、无业务逻辑） | `{名称}Helper.cs` |
+| `Program.cs` | 应用入口：构建配置、注册依赖、调度命令 | — |
+
 ---
 
 ## 控制台规则
@@ -148,9 +163,17 @@ project-root/
 - 使用 DTO 进行数据传递
 - 业务异常抛出继承自 Azrng 异常体系的自定义异常
 - 服务类实现标记接口（`ITransientDependency`/`IScopedDependency`/`ISingletonDependency`）以自动注册
+- 禁止在 Command、Service、DTO、Options、Helper 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
+
+### 代码组织规范
+- 一个文件只放一个主类型：Command、Service 接口与实现、DTO、Options、枚举等，默认一个类一个文件，文件名与类名一致。
+- DTO 目录组织：输入 / 输出 DTO 放 `Models/DTOs/`，一类一文件，不合并到 `Dtos.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Dtos.cs` 长期堆放多个输入 / 输出模型；把命令专用参数内联写在 Command 文件里。
 
 ### 数据模型规则
-- DTO 按用途区分：输入参数、输出结果
+- DTO 按用途区分（输入参数、输出结果），文件组织见 `代码组织规范`。
 - 枚举放在 `Models/Enums/` 目录
 - 输出模型需考虑控制台展示友好性
 
@@ -233,6 +256,14 @@ project-root/
 - C# 属性：PascalCase
 - 命令行选项：kebab-case（`--output-dir`）
 - JSON 配置键：camelCase
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - Service 接口方法与 Service 核心实现方法：说明该能力做什么，不写实现细节。
+  - 公开 Command 类：说明命令用途，便于生成帮助信息与维护。
+- 优先补行内注释的位置：复杂命令分支、外部调用编排、重试 / 降级等，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
