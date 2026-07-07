@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.3.1
-last_updated: 2026-05-19
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -72,17 +72,37 @@ dependencies: [agents-root]
 
 ## 业务逻辑层规则
 
+### 目录职责映射
+
+按职责将类放到对应目录，文件命名与类名保持一致；View（`.xaml`）的组织见 `ui-AGENTS.md`。
+
+| 目录 | 放什么类 | 命名约定 |
+| --- | --- | --- |
+| `ViewModels/` | ViewModel（状态 + 命令编排） | `{名称}ViewModel.cs` |
+| `Services/Interfaces/` | 服务接口 | `I{业务域}Service.cs` |
+| `Services/` | 服务实现 | `{业务域}Service.cs` |
+| `Models/DTOs/` | DTO（视图与业务层契约），一类一文件 | `{名称}Dto.cs` |
+| `Models/Entities/` | 数据实体，一类一文件 | `{实体名}.cs` |
+
 ### Service 层规则
 - 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录
 - 服务方法必须是异步的（返回 `Task<T>` 或 `ValueTask<T>`）
 - 服务层处理所有业务逻辑，不直接承担视图渲染、控件操作与数据访问实现细节
 - 服务层异常必须统一封装，抛出 Azrng 异常体系的业务异常类型
 - 服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
+- 禁止在 ViewModel、Service、Repository、Model、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数
 
 ### 应用层协作边界
 - ViewModel 只依赖 Service 接口，不直接依赖 Repository、数据库连接或 SQL
 - 若业务需要持久化能力，可在应用层定义仓储接口或调用边界，但具体实现与数据访问规则统一放在 `infrastructure-AGENTS.md`
 - 涉及缓存、数据库、文件系统或第三方 SDK 的具体接入时，必须同时阅读 `infrastructure-AGENTS.md`
+
+### 代码组织规范
+- 一个文件只放一个主类型：ViewModel、Service 接口与实现、Entity、DTO 等，默认一个类一个文件，文件名与类名一致。
+- DTO 目录组织：DTO 放 `Models/DTOs/`，一类一文件，不合并到 `Dtos.cs`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
+- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
+- 反模式：`Dtos.cs` 长期堆放多个 DTO；把 ViewModel 专用模型内联写在 ViewModel 文件里；业务逻辑塞进 View 的 code-behind。
 
 ### 统一结果包装
 - 服务层方法返回值统一使用 `ResultModel<T>` 包装
@@ -98,6 +118,14 @@ dependencies: [agents-root]
   - `ForbiddenException`：禁止访问
   - `InternalServerException`：服务器内部错误
 - 异常在 ViewModel 层捕获并转换为用户友好的提示信息
+
+### 代码注释规范
+- 必须补 XML 注释的位置：
+  - ViewModel 公共命令与关键属性：说明用户操作意图与可观察状态。
+  - Service 接口方法与核心实现方法：说明该能力做什么，不写实现细节。
+- 优先补行内注释的位置：复杂状态流转、命令分支、外部调用编排，说明为什么这样处理。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 
