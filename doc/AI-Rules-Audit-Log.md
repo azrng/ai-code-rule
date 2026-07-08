@@ -40,6 +40,7 @@
 - [2026-06-27 新增 electronDotNetExe 模板](rulelog/2026-06-27-新增electronDotNetExe模板.md)
 - [2026-06-28 azrng-efcore 分页示例与实体基类描述修复](rulelog/2026-06-28-azrng-efcore分页与实体基类描述修复.md)
 - [2026-06-28 onion-architecture 去重精简](rulelog/2026-06-28-onion-architecture去重精简.md)
+- [2026-07-08 dotnetCoreSingle 任务记录范围、Docker 门控与注释约束收紧](rulelog/2026-07-08-dotnetCoreSingle任务记录Docker门控注释约束收紧.md)
 
 ---
 
