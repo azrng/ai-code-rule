@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.4.0
+version: 1.5.0
 last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
@@ -200,9 +200,13 @@ API → Application → Domain ← Infrastructure
 
 ### 代码注释规范
 - 必须补 XML 注释的位置：
-  - Controller action：说明接口用途、关键参数、返回结果。
-  - Application 层服务接口与核心实现方法：说明应用能力，不写实现细节。
+  - Controller action：用 `<summary>` 说明接口用途、关键参数、返回结果。
+  - Application 层服务接口方法：说明应用能力，不写实现细节。
   - Domain 核心业务规则方法：说明规则意图。
+  - 不来自接口的实现类自有方法（接口未约束的核心方法）：补 `<summary>` 说明该能力做什么。
+- 接口已注释时，实现方法不重复注释，也不加 `/// <inheritdoc />`；只有实现类自有的、接口未定义的方法才需要补注释。
+- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按"不写实现细节"原则省略。
+  - 例外：Controller action 需要向调用方暴露事件格式、鉴权要求、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
 - 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明为什么这样处理。
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
