@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.6.0
-last_updated: 2026-07-07
+version: 1.7.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -263,7 +263,7 @@ src/
 - 中间件启用：`app.UseDefaultSwagger(onlyDevelopmentEnabled: true)`。
 - 项目必须启用 XML 文档生成：`<GenerateDocumentationFile>true</GenerateDocumentationFile>`。
 - Controller 和公开方法必须添加 XML 注释，Swagger 会自动展示；XML 注释内容统一使用中文。
-- AppService / DomainService 核心方法与 IApplication / IDomain 接口方法按 `代码注释规范` 补 XML 注释（不依赖 Swagger 自动展示，但需保证可读与可维护）。
+- AppService / DomainService 的方法 XML 注释按 `代码注释规范` 处理（不依赖 Swagger 自动展示，但需保证可读与可维护）。
 - 接口需通过 Swagger UI 独立验证，确保请求 / 响应结构正确。
 
 ### 数据库迁移规则
@@ -281,9 +281,13 @@ src/
 
 ### 代码注释规范
 - 必须补 XML 注释的位置：
-  - Controller action：说明接口用途、关键参数、返回结果（Swagger 会消费这些说明）。
+  - Controller action：用 `<summary>` 说明接口用途、关键参数、返回结果（Swagger 会消费这些说明）。
   - IApplication / IDomain 接口方法：说明应用能力或领域能力，不写实现细节。
-  - Application / Domain 核心实现方法：说明该能力做什么。
+  - Domain 核心业务规则方法：说明规则意图。
+  - 不来自接口的实现类自有方法（接口未约束的核心方法）：补 `<summary>` 说明该能力做什么。
+- 接口已注释时，实现方法不重复注释，也不加 `/// <inheritdoc />`；只有实现类自有的、接口未定义的方法才需要补注释。
+- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按"不写实现细节"原则省略。
+  - 例外：Controller action 需要向调用方暴露事件格式、鉴权要求、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
 - 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明为什么这样处理。
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
