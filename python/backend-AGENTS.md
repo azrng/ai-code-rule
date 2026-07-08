@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.3.1
-last_updated: 2026-05-19
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -415,6 +415,13 @@ FastAPI 自带 Swagger UI 和 ReDoc，确保：
 | 数据库列名 | snake_case | `created_at`, `is_deleted` |
 | API 路径 | kebab-case（小写复数） | `/api/v1/user-roles` |
 | 环境变量 | UPPER_SNAKE_CASE | `DATABASE_URL` |
+
+### 代码组织规范
+- 一个文件只放一个主对象：路由处理、Service、Repository、ORM Model、Pydantic Schema、配置类各自独立文件，文件名与主对象一致。
+- 数据契约（请求 / 响应 / DTO / Schema）按业务域分文件定义（`schemas/requests/`、`schemas/responses/`），不合并到一个 `models.py` / `schemas.py`。
+- 触发拆分的信号：单文件出现多个主类、函数或字段持续堆叠、模块跨多个不相关业务。
+- 允许例外：紧耦合的常量、Protocol 接口分组、测试 fixture。
+- 反模式：一个 `models.py` 堆放所有 ORM 模型；一个 `schemas.py` 堆放所有请求 / 响应；把多个不相关 Service 塞进同一文件。
 
 ---
 

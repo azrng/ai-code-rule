@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.3.1
-last_updated: 2026-05-19
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -127,6 +127,13 @@ Route Handler / Server Action
 - 邮件、短信、对象存储、Webhook、支付等第三方能力统一放在 `src/server/integrations/`
 - 第三方密钥只允许从服务端环境变量读取
 - 所有第三方调用都必须具备错误处理与日志
+
+### 代码组织规范
+- 一个文件只放一个主对象：Route Handler、Server Action、Service、Repository、Prisma model、Schema 各自独立文件，文件名与主对象一致。
+- 数据契约（请求 / 响应 / DTO / Schema）按业务域分文件定义，不合并到一个大杂烩文件。
+- 触发拆分的信号：单文件出现多个主对象、函数或字段持续堆叠、模块跨多个不相关业务。
+- 允许例外：紧耦合的常量、类型分组、测试 fixture。
+- 反模式：一个文件堆放所有 Prisma model 或所有请求 / 响应定义；把多个不相关 Service 塞进同一文件。
 
 ---
 
