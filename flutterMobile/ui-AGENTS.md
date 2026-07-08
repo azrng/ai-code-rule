@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.3.1
-last_updated: 2026-06-05
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -221,6 +221,13 @@ lib/
 - 底部操作栏：`BackdropFilter` blur=15, bg white/0.85
 - 深色背景浮层：`BackdropFilter` blur=20, bg black/0.3
 - 避免在列表滚动区域使用 `BackdropFilter`，影响性能
+
+### 代码组织规范
+- 一个文件只放一个主对象：页面、Widget、布局、路由各自独立文件，文件名与主对象一致。
+- Widget 职责单一：一个 Widget 只做一件事，发现持续膨胀或多个不相关职责堆在同一文件时，应拆分为更小的子 Widget。
+- 触发拆分的信号：单文件出现多个主 Widget、字段持续堆叠、跨多个不相关页面、阅读成本明显升高。
+- 允许例外：仅服务当前 Widget 的私有小组件、紧耦合的样式常量、测试 fixture。
+- 反模式：一个文件同时定义页面、表单、列表、弹窗等多个 Widget；把多个不相关 Widget 堆在同一文件。
 
 ---
 

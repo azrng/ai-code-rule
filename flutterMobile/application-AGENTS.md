@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.3.1
-last_updated: 2026-06-05
+version: 1.4.0
+last_updated: 2026-07-08
 dependencies: [agents-root]
 ---
 
@@ -185,6 +185,13 @@ class Failure<T> extends Result<T> {
 - 后台返回前台时，应根据业务需要刷新关键数据
 - 网络状态变化时，应通过 `connectivity_plus` 监听并给出适当提示
 - 权限请求（相机、位置、存储等）必须在真正需要时才请求，禁止启动时一次性全部请求
+
+### 代码组织规范
+- 一个文件只放一个主对象：Provider、Service、Repository、Entity、DTO 各自独立文件，文件名与主对象一致。
+- DTO / Model 组织：放 `lib/models/`，按 `entities/` / `dtos/` 分类，一类一文件，不合并到一个 `models.dart`。
+- 触发拆分的信号：职责混杂、同文件出现多个主类、字段持续堆叠、跨多个不相关业务。
+- 允许例外：仅服务当前文件的私有辅助类型、freezed 生成的联合类型成员、测试 fixture。
+- 反模式：一个 `models.dart` 堆放所有实体 / DTO；把多个不相关 Provider 或 Service 塞进同一文件。
 
 ---
 
