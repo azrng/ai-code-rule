@@ -7,8 +7,7 @@ dependencies: [agents-root]
 
 # AI 规则
 
-> 本规则是 `aiReactLinkdotNet` 区别于 `reactLinkdotNet` 的核心增量：规定模型调用、Agent 编排、工具 / Skills、Prompt、流式与可选扩展能力（向量库、记忆、多 Agent、MCP）。
-> 选型理念来源：技术选型.md ——「核心做扎实，可选按需引入，先闭环再扩张」。
+> 本规则规定模型调用、Agent 编排、工具 / Skills、Prompt、流式与可选扩展能力（向量库、记忆、多 Agent、MCP）；选型理念为「核心做扎实，可选按需引入，先闭环再扩张」。
 
 ## 适用范围
 

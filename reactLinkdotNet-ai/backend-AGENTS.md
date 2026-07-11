@@ -7,7 +7,7 @@ dependencies: [agents-root, ai-agents]
 
 # 后端规则
 
-> 与 `reactLinkdotNet` 的差异：从四工程分层改为 **单项目整洁架构**；数据库 **SQLite 默认、PostgreSQL 可选**；Redis 降为 **可选**；新增 AI 集成边界（详见 `ai-AGENTS.md`）。
+> 本规则采用 **单项目整洁架构**（单 .csproj，按依赖方向分层）；数据库 **SQLite 默认、PostgreSQL 可选**；Redis 为 **可选**；含 AI 集成边界（详见 `ai-AGENTS.md`）。
 
 ## 适用范围
 

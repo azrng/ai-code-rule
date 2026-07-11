@@ -7,7 +7,7 @@ dependencies: []
 
 # AGENTS.md
 
-> 本规则以 `reactLinkdotNet` 为工程底座，融合 AI Agent 产品 MVP 选型理念（参见技术选型.md）。
+> 本规则以 React + .NET 全栈为工程底座，融合 AI Agent 产品的 MVP 选型理念。
 > 定位：一套面向 **AI Agent 产品** 的 React + .NET 全栈开发规范，强调工程规范与"少仪式、快闭环、AI Coding 友好、可演进"并存。
 
 ## 目标

@@ -7,7 +7,7 @@ dependencies: [agents-root, ai-agents]
 
 # 基础设施规则
 
-> 与 `reactLinkdotNet` 的差异：数据库 **SQLite 默认、PostgreSQL 可选**；Redis 不再默认；新增 **模型相关环境变量**（密钥、Base URL、模型名）。理念：第一版本地零依赖即可跑通，按需升级。
+> 本规则：数据库 **SQLite 默认、PostgreSQL 可选**；Redis 不默认；含 **模型相关环境变量**（密钥、Base URL、模型名）。理念：第一版本地零依赖即可跑通，按需升级。
 
 ## 适用范围
 

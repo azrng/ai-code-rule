@@ -1,7 +1,7 @@
 # 设计与组件规则的唯一事实来源。
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
 # 技术栈：React + TypeScript + Tailwind CSS + shadcn/ui + lucide-react + recharts(可选) + Zustand
-# 与 reactLinkdotNet 的差异：从 Ant Design 5 换为 Tailwind + shadcn/ui；图标 lucide-react；图表 recharts（可选）。
+# 设计体系：Tailwind + shadcn/ui；图标 lucide-react；图表 recharts（可选）。
 
 meta:
   name: "AI 应用设计系统"

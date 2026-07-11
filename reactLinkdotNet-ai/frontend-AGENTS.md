@@ -7,7 +7,7 @@ dependencies: [agents-root]
 
 # 前端规则
 
-> 与 `reactLinkdotNet` 的差异：UI 从 **Ant Design 5 换为 Tailwind CSS + shadcn/ui**；图标从 `@ant-design/icons` 换为 **lucide-react**；图表改为 **recharts（可选）**。更契合 AI Agent 产品中"自定义结果卡、流式输出、非标准交互"的场景，且 AI Coding 对这套组合高度熟悉。
+> 本规则 UI 采用 **Tailwind CSS + shadcn/ui**；图标用 **lucide-react**；图表为 **recharts（可选）**。更契合 AI Agent 产品中"自定义结果卡、流式输出、非标准交互"的场景，且 AI Coding 对这套组合高度熟悉。
 
 ## 适用范围
 

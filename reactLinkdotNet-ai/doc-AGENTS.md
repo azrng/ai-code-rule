@@ -7,7 +7,7 @@ dependencies: [agents-root, ai-agents]
 
 # 文档规则
 
-> 与 `reactLinkdotNet` 的差异：设计系统文件改为 Tailwind + shadcn 体系；新增 **AI 产品交互补充**（Agent 输出展示、流式契约、用户确认节点、人工审核）。
+> 本规则的设计系统基于 Tailwind + shadcn 体系；含 **AI 产品交互补充**（Agent 输出展示、流式契约、用户确认节点、人工审核）。
 
 ## 适用范围
 
