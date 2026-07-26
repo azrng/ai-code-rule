@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.7.0
-last_updated: 2026-07-08
+version: 1.8.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -14,7 +14,7 @@ dependencies: [agents-root]
 
 ### 阅读摘要
 - 建议阅读：改接口、改 Service、改数据访问、改缓存、改权限、补后端验证
-- 可先跳过：纯页面样式、纯文档整理、仅构建或部署配置调整
+- 可先跳过：纯文档整理、仅构建或部署配置调整
 - 优先查看：服务端规则、数据访问 / 异常处理规范、测试规则
 
 ### 常见任务入口
@@ -44,19 +44,11 @@ dependencies: [agents-root]
 ### 数据库访问库
 - `Common.EFCore`：EF Core 基础封装（必须安装，所有 Provider 都依赖它）
 - 根据项目使用的数据库，按需选择以下其中一个 Provider 包：
-  - `Common.EFCore.PostgreSql`：PostgreSQL（默认推荐）
+  - `Common.EFCore.PostgresSql`：PostgreSQL（默认推荐；注意实际 NuGet 包 id 拼写为 `PostgresSql`）
   - `Common.EFCore.MySQL`：MySQL / MariaDB
   - `Common.EFCore.SQLServer`：SQL Server
   - `Common.EFCore.SQLite`：SQLite
   - `Common.EFCore.InMemory`：内存数据库（仅用于测试）
-
-### 依赖注入规范
-- 使用 Azrng 标记接口方式：
-  - `ITransientDependency`：临时注入
-  - `IScopedDependency`：作用域注入
-  - `ISingletonDependency`：单例注入
-- 在 `Program.cs` 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
-- 服务类实现对应标记接口，自动被扫描注册到 DI 容器
 
 ### 数据库
 - 默认使用 PostgreSQL
@@ -98,12 +90,14 @@ src/
 | 基础层 | Core | 公共 DTO、工具类、安全、缓存配置 | 无 | 禁止依赖任何业务层 |
 | 领域接口 | IDomain | 实体定义、领域服务接口、仓储接口 | Core | 禁止依赖 Adapter / EntityFramework / Domain |
 | 适配器 | Adapter | 外部 HTTP 服务调用、第三方 SDK 封装 | Core, IDomain | 禁止依赖 Domain / Application |
-| 数据访问 | EntityFramework | DbContext、数据库迁移、EF Core 配置 | Core, IDomain | 禁止依赖 Domain / Application |
+| 数据访问 | EntityFramework | DbContext、EF Core 实体配置、自定义仓储实现 | Core, IDomain | 禁止依赖 Domain / Application |
 | 领域实现 | Domain | 核心业务逻辑，编排 Adapter 和数据访问 | IDomain, Adapter, EntityFramework | 禁止依赖 IApplication / Application |
 | 应用接口 | IApplication | 应用服务接口定义、CQRS 请求 / 响应 | Core, IDomain | 禁止依赖 Domain / Application |
 | 应用实现 | Application | 应用服务实现、业务流程编排 | IApplication, Domain | 禁止依赖 Service |
 | 存储 | Storage | 文件上传下载、对象存储操作 | Core | 禁止依赖 Application / Service |
 | 宿主层 | Service | Controller、中间件、DI 注册、配置 | Application, Storage | 禁止包含业务逻辑 |
+
+- Storage 的能力接口定义在 Core（Storage 仅依赖 Core），实现放在 Storage 项目；Application / Domain 通过 Core 中的接口使用存储能力，Service 只负责装配。禁止 Controller 绕过业务层直接调用存储实现。
 
 ### 层内目录组织
 
@@ -115,10 +109,10 @@ src/
 | 应用层 DTO（请求 / 响应 / 查询） | `IApplication/{业务域}/Dto/` | `CreateOrderRequest.cs`、`OrderDetailResponse.cs` |
 | 领域服务接口 | `IDomain/{业务域}/` | `I{业务域}DomainService.cs` |
 | 实体 / 值对象 | `IDomain/{业务域}/` | `{实体名}.cs` |
-| 仓储接口 | `IDomain/{业务域}/` | `I{实体名}Repository.cs` |
-| EF Core 实体配置 | `EntityFramework/Configurations/` | `{实体名}Configuration.cs` |
+| 自定义仓储接口（仅复杂查询需要时） | `IDomain/{业务域}/` | `I{实体名}Repository.cs`，实现放 `EntityFramework/Repositories/` |
+| EF Core 实体配置 | `EntityFramework/` | `{实体名}Etc.cs`（继承 Azrng 配置基类） |
 | DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
-| 数据库迁移脚本 | `EntityFramework/Migrations/` | 按版本号命名 |
+| 数据库迁移脚本 | `Service/MigrationSql/` | `版本号_描述.sql`（如 `1.1.0_add_user_phone.sql`） |
 | 外部服务调用 / 第三方封装 | `Adapter/{业务域}/` | `{名称}Adapter.cs` |
 | 通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
 | 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
@@ -153,22 +147,20 @@ src/
 - 使用 `[ApiController]` 特性，自动处理 400 响应。
 - 使用 `[Route("api/[controller]")]` 统一路由前缀。
 - 通过构造函数注入 IApplication 层的服务接口。
-- 统一使用 `ActionResult<T>` 或 `IActionResult` 返回类型。
-- 所有响应统一使用 `ResultModel<T>` 包装。
+- Controller action 直接返回 `Task<T>` 并一行转发 AppService；不写 `Ok()`，不手动构造 `ResultModel`，统一包装由全局过滤器与异常中间件完成（见 `统一响应格式`）。
 - DI 注册、中间件配置、Swagger 配置等都在此层完成。
 - 禁止在 Controller、AppService、DomainService、Repository、Entity、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
 
 ### IApplication（应用接口层）规则
 - 按业务域拆分接口文件夹（如 `UserManager/`、`OrderManager/`）。
 - 接口方法定义清晰的入参和返回类型。
-- 使用 DTO 作为数据契约，不暴露领域实体。
+- 使用 DTO 作为数据契约，不暴露领域实体；对 IDomain 的依赖仅用于复用枚举、值对象等共享定义。
 - 接口方法必须是异步的（返回 `Task<T>`）。
 
 ### Application（应用实现层）规则
 - 实现类实现对应标记接口以自动注册 DI。
 - 编排 Domain 层服务完成业务流程。
 - 负责事务管理和跨领域协调。
-- Handler 模式处理请求（可结合 MediatR）。
 - DTO 与实体之间的转换在此层完成。
 
 ### IDomain（领域接口层）规则
@@ -184,12 +176,12 @@ src/
 - 业务异常抛出继承自 Azrng 异常体系的自定义异常。
 
 ### EntityFramework（数据访问层）规则
-- DbContext 通过构造函数注入。
+- 数据访问默认直接注入 `Common.EFCore` 提供的 `IBaseRepository<T>`，不为每个实体创建自定义仓储；仅当查询逻辑复杂、需要封装复用时才定义 `I{实体名}Repository`（接口放 `IDomain/{业务域}/`，实现放 `EntityFramework/Repositories/`）。
 - 使用 LINQ 查询，避免原生 SQL。
-- 涉及事务时使用 `IDbContextTransaction`。
-- 软删除通过全局查询过滤器实现。
-- EF Core 实体配置在此层定义。
-- 数据库迁移脚本放在 `Migrations/` 目录。
+- 多步原子写操作优先使用 `IUnitOfWork` 事务，不直接操作 `IDbContextTransaction`。
+- 软删除统一使用实体基类的 `Deleted` 字段；包不自动做全局过滤，默认在查询中显式过滤 `!x.Deleted`，或在实体配置类中统一配置查询过滤器。
+- EF Core 实体配置类（`{实体名}Etc.cs`）在此层定义，DbContext 通过 `ApplyConfigurationsFromAssembly` 扫描应用。
+- 数据库迁移脚本位置与规则见 `数据库迁移规则`。
 
 ### Adapter（适配器层）规则
 - 封装外部 HTTP 服务调用（通过 `Common.HttpClients`）。
@@ -211,17 +203,18 @@ src/
 - 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；跨层把多个不相关类型塞进同一文件。
 
 ### 数据模型规则
-- 实体类继承自 Azrng 基类（包含 Id、创建时间等公共属性）。
+- 实体类继承自 Azrng 基类（如 `IdentityOperatorStatusEntity`，自带雪花 Id、审计与软删除字段）。
 - DTO 按用途区分（查询参数、创建请求、更新请求、响应结果），文件组织见 `代码组织规范`。
 - 接口层（IApplication / IDomain）只定义 DTO 和接口，不包含实现。
 - 禁止在 DTO 中暴露数据库内部字段。
 
 ### 统一响应格式
-- 所有 API 响应统一使用 `ResultModel<T>` 包装。
-- 成功响应：`ResultModel<T>.Success(data)`。
-- 错误响应：`ResultModel<T>.Failure(message, errorCode)`。
-- 状态码：200 表示成功，其他表示各类错误。
-- 异常处理由 `Azrng.AspNetCore.Core` 中间件统一捕获。
+- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
+  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
+  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
+  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
+- AppService 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
+- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
 
 ### 依赖注入规范
 - 服务类必须实现以下接口之一：
@@ -240,7 +233,7 @@ src/
   - `ForbiddenException`：禁止访问
   - `InternalServerException`：服务器内部错误
 - 异常由中间件统一捕获并转换为 `ResultModel` 响应。
-- 禁止在 Controller 外部直接返回错误状态码。
+- 业务失败一律通过抛出上述异常表达；禁止在业务层手工构造失败 `ResultModel` 或直接设置错误状态码。
 
 ### Redis 缓存使用规范
 - 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口。
@@ -254,7 +247,7 @@ src/
 - 使用 `Common.Cache.MemoryCache` 封装的 `IMemoryCacheProvider` 接口。
 - 通过 `services.AddMemoryCacheStore()` 注册内存缓存服务。
 - 适用于单实例部署、不需要分布式共享的缓存场景。
-- 可通过 `MemoryConfig` 配置默认过期时间（默认 5 秒）等参数。
+- 可通过 `MemoryConfig` 配置默认过期时间等参数，具体默认值以包实现为准。
 - 与 Redis 搭配使用时作为一级缓存，Redis 作为二级缓存。
 
 ### Swagger 规范
@@ -267,12 +260,11 @@ src/
 - 接口需通过 Swagger UI 独立验证，确保请求 / 响应结构正确。
 
 ### 数据库迁移规则
-- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移。
-- 迁移脚本放在 `EntityFramework/Migrations/` 目录，按版本号命名。
-- 迁移脚本必须幂等，可重复执行。
-- 应用启动时自动执行迁移（可选配置）。
-- 回滚脚本必须与正向脚本配套提供。
-- 每次迁移后更新数据库版本记录表。
+- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移，不使用 EF Core Code-First Migrations。
+- 迁移脚本放在 `Service/MigrationSql/` 目录，文件名按 `版本号_描述.sql` 命名（如 `1.0.0_init.sql`、`1.1.0_add_user_phone.sql`），按版本号顺序执行。
+- 通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本；已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表。
+- 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本。
+- 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式。
 
 ### 字段命名约定
 - C# 属性：PascalCase
@@ -301,7 +293,7 @@ src/
 - 业务逻辑改动：至少补一项业务规则、权限判断或状态流转验证
 - 接口 / 路由 / 控制器改动：至少补一项输入输出、状态码或异常分支验证
 - 数据访问、缓存、迁移改动：至少补一项查询结果、缓存行为、事务或迁移同步验证
-- 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
+- 若仓库暂时缺少自动化测试基础，可使用接口调用、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
 
 ### 总体要求
 - 影响行为的改动应优先补充或更新测试。

@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.6.0
-last_updated: 2026-07-08
+version: 1.7.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -14,7 +14,7 @@ dependencies: [agents-root]
 
 ### 阅读摘要
 - 建议阅读：改 Dockerfile、Compose、环境变量、运行端口、启动方式、发布链路
-- 可先跳过：纯界面交互、纯业务逻辑、仅设计文档维护
+- 可先跳过：纯业务逻辑、仅设计文档维护
 - 优先查看：默认端口、交付规则、`提交前最小回归`
 
 ### 常见任务入口
@@ -47,7 +47,9 @@ dependencies: [agents-root]
 | --- | --- | --- |
 | 后端（.NET） | 8080 | 8080 |
 | 数据库（PostgreSQL） | 5432 | 5432 |
+| 缓存（Redis，启用时） | 6379 | 6379 |
 
+- Redis 仅在项目实际启用 `Common.Cache.Redis` 时才纳入 Compose 编排，并同样补充健康检查或启动等待策略。
 - 若宿主机端口冲突，优先调整 Compose 映射端口（宿主机侧），容器内端口保持不变。
 
 ---
