@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.4.0
-last_updated: 2026-07-08
+version: 1.5.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -101,5 +101,3 @@ dependencies: [agents-root]
 - 若本次改动同时影响应用访问链路，应至少补一次核心链路检查
 
 ---
-
-文件结束。

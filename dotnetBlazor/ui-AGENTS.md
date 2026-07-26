@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.5.0
-last_updated: 2026-07-08
+version: 1.6.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -182,5 +182,3 @@ src/
 - 必须说明潜在影响范围和风险。
 
 ---
-
-文件结束。

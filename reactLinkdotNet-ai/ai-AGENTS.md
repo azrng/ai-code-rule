@@ -1,7 +1,7 @@
 ---
 rule_id: ai-agents
-version: 1.0.0
-last_updated: 2026-07-11
+version: 1.1.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -248,5 +248,3 @@ await foreach (var update in agent.RunStreamingAsync("帮我列三个选题。")
 - 必须说明潜在影响范围和风险
 
 ---
-
-文件结束。

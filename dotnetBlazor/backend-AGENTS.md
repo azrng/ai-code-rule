@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.6.0
-last_updated: 2026-07-08
+version: 1.7.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -96,7 +96,7 @@ src/
 | 枚举 | `Domain/Enums/` | `{枚举名}.cs` |
 | DbContext / EF 配置 | `Infrastructure/Data/` | `{项目名}DbContext.cs`、`{实体名}Configuration.cs` |
 | 外部服务实现 | `Infrastructure/Services/` | `{名称}Service.cs` |
-| 迁移脚本（如使用数据库） | `Infrastructure/Migrations/` | 按版本号命名 |
+| SQL 迁移脚本（如使用数据库） | `Web/MigrationSql/` | `版本号_描述.sql`（如 `1.1.0_add_user_phone.sql`） |
 
 ---
 
@@ -135,7 +135,7 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 使用 `[ApiController]` 特性，自动处理 400 响应。
 - 使用 `[Route("api/[controller]")]` 统一路由前缀。
 - 注入 Application 层的服务接口，不直接依赖 Infrastructure。
-- 统一使用 `ActionResult<T>` 或 `IActionResult` 返回类型。
+- Controller action 直接返回 `Task<T>` 并一行转发 Service；不写 `Ok()`，不手动构造 `ResultModel`，统一包装由全局过滤器与异常中间件完成（见 `统一响应格式`）。
 
 ### Service 层规则
 - 服务类实现接口，接口定义在 `Interfaces/` 目录。
@@ -163,12 +163,13 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 涉及事务时使用 `IDbContextTransaction`。
 - 软删除通过全局查询过滤器实现。
 
-### 统一响应格式
-- 所有 API 响应统一使用 `ResultModel<T>` 包装。
-- 成功响应：`ResultModel<T>.Success(data)`。
-- 错误响应：`ResultModel<T>.Failure(message, errorCode)`。
-- 状态码：200 表示成功，其他表示各类错误。
-- 异常处理由 `Azrng.AspNetCore.Core` 中间件统一捕获。
+### 统一响应格式（如提供 API 接口）
+- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
+  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
+  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
+  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
+- Service 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
+- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
 
 ### 依赖注入规范
 - 服务类必须实现以下接口之一：
@@ -195,10 +196,11 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 禁止在循环中频繁调用 Redis。
 
 ### 数据库迁移规则（可选）
-- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移。
-- 迁移脚本放在 `Migrations/` 目录，按版本号命名。
-- 迁移脚本必须幂等，可重复执行。
-- 回滚脚本必须与正向脚本配套提供。
+- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移，不使用 EF Core Code-First Migrations。
+- 迁移脚本放在宿主项目下 `Web/MigrationSql/` 目录，文件名按 `版本号_描述.sql` 命名（如 `1.0.0_init.sql`、`1.1.0_add_user_phone.sql`），按版本号顺序执行。
+- 通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本；已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表。
+- 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本。
+- 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式。
 
 ### 代码注释规范
 - 必须补 XML 注释的位置：
@@ -246,5 +248,3 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 必须说明潜在影响范围和风险。
 
 ---
-
-文件结束。

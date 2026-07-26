@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.5.0
-last_updated: 2026-06-22
+version: 1.6.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -109,5 +109,3 @@ dependencies: [agents-root]
   - 后续如何避免或验证不再复发
 
 ---
-
-文件结束。

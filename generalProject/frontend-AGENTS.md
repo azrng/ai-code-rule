@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.4.0
-last_updated: 2026-07-08
+version: 1.5.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -154,5 +154,3 @@ dependencies: [agents-root]
 - 必须说明潜在影响范围与风险
 
 ---
-
-文件结束。

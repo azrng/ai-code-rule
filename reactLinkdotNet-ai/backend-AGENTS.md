@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.0.0
-last_updated: 2026-07-11
+version: 1.1.0
+last_updated: 2026-07-26
 dependencies: [agents-root, ai-agents]
 ---
 
@@ -94,7 +94,7 @@ backend/
 │       │   ├── Data/
 │       │   │   ├── Context/             # DbContext
 │       │   │   ├── Configurations/      # EF Core 实体配置
-│       │   │   ├── Migrations/          # 迁移文件
+│       │   │   ├── Migrations/          # EF Core 迁移文件（SQLite 默认场景）
 │       │   │   └── Repositories/        # 仓储实现
 │       │   └── Services/                # 外部服务实现（邮件、文件存储等；模型客户端在 AI/Clients/）
 │       ├── AI/                          # AI 能力（见 ai-AGENTS.md）
@@ -151,7 +151,6 @@ Endpoints → Application → Domain ← Infrastructure / AI
 ### Domain 层规则
 - 实体类继承自基类（包含 Id、创建时间等公共属性）
 - 值对象使用 record 类型，实现值相等比较
-- 领域事件继承自 `INotification`（MediatR）
 - 禁止依赖外部库，保持纯净
 
 ### Infrastructure 层规则
@@ -182,11 +181,12 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 迁移脚本必须保证在两种 Provider 下都可执行或分别提供，避免只跑通一边
 
 ### 统一响应格式
-- 所有 API 响应统一使用 `ResultModel<T>` 包装
-- 成功响应：`ResultModel<T>.Success(data)`
-- 错误响应：`ResultModel<T>.Failure(message, errorCode)`
-- 状态码：200 表示成功，其他表示各类错误
-- 异常处理由 Azrng.AspNetCore.Core 中间件统一捕获
+- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
+  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
+  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
+  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
+- Service 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
+- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
 - 流式接口（如 Agent 输出）可不套 `ResultModel<T>`，按 `ai-AGENTS.md` 与 `doc-AGENTS.md` 约定的事件结构返回
 
 ### 依赖注入规范
@@ -206,7 +206,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
   - `ForbiddenException`：禁止访问
   - `InternalServerException`：服务器内部错误
 - 异常由中间件统一捕获并转换为 `ResultModel` 响应
-- 禁止在 Controller / 端点外部直接返回错误状态码
+- 业务失败一律通过抛出上述异常表达；禁止在业务层手工构造失败 `ResultModel` 或直接设置错误状态码
 - 模型调用异常（超时、限流、空响应）需转换为可读的业务异常，不向上层泄漏 SDK 细节
 
 ### Redis 缓存使用规范（可选）
@@ -220,7 +220,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 ### 数据库迁移规则
 - **迁移工具优先级**：**PostgreSQL 优先用 `Azrng.SqlMigration`（SQL 脚本迁移）**；**SQLite（默认）及其他场景优先用 EF Core Migrations**
 - 两种工具可在同一项目并存，但同一数据库的同一变更只走一种，避免重复执行或互相覆盖
-- `Azrng.SqlMigration` 脚本放在 `Migrations/` 目录，按版本号命名；必须幂等，可重复执行；回滚脚本与正向脚本配套提供；每次迁移后更新数据库版本记录表
+- `Azrng.SqlMigration` 脚本放在宿主项目下 `MigrationSql/` 目录，文件名按 `版本号_描述.sql` 命名（如 `1.1.0_add_user_phone.sql`），按版本号顺序执行；通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本，已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表
+- `Azrng.SqlMigration` 已应用的脚本不可修改，结构调整必须新增更高版本号的脚本；涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式
 - EF Core Migrations 通过 `dotnet ef migrations add` 生成，注意 SQLite 与 PostgreSQL 的 Provider 差异（大小写敏感、JSON、并发等）
 - 应用启动时自动执行迁移（可选配置）；默认 SQLite 需注意文件锁与并发限制，生产场景再评估是否切 PostgreSQL
 
@@ -273,5 +274,3 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 必须说明潜在影响范围和风险
 
 ---
-
-文件结束。

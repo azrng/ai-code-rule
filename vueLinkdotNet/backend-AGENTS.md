@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.5.0
-last_updated: 2026-07-08
+version: 1.6.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -61,7 +61,7 @@ dependencies: [agents-root]
   - `IScopedDependency`：作用域注入
   - `ISingletonDependency`：单例注入
 - 在 Program.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
-- 服务类实现对应标记接口，自动被扫描注册到 DI 容器到 DI 容器
+- 服务类实现对应标记接口，自动被扫描注册到 DI 容器
 
 ---
 
@@ -114,14 +114,14 @@ API → Application → Domain ← Infrastructure
 | 枚举 | `Domain/Enums/` | `{枚举名}.cs` |
 | DbContext / EF 配置 | `Infrastructure/Data/` | `{项目名}DbContext.cs`、`{实体名}Configuration.cs` |
 | 仓储实现 | `Infrastructure/Data/Repositories/` | `{实体名}Repository.cs` |
-| 迁移脚本 | `Infrastructure/Migrations/` | 按版本号命名 |
+| SQL 迁移脚本 | `API/MigrationSql/` | `版本号_描述.sql`（如 `1.1.0_add_user_phone.sql`） |
 
 ### Controller 层规则
 - Controller 只负责 HTTP 处理，不包含业务逻辑
 - 使用 `[ApiController]` 特性，自动处理 400 响应
 - 使用 `[Route("api/[controller]")]` 统一路由前缀
 - 注入 Application 层的服务接口，不直接依赖 Infrastructure
-- 统一使用 `ActionResult<T>` 或 `IActionResult` 返回类型
+- Controller action 直接返回 `Task<T>` 并一行转发 Service；不写 `Ok()`，不手动构造 `ResultModel`，统一包装由全局过滤器与异常中间件完成（见 `统一响应格式`）
 
 ### Application 层规则
 - 服务类实现接口，接口定义在 `Interfaces/` 目录
@@ -134,12 +134,11 @@ API → Application → Domain ← Infrastructure
 ### Domain 层规则
 - 实体类继承自基类（包含 Id、创建时间等公共属性）
 - 值对象使用 record 类型，实现值相等比较
-- 领域事件继承自 `INotification`（MediatR）
 - 禁止依赖外部库，保持纯净
 
 ### Infrastructure 层规则
 - DbContext 实现数据上下文，配置连接和映射
-- 使用 EF Core Migrations 管理数据库结构变更
+- 数据库结构变更通过 `Azrng.SqlMigration` SQL 脚本迁移管理（见 `数据库迁移规则`），不使用 EF Core Code-First Migrations
 - 仓储实现依赖注入，遵循仓储模式
 - 外部服务（邮件、文件存储等）实现在此层
 
@@ -158,11 +157,12 @@ API → Application → Domain ← Infrastructure
 - 软删除通过全局查询过滤器实现
 
 ### 统一响应格式
-- 所有 API 响应统一使用 `ResultModel<T>` 包装
-- 成功响应：`ResultModel<T>.Success(data)`
-- 错误响应：`ResultModel<T>.Failure(message, errorCode)`
-- 状态码：200 表示成功，其他表示各类错误
-- 异常处理由 Azrng.AspNetCore.Core 中间件统一捕获
+- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
+  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
+  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
+  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
+- Service 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
+- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
 
 ### 依赖注入规范
 - 服务类必须实现以下接口之一：
@@ -180,7 +180,7 @@ API → Application → Domain ← Infrastructure
   - `ForbiddenException`：禁止访问
   - `InternalServerException`：服务器内部错误
 - 异常由中间件统一捕获并转换为 `ResultModel` 响应
-- 禁止在 Controller 外部直接返回错误状态码
+- 业务失败一律通过抛出上述异常表达；禁止在业务层手工构造失败 `ResultModel` 或直接设置错误状态码
 
 ### Redis 缓存使用规范
 - 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口
@@ -191,12 +191,11 @@ API → Application → Domain ← Infrastructure
 - 禁止在循环中频繁调用 Redis
 
 ### 数据库迁移规则
-- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移
-- 迁移脚本放在 `Migrations/` 目录，按版本号命名
-- 迁移脚本必须幂等，可重复执行
-- 应用启动时自动执行迁移（可选配置）
-- 回滚脚本必须与正向脚本配套提供
-- 每次迁移后更新数据库版本记录表
+- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移，不使用 EF Core Code-First Migrations
+- 迁移脚本放在宿主项目下 `API/MigrationSql/` 目录，文件名按 `版本号_描述.sql` 命名（如 `1.0.0_init.sql`、`1.1.0_add_user_phone.sql`），按版本号顺序执行
+- 通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本；已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表
+- 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本
+- 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式
 
 ### 代码注释规范
 - 必须补 XML 注释的位置：

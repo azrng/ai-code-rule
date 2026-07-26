@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.0.0
-last_updated: 2026-07-11
+version: 1.1.0
+last_updated: 2026-07-26
 dependencies: [agents-root, ai-agents]
 ---
 
@@ -150,7 +150,4 @@ Agent 产品的前端不能只是一个聊天框。设计 Agent 交互时，必�
   - 本次补充或修改的规则
   - 后续如何避免或验证不再复发
 
-
 ---
-
-文件结束。
