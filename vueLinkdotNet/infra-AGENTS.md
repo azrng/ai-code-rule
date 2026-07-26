@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.4.0
-last_updated: 2026-07-08
+version: 1.5.0
+last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
 
@@ -36,6 +36,22 @@ dependencies: [agents-root]
 - 发现可以复用现有 Dockerfile、Compose、CI/CD、环境变量命名或发布脚本时，应优先建议复用，不新增平行部署链路
 - 不确定端口占用、外部服务地址、密钥来源或运行命令时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验写死配置
 - 涉及清理环境、删除数据、停止未知进程、修改部署配置等高风险操作时，只能提出建议，必须等待明确确认后执行
+
+---
+
+## 默认端口
+
+| 服务 | 容器内端口 | 宿主机映射端口 |
+| --- | --- | --- |
+| 前端（Vue） | 3000 | 3000 |
+| 后端（.NET） | 8080 | 8080 |
+| 数据库（PostgreSQL） | 5432 | 5432 |
+| 缓存（Redis，启用时） | 6379 | 6379 |
+
+- Redis 仅在项目实际启用 `Common.Cache.Redis` 时才纳入 Compose 编排，并同样补充健康检查或启动等待策略。
+- 若宿主机端口冲突，优先调整 Compose 映射端口（宿主机侧），容器内端口保持不变，并同步更新 `.env.example` 和前端配置。
+- 前端 API 请求统一指向 `http://localhost:8080`，通过环境变量 `VITE_API_BASE_URL` 配置，不允许硬编码。
+- 端口与 API 基址的唯一事实来源是 `design-system.yaml`，两处修改必须同步。
 
 ---
 
