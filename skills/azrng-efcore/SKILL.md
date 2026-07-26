@@ -192,7 +192,7 @@ builder.Services.AddSqlMigrationService("default", config =>
 }).AddAutoMigration();                         // ← 启动时自动跑未应用的脚本
 ```
 
-**SQL 脚本约定**：放 `Service/MigrationSql/`，文件名 = `VersionPrefix + 版本号 + 描述.sql`（如 `1.0.0_init.sql`、`1.1.0_add_user_phone.sql`），按版本号顺序执行。
+**SQL 脚本约定**：放 `Service/MigrationSql/`，文件名 = `VersionPrefix + 版本号 + 扩展名`，扩展名支持 `.sql` / `.txt`（如 `1.0.0.sql`、`1.1.0.txt`、`1.0.0.1.sql`），**不含描述文字**——去掉前缀与扩展名后的剩余部分会被整体解析为版本号，带描述会破坏版本排序；按版本号顺序执行。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
 

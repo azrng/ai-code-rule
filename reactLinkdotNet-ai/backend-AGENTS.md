@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.1.0
+version: 1.1.1
 last_updated: 2026-07-26
 dependencies: [agents-root, ai-agents]
 ---
@@ -220,7 +220,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 ### 数据库迁移规则
 - **迁移工具优先级**：**PostgreSQL 优先用 `Azrng.SqlMigration`（SQL 脚本迁移）**；**SQLite（默认）及其他场景优先用 EF Core Migrations**
 - 两种工具可在同一项目并存，但同一数据库的同一变更只走一种，避免重复执行或互相覆盖
-- `Azrng.SqlMigration` 脚本放在宿主项目下 `MigrationSql/` 目录，文件名按 `版本号_描述.sql` 命名（如 `1.1.0_add_user_phone.sql`），按版本号顺序执行；通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本，已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表
+- `Azrng.SqlMigration` 脚本放在宿主项目下 `MigrationSql/` 目录，文件名按 `版本号.sql` 或 `版本号.txt` 命名（如 `1.0.0.sql`、`1.1.0.txt`），不含描述文字——去掉版本前缀与扩展名后的剩余部分会被整体解析为版本号；按版本号顺序执行；通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本，已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表
 - `Azrng.SqlMigration` 已应用的脚本不可修改，结构调整必须新增更高版本号的脚本；涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式
 - EF Core Migrations 通过 `dotnet ef migrations add` 生成，注意 SQLite 与 PostgreSQL 的 Provider 差异（大小写敏感、JSON、并发等）
 - 应用启动时自动执行迁移（可选配置）；默认 SQLite 需注意文件锁与并发限制，生产场景再评估是否切 PostgreSQL

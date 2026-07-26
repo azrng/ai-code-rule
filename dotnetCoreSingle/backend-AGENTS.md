@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 2.0.0
+version: 2.0.1
 last_updated: 2026-07-26
 dependencies: [agents-root]
 ---
@@ -121,7 +121,7 @@ project-root/
 | `Controllers/` | API 控制器，仅做 HTTP 编排，不含业务逻辑 | `{资源}Controller.cs` |
 | `Middleware/` | 中间件 | `{名称}Middleware.cs` |
 | `Extensions/` | 扩展方法、DI 注册扩展 | `{类型}Extensions.cs` |
-| `MigrationSql/` | SQL 迁移脚本 | `版本号_描述.sql`（如 `1.1.0_add_user_phone.sql`） |
+| `MigrationSql/` | SQL 迁移脚本 | `版本号.sql` / `版本号.txt`（如 `1.0.0.sql`、`1.1.0.txt`，不含描述文字） |
 
 ### 依赖方向约定（单项目关键防线）
 
@@ -252,7 +252,7 @@ Controllers → Application → Domain ← Infrastructure
 
 ### 数据库迁移规则
 - 使用 `Azrng.SqlMigration` 进行数据库脚本迁移，不使用 EF Core Code-First Migrations。
-- 迁移脚本放在项目根目录 `MigrationSql/` 下，文件名按 `版本号_描述.sql` 命名（如 `1.0.0_init.sql`、`1.1.0_add_user_phone.sql`），按版本号顺序执行。
+- 迁移脚本放在项目根目录 `MigrationSql/` 下，文件名按 `版本号.sql` 或 `版本号.txt` 命名（如 `1.0.0.sql`、`1.1.0.txt`），不含描述文字——去掉版本前缀与扩展名后的剩余部分会被整体解析为版本号；按版本号顺序执行。
 - 通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本；已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表。
 - 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本。
 - 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式。
