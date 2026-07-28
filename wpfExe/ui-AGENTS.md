@@ -115,7 +115,6 @@ project-root/
 │   │   └── AssemblyInfo.cs           # 程序集信息
 │   └── AppName.sln
 ├── doc/
-│   ├── devlog/
 │   ├── design/
 │   └── requirement.md
 ├── .gitignore

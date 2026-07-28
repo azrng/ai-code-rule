@@ -81,7 +81,6 @@ project-root/
 │   ├── vite.config.ts
 │   └── tsconfig.json
 ├── doc/
-│   ├── devlog/
 │   ├── design/
 │   └── requirement.md
 ├── build/                     # Wails 构建配置

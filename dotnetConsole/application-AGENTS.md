@@ -93,7 +93,6 @@ project-root/
 ├── tests/
 │   └── YourProject.Tests/               # 测试项目
 ├── doc/
-│   ├── devlog/
 │   ├── design/
 │   └── requirement.md
 ├── .gitignore

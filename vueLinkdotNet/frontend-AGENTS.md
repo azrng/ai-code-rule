@@ -83,7 +83,6 @@ project-root/
 │   ├── vite.config.ts
 │   └── tsconfig.json
 ├── doc/
-│   ├── devlog/
 │   ├── design/
 │   └── requirement.md
 ├── docker-compose.yml
