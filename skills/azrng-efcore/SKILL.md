@@ -1,6 +1,8 @@
 ---
 name: azrng-efcore
-description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when building or modifying data-access code that relies on these packages — installing/injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities with the IdentityBaseEntity/IdentityOperatorEntity base classes, calling IBaseRepository CRUD and IUnitOfWork transactions, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors like "Cannot write DateTime with Kind=Unspecified to timestamp with time zone".
+version: 1.1.0
+last_updated: 2026-07-29
+description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when building or modifying data-access code that relies on these packages — installing/injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities with the IdentityBaseEntity/IdentityOperatorEntity base classes, calling IBaseRepository CRUD and IUnitOfWork transactions, composing read queries (same-DbContext table left joins via EntitiesNoTacking.GroupJoin + SelectMany(DefaultIfEmpty), GroupBy aggregation, dynamic OrderBy/Where, SelectMapper DTO mapping, ToPageListAsync paging) using the QueryableExtensions, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors like "Cannot write DateTime with Kind=Unspecified to timestamp with time zone".
 ---
 
 # Azrng EFCore (Common.EFCore) 数据访问指南
@@ -133,10 +135,21 @@ try {
 | `.WhereIfTrue(bool condition, predicate)` / `.QueryableWhereIf(...)` | 任意布尔条件才 Where |
 | `.WhereAny(params predicates)` | 多条件 OR 查询 |
 
-**分页**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）——一次完成 Count + Skip/Take：
+**动态排序 / 映射 / 计数**（同一命名空间 `Azrng.Core.Extension`，`using Azrng.Core.Extension;`）——列名/方向由前端传入时用，避免手写 `switch`：
+
+| 扩展 | 用途 |
+|---|---|
+| `.OrderBy(string 字段名, bool isAsc)` / `.OrderBy(SortContent)` / `.OrderBy(FiledOrderParam[])` | 字符串列名动态排序；多字段使用 `FiledOrderParam[]`，单字段可用 `SortEnum` |
+| `.EqualWhere / .LessWhere / .GreaterWhere(字段名, 值)` | 字符串列名动态条件筛选（等于 / 小于 / 大于） |
+| `.SelectMapper<T, Tm>()` | 将同名、类型兼容的可写属性映射成 DTO；EF Core 可翻译为 SQL 投影 |
+| `.CountBy(out int total)` | 顺手算总数，返回 queryable 继续链式 |
+
+> 完整重载、`SelectMapper` 的同名局限、动态 Where 的适用边界见 references/querying-and-extensions.md。
+
+**分页**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）——一个扩展调用内先 Count 再 Skip/Take（共两条 SQL）：
 
 ```csharp
-// 推荐：传 GetPageRequest + RefAsync<int> 接收总数，内部一次 Count + 分页
+// 推荐：传 GetPageRequest + RefAsync<int> 接收总数，内部依次执行 Count 和分页查询
 var total = new RefAsync<int>();
 var list = await query.ToPageListAsync(request, total);   // request: GetPageRequest
 
@@ -165,6 +178,41 @@ public async Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListReques
 ```
 
 > `RefAsync<T>`（`using Azrng.Core.CommonDto;`）有到 `T` 的隐式转换，`new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。分页在 AppService 的整体编排（含全局返回包装）见 onion-architecture skill「分页查询最佳实践」。
+
+## 复杂查询：表连接（GroupJoin）与分组
+
+**只读 / 投影 / 连接 / 分组查询默认从 `EntitiesNoTacking` 出发**（不追踪，性能优）。需要继续修改已加载实体、依赖 ChangeTracker，或当前 DbContext 已跟踪同一主键时，用追踪的 `Entities`；脱离跟踪的实体也可传给 `UpdateAsync`，但会被标记为全字段更新。
+
+**表连接的标准写法**：两个查询必须来自同一个 `DbContext` 实例。从主表仓储的 `EntitiesNoTacking` 出发，`GroupJoin` 关联另一个仓储的 `EntitiesNoTacking`（可带 `.Where(...)` 预筛选），再 `SelectMany(...DefaultIfEmpty())` 摊平成左连接：
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+
+// 模型列表 + 当前用户是否收藏：左连接，关联表先按用户筛选
+var list = await _modelRepository.EntitiesNoTacking
+    .GroupJoin(
+        _favoriteRepository.EntitiesNoTacking.Where(t => t.UserId == currentUserId),  // 预筛选的关联表
+        model => model.Id,
+        favorite => favorite.ModelId,
+        (model, favorites) => new { model, favorites })
+    .SelectMany(
+        x => x.favorites.DefaultIfEmpty(),
+        (x, fav) => new ModelListDto
+        {
+            Id = x.model.Id,
+            Name = x.model.Name,
+            IsFavorited = fav != null          // 关联表为空 → false（左连接）
+        })
+    .ToListAsync();
+```
+
+- `GroupJoin` 先得到「主表行 + 匹配集合」；接上 `SelectMany(...DefaultIfEmpty())` 才是左连接。此时主表行全部保留，关联表无匹配时为 null。
+- 关联表可先 `.Where(...)` 过滤（如「只取当前用户的收藏」），缩小连接范围。
+- **内连接**用 `Join`：`_rep.EntitiesNoTacking.Join(other.EntitiesNoTacking, outerKey, innerKey, (o,i) => ...)`。
+- 聚合统计用 `GroupBy(...).Select(g => new { g.Key, Count = g.Count(), Sum = g.Sum(...) })`。
+- 有导航属性时也可直接在 `Select` 里 `o.User.Account` 跨表取值，EF 自动 JOIN。
+- 连接 / 分组后是只读投影，**别用追踪的 `Entities`**。
+- 完整写法（GroupJoin / Join / GroupBy）见 references/querying-and-extensions.md。
 
 ## SQL 脚本迁移（Azrng.SqlMigration）
 
@@ -201,6 +249,7 @@ builder.Services.AddSqlMigrationService("default", config =>
 - **选 provider**：按目标数据库选包，注入方式几乎一致（仅连接串与可选 builder 委托不同）。对照表见 references/providers.md。
 - **DbContext 怎么扫描配置类**：继承普通 `DbContext`，在 `OnModelCreating` 里 `modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `{Entity}Etc.cs` 配置类；再 `modelBuilder.HasDefaultSchema(...)` 设默认 schema。
 - **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤（包不自动全局过滤）。
+- **查询入口 / 表连接**：只读、连接、分组查询默认从 `_rep.EntitiesNoTacking` 出发；需要 ChangeTracker 时使用 `Entities`。表连接两侧必须来自同一个 `DbContext`，左连接用 `_rep.EntitiesNoTacking.GroupJoin(other.EntitiesNoTacking.Where(...), ...).SelectMany(...DefaultIfEmpty())`。条件筛选和分页可用 `WhereIf*` / `OrderBy` / `ToPageListAsync`；字段不匹配或需要计算时保留强类型 `Select`。详见 references/querying-and-extensions.md。
 - **遇到 PostgreSQL 时间报错**：先看 references/postgres-time-pitfall.md —— 这是本系列包最常见的崩溃根因，三层（模型/赋值/DDL）必须一致。
 
 ## 关键陷阱（高频）
