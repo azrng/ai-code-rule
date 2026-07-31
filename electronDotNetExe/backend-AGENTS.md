@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.6.1
+last_updated: 2026-07-31
 dependencies: [agents-root]
 ---
 
@@ -52,6 +52,19 @@ dependencies: [agents-root]
   - 已证明子进程 IPC 无法满足能力要求
 
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+
+### JSON-RPC 路由与契约
+- 渲染进程到主进程优先维护单一通用 IPC 通道（如 `sidecar:invoke`），以 `method + params` 转发；不要为每个 sidecar 方法平铺注册独立的 `ipcMain.handle`。
+- .NET sidecar 的 method 分发使用显式路由注册表（`method -> RpcRoute / Handler`），按完整 method 精确匹配并在启动时校验重复项；不要维护随业务域增长的 `if` / `StartsWith` 分发链。
+- 路由条目同时声明 method、请求 DTO、响应 DTO、是否流式及调用委托。Dispatcher 只负责路由和协议错误映射，Handler 只负责参数校验与调用 Service。
+- .NET 路由和 DTO 是跨语言契约的事实来源。若项目具备构建期生成能力，应从路由表 / DTO 生成 TypeScript method 常量、请求响应类型与基础 IPC SDK；生成文件禁止手改。
+- 新增或修改 method 时，依次更新 DTO、路由条目、业务实现和测试，执行契约生成，再使用生成的 method 常量封装渲染层调用；不得在 C# 与 TypeScript 两端手抄 method 字符串或重复维护字段。
+
+### 流式 JSON-RPC 规则
+- 流式方法由 sidecar 通过 JSON-RPC notification 推送进度事件，协议主循环必须能继续接收取消、审批等后续请求，不能因等待流式最终响应而阻塞读取。
+- 流式任务必须区分总时长和空闲时长：sidecar 负责可取消的整轮业务上限并返回稳定错误；主进程按 requestId 监测进度 notification，每次匹配事件都刷新空闲计时，连续无事件时发送取消。
+- 等待用户审批、确认或其他显式交互输入时，主进程暂停空闲计时；收到用户裁决后恢复。该等待仍受 sidecar 的整轮上限约束。
+- 普通 RPC 使用短默认超时；不得为了流式任务把全局默认超时无差别放宽。主进程可保留略长于 sidecar 总时长的失联兜底，并在触发时发送取消。
 
 ## 主动建议规则
 - 发现 IPC handler 与 .NET 服务职责混杂、SQLite 访问封装不一致或错误处理缺失时，应主动提醒

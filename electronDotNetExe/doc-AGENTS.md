@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.6.1
+last_updated: 2026-07-31
 dependencies: [agents-root]
 ---
 
@@ -65,6 +65,8 @@ dependencies: [agents-root]
 - **.NET 边界事实来源**：`src-dotnet/` 中的 DTO / IPC 入参出参定义
 - **定义方式**：表单 schema、Query schema、IPC 入参 schema、IPC 出参结构必须成对维护
 - **变更规则**：字段或行为变化时，必须同步更新 schema、类型、页面、IPC 封装与测试
+- **生成式契约**：若 sidecar 以路由表和 DTO 声明 method，应以其为跨语言契约事实来源，在构建期生成 TypeScript method 常量、类型和基础 SDK；生成文件不作为手工维护入口。
+- **流式契约**：流式 method 要记录最终响应、进度 notification、requestId 关联键、取消 method、总时长、空闲时长与审批等待期间的计时策略。
 - **调用选择原则**：
   - 桌面应用内部业务交互：优先 IPC handler（stdio JSON-RPC）
   - 事件通知或后台状态推送：使用 Electron 主进程向渲染进程的推送

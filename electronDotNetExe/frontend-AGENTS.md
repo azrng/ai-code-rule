@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.6.1
+last_updated: 2026-07-31
 dependencies: [agents-root]
 ---
 
@@ -133,6 +133,7 @@ preload/
 ### IPC 前端调用规范
 - 所有跨进程调用统一收敛在 `lib/ipc/` 或按业务域封装，不直接散落在页面组件中
 - 渲染进程只通过 `window.ipc.<method>` 调用（由 preload `contextBridge` 暴露的封装），不在页面里直接拼 channel 名称
+- sidecar 调用优先复用单一通用 IPC 通道和生成的 method 常量 / 类型化 SDK；页面和业务封装不得手写 JSON-RPC method 字符串。
 - IPC method 的参数与返回值应先经过 TypeScript 类型与 Zod schema 约束
 - 渲染进程禁止直接使用 Node 能力或直接 `child_process`；涉及原生能力的调用一律经主进程转发到 .NET sidecar
 - 除非明确需要，否则不要在 Electron 应用里再额外引入本地 HTTP 服务作为前后端桥接层
