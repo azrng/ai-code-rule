@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.7.0
-last_updated: 2026-08-06
+version: 1.10.0
+last_updated: 2026-08-07
 dependencies: [agents-root]
 ---
 
