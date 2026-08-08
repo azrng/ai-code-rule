@@ -23,7 +23,7 @@ dependencies: [agents-root]
 ## 技术栈
 
 ### 前端
-- React 18 + TypeScript + Vite
+- React 19 + TypeScript + Vite
 - Ant Design 5 组件库（antd）
 - Ant Design Icons（@ant-design/icons，唯一图标库）
 - React Router 6（路由管理）
