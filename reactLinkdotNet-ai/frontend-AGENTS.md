@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.1.0
-last_updated: 2026-07-26
+version: 1.10.0
+last_updated: 2026-08-08
 dependencies: [agents-root]
 ---
 
@@ -13,11 +13,6 @@ dependencies: [agents-root]
 
 - 作用域：前端实现、页面、组件、路由、状态、样式与前端测试
 - 触发场景：涉及页面、布局、组件、交互、样式、流式展示、前端 smoke test 时阅读
-
-### 阅读摘要
-- 建议阅读：新增页面、改表单、改交互、改路由、改组件样式、做流式 / Agent 输出展示、补前端验证
-- 可先跳过：纯服务端逻辑、纯数据访问、仅文档整理、仅部署配置调整
-- 优先查看：技术栈与 shadcn 用法、组件 / 状态规则、流式展示规则、测试规则
 
 ### 常见任务入口
 - 新增页面或布局：先看页面 / 组件规则与目录约定
@@ -31,7 +26,7 @@ dependencies: [agents-root]
 ## 技术栈
 
 ### 前端
-- React 18（或 19）+ TypeScript + Vite
+- React 19 + TypeScript + Vite
 - Tailwind CSS（原子化样式，唯一样式引擎）
 - shadcn/ui（基于 Radix UI 的复制式组件，不是 npm 安装的组件库，组件代码落在 `src/components/ui/`）
 - lucide-react（唯一图标库）
@@ -59,7 +54,7 @@ dependencies: [agents-root]
 - 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点
 - 发现样式与 `design-system.yaml`、shadcn CSS 变量或现有交互模式冲突，或绕过 shadcn 手写重复基础组件时，应先说明差异和影响，不直接引入平行视觉体系
 - 发现表单校验、权限展示、页面状态、流式展示、刷新策略或错误处理缺失时，应主动提醒
-- 发现可以复用已有组件、Hook、Store、请求封装、DTO / 类型定义或 shadcn 组件时，应优先建议复用
+- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
 - 发现 Agent 输出展示缺少 loading / 流式中断 / error / empty 反馈时，应主动提醒
 
 ## 推荐目录结构
@@ -183,8 +178,8 @@ frontend/
 - 测试应覆盖真实业务行为
 
 ### 前端测试
-- 前端暂时不考虑单元测试
-- 但必须进行手动 smoke test 验证核心功能（含 Agent 输出与流式展示的关键路径）
+- 鼓励用 AI 辅助生成关键交互与组件的单元测试（Vitest + React Testing Library）；样板与边缘用例也可借助 AI 生成
+- 仍必须以手动 smoke test 兜底核心功能（含 Agent 输出与流式展示的关键路径）
 
 ### 外部依赖与数据
 - 测试中不要真实调用第三方服务（含真实模型接口），统一使用 mock

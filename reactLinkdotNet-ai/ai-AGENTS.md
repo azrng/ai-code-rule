@@ -1,7 +1,7 @@
 ---
 rule_id: ai-agents
-version: 1.1.0
-last_updated: 2026-07-26
+version: 1.10.0
+last_updated: 2026-08-08
 dependencies: [agents-root]
 ---
 
@@ -13,11 +13,6 @@ dependencies: [agents-root]
 
 - 作用域：模型调用、Agent、Function Calling、Skills、Prompt、流式输出、向量与记忆等可选能力、AI 相关测试
 - 触发场景：涉及任何模型对接、Agent 运行、工具调用、Prompt 编写或流式交互时阅读
-
-### 阅读摘要
-- 建议阅读：接入 / 切换模型、新建 Agent、定义工具或 Skills、写 Prompt、处理流式输出、引入向量或记忆
-- 可先跳过：纯界面样式、纯 CRUD 业务逻辑、仅部署配置（除非涉及模型密钥或环境变量）
-- 优先查看：核心 vs 可选分层、模型调用规范、Agent 规范、Prompt 规范、测试规则
 
 ### 常见任务入口
 - 接入或切换模型（DeepSeek / Azure OpenAI / GitHub Models / 本地模型）：先看模型调用规范
@@ -78,8 +73,7 @@ dependencies: [agents-root]
 - 发现模型密钥、Base URL、模型名硬编码在源码或前端时，必须提醒迁移到环境变量 / 配置
 - 发现 Prompt 散落在 Service / Controller 字符串里、难以维护或测试时，建议沉淀到 Prompt 目录
 - 发现 Agent 一开始就堆 Skills、记忆、多 Agent、向量库而尚未跑通基础闭环时，建议先回退到最小 Agent
-- 发现可复用已有 Agent、工具、Skills、Prompt 片段或模型客户端封装时，优先建议复用
-- 不确定模型能力、上下文窗口、工具调用行为或计费边界时，按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
+- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
 
 ---
 
