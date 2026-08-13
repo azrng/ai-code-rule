@@ -1,0 +1,85 @@
+@* 设备新增/编辑表单弹窗（Modal 子组件模式）。被 CrudTable 引用，Device 类型定义在此 *@
+@using BootstrapBlazor.Components
+
+<Modal @ref="_modal" Size="Size.Large">
+    <ModalDialog Title="@_title" IsCentered="true" ShowCloseButton="false">
+        <BodyTemplate>
+            <ValidateForm @ref="_form" Model="@_model" ShowRequiredMark="true" ValidateAllProperties="true">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <BootstrapInput @bind-Value="_model.Name" DisplayText="名称" PlaceHolder="请输入名称" ShowLabel="true" Required="true" />
+                    </div>
+                    <div class="col-md-6">
+                        <BootstrapInput @bind-Value="_model.IP" DisplayText="IP" PlaceHolder="192.168.1.1" ShowLabel="true" />
+                    </div>
+                    <div class="col-md-6">
+                        <BootstrapInputNumber @bind-Value="_model.Port" DisplayText="端口" ShowLabel="true" Min="0" />
+                    </div>
+                    <div class="col-md-6">
+                        <Switch @bind-Value="_model.Enabled" DisplayText="在线" OnText="是" OffText="否" />
+                    </div>
+                    <div class="col-12">
+                        <Textarea @bind-Value="_model.Description" DisplayText="描述" ShowLabel="true" PlaceHolder="可选" />
+                    </div>
+                </div>
+            </ValidateForm>
+        </BodyTemplate>
+        <FooterTemplate>
+            <div class="text-end w-100">
+                <Button Color="Color.Secondary" Text="取消" OnClick="Hide" />
+                <Button Color="Color.Primary" Icon="fa-solid fa-floppy-disk" Text="保存" OnClick="OnSubmit" />
+            </div>
+        </FooterTemplate>
+    </ModalDialog>
+</Modal>
+
+@code {
+    private Modal? _modal;
+    private ValidateForm? _form;
+    private string _title = "新增设备";
+    private Device _model = new();
+    private bool _isEdit;
+
+    [Inject] ToastService ToastService { get; set; } = null!;
+    [Parameter] public EventCallback<Device> OnSaved { get; set; }
+
+    public async Task Show(Device? device)
+    {
+        _isEdit = device != null;
+        _model = device != null
+            ? new Device { Id = device.Id, Name = device.Name, IP = device.IP, Port = device.Port, Enabled = device.Enabled, Description = device.Description }
+            : new Device();
+        _title = _isEdit ? "编辑设备" : "新增设备";
+        StateHasChanged();
+        if (_modal != null) await _modal.Show();
+    }
+
+    public async Task Hide()
+    {
+        if (_modal != null) await _modal.Close();
+    }
+
+    private async Task OnSubmit()
+    {
+        // 保存按钮在 FooterTemplate（表单外），手动触发校验
+        if (_form != null && !await _form.ValidateAsync())
+        {
+            await ToastService.Error("消息通知", "请检查表单填写");
+            return;
+        }
+        await ToastService.Success("消息通知", _isEdit ? "修改成功" : "新增成功");
+        if (OnSaved.HasDelegate) await OnSaved.InvokeAsync(_model);
+        await Hide();
+    }
+
+    // 设备模型（CrudTable 通过 FormModal.Device 引用）
+    public class Device
+    {
+        public int Id { get; set; }
+        [Required] public string Name { get; set; } = "";
+        public string IP { get; set; } = "";
+        public int Port { get; set; } = 80;
+        public bool Enabled { get; set; } = true;
+        public string? Description { get; set; }
+    }
+}
