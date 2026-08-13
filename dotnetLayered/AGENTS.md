@@ -1,7 +1,7 @@
 ---
 rule_id: agents-root
-version: 1.10.0
-last_updated: 2026-08-08
+version: 1.11.0
+last_updated: 2026-08-13
 dependencies: []
 ---
 
