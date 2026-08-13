@@ -355,5 +355,5 @@ docs/
 NUL
 
 # RuleAssembler 构建产物
-tools/RuleAssembler/bin/
-tools/RuleAssembler/obj/
+app/RuleAssembler/bin/
+app/RuleAssembler/obj/

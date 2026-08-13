@@ -98,14 +98,14 @@
 
 ```powershell
 # 构建（首次）
-./tools/RuleAssembler/publish.ps1
+./app/RuleAssembler/publish.ps1
 
 # 把生成的 use-rule.exe 拷到目标项目根目录，运行后交互选择技术大类 → 架构模板，
 # 确认后会在当前目录释放完整一套 AI rule（AGENTS + 子规则 + CLAUDE/GEMINI/GROK）。
 # 不释放 TASK.md（运行时任务清单，不随规则分发）。
 ```
 
-拼接器把各模板的共同内容抽成公共片段、按选择的架构填入差异部分后输出，因此修改公共规则只需改片段源（`fragments/`）一处，重新构建即可让所有架构生效。详见 `tools/RuleAssembler/` 与 `fragments/`。当前已接入 dotnet 后端家族（dotnetLayered、dotnetCoreSingle），其余架构按计划分阶段接入。
+拼接器把各模板的共同内容抽成公共片段、按选择的架构填入差异部分后输出，因此修改公共规则只需改片段源（`fragments/`）一处，重新构建即可让所有架构生效。详见 `app/RuleAssembler/` 与 `fragments/`。当前已接入 dotnet 后端家族（dotnetLayered、dotnetCoreSingle），其余架构按计划分阶段接入。
 
 ## 共同规则
 

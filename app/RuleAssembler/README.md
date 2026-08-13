@@ -22,7 +22,7 @@ fragments/
 
 ```powershell
 ./publish.ps1
-# 产物：tools/RuleAssembler/bin/Release/net10.0/win-x64/publish/use-rule.exe（约 260KB，框架相关）
+# 产物：app/RuleAssembler/bin/Release/net10.0/win-x64/publish/use-rule.exe（约 260KB，框架相关）
 ```
 
 框架相关单文件，目标机需有 .NET 运行时。如需自包含（零依赖、约 60MB），改 `publish.ps1` 为 `--self-contained true`。
