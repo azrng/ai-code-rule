@@ -1,0 +1,124 @@
+{
+  "note": "架构配方：每个架构 = root 骨架变量 + 子规则整文件 + 指针。生成器读此文件决定如何拼装。顶层 version 是 manifest 配方版本，与规则版本无关；规则版本见 vars。",
+  "vars": {
+    "version": "1.11.0",
+    "last_updated": "2026-08-13"
+  },
+  "families": [
+    {
+      "id": "dotnet-backend",
+      "label": ".NET 后端",
+      "desc": "纯后端 API，无前端界面"
+    }
+  ],
+  "architectures": [
+    {
+      "id": "dotnet-layered",
+      "label": ".NET 分层 API 后端",
+      "family": "dotnet-backend",
+      "desc": "中大型业务系统、DDD、Controller/Service/Repository 多项目拆分",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、Service、Repository、脚本或数据链路时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   服务端与数据实现   →   验证与交付",
+          "（用户确认）    （后端实现角色）        （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 轻量配置、环境变量或部署说明调整",
+          "  - 单个字段增删改，且不引入新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "understanding-checklist-backend": "- 涉及后端时，已查看相关 Controller、Application、Domain、Repository / EntityFramework、DTO、调用方和现有测试",
+        "contract-nouns": "Application、Domain、EntityFramework 映射、测试和相关文档",
+        "search-nouns": "Controller、Application、Domain、DTO、EntityFramework、迁移脚本和测试实现"
+      },
+      "subrules": [
+        { "source": "arch/dotnet-layered/backend-AGENTS.md", "output": "backend-AGENTS.md" },
+        { "source": "arch/dotnet-layered/doc-AGENTS.md", "output": "doc-AGENTS.md" },
+        { "source": "arch/dotnet-layered/infra-AGENTS.md", "output": "infra-AGENTS.md" }
+      ],
+      "pointers": ["CLAUDE.md", "GEMINI.md", "GROK.md"],
+      "designSystem": false
+    },
+    {
+      "id": "dotnet-core-single",
+      "label": ".NET 单层 API 后端",
+      "family": "dotnet-backend",
+      "desc": "中小型 REST API、单一职责微服务、单项目整洁架构（文件夹分层）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、Service、Repository、脚本或数据链路时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   服务端与数据实现   →   验证与交付",
+          "（用户确认）    （后端实现角色）        （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 轻量配置、环境变量或部署说明调整",
+          "  - 单个字段增删改，且不引入新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "understanding-checklist-backend": "- 涉及后端时，已查看相关 Controller、AppService、DomainService、数据访问、DTO、调用方和现有测试",
+        "contract-nouns": "AppService、数据访问映射、测试和相关文档",
+        "search-nouns": "Controller、AppService、DomainService、DTO、迁移脚本和测试实现"
+      },
+      "subrules": [
+        { "source": "arch/dotnet-core-single/backend-AGENTS.md", "output": "backend-AGENTS.md" },
+        { "source": "arch/dotnet-core-single/doc-AGENTS.md", "output": "doc-AGENTS.md" },
+        { "source": "arch/dotnet-core-single/infra-AGENTS.md", "output": "infra-AGENTS.md" }
+      ],
+      "pointers": ["CLAUDE.md", "GEMINI.md", "GROK.md"],
+      "designSystem": false
+    }
+  ]
+}

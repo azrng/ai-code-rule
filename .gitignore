@@ -353,3 +353,7 @@ docs/
 .codegraph
 
 NUL
+
+# RuleAssembler 构建产物
+tools/RuleAssembler/bin/
+tools/RuleAssembler/obj/
