@@ -10,6 +10,8 @@ dependencies: []
 ## 目标
 {{target-list}}
 
+{{extra-sections}}
+
 ---
 
 ## 最小充分上下文
@@ -59,7 +61,7 @@ dependencies: []
 ### 理解检查清单
 开始真实修改前，按命中项确认（不相关项可跳过）：
 - 已明确本次是问答、评审、文档、后端还是基础设施改动，并已阅读命中的子规则和目标文件
-{{understanding-checklist-backend}}
+{{understanding-checklist}}
 - 涉及基础设施时，已查看 Docker、环境变量、端口、启动命令、发布脚本和部署文档
 - 已识别可复用实现、影响范围、验证方式和仍需确认的问题
 

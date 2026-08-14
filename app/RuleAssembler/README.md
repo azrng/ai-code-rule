@@ -16,7 +16,7 @@ fragments/
 └── manifest.json             # 架构配方：变量槽取值 + 子规则清单 + 指针 + 大类
 ```
 
-`manifest.json` 的变量槽：`{{version}}` `{{last_updated}}` `{{target-list}}` `{{subrule-index}}` `{{dev-stage}}` `{{understanding-checklist-backend}}` `{{contract-nouns}}` `{{search-nouns}}`。
+`manifest.json` 的变量槽：`{{version}}` `{{last_updated}}` `{{target-list}}` `{{subrule-index}}` `{{dev-stage}}` `{{understanding-checklist}}`（多行）`{{contract-nouns}}` `{{search-nouns}}` `{{extra-sections}}`（可选，架构特有整段，如 AI 家族的技术栈总览；未提供时占位段落自动清除）。`designSystem: true` 时额外释放 `arch/<架构>/design-system.yaml` 为 `design-system.yaml`。
 
 ## 构建
 

@@ -54,7 +54,9 @@
           "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "understanding-checklist-backend": "- 涉及后端时，已查看相关 Controller、Application、Domain、Repository / EntityFramework、DTO、调用方和现有测试",
+        "understanding-checklist": [
+          "- 涉及后端时，已查看相关 Controller、Application、Domain、Repository / EntityFramework、DTO、调用方和现有测试"
+        ],
         "contract-nouns": "Application、Domain、EntityFramework 映射、测试和相关文档",
         "search-nouns": "Controller、Application、Domain、DTO、EntityFramework、迁移脚本和测试实现"
       },
@@ -108,7 +110,9 @@
           "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "understanding-checklist-backend": "- 涉及后端时，已查看相关 Controller、AppService、DomainService、数据访问、DTO、调用方和现有测试",
+        "understanding-checklist": [
+          "- 涉及后端时，已查看相关 Controller、AppService、DomainService、数据访问、DTO、调用方和现有测试"
+        ],
         "contract-nouns": "AppService、数据访问映射、测试和相关文档",
         "search-nouns": "Controller、AppService、DomainService、DTO、迁移脚本和测试实现"
       },

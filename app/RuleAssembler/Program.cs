@@ -97,9 +97,10 @@ internal static class Program
         [JsonPropertyName("target-list")] public List<string> TargetList { get; set; } = new();
         [JsonPropertyName("subrule-index")] public List<string> SubruleIndex { get; set; } = new();
         [JsonPropertyName("dev-stage")] public List<string> DevStage { get; set; } = new();
-        [JsonPropertyName("understanding-checklist-backend")] public string UnderstandingChecklistBackend { get; set; } = "";
+        [JsonPropertyName("understanding-checklist")] public List<string> UnderstandingChecklist { get; set; } = new();
         [JsonPropertyName("contract-nouns")] public string ContractNouns { get; set; } = "";
         [JsonPropertyName("search-nouns")] public string SearchNouns { get; set; } = "";
+        [JsonPropertyName("extra-sections")] public List<string> ExtraSections { get; set; } = new();
     }
 
     private sealed class Subrule
@@ -200,6 +201,15 @@ internal static class Program
             result.Add(new PlannedFile { Output = p, Content = content });
         }
 
+        // 4. 设计系统文件（可选）：manifest designSystem=true 时释放 design/design-system.yaml
+        if (arch.DesignSystem)
+        {
+            var content = ReadResourceByPath($"arch/{arch.Id}/design-system.yaml");
+            if (content is null)
+                throw new InvalidOperationException($"缺失片段：arch/{arch.Id}/design-system.yaml");
+            result.Add(new PlannedFile { Output = "design-system.yaml", Content = content });
+        }
+
         return result;
     }
 
@@ -219,14 +229,21 @@ internal static class Program
             ["{{target-list}}"] = string.Join("\n", arch.Root.TargetList),
             ["{{subrule-index}}"] = string.Join("\n", arch.Root.SubruleIndex),
             ["{{dev-stage}}"] = string.Join("\n", arch.Root.DevStage),
-            ["{{understanding-checklist-backend}}"] = arch.Root.UnderstandingChecklistBackend,
+            ["{{understanding-checklist}}"] = string.Join("\n", arch.Root.UnderstandingChecklist),
             ["{{contract-nouns}}"] = arch.Root.ContractNouns,
             ["{{search-nouns}}"] = arch.Root.SearchNouns,
+            // 可选槽：manifest 未提供时整段移除（连同前导换行），避免留空段落
+            ["{{extra-sections}}"] = arch.Root.ExtraSections.Count > 0 ? string.Join("\n\n---\n\n", arch.Root.ExtraSections) : "",
         };
 
         var result = template;
         foreach (var kv in vars)
             result = result.Replace(kv.Key, kv.Value);
+
+        // extra-sections 为空时，槽位连同前后空行只剩空串，把 3+ 连续换行收敛为一个空行（兼容 CRLF/LF）
+        if (arch.Root.ExtraSections.Count == 0)
+            result = Regex.Replace(result, @"(?:\r?\n){3,}", "\r\n\r\n");
+
         return result;
     }
 
