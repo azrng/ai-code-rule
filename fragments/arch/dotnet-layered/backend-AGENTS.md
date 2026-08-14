@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.11.0
-last_updated: 2026-08-13
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -103,10 +103,10 @@ src/
 | 应用层 DTO（请求 / 响应 / 查询） | `IApplication/{业务域}/Dto/` | `CreateOrderRequest.cs`、`OrderDetailResponse.cs` |
 | 领域服务接口 | `IDomain/{业务域}/` | `I{业务域}DomainService.cs` |
 | 实体 / 值对象 | `IDomain/{业务域}/` | `{实体名}.cs` |
-| 自定义仓储接口（仅复杂查询需要时） | `IDomain/{业务域}/` | `I{实体名}Repository.cs`，实现放 `EntityFramework/Repositories/` |
+| 自定义仓储接口（仅复杂查询需要时，位置与判定规则见 `EntityFramework（数据访问层）规则`） | `IDomain/{业务域}/` | `I{实体名}Repository.cs` |
 | EF Core 实体配置 | `EntityFramework/` | `{实体名}Etc.cs`（继承 Azrng 配置基类） |
 | DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
-| 数据库迁移脚本 | `Service/MigrationSql/` | `版本号.sql` / `版本号.txt`（如 `1.0.0.sql`、`1.1.0.txt`，不含描述文字） |
+| 数据库迁移脚本 | `Service/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
 | 外部服务调用 / 第三方封装 | `Adapter/{业务域}/` | `{名称}Adapter.cs` |
 | 通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
 | 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
@@ -157,7 +157,7 @@ src/
 - 编排 Domain 层服务完成业务流程。
 - 负责事务管理和跨领域协调。
 - DTO 与实体之间的转换在此层完成。
-- 校验职责边界：请求 DTO 已由 `[Required]`、范围特性或 `[ApiController]` 模型校验覆盖的必填与格式约束，无需使用 `Require` / `RequireId` 等私有辅助方法做同义重复校验；
+- 校验职责边界：请求 DTO 已由 `[Required]`、范围特性或 `[ApiController]` 模型校验覆盖的必填与格式约束，无需使用 `Require` / `RequireId` 等私有辅助方法做同义重复校验。
 
 ### IDomain（领域接口层）规则
 - 定义领域服务接口（按业务域拆分）。
@@ -204,6 +204,7 @@ src/
 - 谨慎使用：多层嵌套 LINQ、一次性 `GroupBy + Select + ToDictionary + ToList` 链、只为"看起来干净"而拆的 helper。
 - helper / 拆分只在降低认知负担时才成立：让职责边界更清楚、真正复用、让调用方少理解细节；若拆完读者要在多个位置来回跳，或用 helper 隐藏本该直说的业务判断，就退回直白写法。
 - 单调用点判定：私有方法、局部映射 / 包装方法若仅有一个调用点，且不承载复杂业务规则、边界隔离、异常处理或类型收窄，也无复用预期，必须直接内联回调用处；不得为形式整洁抽取只被调用一次的方法。
+- 提交前自检：维护者能否一遍看懂核心逻辑？是否要跳转多个 helper 才知道发生了什么？这是不是当前需求的最简单可行实现？犹豫写"抽象版"还是"直白版"时，默认选直白版。
 - 共性的"先读再写""范围最小扰动"见根 `AGENTS.md`「理解检查清单」与「全局工作规则」
 
 ### 数据模型规则
@@ -297,15 +298,6 @@ src/
   - 删除或注释测试让构建通过
   - 用一层抽象重写掩盖原始复杂度，而不是简化它
 - 出现这些倾向时立刻回退一步：复杂 LINQ 比业务逻辑本身更难读；helper 数量增加但理解成本没下降；核心逻辑缺注释只能靠猜。
-
-### 可维护性自检（提交前）
-提交前对核心逻辑至少问一遍：
-- 维护者能否一遍看懂这段核心逻辑？
-- 是否必须跳转多个 helper 才知道发生了什么？
-- 关键方法和关键逻辑有没有注释？
-- 这是不是当前需求的最简单可行实现？
-- 我是不是为了"写得像高手"而牺牲了可读性？
-- 犹豫写"抽象版"还是"直白版"时，默认选直白版。
 
 ---
 

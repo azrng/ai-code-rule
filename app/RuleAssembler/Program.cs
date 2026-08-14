@@ -179,7 +179,7 @@ internal static class Program
         var leftover = LeftoverSlots(filled);
         if (leftover.Count > 0)
             throw new InvalidOperationException($"根模板存在未填充的变量槽：{string.Join(", ", leftover)}");
-        result.Add(new PlannedFile { Output = "AGENTS.md", Content = filled });
+        result.Add(new PlannedFile { Output = "AGENTS.md", Content = NormalizeNewlines(filled) });
 
         // 2. 子规则整文件（替换子规则里的 version/last_updated 与全局一致）
         foreach (var sub in arch.Subrules)
@@ -188,10 +188,10 @@ internal static class Program
             if (content is null)
                 throw new InvalidOperationException($"缺失片段：{sub.Source}");
             content = AlignVersion(content, manifest);
-            result.Add(new PlannedFile { Output = sub.Output, Content = content });
+            result.Add(new PlannedFile { Output = sub.Output, Content = NormalizeNewlines(content) });
         }
 
-        // 3. 指针文件
+        // 3. 指针文件（原样输出，不做行尾规范化——指针片段与目标目录文件同源同格式）
         foreach (var p in arch.Pointers)
         {
             var content = ReadResourceByPath("pointers/" + p);
@@ -202,6 +202,11 @@ internal static class Program
 
         return result;
     }
+
+    // 行尾统一为 CRLF：manifest 变量槽用 \n 拼接、AlignVersion 正则替换会吃掉 \r，
+    // 而仓库目标文件统一 CRLF；输出前规范化，保证字节级等价。
+    private static string NormalizeNewlines(string content) =>
+        content.Replace("\r\n", "\n").Replace("\n", "\r\n");
 
     // ---------- 模板变量填充 ----------
 

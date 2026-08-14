@@ -1,8 +1,8 @@
 {
   "note": "架构配方：每个架构 = root 骨架变量 + 子规则整文件 + 指针。生成器读此文件决定如何拼装。顶层 version 是 manifest 配方版本，与规则版本无关；规则版本见 vars。",
   "vars": {
-    "version": "1.11.0",
-    "last_updated": "2026-08-13"
+    "version": "1.12.0",
+    "last_updated": "2026-08-14"
   },
   "families": [
     {
