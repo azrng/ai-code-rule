@@ -57,7 +57,6 @@
         "understanding-checklist": [
           "- 涉及后端时，已查看相关 Controller、Application、Domain、Repository / EntityFramework、DTO、调用方和现有测试"
         ],
-        "contract-nouns": "Application、Domain、EntityFramework 映射、测试和相关文档",
         "search-nouns": "Controller、Application、Domain、DTO、EntityFramework、迁移脚本和测试实现"
       },
       "subrules": [
@@ -113,7 +112,7 @@
         "understanding-checklist": [
           "- 涉及后端时，已查看相关 Controller、AppService、DomainService、数据访问、DTO、调用方和现有测试"
         ],
-        "contract-nouns": "AppService、数据访问映射、测试和相关文档",
+        "contract-error-line": "阶段 0 输出的接口契约、DTO 或字段说明在阶段 1 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步 AppService、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "Controller、AppService、DomainService、DTO、迁移脚本和测试实现"
       },
       "subrules": [

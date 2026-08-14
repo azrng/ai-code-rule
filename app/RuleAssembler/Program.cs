@@ -98,9 +98,19 @@ internal static class Program
         [JsonPropertyName("subrule-index")] public List<string> SubruleIndex { get; set; } = new();
         [JsonPropertyName("dev-stage")] public List<string> DevStage { get; set; } = new();
         [JsonPropertyName("understanding-checklist")] public List<string> UnderstandingChecklist { get; set; } = new();
-        [JsonPropertyName("contract-nouns")] public string ContractNouns { get; set; } = "";
         [JsonPropertyName("search-nouns")] public string SearchNouns { get; set; } = "";
         [JsonPropertyName("extra-sections")] public List<string> ExtraSections { get; set; } = new();
+        // 以下为短语级家族差异槽；未提供时回退到纯后端家族默认值
+        [JsonPropertyName("root-scope-nouns")] public string RootScopeNouns { get; set; } = "后端、文档、基础设施";
+        [JsonPropertyName("context-scope-nouns")] public string ContextScopeNouns { get; set; } = "服务端实现 / 文档 / 发布链路";
+        [JsonPropertyName("high-risk-nouns")] public string HighRiskNouns { get; set; } = "数据库、缓存、鉴权、发布、环境变量";
+        [JsonPropertyName("high-risk-prefix")] public string HighRiskPrefix { get; set; } = "";
+        [JsonPropertyName("task-kind-nouns")] public string TaskKindNouns { get; set; } = "后端还是基础设施";
+        [JsonPropertyName("evidence-nouns")] public string EvidenceNouns { get; set; } = "日志、数据、断点、测试";
+        [JsonPropertyName("reuse-noun")] public string ReuseNoun { get; set; } = "配置";
+        [JsonPropertyName("persistence-suffix")] public string PersistenceSuffix { get; set; } = "";
+        [JsonPropertyName("destructive-nouns")] public string DestructiveNouns { get; set; } = "数据破坏性变更、环境清理";
+        [JsonPropertyName("contract-error-line")] public string ContractErrorLine { get; set; } = "阶段 0 输出的接口契约、DTO 或字段说明在阶段 1 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步 Application、Domain、EntityFramework 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段";
     }
 
     private sealed class Subrule
@@ -230,8 +240,17 @@ internal static class Program
             ["{{subrule-index}}"] = string.Join("\n", arch.Root.SubruleIndex),
             ["{{dev-stage}}"] = string.Join("\n", arch.Root.DevStage),
             ["{{understanding-checklist}}"] = string.Join("\n", arch.Root.UnderstandingChecklist),
-            ["{{contract-nouns}}"] = arch.Root.ContractNouns,
             ["{{search-nouns}}"] = arch.Root.SearchNouns,
+            ["{{root-scope-nouns}}"] = arch.Root.RootScopeNouns,
+            ["{{context-scope-nouns}}"] = arch.Root.ContextScopeNouns,
+            ["{{high-risk-nouns}}"] = arch.Root.HighRiskNouns,
+            ["{{high-risk-prefix}}"] = arch.Root.HighRiskPrefix,
+            ["{{task-kind-nouns}}"] = arch.Root.TaskKindNouns,
+            ["{{evidence-nouns}}"] = arch.Root.EvidenceNouns,
+            ["{{reuse-noun}}"] = arch.Root.ReuseNoun,
+            ["{{persistence-suffix}}"] = arch.Root.PersistenceSuffix,
+            ["{{destructive-nouns}}"] = arch.Root.DestructiveNouns,
+            ["{{contract-error-line}}"] = arch.Root.ContractErrorLine,
             // 可选槽：manifest 未提供时整段移除（连同前导换行），避免留空段落
             ["{{extra-sections}}"] = arch.Root.ExtraSections.Count > 0 ? string.Join("\n\n---\n\n", arch.Root.ExtraSections) : "",
         };
