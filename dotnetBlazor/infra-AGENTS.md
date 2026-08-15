@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.10.0
-last_updated: 2026-08-07
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -73,7 +73,6 @@ dependencies: [agents-root]
   - Blazor 应用核心访问链路是否可用
 - 若发现宿主机端口冲突，不要直接停止未知本地进程；优先调整 Compose 映射端口，并同步更新文档。
 - 新增镜像构建链路时，应同步补充 `.dockerignore`。
-
 
 ### 提交前最小回归
 - 修改 Dockerfile、Compose、启动命令、打包脚本或端口映射时：至少执行一次构建与启动验证

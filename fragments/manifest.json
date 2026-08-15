@@ -19,6 +19,11 @@
       "id": "web-fullstack",
       "label": "Web 前后端分离 / 全栈",
       "desc": "前端 SPA/SSR + 独立后端或同构全栈"
+    },
+    {
+      "id": "desktop",
+      "label": "桌面应用",
+      "desc": "Windows / 跨平台桌面客户端与控制台程序"
     }
   ],
   "architectures": [
@@ -626,6 +631,359 @@
         "GROK.md"
       ],
       "designSystem": true
+    },
+    {
+      "id": "avaloniaExe",
+      "label": "Avalonia 跨平台桌面应用",
+      "family": "desktop",
+      "desc": "Avalonia + MVVM，跨平台桌面客户端",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `ui-AGENTS.md`：视图、布局、导航、样式、状态、界面测试",
+          "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
+          "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `ui-AGENTS.md` | 视图、布局、导航、样式、交互、界面 smoke test | 涉及界面实现与交互时 |",
+          "| `application-AGENTS.md` | ViewModel、Service、命令、状态流转、应用层测试 | 涉及业务编排、命令逻辑或应用层实现时 |",
+          "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                  阶段 3",
+          "设计文档   →   视图与交互实现   →   应用层与数据实现   →   联调与交付",
+          "（用户确认）    （视图实现角色）      （业务实现角色）         （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、发布脚本调整",
+          "  - 单个字段增删改，且不引入新窗口或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：视图骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
+          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关 View、ViewModel、样式资源和设计 token",
+          "- 涉及业务逻辑时，已查看相关 ViewModel、Service、DTO / Model、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的 DTO / 契约在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO 后同步 ViewModel、Service、Repository 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "View、ViewModel、Service、Repository、DTO、样式资源与测试实现",
+        "task-kind-nouns": "界面、应用层还是基础设施",
+        "root-scope-nouns": "界面、应用层、基础设施、文档",
+        "context-scope-nouns": "视图、业务、数据访问与发布链路",
+        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、第三方集成",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/avaloniaExe/ui-AGENTS.md",
+          "output": "ui-AGENTS.md"
+        },
+        {
+          "source": "arch/avaloniaExe/application-AGENTS.md",
+          "output": "application-AGENTS.md"
+        },
+        {
+          "source": "arch/avaloniaExe/infrastructure-AGENTS.md",
+          "output": "infrastructure-AGENTS.md"
+        },
+        {
+          "source": "arch/avaloniaExe/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "wpfExe",
+      "label": "WPF Windows 桌面应用",
+      "family": "desktop",
+      "desc": "WPF + MVVM，Windows 桌面客户端",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `ui-AGENTS.md`：视图、布局、导航、样式、状态、界面测试",
+          "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
+          "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `ui-AGENTS.md` | 视图、布局、导航、样式、交互、界面 smoke test | 涉及界面实现与交互时 |",
+          "| `application-AGENTS.md` | ViewModel、Service、命令、状态流转、应用层测试 | 涉及业务编排、命令逻辑或应用层实现时 |",
+          "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                  阶段 3",
+          "设计文档   →   视图与交互实现   →   应用层与数据实现   →   联调与交付",
+          "（用户确认）    （视图实现角色）      （业务实现角色）         （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、发布脚本调整",
+          "  - 单个字段增删改，且不引入新窗口或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：视图骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
+          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关窗口、视图、控件、样式资源、设计 token 和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关 ViewModel、Service、DTO、Repository、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的界面契约、控件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步界面、ViewModel、Service、Repository 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "窗口、控件、ViewModel、Service、Repository、DTO 和测试实现",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施",
+        "root-scope-nouns": "界面、应用层、基础设施、文档",
+        "context-scope-nouns": "视图、业务、数据访问与发布链路",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/wpfExe/ui-AGENTS.md",
+          "output": "ui-AGENTS.md"
+        },
+        {
+          "source": "arch/wpfExe/application-AGENTS.md",
+          "output": "application-AGENTS.md"
+        },
+        {
+          "source": "arch/wpfExe/infrastructure-AGENTS.md",
+          "output": "infrastructure-AGENTS.md"
+        },
+        {
+          "source": "arch/wpfExe/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "dotnetBlazor",
+      "label": "Blazor 混合桌面应用",
+      "family": "desktop",
+      "desc": "Blazor + .NET，Web UI 技术栈的桌面/混合应用",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `ui-AGENTS.md`：页面、布局、组件、导航、状态、样式、界面测试",
+          "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `ui-AGENTS.md` | Razor 页面、布局、组件、交互、样式、界面 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务、数据访问、鉴权、状态流转、服务端测试 | 涉及服务实现、数据链路或后端逻辑时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   界面与交互实现   →   服务端与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、布局、交互与界面验证，细则见 `ui-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关 Razor 页面、组件、布局、样式资源、设计 token 和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关服务、数据访问、DTO、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的界面契约、组件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改契约 / DTO 后同步界面、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "Razor 页面、组件、服务、数据访问、DTO 和测试实现",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施",
+        "root-scope-nouns": "界面、服务、文档、基础设施",
+        "context-scope-nouns": "界面、服务与发布链路",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/dotnetBlazor/ui-AGENTS.md",
+          "output": "ui-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnetBlazor/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnetBlazor/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnetBlazor/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "dotnetConsole",
+      "label": ".NET 控制台程序",
+      "family": "desktop",
+      "desc": "命令行工具与后台服务，轻量无界面",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `application-AGENTS.md`：命令、Service、业务流程、配置、日志与测试",
+          "- `doc-AGENTS.md`：需求文档",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `application-AGENTS.md` | 命令解析、Service、配置、日志、异常处理与测试 | 涉及控制台实现与验证时 |",
+          "| `doc-AGENTS.md` | 需求文档 | 涉及需求整理、文档维护或归档时 |"
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1              阶段 2",
+          "需求与说明  →   控制台实现       →   验证与交付",
+          "（用户确认）    （控制台实现角色）    （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 命令文案、帮助信息或轻量输出调整",
+          "  - 配置、日志格式或启动方式调整",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、用法说明与文档维护，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：命令解析、Service、配置、日志与测试，细则见 `application-AGENTS.md`",
+          "- 阶段 2：构建、运行、结果验证与交付收口，结合当前文件与命中的子规则执行"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及控制台实现时，已查看相关命令解析、Service、配置、日志、DTO 和现有测试"
+        ],
+        "contract-error-line": "阶段 0 输出的需求说明、命令契约或字段定义在阶段 1 发现缺口时，应先回到契约变更流程，修改需求说明 / 命令定义后同步 Service、配置、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "命令解析、Service、配置、DTO 和测试实现",
+        "root-scope-nouns": "实现与文档",
+        "context-scope-nouns": "需求说明、命令实现与交付验证",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、输出结果、测试和运行验证",
+        "destructive-nouns": "环境清理",
+        "task-kind-nouns": "还是控制台实现"
+      },
+      "subrules": [
+        {
+          "source": "arch/dotnetConsole/application-AGENTS.md",
+          "output": "application-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnetConsole/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": false
     }
   ]
 }

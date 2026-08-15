@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
-version: 1.10.0
-last_updated: 2026-08-07
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -136,7 +136,6 @@ src/AppName/
 - 必须说明未执行的验证类型。
 - 必须说明未执行原因。
 - 必须说明潜在影响范围和风险。
-
 
 ### 提交前最小回归
 - 修改发布配置、单文件发布配置、安装包脚本、启动命令或运行时依赖时：至少执行一次构建与启动验证
