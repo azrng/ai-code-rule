@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.5.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：Next.js 页面、布局、组件、状态、样式与前端测试
 - 触发场景：涉及 App Router、Server Component、Client Component、表单、交互、前端 smoke test 时阅读
-
-### 阅读摘要
-- 建议阅读：新增页面、改表单、改交互、改路由、改组件样式、补前端测试
-- 可先跳过：纯服务端逻辑、Prisma、Docker、环境变量、仅文档说明改动
-- 优先查看：`阶段 1`、`前端规则`、`测试规则`
 
 ### 常见任务入口
 - 新增页面或布局：先看 `阶段 1`、`React / App Router 规范`

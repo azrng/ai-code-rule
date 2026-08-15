@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.5.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：Route Handlers、Server Actions、Service、Repository、Prisma、缓存、鉴权与服务端测试
 - 触发场景：涉及服务端逻辑、数据库、缓存、权限、异常处理时阅读
-
-### 阅读摘要
-- 建议阅读：改接口、改 Server Action、改 Service、改 Repository、改 Prisma、改鉴权与服务端测试
-- 可先跳过：纯页面样式、纯文档整理、仅 Docker 或端口调整
-- 优先查看：`阶段 2`、`服务端规则`、`测试规则`
 
 ### 常见任务入口
 - 改接口响应或状态码：先看 `Route Handler 规则`、`异常处理规范`

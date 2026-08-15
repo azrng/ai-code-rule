@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.4.1
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：端口、环境变量、Docker 与容器化交付规则
 - 触发场景：涉及 Docker、端口、环境变量、部署链路、容器验证时阅读
-
-### 阅读摘要
-- 建议阅读：改 Dockerfile、Compose、环境变量、运行端口、启动方式、发布链路
-- 可先跳过：纯页面交互、纯服务层业务逻辑、仅设计文档维护
-- 优先查看：`默认端口`、`Docker 规则`、`提交前最小回归`
 
 ---
 

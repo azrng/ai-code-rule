@@ -1,0 +1,1213 @@
+# 设计与组件规则的唯一事实来源。
+# 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
+# 技术栈：React + TypeScript + Ant Design 5 + ECharts + Zustand
+
+meta:
+  name: "企业级应用设计系统"
+  version: "2.1.0"
+  last_updated: "2026-05-19"
+  status: "启用中"
+  owners:
+    - "design"
+    - "frontend"
+  tech_stack:
+    styling: "Ant Design 5 Design Token + CSS Modules（唯一样式引擎）"
+    icons: "@ant-design/icons（唯一图标库，尺寸 16-24px）"
+    charts: "ECharts + echarts-for-react（唯一图表库）"
+    state_global: "Zustand（跨组件全局状态）"
+    state_local: "React Hooks（组件本地状态）"
+  default_ports:
+    frontend: 3000 # React 开发服务器 / 容器内端口
+    backend: 8080 # ASP.NET Core / 容器内端口
+    database: 5432 # PostgreSQL / 容器内端口
+  api_base_url:
+    env_var: "VITE_API_BASE_URL"
+    default: "http://localhost:8080"
+    rule: "前端所有 API 请求统一读取此环境变量，禁止在代码中硬编码后端地址"
+  port_conflict_policy: "宿主机端口冲突时，优先调整 docker-compose.yml 中的宿主机映射端口，容器内端口保持不变，并同步更新 .env.example 和前端配置"
+  usage:
+    read_order:
+      - "在进行任何 UI 改动前阅读本文件"
+      - "然后查看 src/config/antd-theme.ts Ant Design 主题配置"
+      - "然后查看 src/config/echarts-theme.ts 图表主题配置"
+      - "然后再查看现有页面与组件实现"
+    principles:
+      - "优先复用，而不是重新发明"
+      - "优先使用 Ant Design 组件和 Design Token，而不是硬编码视觉值"
+      - "优先使用已有项目组件，而不是先写自定义组件"
+      - "图表颜色统一来自 echarts-theme，不在页面层硬编码"
+
+product:
+  style_keywords:
+    - "专业"
+    - "清晰"
+    - "可信"
+    - "高效"
+    - "现代"
+  ui_goal:
+    - "企业后台界面优先保证清晰度与信息密度平衡"
+    - "移动端界面需要保证触控舒适"
+    - "状态和反馈必须让用户一眼看懂"
+    - "数据可视化图表风格统一、专业"
+
+# ============================================================
+# 颜色 Token
+# 对应 Tailwind 配置中的自定义颜色（tailwind.config.ts）
+# 使用方式：className="bg-primary-500 text-error-600"
+# ============================================================
+tokens:
+  colors:
+    # 主品牌色 - Ant Design 蓝
+    primary:
+      50: "#E6F4FF"
+      100: "#BAE0FF"
+      200: "#91CAFF"
+      300: "#69B1FF"
+      400: "#4096FF"
+      500: "#1677FF" # Ant Design 默认主色，用于主按钮、链接、激活态
+      600: "#0958D9" # hover 态
+      700: "#003EB3" # active 态
+      800: "#002C8C"
+      900: "#001D66"
+
+    # 成功色 - 企业绿
+    success:
+      50: "#F0FDF4"
+      100: "#E6FBEE"
+      200: "#BFFCE0"
+      300: "#8FF7D0"
+      400: "#5AE9BA"
+      500: "#10B981" # 主成功色
+      600: "#059669"
+      700: "#047857"
+      800: "#065F46"
+      900: "#064E3B"
+
+    # 警告色 - 企业橙
+    warning:
+      50: "#FEF3C7"
+      100: "#FEE8B6"
+      200: "#FDD48F"
+      300: "#FBC15E"
+      400: "#F9A825"
+      500: "#F59E0B" # 主警告色
+      600: "#D97706"
+      700: "#B45309"
+      800: "#92400E"
+      900: "#78350F"
+
+    # 错误色 - 企业红
+    error:
+      50: "#FEF2F2"
+      100: "#FEE2E2"
+      200: "#FECACA"
+      300: "#FCA5A5"
+      400: "#F87171"
+      500: "#EF4444" # 主错误色
+      600: "#DC2626"
+      700: "#B91C1C"
+      800: "#991B1B"
+      900: "#7F1D1D"
+
+    # 信息色
+    info:
+      50: "#EFF6FF"
+      100: "#DBEAFE"
+      500: "#1A90FF"
+      600: "#0078E0"
+
+    # 中性色 - 灰度系
+    gray:
+      50: "#FAFBFC"
+      100: "#F3F4F6"
+      150: "#EBEEF2"
+      200: "#E5E7EB"
+      300: "#D1D5DB"
+      400: "#9CA3AF"
+      500: "#6B7280"
+      600: "#4B5563"
+      700: "#374151"
+      800: "#1F2937"
+      900: "#111827"
+
+  # ============================================================
+  # 语义化颜色映射（使用 Ant Design Design Token）
+  # 优先使用 ConfigProvider theme token，而非硬编码颜色
+  # ============================================================
+  semantic:
+    text:
+      primary: "colorText" # Ant Design token: colorText
+      secondary: "colorTextSecondary" # colorTextSecondary
+      disabled: "colorTextDisabled" # colorTextDisabled
+      inverse: "colorTextLightSolid" # 深色背景上的白色文本
+      link: "colorPrimary" # colorPrimary
+      link_hover: "colorPrimaryHover" # colorPrimaryHover
+    background:
+      page: "colorBgLayout" # colorBgLayout
+      container: "colorBgContainer" # colorBgContainer
+      subtle: "colorBgContainer" # colorBgContainer
+      active: "colorPrimaryBg" # colorPrimaryBg
+    border:
+      default: "colorBorderSecondary" # colorBorderSecondary
+      strong: "colorBorder" # colorBorder
+      focus: "colorPrimary" # colorPrimary
+    status:
+      success_bg: "colorSuccessBg"
+      success_text: "colorSuccess"
+      warning_bg: "colorWarningBg"
+      warning_text: "colorWarning"
+      error_bg: "colorErrorBg"
+      error_text: "colorError"
+      info_bg: "colorInfoBg"
+      info_text: "colorInfo"
+
+  typography:
+    font_family:
+      sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+      mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
+    font_size:
+      xs: "12px" # text-xs
+      sm: "14px" # text-sm（表格、辅助信息）
+      base: "16px" # text-base（正文）
+      md: "15px" # text-md
+      lg: "18px" # text-lg（小标题）
+      xl: "20px" # text-xl（标题）
+      2xl: "24px" # text-2xl（页面标题）
+      3xl: "30px" # text-3xl（大数字展示）
+    font_weight:
+      normal: 400 # font-normal
+      medium: 500 # font-medium
+      semibold: 600 # font-semibold
+      bold: 700 # font-bold
+    line_height:
+      tight: 1.2 # leading-tight
+      normal: 1.5 # leading-normal
+      relaxed: 1.75 # leading-relaxed
+
+  spacing:
+    base_unit: "4px"
+    # 使用 Tailwind 间距工具类，禁止硬编码数值
+    scale:
+      0.5: "2px" # 0.5
+      1: "4px" # p-1, m-1
+      1.5: "6px" # p-1.5
+      2: "8px" # p-2
+      2.5: "10px" # p-2.5
+      3: "12px" # p-3
+      3.5: "14px" # p-3.5
+      4: "16px" # p-4
+      5: "20px" # p-5
+      6: "24px" # p-6
+      7: "28px" # p-7
+      8: "32px" # p-8
+      10: "40px" # p-10
+      12: "48px" # p-12
+      14: "56px" # p-14
+      16: "64px" # p-16
+
+  radius:
+    none: "0"
+    xs: "2px" # rounded-sm（2px）
+    sm: "4px" # rounded（4px）
+    md: "6px" # rounded-md
+    lg: "8px" # rounded-lg（标准）
+    xl: "12px" # rounded-xl
+    2xl: "16px" # rounded-2xl
+    full: "9999px" # rounded-full
+
+  shadow:
+    none: "none" # shadow-none
+    xs: "0 1px 2px 0 rgba(0,0,0,0.04)" # shadow-xs
+    sm: "0 1px 3px 0 rgba(0,0,0,0.08)" # shadow-sm
+    md: "0 4px 8px -2px rgba(0,0,0,0.10), 0 2px 4px -2px rgba(0,0,0,0.06)" # shadow-md
+    lg: "0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05)" # shadow-lg
+    xl: "0 20px 25px -5px rgba(0,0,0,0.10), 0 10px 10px -5px rgba(0,0,0,0.04)" # shadow-xl
+
+  transitions:
+    fast: "100ms" # duration-100
+    base: "200ms" # duration-200（标准）
+    slow: "300ms" # duration-300
+    slower: "500ms" # duration-500
+
+  breakpoints:
+    xs: "320px"
+    sm: "640px" # 手机横屏/小平板
+    md: "768px" # 平板
+    lg: "1024px" # 桌面
+    xl: "1280px" # 宽屏
+    2xl: "1536px" # 超宽屏
+
+# ============================================================
+# ECharts 图表主题配置
+# 具体实现文件：src/config/echarts-theme.ts
+# 所有图表颜色、字体、网格、tooltip 均来自此配置
+# ============================================================
+echarts:
+  theme_name: "enterprise"
+  color_palette:
+    - "#1A90FF" # 主蓝（primary-500）
+    - "#10B981" # 主绿（success-500）
+    - "#F59E0B" # 主橙（warning-500）
+    - "#EF4444" # 主红（error-500）
+    - "#8B5CF6" # 紫
+    - "#EC4899" # 粉
+    - "#06B6D4" # 青
+    - "#F97316" # 橙红
+  grid:
+    color: "#E5E7EB" # gray-200
+    label_color: "#6B7280" # gray-500
+    axis_color: "#D1D5DB" # gray-300
+  tooltip:
+    bg: "#FFFFFF"
+    border: "#E5E7EB"
+    text: "#374151" # gray-700
+  legend:
+    text_color: "#4B5563" # gray-600
+  font_family: "ui-sans-serif, system-ui, -apple-system, sans-serif"
+  font_size:
+    axis_label: 12
+    tooltip: 13
+    legend: 13
+    title: 14
+  usage_rules:
+    - "所有图表通过 src/components/charts/ 下封装的组件使用，禁止页面直接使用 ReactECharts"
+    - "图表颜色统一引用 echarts-theme，禁止在 option 中硬编码颜色"
+    - "图表容器必须设置明确的高度（className='h-64' 或 h-80 等）"
+    - "图表组件必须处理 loading 和 empty 状态"
+    - "tooltip、legend、axis 样式统一来自主题，不单独覆盖"
+
+# ============================================================
+# Ant Design 主题配置映射
+# 通过 ConfigProvider theme token 统一管理
+# ============================================================
+ant_design:
+  theme_config:
+    location: "src/config/antd-theme.ts"
+    description: "通过 ConfigProvider 的 theme.token 属性自定义主题"
+    token_mapping:
+      colorPrimary: "tokens.colors.primary.500 (#1677FF)"
+      colorSuccess: "tokens.colors.success.500"
+      colorWarning: "tokens.colors.warning.500"
+      colorError: "tokens.colors.danger.500"
+      colorInfo: "tokens.colors.info.500"
+      colorBgLayout: "tokens.colors.gray.50"
+      colorBgContainer: "tokens.colors.gray.50 (white)"
+      borderRadius: "tokens.radius.md (6px)"
+      fontSize: "tokens.typography.font_size.base (14px)"
+  usage_rules:
+    - "主题定制统一通过 ConfigProvider theme.token 配置"
+    - "组件中使用 theme.useToken() 获取 token 值，禁止硬编码颜色"
+    - "间距统一使用 Ant Design Space 组件或 token.marginXXS ~ token.marginXL"
+    - "响应式使用 Ant Design Grid 系统（Row / Col）"
+    - "禁止使用 style={{}} 硬编码样式"
+
+# ============================================================
+# 状态管理规范
+# ============================================================
+state_management:
+  local_state:
+    tool: "React Hooks（useState、useReducer、useCallback、useEffect）"
+    use_for:
+      - "表单输入值"
+      - "弹窗开关"
+      - "单个组件的 loading/error 状态"
+      - "本地筛选、排序、分页"
+  global_state:
+    tool: "Zustand"
+    store_location: "src/store/"
+    use_for:
+      - "当前登录用户信息"
+      - "权限与角色"
+      - "侧边菜单折叠状态"
+      - "全局通知/消息"
+      - "跨页面共享的筛选条件"
+      - "主题/语言配置"
+    store_naming: "use[Domain]Store（如 useUserStore、usePermissionStore）"
+    forbidden:
+      - "Redux"
+      - "MobX"
+      - "Recoil"
+      - "Context API 用于业务状态（仅允许用于主题/语言等低频配置）"
+
+# ============================================================
+# 页面状态规范
+# ============================================================
+page_states:
+  required:
+    - "loading"
+    - "empty"
+    - "error"
+    - "no-permission"
+  guidance:
+    loading:
+      description: "数据加载中"
+      implementation: "列表/表格用骨架屏（Skeleton 效果），按钮操作用 disabled + spinner"
+      tailwind_example: "animate-pulse bg-gray-200 rounded"
+    empty:
+      description: "无数据"
+      implementation: "展示空状态图示 + 简短说明 + 引导操作按钮"
+    error:
+      description: "请求失败"
+      implementation: "展示可读的错误原因，提供重试按钮"
+    no_permission:
+      description: "权限不足"
+      implementation: "明确说明权限不足，不暴露内部实现细节"
+
+# ============================================================
+# 组件使用规则
+# ============================================================
+component_rules:
+  reuse_first: true
+  naming:
+    components: "PascalCase"
+    hooks: "camelCase，以 use 开头"
+    stores: "camelCase，以 use 开头，以 Store 结尾"
+    utils: "camelCase"
+  custom_component_policy:
+    - "只有在确实存在复用价值时才新增共享组件"
+    - "避免为了单次需求做过度抽象"
+    - "组件职责保持单一"
+  categories:
+    layout:
+      description: "布局组件"
+      location: "src/components/layout/"
+      examples:
+        - "PageContainer（页面容器，统一 padding）"
+        - "SectionCard（分区卡片）"
+        - "Grid（响应式网格）"
+        - "Flex（弹性布局）"
+    ui:
+      description: "基础 UI 组件"
+      location: "src/components/ui/"
+      examples:
+        - "Button（主/次/幽灵/危险变体）"
+        - "Badge（状态标签）"
+        - "StatCard（数据统计卡片）"
+        - "StatusTag（业务状态标签）"
+        - "SearchBar（搜索栏）"
+        - "FilterBar（筛选栏）"
+        - "Input（文本输入框）"
+        - "Select（下拉选择器）"
+        - "Checkbox（多选框）"
+        - "Radio（单选框）"
+        - "Switch（开关）"
+        - "DatePicker（日期选择器）"
+        - "Upload（文件上传）"
+        - "Table（数据表格）"
+        - "Pagination（分页）"
+        - "Tag（标签）"
+        - "Tooltip（文字提示）"
+        - "Popover（气泡卡片）"
+        - "Progress（进度条）"
+        - "Avatar（头像）"
+        - "Modal（弹窗）"
+        - "Drawer（抽屉）"
+        - "Alert（内联提示）"
+        - "Toast（轻提示）"
+        - "Steps（步骤条）"
+        - "Tabs（标签页）"
+        - "Breadcrumb（面包屑）"
+        - "Collapse（折叠面板）"
+        - "Divider（分割线）"
+        - "Skeleton（骨架屏）"
+        - "Spin（加载中）"
+        - "Empty（空状态）"
+    charts:
+      description: "ECharts 封装图表组件"
+      location: "src/components/charts/"
+      examples:
+        - "BarChartCard（柱状图卡片）"
+        - "LineChartCard（折线图卡片）"
+        - "PieChartCard（饼图卡片）"
+        - "TrendChart（趋势图）"
+      rules:
+        - "统一封装 loading、empty、error 状态"
+        - "统一传入 title、height、className"
+        - "颜色通过 echarts-theme 注入，不接受外部 color prop"
+
+# ============================================================
+# 表单规范
+# ============================================================
+form_rules:
+  layout:
+    label_position: "标签在输入框上方（top），企业表单标准布局"
+    label_style: "text-sm font-medium text-gray-700"
+    required_mark: "标签后紧跟红色星号 * ，使用 text-error-500"
+    helper_text: "输入框下方，text-xs text-gray-500"
+    error_text: "输入框下方，text-xs text-error-600，替换 helper_text 位置"
+    field_gap: "垂直间距 gap-4（16px），分组间距 gap-6（24px）"
+    section_gap: "表单分区间距 gap-8（32px）"
+  sizes:
+    sm:
+      height: "h-8"
+      padding: "px-3 py-1.5"
+      text: "text-sm"
+      description: "紧凑型，用于筛选栏、内联表单"
+    md:
+      height: "h-10"
+      padding: "px-3 py-2"
+      text: "text-sm"
+      description: "默认尺寸，企业表单标准"
+    lg:
+      height: "h-12"
+      padding: "px-4 py-3"
+      text: "text-base"
+      description: "宽松型，用于登录、注册等关键表单"
+  validation:
+    trigger: "onBlur 失焦校验为主，提交时全量校验"
+    error_border: "border-error-500 focus:border-error-500 focus:ring-error-100"
+    success_border: "border-success-500"
+    error_icon: "InputAdornment 右侧 AlertCircle 图标，text-error-500，size=16"
+  submit_behavior:
+    loading_state: "提交按钮 disabled + Loader2 旋转图标，防止重复提交"
+    reset_policy: "提交成功后根据业务场景决定是否重置，不强制"
+
+# ============================================================
+# 组件详细规范
+# ============================================================
+component_specs:
+  # ----------------------------------------------------------
+  # 数据输入类
+  # ----------------------------------------------------------
+
+  input:
+    description: "文本输入框，企业表单最基础组件"
+    sizes:
+      sm: "h-8 px-3 text-sm"
+      md: "h-10 px-3 text-sm" # 默认
+      lg: "h-12 px-4 text-base"
+    states:
+      default: "border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400"
+      hover: "border-gray-400"
+      focus: "border-primary-500 ring-2 ring-primary-100 outline-none"
+      error: "border-error-500 ring-2 ring-error-100"
+      disabled: "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+      readonly: "bg-gray-50 border-gray-200 text-gray-700 cursor-default"
+    variants:
+      default: "单行文本输入"
+      textarea: "多行文本，min-h-[80px]，可 resize-y"
+      password: "type=password，右侧切换可见图标（Eye/EyeOff，size=16）"
+      search: "左侧 Search 图标（size=16, text-gray-400），右侧可清除按钮"
+    adornments:
+      prefix_icon: "左侧图标，pl-9，图标 absolute left-3，size=16，text-gray-400"
+      suffix_icon: "右侧图标，pr-9，图标 absolute right-3，size=16，text-gray-400"
+      prefix_text: "左侧文字单元（如 http://），bg-gray-50 border-r border-gray-300 px-3，rounded-l-lg"
+      suffix_text: "右侧文字单元（如 元），bg-gray-50 border-l border-gray-300 px-3，rounded-r-lg"
+    rules:
+      - "禁止使用 outline-none 而不补充 ring/border 焦点样式"
+      - "placeholder 颜色统一 placeholder:text-gray-400"
+      - "错误状态不依赖颜色单独传达，需同时展示错误文字"
+
+  select:
+    description: "下拉选择器，支持单选、多选、搜索"
+    library: "原生 <select> 不满足企业需求时，使用自定义实现或 headlessui Listbox"
+    sizes:
+      sm: "h-8 px-3 text-sm"
+      md: "h-10 px-3 text-sm" # 默认
+      lg: "h-12 px-4 text-base"
+    trigger_states:
+      default: "border border-gray-300 rounded-lg bg-white text-gray-900"
+      hover: "border-gray-400"
+      focus: "border-primary-500 ring-2 ring-primary-100"
+      open: "border-primary-500 ring-2 ring-primary-100"
+      error: "border-error-500 ring-2 ring-error-100"
+      disabled: "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+    dropdown:
+      container: "bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50 max-h-60 overflow-y-auto"
+      option_default: "px-3 py-2 text-sm text-gray-700 cursor-pointer"
+      option_hover: "bg-gray-50"
+      option_selected: "bg-primary-50 text-primary-700 font-medium"
+      option_disabled: "text-gray-400 cursor-not-allowed"
+      group_label: "px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide"
+    variants:
+      single: "默认单选，右侧 ChevronDown 图标 size=16 text-gray-400"
+      multiple: "多选模式，选中项以 Tag 形式展示在 trigger 内，可逐个删除"
+      searchable: "trigger 内嵌 input，可过滤选项列表，Search 图标 size=16"
+      clearable: "有值时右侧展示 X 清除按钮（size=14），替换 ChevronDown"
+    placeholder: "text-gray-400"
+    rules:
+      - "下拉列表 z-index 统一 z-50，避免被遮挡"
+      - "超过 5 个选项时建议启用搜索模式"
+      - "选项过多（>50）时使用虚拟滚动"
+
+  checkbox:
+    description: "多选框，支持单个使用和组使用"
+    sizes:
+      sm: "w-3.5 h-3.5"
+      md: "w-4 h-4" # 默认
+      lg: "w-5 h-5"
+    states:
+      default: "border-2 border-gray-300 rounded bg-white"
+      hover: "border-primary-400"
+      checked: "bg-primary-500 border-primary-500 text-white"
+      indeterminate: "bg-primary-500 border-primary-500，内部显示横线而非勾"
+      focus: "ring-2 ring-primary-100 ring-offset-1"
+      disabled: "bg-gray-100 border-gray-200 cursor-not-allowed"
+      disabled_checked: "bg-gray-300 border-gray-300 cursor-not-allowed"
+    label:
+      gap: "gap-2（图标与文字间距）"
+      style: "text-sm text-gray-700"
+      disabled: "text-gray-400"
+    group:
+      layout: "vertical（默认）或 horizontal，flex flex-col gap-2 / flex flex-row gap-4"
+      select_all: "全选项位于列表顶部，使用 indeterminate 态表达部分选中"
+    rules:
+      - "点击区域包含标签文字，不仅限于图标本身"
+      - "与表格联动时，表头全选使用 indeterminate 态"
+
+  radio:
+    description: "单选框，互斥选择"
+    sizes:
+      sm: "w-3.5 h-3.5"
+      md: "w-4 h-4" # 默认
+      lg: "w-5 h-5"
+    states:
+      default: "border-2 border-gray-300 rounded-full bg-white"
+      hover: "border-primary-400"
+      checked: "border-primary-500，内圆 bg-primary-500 w-2 h-2 rounded-full"
+      focus: "ring-2 ring-primary-100 ring-offset-1"
+      disabled: "bg-gray-100 border-gray-200 cursor-not-allowed"
+    label:
+      gap: "gap-2"
+      style: "text-sm text-gray-700"
+    group:
+      layout: "horizontal（默认，并排选项）或 vertical（选项较多时）"
+      gap: "horizontal: gap-4，vertical: gap-2"
+    radio_button_variant:
+      description: "按钮组形式的单选，视觉为 segmented control"
+      style: "border border-gray-300 px-4 py-2 text-sm，选中态 bg-primary-500 text-white border-primary-500"
+
+  switch:
+    description: "开关，表示启用/禁用"
+    sizes:
+      sm:
+        track: "w-8 h-4"
+        thumb: "w-3 h-3"
+        translate: "translate-x-4"
+      md:
+        track: "w-11 h-6" # 默认
+        thumb: "w-5 h-5"
+        translate: "translate-x-5"
+      lg:
+        track: "w-14 h-7"
+        thumb: "w-6 h-6"
+        translate: "translate-x-7"
+    states:
+      off: "bg-gray-200"
+      on: "bg-primary-500"
+      disabled_off: "bg-gray-100 cursor-not-allowed"
+      disabled_on: "bg-primary-200 cursor-not-allowed"
+      focus: "ring-2 ring-primary-100 ring-offset-2"
+    thumb: "bg-white rounded-full shadow-sm transition-transform duration-200"
+    label_position: "right（默认）或 left"
+    loading: "thumb 内显示 Loader2 旋转图标，size=12，禁止点击"
+    rules:
+      - "开关状态变化必须有即时视觉反馈，异步操作期间显示 loading 态"
+      - "影响范围较大的操作（如启用/停用账号）需配合确认提示"
+
+  datepicker:
+    description: "日期与时间选择器"
+    library: "react-datepicker，样式通过 Tailwind 自定义覆盖，禁止引入其默认 CSS"
+    trigger:
+      style: "同 Input md 尺寸规范，左侧 Calendar 图标 size=16 text-gray-400"
+      placeholder: "text-gray-400，格式提示如 YYYY-MM-DD"
+    calendar_popup:
+      container: "bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-50"
+      header: "flex items-center justify-between mb-3，月份年份 font-semibold text-gray-800"
+      nav_button: "p-1 rounded hover:bg-gray-100 text-gray-500，使用 ChevronLeft/ChevronRight size=16"
+      day_cell_size: "w-8 h-8 text-sm rounded-lg"
+      day_default: "text-gray-700 hover:bg-gray-100"
+      day_selected: "bg-primary-500 text-white hover:bg-primary-600"
+      day_in_range: "bg-primary-50 text-primary-700（日期范围选择中间态）"
+      day_today: "font-semibold text-primary-500（未选中时）"
+      day_disabled: "text-gray-300 cursor-not-allowed"
+      day_outside_month: "text-gray-300"
+      weekday_label: "text-xs text-gray-400 font-medium text-center"
+    variants:
+      date: "单日期选择，格式 YYYY-MM-DD"
+      date_range: "日期范围，startDate + endDate，同一 popup 内选择"
+      datetime: "日期 + 时间，底部追加时间选择器（HH:mm）"
+      time: "纯时间选择，HH:mm 格式，滚动列表选择"
+      month: "月份选择，格式 YYYY-MM"
+    shortcuts:
+      position: "popup 左侧面板或顶部，常用：今天、昨天、最近7天、最近30天、本月、上月"
+      style: "text-sm text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg cursor-pointer"
+    rules:
+      - "禁止引入 react-datepicker 的默认 CSS，全量使用 Tailwind 覆盖"
+      - "日期范围选择时，结束日期不能早于开始日期，需校验并提示"
+      - "时区处理统一由业务层负责，组件只处理本地展示"
+
+  upload:
+    description: "文件上传"
+    variants:
+      button: "普通按钮触发，上传后在下方列表展示文件"
+      dragger: "拖拽区域，虚线边框 border-2 border-dashed border-gray-300 rounded-xl"
+    dragger_states:
+      default: "border-gray-300 bg-gray-50"
+      drag_over: "border-primary-400 bg-primary-50"
+      error: "border-error-400 bg-error-50"
+    dragger_content: "Upload 图标 size=24 text-gray-400，主文字 text-sm text-gray-600，次文字 text-xs text-gray-400"
+    file_list:
+      item: "flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg"
+      icon: "File/Image/FileText 等按文件类型区分，size=18 text-gray-400"
+      name: "text-sm text-gray-700 flex-1 truncate"
+      size: "text-xs text-gray-400"
+      status_uploading: "进度条 + 百分比文字"
+      status_done: "CheckCircle size=16 text-success-500"
+      status_error: "AlertCircle size=16 text-error-500 + 错误文字"
+      remove_button: "X size=14 text-gray-400 hover:text-error-500"
+    progress_bar: "h-1 bg-gray-200 rounded-full，内部 bg-primary-500 rounded-full transition-all"
+    rules:
+      - "文件大小和类型限制需在 UI 层明确提示，不只依赖接口报错"
+      - "上传中状态需禁止重复触发上传"
+
+  # ----------------------------------------------------------
+  # 数据展示类
+  # ----------------------------------------------------------
+
+  table:
+    description: "数据表格，企业应用核心组件"
+    structure:
+      wrapper: "w-full overflow-x-auto"
+      table: "w-full border-collapse text-sm"
+      thead: "bg-gray-50 border-b border-gray-200"
+      th: "px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+      tbody: "divide-y divide-gray-100"
+      tr_default: "bg-white hover:bg-gray-50 transition-colors duration-100"
+      tr_selected: "bg-primary-50"
+      tr_striped: "偶数行 bg-gray-50/50（可选，非默认）"
+      td: "px-4 py-3 text-sm text-gray-700 whitespace-nowrap"
+    column_types:
+      text: "默认 td 样式"
+      number: "text-right font-mono"
+      status: "使用 Badge / StatusTag 组件"
+      action: "text-right，操作按钮组，间距 gap-2"
+      checkbox: "w-12，居中，表头全选"
+      avatar_name: "flex items-center gap-3，头像 + 姓名"
+      date: "text-gray-500 text-sm"
+    features:
+      sortable:
+        icon: "ChevronsUpDown size=14（默认），ChevronUp / ChevronDown size=14（激活）"
+        active_color: "text-primary-500"
+        th_style: "cursor-pointer select-none hover:bg-gray-100"
+      fixed_column:
+        left: "sticky left-0 bg-white z-10 shadow-[2px_0_4px_rgba(0,0,0,0.06)]"
+        right: "sticky right-0 bg-white z-10 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]"
+      expandable:
+        expand_icon: "ChevronRight size=16 过渡到 ChevronDown，tr 左侧"
+        expanded_row: "bg-gray-50 border-t border-b border-gray-100"
+      row_selection:
+        checkbox_col: "表头全选 + 每行 Checkbox，宽度 w-12"
+        bulk_action_bar: "选中后顶部浮现操作栏，bg-primary-50 border border-primary-200 rounded-lg px-4 py-2"
+    empty_state: "td colspan=全列数，py-16 text-center，使用 Empty 组件"
+    loading_state: "tbody 替换为骨架行，3-5 行，animate-pulse"
+    rules:
+      - "操作列固定在最右侧"
+      - "表格必须处理 loading、empty、error 三种状态"
+      - "列宽通过 w-* / min-w-* 控制，禁止依赖内容撑开导致错位"
+      - "超长文本使用 truncate 截断，配合 Tooltip 展示完整内容"
+
+  pagination:
+    description: "分页器"
+    variants:
+      simple: "仅上一页/下一页按钮 + 当前页码，用于移动端或空间紧凑场景"
+      full: "完整分页，包含首尾页、页码列表、跳页输入、每页条数选择"
+    sizes:
+      sm: "h-7 min-w-7 text-xs"
+      md: "h-8 min-w-8 text-sm" # 默认
+      lg: "h-10 min-w-10 text-base"
+    button_states:
+      default: "border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50"
+      active: "border-primary-500 bg-primary-500 text-white"
+      disabled: "border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed"
+      hover: "border-gray-400 bg-gray-50"
+    ellipsis: "... 文字，text-gray-400，不可点击"
+    page_size_selector:
+      style: "Select sm 尺寸规范，选项如 10/20/50/100 条/页"
+      position: "分页器左侧"
+    jump_input:
+      style: "Input sm 尺寸，w-16，右侧跟文字「页」，回车或失焦触发跳转"
+      position: "分页器右侧"
+    total_display: "共 N 条，text-sm text-gray-500，最左侧"
+    layout: "flex items-center justify-between，左侧总数，右侧分页控件"
+    rules:
+      - "每页条数变更时重置到第 1 页"
+      - "跳页超出范围时自动修正到边界值，不报错"
+      - "总数为 0 时不展示分页器"
+
+  tag:
+    description: "标签，用于分类、过滤条件、可关闭的选中项，区别于 Badge（Badge 是状态指示，Tag 是内容标记）"
+    sizes:
+      sm: "px-2 py-0.5 text-xs h-5"
+      md: "px-2.5 py-1 text-xs h-6" # 默认
+      lg: "px-3 py-1 text-sm h-7"
+    appearance:
+      default: "bg-gray-100 text-gray-700 border border-gray-200 rounded-full"
+      primary: "bg-primary-50 text-primary-700 border border-primary-200 rounded-full"
+      success: "bg-success-50 text-success-700 border border-success-200 rounded-full"
+      warning: "bg-warning-50 text-warning-700 border border-warning-200 rounded-full"
+      error: "bg-error-50 text-error-700 border border-error-200 rounded-full"
+    closable:
+      icon: "X size=12，ml-1，text-current opacity-60 hover:opacity-100"
+      hover: "hover:bg-gray-200（default 变体）"
+    addable:
+      trigger: "虚线边框按钮，border border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-500"
+      icon: "Plus size=12，mr-1"
+    rules:
+      - "Tag 与 Badge 不混用：Badge 用于状态（在线/离线/审批中），Tag 用于内容标记（技能标签/筛选条件）"
+      - "可关闭 Tag 的删除操作即时生效，不需要确认"
+
+  tooltip:
+    description: "文字提示，鼠标悬停触发，轻量信息补充"
+    trigger: "hover（默认）/ focus"
+    delay:
+      show: "300ms"
+      hide: "100ms"
+    appearance:
+      container: "bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg shadow-lg max-w-xs"
+      arrow: "bg-gray-800，4px 三角形，指向触发元素"
+    positions: "top（默认）/ bottom / left / right，自动翻转避免溢出视口"
+    max_width: "max-w-xs（240px）"
+    rules:
+      - "Tooltip 内容纯文字，复杂内容（含操作按钮）使用 Popover"
+      - "移动端不依赖 hover，tooltip 内容需有替代展示方式"
+      - "禁止在 Tooltip 内放置可交互元素"
+
+  popover:
+    description: "气泡卡片，点击触发，支持复杂内容和交互"
+    trigger: "click（默认）/ hover"
+    appearance:
+      container: "bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-50 min-w-48 max-w-sm"
+      arrow: "bg-white border border-gray-200，8px 三角形"
+      header: "text-sm font-semibold text-gray-800 mb-2（可选）"
+      body: "text-sm text-gray-600"
+      footer: "mt-3 pt-3 border-t border-gray-100 flex justify-end gap-2（可选）"
+    close: "点击外部区域关闭，或内部提供关闭按钮 X size=16 text-gray-400"
+    positions: "top / bottom / left / right，自动翻转"
+    rules:
+      - "Popover 与 Tooltip 区别：Popover 支持交互（按钮/链接），Tooltip 只展示文字"
+      - "同一时间只允许一个 Popover 处于打开状态"
+
+  progress:
+    description: "进度条，展示任务/上传/流程完成度"
+    variants:
+      line:
+        track: "h-2 bg-gray-200 rounded-full w-full"
+        bar: "h-full rounded-full transition-all duration-300"
+        sizes:
+          xs: "h-1"
+          sm: "h-1.5"
+          md: "h-2" # 默认
+          lg: "h-3"
+          xl: "h-4"
+      circle:
+        description: "SVG 圆形进度，适用于仪表盘/概览卡片"
+        sizes:
+          sm: "w-12 h-12"
+          md: "w-16 h-16" # 默认
+          lg: "w-24 h-24"
+        track_color: "text-gray-200"
+        percentage_text: "text-xs font-semibold text-gray-700 绝对居中"
+    status_colors:
+      default: "bg-primary-500"
+      success: "bg-success-500"
+      warning: "bg-warning-500"
+      error: "bg-error-500"
+    with_label:
+      percentage: "text-xs text-gray-500 text-right mb-1"
+      inline: "进度条右侧 ml-3 text-sm text-gray-600 w-10 text-right"
+    striped_animated: "bg-stripes animate-pulse，用于不确定进度的长时任务"
+    rules:
+      - "进度值范围 0-100，超出范围自动 clamp"
+      - "超过 100% 的情况（如超额完成）用 success 色展示并截断在 100% 宽度"
+
+  avatar:
+    description: "用户头像"
+    sizes:
+      xs: "w-6 h-6 text-xs"
+      sm: "w-8 h-8 text-xs"
+      md: "w-10 h-10 text-sm" # 默认
+      lg: "w-12 h-12 text-base"
+      xl: "w-16 h-16 text-lg"
+      2xl: "w-20 h-20 text-xl"
+    variants:
+      image: "rounded-full object-cover，图片加载失败时 fallback 到 initials 或 icon"
+      initials: "rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center"
+      icon: "rounded-full bg-gray-100 text-gray-500 flex items-center justify-center，User 图标"
+    shape:
+      circle: "rounded-full（默认）"
+      square: "rounded-lg"
+    status_dot:
+      position: "右下角 absolute，ring-2 ring-white"
+      online: "w-2.5 h-2.5 bg-success-500 rounded-full"
+      offline: "w-2.5 h-2.5 bg-gray-400 rounded-full"
+      busy: "w-2.5 h-2.5 bg-warning-500 rounded-full"
+    group:
+      description: "头像组，多个头像叠加展示"
+      overlap: "-ml-2（第2个起），ring-2 ring-white"
+      max_display: "最多显示 5 个，超出用 +N 灰色头像表示"
+      overflow_style: "bg-gray-200 text-gray-600 text-xs font-medium"
+
+  empty:
+    description: "空状态，无数据时的占位展示"
+    structure: "flex flex-col items-center justify-center py-16 text-center"
+    icon_style: "text-gray-300，size=48，mb-4"
+    title_style: "text-sm font-medium text-gray-500 mb-1"
+    desc_style: "text-xs text-gray-400 mb-4（可选）"
+    action: "Button sm 尺寸（可选）"
+    scenarios:
+      no_data: "InboxIcon，文案：暂无数据"
+      no_search_result: "SearchX 图标，文案：未找到相关结果，建议调整搜索条件"
+      no_permission: "Lock 图标，文案：暂无权限查看此内容"
+      network_error: "WifiOff 图标，文案：加载失败，附重试按钮"
+    rules:
+      - "空状态图标和文案需根据具体场景定制，不使用通用「暂无数据」覆盖所有场景"
+
+  # ----------------------------------------------------------
+  # 反馈与通知类
+  # ----------------------------------------------------------
+
+  modal:
+    description: "弹窗，用于需要用户聚焦处理的操作"
+    sizes:
+      sm: "max-w-sm" # 确认框
+      md: "max-w-lg" # 默认，表单弹窗
+      lg: "max-w-2xl" # 复杂表单
+      xl: "max-w-4xl" # 详情查看
+      fullscreen: "w-screen h-screen rounded-none"
+    overlay: "fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4"
+    container: "bg-white rounded-2xl shadow-xl w-full z-50 flex flex-col max-h-[90vh]"
+    header: "flex items-center justify-between px-6 py-4 border-b border-gray-100"
+    header_title: "text-base font-semibold text-gray-900"
+    header_close: "X size=20 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-lg"
+    body: "px-6 py-5 overflow-y-auto flex-1"
+    footer: "flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100"
+    animation: "scale-95 opacity-0 → scale-100 opacity-100，duration-200 ease-out"
+    close_behavior:
+      esc: "按 ESC 关闭（默认启用）"
+      overlay_click: "点击遮罩关闭（默认启用，危险操作弹窗可禁用）"
+      programmatic: "通过 onClose 回调关闭"
+    confirm_variant:
+      description: "确认/警告弹窗，无 header 分割线，图标居中展示"
+      icon_danger: "AlertTriangle size=24 text-error-500，bg-error-50 rounded-full p-3"
+      icon_info: "Info size=24 text-primary-500，bg-primary-50 rounded-full p-3"
+      icon_success: "CheckCircle size=24 text-success-500，bg-success-50 rounded-full p-3"
+    rules:
+      - "弹窗打开时锁定 body 滚动"
+      - "表单弹窗提交按钮须有 loading 态，防止重复提交"
+      - "危险操作（删除/停用）使用 error 色确认按钮"
+      - "弹窗层级不超过 2 层，禁止多层嵌套弹窗"
+
+  drawer:
+    description: "抽屉，从边缘滑出的面板，适合详情查看、筛选配置、复杂表单"
+    directions:
+      right: "从右侧滑入（默认），适合详情面板"
+      left: "从左侧滑入，适合导航/筛选"
+      bottom: "从底部滑入，移动端适用"
+    sizes:
+      right_left:
+        sm: "w-80"
+        md: "w-96" # 默认
+        lg: "w-[512px]"
+        xl: "w-[640px]"
+        full: "w-full"
+      bottom:
+        sm: "h-1/4"
+        md: "h-1/2"
+        lg: "h-3/4"
+        full: "h-full"
+    overlay: "fixed inset-0 bg-black/40 z-40"
+    container: "fixed z-50 bg-white shadow-xl flex flex-col"
+    header: "flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0"
+    header_title: "text-base font-semibold text-gray-900"
+    header_close: "X size=20 text-gray-400 hover:text-gray-600"
+    body: "flex-1 overflow-y-auto px-6 py-5"
+    footer: "flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0（可选）"
+    animation:
+      right: "translate-x-full → translate-x-0，duration-300 ease-out"
+      left: "-translate-x-full → translate-x-0，duration-300 ease-out"
+      bottom: "translate-y-full → translate-y-0，duration-300 ease-out"
+    rules:
+      - "Drawer 与 Modal 选择：详情查看/编辑用 Drawer，需用户聚焦决策用 Modal"
+      - "底部带操作按钮的 Drawer，footer 固定不随内容滚动"
+      - "移动端优先使用 bottom drawer"
+
+  alert:
+    description: "内联提示，嵌入页面内容中的状态说明，非浮层"
+    variants:
+      info: "bg-info-50 border border-info-100 text-info-700，Info 图标 text-primary-500"
+      success: "bg-success-50 border border-success-100 text-success-700，CheckCircle 图标"
+      warning: "bg-warning-50 border border-warning-100 text-warning-700，AlertTriangle 图标"
+      error: "bg-error-50 border border-error-100 text-error-700，AlertCircle 图标"
+    structure: "flex items-start gap-3 p-4 rounded-lg border"
+    icon: "size=18，flex-shrink-0，mt-0.5"
+    title_style: "text-sm font-semibold（可选）"
+    body_style: "text-sm"
+    closable: "X size=16 ml-auto flex-shrink-0，text-current opacity-60 hover:opacity-100"
+    action_link: "text-sm font-medium underline ml-4（可选）"
+    rules:
+      - "Alert 用于页面级别的持久提示，Toast 用于操作结果的短暂反馈"
+      - "不在 Alert 中放置复杂交互元素，最多一个操作链接"
+
+  toast:
+    description: "轻提示，操作结果反馈，自动消失"
+    variants:
+      success: "bg-white border border-success-200，CheckCircle size=18 text-success-500"
+      error: "bg-white border border-error-200，AlertCircle size=18 text-error-500"
+      warning: "bg-white border border-warning-200，AlertTriangle size=18 text-warning-500"
+      info: "bg-white border border-gray-200，Info size=18 text-primary-500"
+    structure: "flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg min-w-64 max-w-sm"
+    message: "text-sm text-gray-700 flex-1"
+    close_button: "X size=14 text-gray-400 hover:text-gray-600 ml-2"
+    position: "右上角（默认）：fixed top-4 right-4 z-[60]"
+    stack: "多条 Toast 垂直排列，gap-2，最多同时显示 5 条"
+    duration:
+      default: "3000ms 自动关闭"
+      error: "5000ms（错误信息需要更多阅读时间）"
+      persistent: "duration=0 不自动关闭，需手动关闭"
+    animation: "slide-in from right + fade，slide-out + fade，duration-200"
+    rules:
+      - "成功操作使用 success Toast，失败使用 error Toast，不混用"
+      - "Toast 文案简洁，15 字以内，详细信息引导用户查看页面"
+      - "同类型操作的连续 Toast 合并展示，不堆叠刷屏"
+
+  # ----------------------------------------------------------
+  # 导航类
+  # ----------------------------------------------------------
+
+  steps:
+    description: "步骤条，展示多步骤流程的进度"
+    variants:
+      horizontal: "步骤水平排列，桌面端默认"
+      vertical: "步骤垂直排列，适合步骤数多或移动端"
+    step_states:
+      pending: "圆圈 border-2 border-gray-300 bg-white text-gray-400，步骤序号或图标"
+      active: "圆圈 bg-primary-500 text-white border-2 border-primary-500，当前步骤"
+      done: "圆圈 bg-primary-500 border-primary-500，内部 Check size=14 text-white"
+      error: "圆圈 bg-error-500 border-error-500，内部 X size=14 text-white"
+      disabled: "圆圈 bg-gray-100 border-gray-200 text-gray-300，不可点击"
+    step_indicator:
+      size: "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+    connector_line:
+      horizontal: "flex-1 h-0.5 mx-2 bg-gray-200（pending），bg-primary-500（done）"
+      vertical: "w-0.5 h-8 mx-auto my-1 bg-gray-200（pending），bg-primary-500（done）"
+    labels:
+      title: "text-sm font-medium，active: text-primary-600，done: text-gray-700，pending: text-gray-400"
+      description: "text-xs text-gray-400 mt-0.5（可选）"
+    clickable: "已完成的步骤可点击回退，pending 步骤不可跳跃点击"
+    rules:
+      - "步骤条只展示状态，不承担内容展示职责，内容区域独立"
+      - "移动端步骤数超过 4 个时切换为 vertical 或仅展示当前步骤进度"
+
+  tabs:
+    description: "标签页，同一内容区域的多视图切换"
+    variants:
+      line:
+        description: "下划线型，默认，适合内容区较大的场景"
+        tab_default: "px-4 py-2.5 text-sm text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300"
+        tab_active: "text-primary-600 border-b-2 border-primary-500 font-medium"
+        container: "border-b border-gray-200 flex gap-1"
+      card:
+        description: "卡片型，适合功能分区明确的场景"
+        tab_default: "px-4 py-2 text-sm text-gray-500 bg-gray-100 rounded-t-lg hover:bg-gray-200"
+        tab_active: "text-gray-900 bg-white border border-b-0 border-gray-200 font-medium"
+      pill:
+        description: "胶囊型，适合数量少（2-4个）的紧凑场景"
+        container: "bg-gray-100 p-1 rounded-lg inline-flex"
+        tab_default: "px-4 py-1.5 text-sm text-gray-500 rounded-md hover:text-gray-700"
+        tab_active: "bg-white text-gray-900 font-medium shadow-sm"
+    badge_on_tab: "tab 标题右侧跟 Badge（数字），ml-2"
+    disabled_tab: "text-gray-300 cursor-not-allowed，禁止点击"
+    sizes:
+      sm: "text-xs px-3 py-2"
+      md: "text-sm px-4 py-2.5" # 默认
+      lg: "text-base px-5 py-3"
+    rules:
+      - "Tab 切换不重新发起请求（数据已缓存），切换即时响应"
+      - "Tab 内容区域的 loading 状态独立处理，不影响 Tab 本身"
+      - "禁止超过 8 个 Tab，超出考虑用 Select/下拉切换代替"
+
+  breadcrumb:
+    description: "面包屑导航，展示当前页面在层级中的位置"
+    structure: "flex items-center gap-1 text-sm"
+    item_default: "text-gray-500 hover:text-gray-700 cursor-pointer"
+    item_current: "text-gray-900 font-medium cursor-default"
+    separator: "ChevronRight size=14 text-gray-400 flex-shrink-0"
+    max_items: "超过 4 层时，中间层级折叠为 ... ，点击展开"
+    collapsed_trigger: "... 文字，text-gray-400 hover:text-gray-600 cursor-pointer"
+    home_icon: "可选，Home size=16 作为第一项"
+    rules:
+      - "最后一项（当前页）不可点击"
+      - "面包屑文字与页面标题保持一致"
+
+  menu:
+    description: "侧边导航菜单，企业后台主导航"
+    layout:
+      sidebar_width: "w-64（展开），w-16（折叠）"
+      transition: "transition-all duration-300 ease-in-out"
+    container: "h-full bg-white border-r border-gray-200 flex flex-col"
+    logo_area: "h-16 flex items-center px-4 border-b border-gray-100"
+    menu_section:
+      label: "px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider（分组标签）"
+    menu_item:
+      default: "flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 rounded-lg mx-2 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"
+      active: "bg-primary-50 text-primary-700 font-medium"
+      icon: "size=18 flex-shrink-0"
+      label: "flex-1 truncate"
+      badge: "ml-auto，Badge xs 尺寸"
+    submenu:
+      indent: "pl-10（二级菜单缩进）"
+      indicator: "ChevronRight size=14 ml-auto，展开时 rotate-90，duration-200"
+      item_style: "text-sm text-gray-500 hover:text-gray-800，py-2 px-4"
+      active: "text-primary-600 font-medium"
+    collapsed_mode:
+      item: "justify-center px-0，隐藏文字"
+      tooltip: "悬停展示菜单项名称 Tooltip，position=right"
+      section_label: "隐藏"
+    collapse_button: "底部固定，ChevronLeft/ChevronRight size=18"
+    rules:
+      - "折叠状态下必须通过 Tooltip 展示菜单名称"
+      - "多级菜单最多 2 层，禁止 3 层嵌套"
+      - "激活项的父级菜单自动展开"
+
+  # ----------------------------------------------------------
+  # 布局增强类
+  # ----------------------------------------------------------
+
+  collapse:
+    description: "折叠面板，展示/隐藏内容区域"
+    variants:
+      accordion: "手风琴模式，同一时间只有一项展开"
+      multiple: "多展开模式，各项独立控制"
+    header:
+      style: "flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 select-none"
+      title: "text-sm font-medium text-gray-800"
+      icon: "ChevronDown size=16 text-gray-400，展开时 rotate-180，duration-200 transition-transform"
+      icon_position: "right（默认）/ left"
+    content:
+      style: "px-4 pb-4 text-sm text-gray-600"
+      animation: "overflow-hidden，高度 0 → auto，duration-200（需 JS 辅助实现精确动画）"
+    container:
+      bordered: "border border-gray-200 rounded-lg divide-y divide-gray-100（默认）"
+      ghost: "无边框，仅分割线，适合嵌入卡片中"
+    rules:
+      - "禁止在折叠内容中放置表格等需要固定高度的复杂组件，避免动画异常"
+
+  divider:
+    description: "分割线"
+    variants:
+      horizontal: "w-full h-px bg-gray-200（默认）"
+      vertical: "h-full w-px bg-gray-200，inline-block mx-3"
+    with_text:
+      style: "flex items-center gap-3"
+      line: "flex-1 h-px bg-gray-200"
+      text: "text-xs text-gray-400 font-medium whitespace-nowrap"
+    margin:
+      horizontal: "my-4（默认）"
+      vertical: "mx-3（默认）"
+    rules:
+      - "装饰性分割线使用 <hr> 或 div，不使用 border 属性"
+
+  skeleton:
+    description: "骨架屏，内容加载时的占位动画"
+    base: "animate-pulse bg-gray-200 rounded"
+    variants:
+      text_line: "h-4 rounded w-full（可指定宽度百分比）"
+      text_short: "h-4 rounded w-3/5"
+      title: "h-5 rounded w-2/5 mb-3"
+      avatar: "rounded-full（对应 Avatar 尺寸）"
+      image: "rounded-lg（对应图片区域比例）"
+      button: "h-9 rounded-lg w-24"
+      card: "组合：title + 2-3 行 text_line"
+      table_row: "h-12 rounded w-full"
+    colors:
+      base: "bg-gray-200"
+      highlight: "bg-gray-100（shimmer 效果中的高亮部分，可选）"
+    rules:
+      - "骨架屏结构应尽量贴近真实内容布局，避免视觉跳变"
+      - "骨架行数与真实数据行数保持一致（通常 3-5 行）"
+      - "表格 loading 用骨架行替换 tbody，不用全页 Spin 遮罩"
+
+  spin:
+    description: "加载中，页面级或局部容器级遮罩"
+    variants:
+      inline: "纯图标，不带遮罩，嵌入按钮或内容流中"
+      container: "相对定位的父容器内覆盖，半透明遮罩 + 居中 spinner"
+      fullpage: "fixed inset-0 覆盖全页，z-[100]"
+    spinner:
+      style: "Loader2 size=24 text-primary-500 animate-spin"
+      sizes:
+        sm: "size=16"
+        md: "size=24" # 默认
+        lg: "size=32"
+    overlay:
+      container: "absolute inset-0 bg-white/70 flex items-center justify-center z-10 rounded-lg"
+      fullpage: "fixed inset-0 bg-white/80 flex items-center justify-center z-[100]"
+    loading_text: "text-sm text-gray-500 mt-2（可选）"
+    rules:
+      - "表格/列表数据加载优先使用 Skeleton，不用 Spin 遮罩"
+      - "Spin 适用于提交、保存等操作的等待状态"
+      - "全页 Spin 仅用于页面初始化加载，不用于局部操作"
+icons:
+  library: "@ant-design/icons"
+  sizes:
+    default: 18
+    medium: 20
+    large: 24
+  usage_rules:
+    - "统一从 @ant-design/icons 导入，禁止自定义 SVG 或其他图标库"
+    - "尺寸统一用 style={{ fontSize: 20 }}：`<IconFont style={{ fontSize: 20 }} />`"
+    - "颜色通过 style 控制：`<PlusOutlined style={{ fontSize: 20, color: token.colorPrimary }} />`"
+    - "禁止使用 <img src='icon.svg' /> 或 <i className='fa-...' />"
+
+# ============================================================
+# 响应式设计规范
+# ============================================================
+responsive:
+  principle: "移动优先（Mobile First）"
+  breakpoints:
+    default: "手机竖屏（< 640px）"
+    sm: "640px - 手机横屏"
+    md: "768px - 平板"
+    lg: "1024px - 桌面"
+    xl: "1280px - 宽屏"
+    2xl: "1536px - 超宽屏"
+  common_patterns:
+    grid_cols: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+    padding: "px-4 sm:px-6 lg:px-8"
+    text_size: "text-sm md:text-base lg:text-lg"
+    sidebar_width: "w-full lg:w-64"
+
+# ============================================================
+# Do / Don't 规则
+# ============================================================
+do:
+  - "优先复用现有组件和页面模式"
+  - "优先使用 Ant Design 组件和 Design Token（token.colorPrimary 而非硬编码颜色）"
+  - "保持完整的页面状态反馈（loading/empty/error/no-permission）"
+  - "图表颜色统一来自 echarts-theme 配置文件"
+  - "全局状态使用 Zustand store，本地状态使用 React Hooks"
+  - "图标统一使用 @ant-design/icons"
+  - "响应式遵循移动优先原则"
+  - "同时关注桌面端与移动端可读性"
+  - "主题定制统一通过 ConfigProvider theme token 配置"
+
+dont:
+  - "不要使用 style={{}} 属性硬编码样式"
+  - "不要硬编码颜色值（如 #1677ff）"
+  - "不要硬编码间距数值（如 padding: '20px'）"
+  - "不要使用 ECharts 以外的图表库（Recharts、Chart.js 等）"
+  - "不要在图表 option 中硬编码颜色，必须引用 echarts-theme"
+  - "不要使用 Redux、MobX、Recoil"
+  - "不要在组件中直接调用后端 API，统一通过 src/api/ 封装"
+  - "不要交付缺少 loading、empty、error 状态的页面"
+  - "不要再创建新的设计 token 文件或平行配置体系"
+  - "不要使用 @ant-design/icons 以外的图标库"
+  - "不要在没有充分复用价值的情况下创建新共享组件"
+  - "不要在 Tooltip 内放置可交互元素（按钮/链接），应使用 Popover"
+  - "不要嵌套超过 2 层弹窗（Modal/Drawer）"
+  - "不要使用 ECharts 以外的图表库，不要用 Recharts、Chart.js 等"
+  - "不要超过 8 个 Tab，超出用 Select 代替"
+  - "不要在侧边导航菜单中嵌套超过 2 层菜单"
+  - "不要在表格/列表数据加载时使用全页 Spin 遮罩，应使用 Skeleton"
+  - "不要使用 class 组件，必须使用函数组件 + Hooks"

@@ -111,6 +111,15 @@ internal static class Program
         [JsonPropertyName("persistence-suffix")] public string PersistenceSuffix { get; set; } = "";
         [JsonPropertyName("destructive-nouns")] public string DestructiveNouns { get; set; } = "数据破坏性变更、环境清理";
         [JsonPropertyName("contract-error-line")] public string ContractErrorLine { get; set; } = "阶段 0 输出的接口契约、DTO 或字段说明在阶段 1 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步 Application、Domain、EntityFramework 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段";
+        [JsonPropertyName("reading-order")] public List<string> ReadingOrder { get; set; } = new();
+        // 追加型可选槽：空串占位行在输出前统一清理
+        [JsonPropertyName("intro-quote")] public string IntroQuote { get; set; } = "";
+        [JsonPropertyName("checklist-infra")] public string ChecklistInfra { get; set; } = "- 涉及基础设施时，已查看 Docker、环境变量、端口、启动命令、发布脚本和部署文档";
+        [JsonPropertyName("model-behavior-extra")] public string ModelBehaviorExtra { get; set; } = "";
+        [JsonPropertyName("verify-nouns")] public string VerifyNouns { get; set; } = "";
+        [JsonPropertyName("verify-quote")] public string VerifyQuote { get; set; } = "";
+        [JsonPropertyName("rollback-scope")] public string RollbackScope { get; set; } = "发布产物、容器";
+        [JsonPropertyName("boundary-nouns")] public string BoundaryNouns { get; set; } = "跨层职责";
     }
 
     private sealed class Subrule
@@ -251,6 +260,16 @@ internal static class Program
             ["{{persistence-suffix}}"] = arch.Root.PersistenceSuffix,
             ["{{destructive-nouns}}"] = arch.Root.DestructiveNouns,
             ["{{contract-error-line}}"] = arch.Root.ContractErrorLine,
+            ["{{reading-order}}"] = arch.Root.ReadingOrder.Count > 0
+                ? string.Join("\n", arch.Root.ReadingOrder)
+                : "先读本文件确认全局规则与任务阶段 → 按任务类型命中对应子规则 → 再读相关模块与现有实现，确认复用点后动手。",
+            ["{{intro-quote}}"] = arch.Root.IntroQuote,
+            ["{{checklist-infra}}"] = arch.Root.ChecklistInfra,
+            ["{{model-behavior-extra}}"] = arch.Root.ModelBehaviorExtra,
+            ["{{verify-nouns}}"] = arch.Root.VerifyNouns,
+            ["{{verify-quote}}"] = arch.Root.VerifyQuote,
+            ["{{rollback-scope}}"] = arch.Root.RollbackScope,
+            ["{{boundary-nouns}}"] = arch.Root.BoundaryNouns,
             // 可选槽：manifest 未提供时整段移除（连同前导换行），避免留空段落
             ["{{extra-sections}}"] = arch.Root.ExtraSections.Count > 0 ? string.Join("\n\n---\n\n", arch.Root.ExtraSections) : "",
         };
@@ -259,9 +278,10 @@ internal static class Program
         foreach (var kv in vars)
             result = result.Replace(kv.Key, kv.Value);
 
-        // extra-sections 为空时，槽位连同前后空行只剩空串，把 3+ 连续换行收敛为一个空行（兼容 CRLF/LF）
-        if (arch.Root.ExtraSections.Count == 0)
-            result = Regex.Replace(result, @"(?:\r?\n){3,}", "\r\n\r\n");
+        // 可选槽（extra-sections / intro-quote / model-behavior-extra / verify-quote）为空时
+        // 会留下空行，3+ 连续换行一律收敛为一个空行（兼容 CRLF/LF）
+        result = Regex.Replace(result, @"(?:\r?\n){3,}", "\n\n");
+        return result;
 
         return result;
     }

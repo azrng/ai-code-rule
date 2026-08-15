@@ -14,6 +14,11 @@
       "id": "python-backend",
       "label": "Python 后端",
       "desc": "FastAPI / Pydantic / SQLAlchemy 技术栈的纯后端 API"
+    },
+    {
+      "id": "web-fullstack",
+      "label": "Web 前后端分离 / 全栈",
+      "desc": "前端 SPA/SSR + 独立后端或同构全栈"
     }
   ],
   "architectures": [
@@ -65,11 +70,24 @@
         "search-nouns": "Controller、Application、Domain、DTO、EntityFramework、迁移脚本和测试实现"
       },
       "subrules": [
-        { "source": "arch/dotnet-layered/backend-AGENTS.md", "output": "backend-AGENTS.md" },
-        { "source": "arch/dotnet-layered/doc-AGENTS.md", "output": "doc-AGENTS.md" },
-        { "source": "arch/dotnet-layered/infra-AGENTS.md", "output": "infra-AGENTS.md" }
+        {
+          "source": "arch/dotnet-layered/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnet-layered/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnet-layered/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
       ],
-      "pointers": ["CLAUDE.md", "GEMINI.md", "GROK.md"],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
       "designSystem": false
     },
     {
@@ -121,11 +139,24 @@
         "search-nouns": "Controller、AppService、DomainService、DTO、迁移脚本和测试实现"
       },
       "subrules": [
-        { "source": "arch/dotnet-core-single/backend-AGENTS.md", "output": "backend-AGENTS.md" },
-        { "source": "arch/dotnet-core-single/doc-AGENTS.md", "output": "doc-AGENTS.md" },
-        { "source": "arch/dotnet-core-single/infra-AGENTS.md", "output": "infra-AGENTS.md" }
+        {
+          "source": "arch/dotnet-core-single/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnet-core-single/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnet-core-single/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
       ],
-      "pointers": ["CLAUDE.md", "GEMINI.md", "GROK.md"],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
       "designSystem": false
     },
     {
@@ -177,12 +208,424 @@
         "search-nouns": "路由、服务、数据访问、DTO 和测试实现"
       },
       "subrules": [
-        { "source": "arch/python/backend-AGENTS.md", "output": "backend-AGENTS.md" },
-        { "source": "arch/python/doc-AGENTS.md", "output": "doc-AGENTS.md" },
-        { "source": "arch/python/infra-AGENTS.md", "output": "infra-AGENTS.md" }
+        {
+          "source": "arch/python/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/python/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/python/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
       ],
-      "pointers": ["CLAUDE.md", "GEMINI.md", "GROK.md"],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
       "designSystem": false
+    },
+    {
+      "id": "reactLinkdotNet",
+      "label": "React + .NET 前后端分离",
+      "family": "web-fullstack",
+      "desc": "React SPA（Vite）+ ASP.NET Core API，双工程分离部署",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO / 类型定义、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 类型后同步前端、后端、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Controller、Service、Repository、DTO / 类型定义和测试实现",
+        "task-kind-nouns": "前端、后端还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "reuse-noun": "配置",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "high-risk-prefix": "联调、",
+        "boundary-nouns": "跨模块职责"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "vueLinkdotNet",
+      "label": "Vue + .NET 前后端分离",
+      "family": "web-fullstack",
+      "desc": "Vue 3 SPA（Vite）+ ASP.NET Core API，双工程分离部署",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   前端实现        →   后端实现         →   联调与交付",
+          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Controller、Service、DTO 和测试实现",
+        "task-kind-nouns": "前端、后端还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "reuse-noun": "配置",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "high-risk-prefix": "联调、",
+        "boundary-nouns": "跨模块职责"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/vueLinkdotNet/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/vueLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/vueLinkdotNet/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "reactLinkdotNet-ai",
+      "label": "React + .NET + AI Agent 全栈",
+      "family": "web-fullstack",
+      "desc": "单项目整洁架构 + Microsoft.Extensions.AI / Agent Framework + React，AI 产品 MVP",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试（单项目整洁架构）",
+          "- `ai-AGENTS.md`：模型调用（Microsoft.Extensions.AI）、Agent 框架、工具 / Skills、Prompt、流式、向量与记忆等可选能力",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统、AI 产品交互补充",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 单项目整洁架构、服务端逻辑、数据访问、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          "| `ai-AGENTS.md` | 模型调用、Agent、工具 / Skills、Prompt、流式、向量与记忆等可选能力 | 涉及任何 AI / Agent / 模型对接时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明、AI 产品交互补充、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、模型密钥、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "  - 调 Prompt、换模型、调工具参数等不影响契约与数据结构的实验性改动",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "- **Agent 闭环优先**：新 Agent 功能鼓励先在阶段 2 用最小端点跑通\"输入→Agent→输出→确认\"闭环，再在阶段 1 补正式界面",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明、AI 产品交互补充，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、AI / Agent 集成、权限控制与测试，细则见 `backend-AGENTS.md` 与 `ai-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 涉及 AI 能力时，无论是否动前端展示，都应先读 `ai-AGENTS.md`，确认模型调用与 Agent 编排规则。",
+          "5. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关端点 / Controller、Service、Repository、DTO / 类型定义、调用方和现有测试",
+          "- 涉及 AI 时，已查看现有 Agent、工具、Skills、Prompt、模型客户端封装与流式处理实现"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 类型后同步前端、后端、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、端点、Service、Repository、Agent、工具、DTO / 类型定义和测试实现",
+        "task-kind-nouns": "前端、后端、AI 还是基础设施",
+        "root-scope-nouns": "前端、后端、AI、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、模型对接变更、Prompt 核心逻辑变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "reuse-noun": "配置",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "extra-sections": [
+          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET 10 + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
+          "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n2. **核心 vs 可选**：`IChatClient` + Agent Framework 是核心；向量库、记忆、多 Agent、MCP、Redis、PostgreSQL 都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：技术栈文档与示例要充分、项目结构边界要清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程、本地运行可上云。\n5. **先做闭环，再做扩张**：先把\"用户输入 → Agent 运行 → 结果展示 → 用户确认 → 下一步\"跑通，再补 Skills / Memory / Middleware。"
+        ],
+        "intro-quote": "> 本规则以 React + .NET 全栈为工程底座，融合 AI Agent 产品的 MVP 选型理念。\n> 定位：一套面向 **AI Agent 产品** 的 React + .NET 全栈开发规范，强调工程规范与\"少仪式、快闭环、AI Coding 友好、可演进\"并存。\n",
+        "checklist-infra": "- 涉及基础设施时，已查看启动命令、环境变量、Dockerfile、Compose、端口和运行文档",
+        "model-behavior-extra": "- **模型调用不得散落**：业务代码不得直接依赖具体模型 SDK，统一走 `IChatClient`；细则见 `ai-AGENTS.md`",
+        "verify-nouns": "模型能力、",
+        "verify-quote": "> AI 领域包名与 API 演进较快（如 Microsoft Agent Framework、Microsoft.Extensions.AI），调用前以官方最新文档与项目锁定版本为准。",
+        "rollback-scope": "Docker 镜像",
+        "high-risk-prefix": "联调、",
+        "boundary-nouns": "跨模块职责"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactLinkdotNet-ai/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet-ai/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet-ai/ai-AGENTS.md",
+          "output": "ai-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet-ai/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet-ai/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "nextFullstack",
+      "label": "Next.js 全栈",
+      "family": "web-fullstack",
+      "desc": "Next.js App Router + Prisma，同构全栈单工程",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Route Handlers、Server Actions、Service、Repository、Prisma、服务端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Next.js 页面与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据库、鉴权、缓存、异常处理、服务端测试 | 涉及 Route Handler、Server Action、Prisma、Service 时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护、设计系统时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、发布链路 | 涉及部署、容器化、环境变量时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   页面与交互实现   →   服务端与数据实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 Route Handler、Server Action、Service、Repository、schema / Prisma、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、Service、Repository、Prisma 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Route Handler、Server Action、Service、Repository、Prisma 与测试实现",
+        "task-kind-nouns": "前端、后端还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "reuse-noun": "配置",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "destructive-nouns": "数据库破坏性变更、环境清理",
+        "high-risk-prefix": "联调、",
+        "boundary-nouns": "跨模块职责"
+      },
+      "subrules": [
+        {
+          "source": "arch/nextFullstack/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/nextFullstack/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/nextFullstack/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/nextFullstack/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
     }
   ]
 }

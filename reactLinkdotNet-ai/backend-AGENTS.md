@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.10.0
-last_updated: 2026-08-08
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root, ai-agents]
 ---
 

@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.10.0
-last_updated: 2026-08-07
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -36,7 +36,6 @@ dependencies: [agents-root]
 
 如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
 技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
-
 
 ---
 
