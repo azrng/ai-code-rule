@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.10.0
-last_updated: 2026-08-07
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -67,7 +67,6 @@ dependencies: [agents-root]
 - 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
 
 技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
-
 
 ---
 

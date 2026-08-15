@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.10.0
-last_updated: 2026-08-07
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -120,6 +120,5 @@ dependencies: [agents-root]
   - 根因
   - 本次补充或修改的规则
   - 后续如何避免或验证不再复发
-
 
 ---

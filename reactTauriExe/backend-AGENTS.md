@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：Tauri Command、Rust 服务、数据访问、本地系统能力与后端测试
 - 触发场景：涉及 `src-tauri/`、SQLite、文件系统、系统权限、插件、异常处理或测试时阅读
-
-### 阅读摘要
-- 建议阅读：改 Command、改 Rust 服务、改数据访问、改本地文件 / 系统能力、补后端验证
-- 可先跳过：纯页面样式、纯文档整理、仅打包配置调整
-- 优先查看：Command 规则、服务 / 数据访问规则、测试规则
 
 ### 常见任务入口
 - 改前后端调用契约：先看 Command 规则与输入输出约束
@@ -56,7 +51,6 @@ dependencies: [agents-root]
 - 不确定业务规则、数据含义或系统能力边界时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
-
 
 ---
 

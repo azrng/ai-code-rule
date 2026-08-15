@@ -24,6 +24,11 @@
       "id": "desktop",
       "label": "桌面应用",
       "desc": "Windows / 跨平台桌面客户端与控制台程序"
+    },
+    {
+      "id": "hybrid-app",
+      "label": "跨平台混合桌面",
+      "desc": "Web 前端 + 原生/托管后端的打包桌面应用"
     }
   ],
   "architectures": [
@@ -984,6 +989,376 @@
         "GROK.md"
       ],
       "designSystem": false
+    },
+    {
+      "id": "electronDotNetExe",
+      "label": "Electron + .NET 桌面应用",
+      "family": "hybrid-app",
+      "desc": "Electron 渲染进程 + .NET 本地后端（IPC）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：IPC handler、.NET 服务、数据访问、本地能力、后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Electron 渲染进程界面实现与交互时 |",
+          "| `backend-AGENTS.md` | IPC handler、.NET 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-dotnet/`、子进程 IPC 或本地能力实现时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+          "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Electron / .NET 实现 →   联调与交付",
+          "（用户确认）    （前端实现角色）      （.NET 实现角色）        （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：IPC handler、.NET 服务、数据访问、本地能力与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 IPC handler、Service、Repository、DTO / schema、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、IPC handler、Service、Repository、DTO 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、IPC handler、Service、Repository、DTO / schema 与测试实现",
+        "task-kind-nouns": "前端、后端还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据库破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/electronDotNetExe/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/electronDotNetExe/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/electronDotNetExe/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/electronDotNetExe/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "reactTauriExe",
+      "label": "React + Tauri 桌面应用",
+      "family": "hybrid-app",
+      "desc": "React 前端 + Rust 后端（Tauri Command）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 React 界面实现与交互时 |",
+          "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+          "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Rust / Tauri 实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （Rust 实现角色）        （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、签名或打包脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
+        "task-kind-nouns": "前端、Rust 后端还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactTauriExe/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactTauriExe/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactTauriExe/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/reactTauriExe/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "reactWailsExe",
+      "label": "React + Wails 桌面应用",
+      "family": "hybrid-app",
+      "desc": "React 前端 + Go 后端（Wails 绑定）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：界面、视图、页面、组件、交互、样式与前端测试；没有前端或界面层时可跳过",
+          "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 界面、页面、视图、表单、交互、样式、前端 smoke test | 涉及任何用户界面或客户端交互时 |",
+          "| `backend-AGENTS.md` | 服务逻辑、接口、数据访问、鉴权、缓存、异常处理、后端测试 | 涉及业务服务、接口、任务处理或数据持久化时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、设计系统时 |",
+          "| `infra-AGENTS.md` | 启动方式、环境变量、打包、部署链路 | 涉及运行环境、构建、发布、部署时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：界面骨架、交互、显示层契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：业务逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、部署与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关页面、视图、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关入口层、服务层、数据访问层、schema / DTO / 类型定义、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的显示层契约、schema、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO / 类型后同步界面、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、视图、组件、入口层、服务层、数据访问层、schema / DTO / 类型定义和测试实现",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据库破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactWailsExe/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactWailsExe/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactWailsExe/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/reactWailsExe/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "vueWailsExe",
+      "label": "Vue + Wails 桌面应用",
+      "family": "hybrid-app",
+      "desc": "Vue 3 前端 + Go 后端（Wails 绑定）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   前端实现        →   后端实现         →   联调与交付",
+          "（用户确认）    （界面实现角色）    （业务实现角色）      （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及后端时，已查看相关 Go 服务、数据访问、绑定结构体、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Go 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Go 服务、绑定结构体和测试实现",
+        "task-kind-nouns": "前端、后端还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueWailsExe/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/vueWailsExe/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/vueWailsExe/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/vueWailsExe/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
     }
   ]
 }

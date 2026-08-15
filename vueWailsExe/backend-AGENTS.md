@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.5.0
-last_updated: 2026-07-08
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：服务端实现、接口、服务、数据访问、缓存、异常处理与后端测试
 - 触发场景：涉及接口、Service、Repository、缓存、权限、异常处理或测试时阅读
-
-### 阅读摘要
-- 建议阅读：改接口、改 Service、改数据访问、改缓存、改权限、补后端验证
-- 可先跳过：纯页面样式、纯文档整理、仅构建或部署配置调整
-- 优先查看：服务端规则、数据访问 / 异常处理规范、测试规则
 
 ### 常见任务入口
 - 改接口响应或状态码：先看接口 / 路由规则与异常处理规范

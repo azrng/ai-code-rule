@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：前端实现、页面、组件、路由、状态、样式与前端测试
 - 触发场景：涉及 React 页面、布局、组件、交互、样式、前端 smoke test 时阅读
-
-### 阅读摘要
-- 建议阅读：新增页面、改表单、改交互、改路由、改组件样式、补前端验证
-- 可先跳过：纯 Rust / Tauri 逻辑、纯数据访问、仅文档整理、仅打包配置调整
-- 优先查看：前端规则、状态 / 表单规则、测试规则
 
 ### 常见任务入口
 - 新增页面或布局：先看 React / 路由规范与组件规则
@@ -55,7 +50,6 @@ dependencies: [agents-root]
 - 不确定组件行为、路由规则、状态管理模式或设计 token 时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验硬编码
 
 技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
-
 
 ---
 
