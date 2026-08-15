@@ -47,14 +47,16 @@ internal static class Program
         Console.WriteLine("（不释放 TASK.md / rulelog / devlog）");
         Console.WriteLine();
 
-        var overwriteAll = WriteFilesInteractive(files);
-        if (!overwriteAll.HasValue)
+        var written = WriteFilesInteractive(files);
+        if (written < 0)
         {
             Console.WriteLine("已取消。");
             return 0;
         }
         Console.WriteLine();
-        Console.WriteLine($"完成：已释放 {files.Count} 个文件到 {Environment.CurrentDirectory}");
+        Console.WriteLine(written > 0
+            ? $"完成：已释放 {written} 个文件到 {Environment.CurrentDirectory}"
+            : "完成：所有文件均被跳过，未写入任何内容。");
         return 0;
     }
 
@@ -284,7 +286,9 @@ internal static class Program
             result = result.Replace(kv.Key, kv.Value);
 
         // 可选槽（extra-sections / intro-quote / model-behavior-extra / verify-quote）为空时
-        // 会留下空行，3+ 连续换行一律收敛为一个空行（兼容 CRLF/LF）
+        // 会留下空行，3+ 连续换行一律收敛为一个空行（兼容 CRLF/LF）。
+        // 边界：这是全文件性的收敛——若未来某个槽值内容里需要连续两个空行（如代码块分隔），
+        // 此处会将其压扁；当前所有片段与槽值均无双空行场景，安全。
         result = Regex.Replace(result, @"(?:\r?\n){3,}", "\n\n");
         return result;
     }
@@ -324,18 +328,31 @@ internal static class Program
 
     // ---------- 写出（带逐文件覆盖确认）----------
 
-    // 返回 true=全部覆盖完成，false=全部跳过，null=用户取消（已处理零文件时不进此分支）
-    private static bool? WriteFilesInteractive(List<PlannedFile> files)
+    // 读取一行确认输入；EOF（ReadLine 返回 null）视为无效输入返回 ""，
+    // 由调用方按各自默认分支处理，避免输入流关闭时静默走默认值
+    private static string ReadAnswer()
+    {
+        var line = Console.ReadLine();
+        return line is null ? "" : line.Trim().ToLowerInvariant();
+    }
+
+    // 返回实际写入的文件数；-1 表示用户整体取消（未进入逐文件流程）
+    private static int WriteFilesInteractive(List<PlannedFile> files)
     {
         bool all = false;
+        int written = 0;
         var cwd = Environment.CurrentDirectory;
-        // 若无任何已存在文件，先做一次整体确认
+        // 整体确认：全新目录默认 Y 直接放行；存在同名文件时提示后进入逐文件 y/N/all
         var anyExisting = files.Any(f => File.Exists(Path.Combine(cwd, f.Output)));
         if (!anyExisting)
         {
             Console.Write("确认释放？(Y/n)：");
-            if ((Console.ReadLine()?.Trim().ToLowerInvariant() ?? "y") == "n")
-                return null;
+            if (ReadAnswer() == "n")
+                return -1;
+        }
+        else
+        {
+            Console.WriteLine("目标目录存在同名文件，将逐个确认是否覆盖。");
         }
 
         foreach (var f in files)
@@ -345,7 +362,7 @@ internal static class Program
             if (exists && !all)
             {
                 Console.Write($"`{f.Output}` 已存在，覆盖？(y/N/all)：");
-                var reply = Console.ReadLine()?.Trim().ToLowerInvariant() ?? "n";
+                var reply = ReadAnswer();
                 if (reply == "all") { all = true; }
                 else if (reply != "y")
                 {
@@ -357,8 +374,9 @@ internal static class Program
             if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
             File.WriteAllText(path, f.Content, new UTF8Encoding(false));
             Console.WriteLine($"  写入 {f.Output}");
+            written++;
         }
-        return true;
+        return written;
     }
 
     // ---------- 嵌入资源读取 ----------
