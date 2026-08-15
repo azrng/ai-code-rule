@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证规则
 - 触发场景：涉及 Repository、数据库、Riverpod 依赖注入、平台服务、配置、启动方式、打包发布时阅读
-
-### 阅读摘要
-- 建议阅读：改仓储、改数据访问、改依赖注入、改平台服务、改配置、改发布链路
-- 可先跳过：纯界面样式、纯业务编排、仅文档整理
-- 优先查看：数据访问 / 配置规则、平台服务规则、构建发布规则、`提交前最小回归`
 
 ### 常见任务入口
 - 改 Repository 或数据库结构：先看数据访问规则与迁移约束

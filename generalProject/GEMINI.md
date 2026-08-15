@@ -1,7 +1,7 @@
 ---
 rule_id: gemini-entry
-version: 1.0.0
-last_updated: 2026-04-18
+version: 1.3.1
+last_updated: 2026-05-19
 dependencies: [agents-root]
 ---
 

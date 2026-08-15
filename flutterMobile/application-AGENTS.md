@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：Riverpod Provider、Service、命令、业务编排、结果包装与应用层测试
 - 触发场景：涉及业务流程、状态管理、Service 逻辑、应用服务或应用层测试时阅读
-
-### 阅读摘要
-- 建议阅读：改 Provider、改命令、改 Service、改业务规则、补应用层验证
-- 可先跳过：纯界面样式、纯文档整理、仅发布配置调整
-- 优先查看：应用层规则、业务流程 / 状态流转规则、测试规则
 
 ### 常见任务入口
 - 改命令流程或状态切换：先看 Provider / 命令规则与结果处理约束

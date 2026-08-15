@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：页面、布局、导航、样式、交互、动效、移动端适配、界面测试
 - 触发场景：涉及 Widget、GoRouter 导航、布局、交互、样式、动效、移动端适配、UI smoke test 时阅读
-
-### 阅读摘要
-- 建议阅读：新增页面、改导航、改表单交互、改 Widget 样式、补界面验证
-- 可先跳过：纯服务层逻辑、纯数据访问、仅文档整理、仅部署配置调整
-- 优先查看：界面规则、动效规则、移动端适配规则、测试规则
 
 ### 常见任务入口
 - 新增页面或布局：先看界面结构与 Widget 规则

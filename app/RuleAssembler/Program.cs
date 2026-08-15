@@ -120,6 +120,8 @@ internal static class Program
         [JsonPropertyName("verify-quote")] public string VerifyQuote { get; set; } = "";
         [JsonPropertyName("rollback-scope")] public string RollbackScope { get; set; } = "发布产物、容器";
         [JsonPropertyName("boundary-nouns")] public string BoundaryNouns { get; set; } = "跨层职责";
+        // 整行覆盖槽：默认为后端家族持久化句；staticHtml 等家族用交付句替代
+        [JsonPropertyName("persistence-line")] public string PersistenceLine { get; set; } = "";
     }
 
     private sealed class Subrule
@@ -270,6 +272,9 @@ internal static class Program
             ["{{verify-quote}}"] = arch.Root.VerifyQuote,
             ["{{rollback-scope}}"] = arch.Root.RollbackScope,
             ["{{boundary-nouns}}"] = arch.Root.BoundaryNouns,
+            ["{{persistence-line}}"] = arch.Root.PersistenceLine.Length > 0
+                ? arch.Root.PersistenceLine
+                : $"- 涉及新增、修改、删除等业务逻辑时，必须能真实生效并持久化{arch.Root.PersistenceSuffix}",
             // 可选槽：manifest 未提供时整段移除（连同前导换行），避免留空段落
             ["{{extra-sections}}"] = arch.Root.ExtraSections.Count > 0 ? string.Join("\n\n---\n\n", arch.Root.ExtraSections) : "",
         };
@@ -281,8 +286,6 @@ internal static class Program
         // 可选槽（extra-sections / intro-quote / model-behavior-extra / verify-quote）为空时
         // 会留下空行，3+ 连续换行一律收敛为一个空行（兼容 CRLF/LF）
         result = Regex.Replace(result, @"(?:\r?\n){3,}", "\n\n");
-        return result;
-
         return result;
     }
 

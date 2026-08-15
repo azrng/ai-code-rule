@@ -16,7 +16,7 @@ fragments/
 └── manifest.json             # 架构配方：变量槽取值 + 子规则清单 + 指针 + 大类
 ```
 
-`manifest.json` 的变量槽：`{{version}}` `{{last_updated}}` `{{target-list}}` `{{subrule-index}}` `{{dev-stage}}` `{{understanding-checklist}}`（多行）`{{contract-nouns}}` `{{search-nouns}}` `{{extra-sections}}`（可选，架构特有整段，如 AI 家族的技术栈总览；未提供时占位段落自动清除）。`designSystem: true` 时额外释放 `arch/<架构>/design-system.yaml` 为 `design-system.yaml`。
+`manifest.json` 的变量槽：内容级 `{{target-list}}` `{{subrule-index}}` `{{dev-stage}}` `{{understanding-checklist}}`（多行）`{{reading-order}}` `{{extra-sections}}`（可选整段，如 AI 家族的技术栈总览）；短语级（缺省回退纯后端家族默认值）`{{search-nouns}}` `{{contract-error-line}}` `{{root-scope-nouns}}` `{{context-scope-nouns}}` `{{high-risk-nouns}}` `{{high-risk-prefix}}` `{{task-kind-nouns}}` `{{evidence-nouns}}` `{{reuse-noun}}` `{{persistence-line}}` `{{destructive-nouns}}` `{{boundary-nouns}}` `{{rollback-scope}}` 等；追加型可空槽 `{{intro-quote}}` `{{model-behavior-extra}}` `{{verify-quote}}` 等，空值占位行自动清理。`designSystem: true` 时额外释放 `arch/<架构>/design-system.yaml` 为 `design-system.yaml`。
 
 ## 构建
 
@@ -37,13 +37,22 @@ fragments/
 
 目标目录已有同名文件时会提示覆盖（y/N/all）。
 
-## 已接入架构（Phase 1）
+## 已接入架构（8 大类 19 架构，全部 1.12.0 基准）
 
-- dotnet-layered（.NET 分层 API 后端）
-- dotnet-core-single（.NET 单层 API 后端）
+| 大类 | 架构 |
+| --- | --- |
+| .NET 后端 | dotnet-layered（分层）、dotnet-core-single（单层） |
+| Python 后端 | python-backend（FastAPI + uv） |
+| Web 前后端分离 / 全栈 | reactLinkdotNet、vueLinkdotNet、reactLinkdotNet-ai（含 ai-AGENTS 与技术栈总览）、nextFullstack |
+| 桌面应用 | avaloniaExe、wpfExe、dotnetBlazor、dotnetConsole |
+| 跨平台混合桌面 | electronDotNetExe、reactTauriExe、reactWailsExe、vueWailsExe |
+| 移动应用 | mauiMobile、flutterMobile |
+| 纯前端 / 静态站点 | staticHtml |
+| 通用项目 | generalProject |
 
-其余架构（python / dotnetConsole / 桌面移动家族 / web 前后端分离 / 静态）按计划分阶段接入。新增架构：在 `fragments/arch/<id>/` 放子规则整文件，在 `manifest.json` 加一条配方即可。
+新增架构：在 `fragments/arch/<id>/` 放子规则整文件，在 `manifest.json` 加一条配方即可。
 
 ## 等价性验证
 
-dotnetLayered 生成产物与现有 `dotnetLayered/` 目录**七个文件字节级完全一致**；dotnetCoreSingle 生成产物与现有目录的差异**仅为 1.10→1.11 基准统一**（版本号、判断标准精简、重构流程精简、引号规范化），无术语错位。
+19 个架构生成产物与仓库目录**全量 161 文件字节级一致**（哈希逐一比对）。各目录均已升级为 1.12.0 精简基准：根 AGENTS.md 由模板再生成，子规则保留技术栈内容、统一结构外壳（frontmatter 版本、标题去编号、删"阅读摘要"段）。
+

@@ -29,6 +29,21 @@
       "id": "hybrid-app",
       "label": "跨平台混合桌面",
       "desc": "Web 前端 + 原生/托管后端的打包桌面应用"
+    },
+    {
+      "id": "mobile",
+      "label": "移动应用",
+      "desc": "iOS / Android 移动客户端"
+    },
+    {
+      "id": "frontend-static",
+      "label": "纯前端 / 静态站点",
+      "desc": "无独立后端的页面与静态站点"
+    },
+    {
+      "id": "general",
+      "label": "通用项目",
+      "desc": "技术栈未定或混合形态，子规则按需命中"
     }
   ],
   "architectures": [
@@ -1350,6 +1365,365 @@
         },
         {
           "source": "arch/vueWailsExe/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "mauiMobile",
+      "label": "MAUI 移动应用",
+      "family": "mobile",
+      "desc": ".NET MAUI + MVVM，跨 iOS/Android/桌面",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `ui-AGENTS.md`：页面、布局、导航、样式、交互、移动端适配、界面测试",
+          "- `application-AGENTS.md`：ViewModel、Service、命令、业务编排、结果包装、应用层测试",
+          "- `infrastructure-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与移动端 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `ui-AGENTS.md` | 页面、布局、导航、样式、交互、移动端适配、界面 smoke test | 涉及界面实现与交互时 |",
+          "| `application-AGENTS.md` | ViewModel、Service、命令、状态流转、应用层测试 | 涉及业务编排、命令逻辑或应用层实现时 |",
+          "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、平台服务、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                  阶段 3",
+          "设计文档   →   视图与交互实现   →   应用层与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）         （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、发布脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
+          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关页面、布局、控件、样式资源、设计 token、移动端适配和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关 ViewModel、Service、DTO、Repository、平台服务、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的界面契约、控件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步界面、ViewModel、Service、Repository 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、控件、ViewModel、Service、Repository、DTO 和测试实现",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施",
+        "root-scope-nouns": "界面、应用层、基础设施、文档",
+        "context-scope-nouns": "视图、业务、数据访问与发布链路",
+        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、平台权限配置、第三方集成",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "reuse-noun": "配置",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/mauiMobile/ui-AGENTS.md",
+          "output": "ui-AGENTS.md"
+        },
+        {
+          "source": "arch/mauiMobile/application-AGENTS.md",
+          "output": "application-AGENTS.md"
+        },
+        {
+          "source": "arch/mauiMobile/infrastructure-AGENTS.md",
+          "output": "infrastructure-AGENTS.md"
+        },
+        {
+          "source": "arch/mauiMobile/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "flutterMobile",
+      "label": "Flutter 移动应用",
+      "family": "mobile",
+      "desc": "Flutter + Riverpod，跨平台移动客户端",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `ui-AGENTS.md`：页面、布局、导航、样式、交互、动效、移动端适配、界面测试",
+          "- `application-AGENTS.md`：Riverpod Provider、Service、命令、业务编排、结果包装、应用层测试",
+          "- `backend-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token、移动端 UI 规范与动效规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `ui-AGENTS.md` | 页面、布局、导航、样式、交互、动效、移动端适配、界面 smoke test | 涉及界面实现与交互时 |",
+          "| `application-AGENTS.md` | Riverpod Provider、Service、状态流转、应用层测试 | 涉及业务编排、状态管理或应用层实现时 |",
+          "| `backend-AGENTS.md` | Repository、数据访问、依赖注入、平台服务、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                  阶段 3",
+          "设计文档   →   视图与交互实现   →   应用层与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）         （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、发布脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、样式、动效与界面验证，细则见 `ui-AGENTS.md`",
+          "- 阶段 2：Riverpod Provider、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关页面、布局、控件、样式资源、设计 token、移动端适配和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关 Provider、Service、DTO、Repository、平台服务、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的界面契约、控件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步界面、Provider、Service、Repository 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、控件、Provider、Service、Repository、DTO 和测试实现",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施",
+        "root-scope-nouns": "界面、应用层、基础设施、文档",
+        "context-scope-nouns": "视图、业务、数据访问与发布链路",
+        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、平台权限配置、第三方集成",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "reuse-noun": "配置",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/flutterMobile/ui-AGENTS.md",
+          "output": "ui-AGENTS.md"
+        },
+        {
+          "source": "arch/flutterMobile/application-AGENTS.md",
+          "output": "application-AGENTS.md"
+        },
+        {
+          "source": "arch/flutterMobile/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/flutterMobile/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "staticHtml",
+      "label": "静态 HTML 站点",
+      "family": "frontend-static",
+      "desc": "原生 HTML/CSS/JS 静态页面，无构建链路或轻构建",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、样式、交互与前端测试",
+          "- `doc-AGENTS.md`：设计文档、设计系统",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、交互、样式、前端 smoke test | 涉及静态页实现与交互时 |",
+          "| `doc-AGENTS.md` | 设计文档、`design-system.yaml` | 涉及设计说明、规则维护时 |"
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   页面与交互实现     →   验证与交付",
+          "（用户确认）    （页面实现角色）        （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 资源引用、构建配置或部署说明调整",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档与页面说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：页面骨架、交互、视觉落地与前端验证，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：构建、部署说明与交付验证，结合当前文件与命中的子规则执行"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关页面与资源文件，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及页面时，已查看相关页面结构、布局、样式资源、设计 token、资源引用和现有交互模式"
+        ],
+        "contract-error-line": "阶段 0 输出的页面说明、设计规范或字段定义在阶段 1 发现缺口时，应先回到设计变更流程，修改设计说明 / 页面规范后同步页面实现和相关文档，再继续实现；不得绕过设计直接补临时样式",
+        "search-nouns": "页面、布局、组件、样式资源和交互模式",
+        "root-scope-nouns": "前端与文档",
+        "context-scope-nouns": "设计、页面实现与交付验证",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "页面状态、资源引用、构建结果与 smoke test",
+        "destructive-nouns": "资源清理",
+        "reuse-noun": "样式",
+        "task-kind-nouns": "还是页面",
+        "persistence-line": "- 页面交付必须真实可演示，不能只停留在静态截图层面"
+      },
+      "subrules": [
+        {
+          "source": "arch/staticHtml/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/staticHtml/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ],
+      "designSystem": true
+    },
+    {
+      "id": "generalProject",
+      "label": "通用项目（技术栈无关）",
+      "family": "general",
+      "desc": "任意技术栈；前后端子规则按命中场景阅读，无则跳过",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：界面、视图、页面、组件、交互、样式与前端测试；没有前端或界面层时可跳过",
+          "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 界面、页面、视图、表单、交互、样式、前端 smoke test | 涉及任何用户界面或客户端交互时 |",
+          "| `backend-AGENTS.md` | 服务逻辑、接口、数据访问、鉴权、缓存、异常处理、后端测试 | 涉及业务服务、接口、任务处理或数据持久化时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、设计系统时 |",
+          "| `infra-AGENTS.md` | 启动方式、环境变量、打包、部署链路 | 涉及运行环境、构建、发布、部署时 |"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：界面骨架、交互、显示层契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：业务逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、部署与交付验证，结合当前文件与 `infra-AGENTS.md`"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关页面、视图、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关入口层、服务层、数据访问层、schema / DTO / 类型定义、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的显示层契约、schema、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO / 类型后同步界面、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、视图、组件、入口层、服务层、数据访问层、schema / DTO / 类型定义和测试实现",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据库破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "reuse-noun": "配置",
+        "high-risk-prefix": "联调、"
+      },
+      "subrules": [
+        {
+          "source": "arch/generalProject/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/generalProject/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/generalProject/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        },
+        {
+          "source": "arch/generalProject/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
       ],

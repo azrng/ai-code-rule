@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.6.0
-last_updated: 2026-07-26
+version: 1.12.0
+last_updated: 2026-08-14
 dependencies: [agents-root]
 ---
 
@@ -11,11 +11,6 @@ dependencies: [agents-root]
 
 - 作用域：设计文档、契约说明、设计系统与开发文档维护
 - 触发场景：涉及阶段 0 设计、契约说明、`design-system.yaml`、`doc/requirement.md` 时阅读
-
-### 阅读摘要
-- 建议阅读：整理需求、补设计文档、维护契约、更新设计系统
-- 可先跳过：纯页面实现、纯服务端逻辑、纯 Docker 调整
-- 优先查看：`阶段 0 设计文档`、`契约说明规范`、`文档更新要求`
 
 ---
 

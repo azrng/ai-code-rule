@@ -1,7 +1,7 @@
 ---
 rule_id: claude-entry
-version: 1.0.0
-last_updated: 2026-05-02
+version: 1.3.1
+last_updated: 2026-05-19
 dependencies: [agents-root]
 ---
 
