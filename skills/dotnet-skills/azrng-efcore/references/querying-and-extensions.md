@@ -1,6 +1,6 @@
 # 复杂查询（表连接 / 分组）与 IQueryable 扩展
 
-> 本系列包自带大量 `IQueryable` 扩展方法。条件拼接和分页可优先使用扩展；字段重命名、计算或跨导航属性投影时，仍应使用强类型 `Select`。扩展分属两个命名空间：
+> 本系列包自带大量 `IQueryable` 扩展方法。条件拼接、动态排序、DTO 映射、计数和分页在适用场景**必须优先使用扩展**，不要手写等价的 if-Where、switch-OrderBy、Count+Skip+Take 逻辑；只有字段重命名、计算或跨导航属性投影等扩展覆盖不了的场景，才用强类型 `Select` 手写。扩展分属两个命名空间：
 > - `Azrng.Core.Extension`（`QueryableExtensions.cs`）—— 排序、动态 where、DTO 映射、CountBy、PagedBy
 > - `Azrng.EFCore.Extensions`（`Common.EFCore/Extensions/`）—— 分页 ToPageListAsync、原生 SQL、条件更新、时间列配置
 

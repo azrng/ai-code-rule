@@ -146,5 +146,5 @@ var req = new GetPageSortRequest
     SortContents = new[] { new SortContent("CreateTime", SortEnum.Desc) }
 };
 var page = await _repo.GetPageListAsync(_repo.Entities.Where(x => !x.Deleted), req);
-// page.List / page.Total
+// page.Rows（List<T>）/ page.PageInfo.Total —— 返回类型是 GetQueryPageResult<T>
 ```

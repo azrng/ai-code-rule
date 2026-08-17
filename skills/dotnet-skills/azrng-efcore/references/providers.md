@@ -6,10 +6,10 @@
 
 | 数据库 | 包 | 注入驱动 | 连接串示例 | 备注 |
 |---|---|---|---|---|
-| PostgreSQL | `Common.EFCore.PostgresSql` | `UseNpgsql` | `Host=lo;Port=5432;Database=db;Username=postgres;Password=pwd` | `Schema` 生效（默认 public） |
-| MySQL | `Common.EFCore.MySQL` | `UseMySql` | `Server=lo;Port=3306;Database=db;User=root;Password=pwd` | 自动 `ServerVersion.AutoDetect` |
+| PostgreSQL | `Common.EFCore.PostgresSql` | `UseNpgsql` | `Host=localhost;Port=5432;Database=db;Username=postgres;Password=pwd` | `Schema` 生效（默认 public） |
+| MySQL | `Common.EFCore.MySQL` | `UseMySql` | `Server=localhost;Port=3306;Database=db;User=root;Password=pwd` | 自动 `ServerVersion.AutoDetect` |
 | SQLite | `Common.EFCore.SQLite` | `UseSqlite` | `Data Source=app.db` 或 `:memory:` | 文件或内存 |
-| SQLServer | `Common.EFCore.SQLServer` | `UseSqlServer` | `Server=lo;Database=db;User Id=sa;Password=pwd;TrustServerCertificate=True` | |
+| SQLServer | `Common.EFCore.SQLServer` | `UseSqlServer` | `Server=localhost;Database=db;User Id=sa;Password=pwd;TrustServerCertificate=True` | |
 | 内存库 | `Common.EFCore.InMemory` | `UseInMemoryDatabase` | （用数据库名，非连接串） | 仅测试/原型 |
 
 ## 注入签名差异
@@ -82,6 +82,24 @@ builder.Services.AddEntityFramework<AppDbContext>("test-db", workId: 1);
 - `IUnitOfWork` → `UnitOfWork<TDbContext>`（Scoped）
 
 需要 `IUnitOfWork<TDbContext>` 时追加 `.AddUnitOfWork<TDbContext>()`（来自 `Azrng.EFCore` 基础包）。
+
+## 其它注册入口（同一命名空间）
+
+除 `AddEntityFramework<TDbContext>` 外，每个 provider 还暴露：
+
+| 入口 | 用途 |
+|---|---|
+| `AddEntityFramework(config, builder?, dbOpt?)`（非泛型） | 用包内 `BaseDbContext`——自动对所有含 `IEntity` 实体的程序集 `ApplyConfigurationsFromAssembly`，免自定义 DbContext；内部就是转发 `AddEntityFramework<BaseDbContext>` |
+| `AddEntityFrameworkFactory<T>(config, builder?, dbOpt?)` | `AddDbContextFactory<T>` 工厂模式注册（需要自己管理 DbContext 生命周期时） |
+| `RepositoryFactory.GenerateRepository<TEntity>(DbContext)`（基础包静态类） | 不走 DI 时从一个 DbContext 实例直接生成仓储 |
+
+## 目标框架与驱动版本
+
+包按 net6~net10 多目标发布，不同 TFM 引用的驱动版本不同，**net10 的 MySQL provider 改用 `Microting.EntityFrameworkCore.MySql`**（net6~net9 用 Pomelo）。解释编译/行为差异时先确认项目 TargetFramework，再对照源码 `src/Shared/<包名>/*.csproj` 的条件引用。
+
+## 连接串来源
+
+provider 包**不读取任何配置键**，连接串完全由调用方赋值 `config.ConnectionString`（InMemory 传数据库名）。示例里的 `GetConnectionString("Default")` 只是宿主项目的自定义约定，键名任意。
 
 ## 各 provider 的 DbTypeId（影响时间列类型）
 

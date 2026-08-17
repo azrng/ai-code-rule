@@ -1,13 +1,13 @@
 ---
 name: azrng-efcore
-version: 1.1.0
-last_updated: 2026-07-29
-description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when building or modifying data-access code that relies on these packages — installing/injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities with the IdentityBaseEntity/IdentityOperatorEntity base classes, calling IBaseRepository CRUD and IUnitOfWork transactions, composing read queries (same-DbContext table left joins via EntitiesNoTacking.GroupJoin + SelectMany(DefaultIfEmpty), GroupBy aggregation, dynamic OrderBy/Where, SelectMapper DTO mapping, ToPageListAsync paging) using the QueryableExtensions, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors like "Cannot write DateTime with Kind=Unspecified to timestamp with time zone".
+version: 1.2.0
+last_updated: 2026-08-17
+description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when building or modifying data-access code that relies on these packages — installing/injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities with the IdentityBaseEntity/IdentityOperatorEntity base classes (long id by default, generic TKey versions available), calling IBaseRepository CRUD and IUnitOfWork transactions, composing read queries (same-DbContext table left joins via EntitiesNoTacking.GroupJoin + SelectMany(DefaultIfEmpty), GroupBy aggregation, dynamic OrderBy/Where, SelectMapper DTO mapping, ToPageListAsync paging) using the QueryableExtensions, configuring SQL migrations via Azrng.SqlMigration, wiring opt-in automatic auditing with Azrng.EFCore.AutoAudit (AddEFCoreAutoAudit, WithAuditRecordsDbContextStore), or diagnosing PostgreSQL timestamp errors like "Cannot write DateTime with Kind=Unspecified to timestamp with time zone".
 ---
 
 # Azrng EFCore (Common.EFCore) 数据访问指南
 
-指导如何用 `Common.EFCore` 系列包在 .NET 项目中操作数据库（仓储 / 工作单元 / 迁移）。
+指导如何用 `Common.EFCore` 系列包在 .NET 项目中操作数据库（仓储 / 工作单元 / 迁移 / 可选自动审计）。
 
 ## 包与适用范围
 
@@ -32,10 +32,12 @@ description: Guide for using the Azrng Common.EFCore family of NuGet packages to
 ```xml
 <!-- EntityFrameworkal 项目 -->
 <PackageReference Include="Common.EFCore" Version="1.7.0" />
-<PackageReference Include="Common.EFCore.PostgresSql" Version="1.7.0" />
+<PackageReference Include="Common.EFCore.PostgresSql" Version="1.7.1" />
 <!-- IDomain 项目（仅实体） -->
 <PackageReference Include="Common.EFCore" Version="1.7.0" />
 ```
+
+> 版本号以源码仓库 `src/Shared/<包名>/*.csproj` 为准（2026-08：核心 1.7.0，PostgresSql 1.7.1，MySQL 1.7.0，SQLServer/SQLite 1.6.2，InMemory 1.6.0）。
 
 ### 2. 注入（Program.cs）
 
@@ -88,7 +90,7 @@ public class User : IdentityOperatorStatusEntity   // Id+审计+软删除/禁用
 
 > 配套在 EntityFramework 层写 `{Entity}Etc.cs` 配置类（继承包的配置基类 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）+ DbContext 用 `ApplyConfigurationsFromAssembly` 扫描，完整套路见 references/entities-and-context.md。
 
-**时间字段统一用无时区值**：`DateTime.Now.ToUnspecifiedDateTime()`，配合 `IsUnTimeZoneDateTime()` 列声明。完整基类对照与选择见 references/entities-and-context.md。
+**PostgreSQL 默认使用无时区时间**：赋值统一 `DateTime.Now.ToUnspecifiedDateTime()`，时间列声明 `IsUnTimeZoneDateTime()`（基类配置在 PG 下自动处理审计字段，业务自声明时间字段手动配）。完整基类对照与选择见 references/entities-and-context.md。
 
 ### 4. CRUD（注入 IBaseRepository<T>）
 
@@ -124,7 +126,7 @@ try {
 
 ## 分页与条件查询扩展（常用）
 
-列表查询不要手写 `CountAsync()` + `Skip().Take()`，用框架的分页/条件扩展。扩展分属两个命名空间，按需 `using`。
+条件筛选、动态排序、投影映射、计数、分页在适用场景**必须优先使用**以下扩展，不要手写等价逻辑（if-Where 堆叠 / switch-OrderBy / CountAsync+Skip+Take）。扩展分属两个命名空间，按需 `using`。
 
 **条件筛选**（`Azrng.Core.Extension`，`using Azrng.Core.Extension;`）——替代手写 `if (...) query = query.Where(...)`：
 
@@ -243,13 +245,33 @@ builder.Services.AddSqlMigrationService("default", config =>
 **SQL 脚本约定**：放 `Service/MigrationSql/`，文件名 = `VersionPrefix + 版本号 + 扩展名`，扩展名支持 `.sql` / `.txt`（如 `1.0.0.sql`、`1.1.0.txt`、`1.0.0.1.sql`），**不含描述文字**——去掉前缀与扩展名后的剩余部分会被整体解析为版本号，带描述会破坏版本排序；按版本号顺序执行。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
+> 全部配置项（分布式锁 `LockProvider`、`SetInitVersionSetter`、版本日志表）与迁移回调 `IMigrationHandler` 见 references/sql-migration.md。
+
+## 自动审计（Azrng.EFCore.AutoAudit，可选）
+
+**可选能力、按需开启**：仅当用户明确提出审计需求（操作留痕 / 记录谁改了什么）时才接入；未提及不主动配置、不主动推荐。装 `Azrng.EFCore.AutoAudit` 包，业务库照常 `AddEntityFramework<TDbContext>`，追加一步：
+
+```csharp
+using Azrng.EFCore.AutoAudit;   // AddEFCoreAutoAudit
+using Azrng.Core.Model;         // DatabaseType
+
+builder.Services.AddEFCoreAutoAudit(config =>
+{
+    config.WithAuditRecordsDbContextStore(options => options.UseNpgsql(auditConn));
+}, DatabaseType.PostgresSql);   // 第三参必填；注意成员拼写是 PostgresSql（README 的 PostgreSql 是笔误）
+```
+
+审计表启动时自动创建（幂等）。忽略实体 / 属性过滤 / 操作人提供者 / 自定义存储等配置见 references/auto-audit.md。
 
 ## 决策指引（AI 必读）
 
 - **选 provider**：按目标数据库选包，注入方式几乎一致（仅连接串与可选 builder 委托不同）。对照表见 references/providers.md。
 - **DbContext 怎么扫描配置类**：继承普通 `DbContext`，在 `OnModelCreating` 里 `modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `{Entity}Etc.cs` 配置类；再 `modelBuilder.HasDefaultSchema(...)` 设默认 schema。
 - **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤（包不自动全局过滤）。
-- **查询入口 / 表连接**：只读、连接、分组查询默认从 `_rep.EntitiesNoTacking` 出发；需要 ChangeTracker 时使用 `Entities`。表连接两侧必须来自同一个 `DbContext`，左连接用 `_rep.EntitiesNoTacking.GroupJoin(other.EntitiesNoTacking.Where(...), ...).SelectMany(...DefaultIfEmpty())`。条件筛选和分页可用 `WhereIf*` / `OrderBy` / `ToPageListAsync`；字段不匹配或需要计算时保留强类型 `Select`。详见 references/querying-and-extensions.md。
+- **查询入口 / 表连接**：只读、连接、分组查询默认从 `_rep.EntitiesNoTacking` 出发；需要 ChangeTracker 时使用 `Entities`。表连接两侧必须来自同一个 `DbContext`，左连接用 `_rep.EntitiesNoTacking.GroupJoin(other.EntitiesNoTacking.Where(...), ...).SelectMany(...DefaultIfEmpty())`。条件筛选、动态排序和分页**必须优先用扩展**（`WhereIf*` / `OrderBy` / `SelectMapper` / `ToPageListAsync`），不手写等价逻辑；字段不匹配或需要计算时保留强类型 `Select`。详见 references/querying-and-extensions.md。
+- **实体主键**：基类默认 `long` 主键（配合雪花 ID）；确实需要其他主键类型才用泛型 `TKey` 版本。详见 references/entities-and-context.md。
+- **schema 变更**：走 `Azrng.SqlMigration` SQL 脚本迁移，不用 EF Code-First Migrations。详见 references/sql-migration.md。
+- **要不要自动审计**：`Azrng.EFCore.AutoAudit` 是可选能力——**用户明确提出审计需求才接入**，未提及不主动加。详见 references/auto-audit.md。
 - **遇到 PostgreSQL 时间报错**：先看 references/postgres-time-pitfall.md —— 这是本系列包最常见的崩溃根因，三层（模型/赋值/DDL）必须一致。
 
 ## 关键陷阱（高频）
