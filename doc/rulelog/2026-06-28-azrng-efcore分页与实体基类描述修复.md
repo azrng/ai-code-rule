@@ -84,3 +84,26 @@
 #### 校验说明
 - 新增 / 修改涉及的全部 API 均逐一回 nuget-packages 源码核实：`AddEFCoreAutoAudit` 签名与第三参必填、`IAuditConfigBuilder` 全部方法、`AuditExtensions` 全部扩展、`AutoAuditStartupFilter` 自动建表逻辑、`SqlMigrationOption` / `IMigrationHandler`、`AddEntityFramework` 非泛型与 `AddEntityFrameworkFactory<T>`、`GetQueryPageResult` 属性、`DatabaseType` 枚举成员。
 - 反向确认未误改：`Deleted` / `Disabled` 属性名、`SetDeleted(name, dateTime)` / `SetDisabled(bool, name, dateTime)` 签名维持原文（探查阶段曾误报为 `IsDeleted`，源码核实后确认 skill 原文正确）。
+
+---
+
+### 2026-08-17（追加）：编译测试发现的 SetPropertyIfNotNull 限制修正
+
+#### 修改原因
+在 `D:\temp\AzrngEfcoreSkillTest`（net10）按 skill 编写测试工程并 `dotnet build`，发现 `SetPropertyIfNotNull` 对 `string?` 属性编译不过。回源码 `ConditionalUpdateExtensions.cs` 确认该泛型方法约束为 `where TProperty : class`，而 `string` 在 nullable 上下文里被当作 `string?` 时，编译器对 `TProperty` 推断与约束匹配与预期不同，导致 CS1061 / CS1929。
+
+#### 主要修改内容
+1. **`references/repository-and-unitofwork.md` §3**：示例改用引用类型属性（`Avatar`）演示 `SetPropertyIfNotNull`；新增"字符串属性统一用 `SetPropertyIfNotNullOrWhiteSpace`、自定义判定用 `SetPropertyIf<T,TProperty>(Func,...)`"提示；方法表补"约束"列。
+2. **`references/querying-and-extensions.md` §9**：.NET 10+ 示例明确区分 string 属性（用 `SetPropertyIfNotNullOrWhiteSpace`）与引用类型属性（用 `SetPropertyIfNotNull`）；注明 `UpdateSettersBuilder<T>` 在 `Microsoft.EntityFrameworkCore.Query` 命名空间。
+3. **`SetPropertyIf` 表格行**：参数类型 `Func<object,bool>` 修正为 `Func<TProperty,bool>`。
+
+#### 修改的文件
+- `skills/dotnet-skills/azrng-efcore/references/repository-and-unitofwork.md`
+- `skills/dotnet-skills/azrng-efcore/references/querying-and-extensions.md`
+
+#### 当前子任务状态
+- `已完成`
+
+#### 校验说明
+- 测试工程路径 `D:\temp\AzrngEfcoreSkillTest\App`，net10.0，安装 `Common.EFCore` 1.7.0 + `Common.EFCore.PostgresSql` 1.7.1 + `Azrng.EFCore.AutoAudit` 1.0.0-beat1 + `Azrng.SqlMigration` 0.5.0（本地 nuget 源指向 nuget-packages 本地构建产物）；包含实体基类（long 与泛型 Guid 各一）、`*Etc` 配置类、自定义 DbContext（`ApplyConfigurationsFromAssembly` + `HasDefaultSchema`）、`UserService`（条件筛选 / 动态排序 / DTO 投影 / `ToPageListAsync` + `GetQueryPageResult` / `SetPropertyIf*` / 左连接 `GroupJoin`+`SelectMany(DefaultIfEmpty)` / `GroupBy` 聚合 / 显式事务作用域），Program.cs 接入 AutoAudit + SqlMigration。
+- 修正后 `dotnet build`：0 错误，仅 1 个无关 CS8619 警告（仓储 `GetAsync` 返回值可空性，属包接口签名而非 skill 描述问题）。

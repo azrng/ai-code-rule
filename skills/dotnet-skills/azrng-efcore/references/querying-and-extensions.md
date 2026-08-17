@@ -260,13 +260,17 @@ var page2 = _userRep.EntitiesNoTacking.PagedBy(pageIndex: 1, pageSize: 20);
 
 配合 `_repo.UpdateAsync(predicate, setter)`（见 repository-and-unitofwork.md §3）。按目标框架版本用不同扩展：
 
-**.NET 10+**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）—— `SetPropertyIf*` 链式：
+**.NET 10+**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）—— `SetPropertyIf*` 链式（`UpdateSettersBuilder<T>` 在 `Microsoft.EntityFrameworkCore.Query` 命名空间）：
 ```csharp
+// Email / Name 都是 string：字符串属性统一用 SetPropertyIfNotNullOrWhiteSpace（SetPropertyIfNotNull 约束 TProperty : class，不匹配 nullable string）
+// Avatar 是引用类型（class）：可用 SetPropertyIfNotNull
+// Disabled 是 bool：用 SetPropertyIfTrue
 await _repo.UpdateAsync(
     x => x.Id == id,
-    x => x.SetPropertyIfNotNull(u => u.Email, email)            // 非 null 才更新
-         .SetPropertyIfNotNullOrWhiteSpace(u => u.Name, name)   // 字符串非空白才更新
-         .SetPropertyIfTrue(needLock, u => u.Disabled, true));  // 条件为 true 才更新
+    x => x.SetPropertyIfNotNullOrWhiteSpace(u => u.Email, email)   // 字符串非空白
+         .SetPropertyIfNotNullOrWhiteSpace(u => u.Name, name)     // 字符串非空白
+         .SetPropertyIfNotNull(u => u.Avatar, avatar)              // 引用类型非 null
+         .SetPropertyIfTrue(needLock, u => u.Disabled, true));      // 布尔条件
 ```
 
 **.NET 7-9**（`Azrng.EFCore.Extensions`）—— 表达式版本用 `AppendIf` 按条件拼 set：
