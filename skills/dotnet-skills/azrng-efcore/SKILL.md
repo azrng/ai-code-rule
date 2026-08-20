@@ -1,7 +1,7 @@
 ---
 name: azrng-efcore
-version: 1.2.0
-last_updated: 2026-08-17
+version: 1.2.1
+last_updated: 2026-08-20
 description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when building or modifying data-access code that relies on these packages — installing/injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities with the IdentityBaseEntity/IdentityOperatorEntity base classes (long id by default, generic TKey versions available), calling IBaseRepository CRUD and IUnitOfWork transactions, composing read queries (same-DbContext table left joins via EntitiesNoTacking.GroupJoin + SelectMany(DefaultIfEmpty), GroupBy aggregation, dynamic OrderBy/Where, SelectMapper DTO mapping, ToPageListAsync paging) using the QueryableExtensions, configuring SQL migrations via Azrng.SqlMigration, wiring opt-in automatic auditing with Azrng.EFCore.AutoAudit (AddEFCoreAutoAudit, WithAuditRecordsDbContextStore), or diagnosing PostgreSQL timestamp errors like "Cannot write DateTime with Kind=Unspecified to timestamp with time zone".
 ---
 
@@ -117,7 +117,7 @@ public class UserService
 await using var scope = await _unitOfWork.BeginTransactionScopeAsync();
 try {
     await _orderRep.AddAsync(order);
-    await _itemRep.AddRangeAsync(items);
+    await _itemRep.AddAsync(items);    // 集合重载批量新增(仓储无 AddRangeAsync)
     await scope.CommitAsync();
 } catch { await scope.RollbackAsync(); throw; }
 ```
