@@ -5,6 +5,7 @@
 ## 1. 先确认基础运行条件
 
 - `AddBootstrapBlazor()`、静态 CSS/JS、`_Imports.razor` 与同一交互 circuit 内的 `<BootstrapBlazorRoot>` 是否齐全。
+- 图标 CSS 与字体资源是否真的由宿主页加载；不可因 BootstrapBlazor bundle 已加载就假设 `fa-*` 或 `bi-*` 可渲染。原生图标类必须与项目唯一图标库一致。
 - `Table` 只能二选一使用 `Items` 或 `OnQueryAsync`；服务端分页应返回正确的 `QueryData<T>` 与 `TotalCount`。
 - 若项目使用自定义 Layout、导航或 CSS，不要求改成 `<Layout>` / `<Menu>`；审查其键盘可达性、焦点可见性、小屏行为和选中状态即可。
 

@@ -1,6 +1,6 @@
 ---
 name: bootstrap-blazor
-version: 10.9.3
+version: 10.9.4
 last_updated: 2026-08-20
 description: Build, review, or refactor Blazor UI using the BootstrapBlazor component library (v10.9.2). Use when the project references the `BootstrapBlazor` NuGet package and the task involves building pages, CRUD tables (server-side paging/search/edit), forms (ValidateForm/EditorForm), feedback (Dialog/Toast/Swal/Modal/Drawer), or admin layouts (Layout/Menu/Tab). Covers real component tag names, service injection by concrete class, the `BootstrapBlazorRoot` host requirement, and the `OnQueryAsync -> QueryData<T>` server query pattern. Also use to audit code for hallucinated APIs (wrong param names, params borrowed from MudBlazor/Radzen/AntDesign Blazor).
 ---
@@ -23,6 +23,10 @@ description: Build, review, or refactor Blazor UI using the BootstrapBlazor comp
 2. **绝不臆造 API。** BootstrapBlazor 不是 MudBlazor / Radzen / Ant Design Blazor / Blazorise。参数名、服务方法名、标签名都不同。拿不准 → 先读 [references/anti-hallucination.md](references/anti-hallucination.md) 或源码。
 3. **严格对齐 10.9.2 API。** 常见陷阱：`ShowAsync` 不存在（是 `Show`）；表格分页是 `IsPagination`（非 `Pageable`）；多选是 `IsMultipleSelect`（非 `ShowRowCheckbox`）；文本输入是 `<BootstrapInput>` / `<BootstrapInputNumber>`（带前缀）。
 4. **遵循项目既有约定。** 仓库已用 Modal 子组件 + `@ref` 模式做编辑弹窗（如 rbac-blazor）时，照着用，不要换成 `DialogService`。
+
+## 图标资源
+
+不要假设 BootstrapBlazor bundle 自带 Font Awesome、Bootstrap Icons 或其它独立图标字体。使用原生 `<i>` 图标类前，先检查宿主页的 CSS 引用和发布后的字体资源。项目选定 Bootstrap Icons 时，必须在 `App.razor` 加载版本固定的本地 CSS/字体，并统一使用 `bi bi-*`；不得与 `fa-*` 混用。BootstrapBlazor 组件参数仅在已核实该参数支持时使用 `IconName`，否则传入项目中已加载图标库的 CSS 类名。
 
 ## UI 审查模式
 
