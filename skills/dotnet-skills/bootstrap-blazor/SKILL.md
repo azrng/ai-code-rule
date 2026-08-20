@@ -1,7 +1,7 @@
 ---
 name: bootstrap-blazor
-version: 10.9.2
-last_updated: 2026-08-13
+version: 10.9.3
+last_updated: 2026-08-20
 description: Build, review, or refactor Blazor UI using the BootstrapBlazor component library (v10.9.2). Use when the project references the `BootstrapBlazor` NuGet package and the task involves building pages, CRUD tables (server-side paging/search/edit), forms (ValidateForm/EditorForm), feedback (Dialog/Toast/Swal/Modal/Drawer), or admin layouts (Layout/Menu/Tab). Covers real component tag names, service injection by concrete class, the `BootstrapBlazorRoot` host requirement, and the `OnQueryAsync -> QueryData<T>` server query pattern. Also use to audit code for hallucinated APIs (wrong param names, params borrowed from MudBlazor/Radzen/AntDesign Blazor).
 ---
 
@@ -23,6 +23,12 @@ All API facts in this skill are extracted from the BootstrapBlazor **10.9.2** so
 2. **Never guess APIs.** BootstrapBlazor is NOT MudBlazor / Radzen / Ant Design Blazor / Blazorise. Param names, service method names, and tag names differ. When unsure → read [references/anti-hallucination.md](references/anti-hallucination.md) or the source first.
 3. **Match the 10.9.2 API exactly.** Common traps: `ShowAsync` does not exist (it's `Show`); table paging is `IsPagination` (not `Pageable`); multi-select is `IsMultipleSelect` (not `ShowRowCheckbox`); text inputs are `<BootstrapInput>` / `<BootstrapInputNumber>` (with prefix).
 4. **Follow the project's conventions.** If the repo already uses a Modal-subcomponent + `@ref` pattern for edit dialogs (like rbac-blazor), match it instead of switching to `DialogService`.
+
+## UI review mode
+
+For a UI/interaction audit, first read [references/anti-hallucination.md](references/anti-hallucination.md) and then [references/ui-audit.md](references/ui-audit.md). Report only findings supported by markup, code, configuration, or a rendered page; distinguish an API defect from a product/design recommendation.
+
+Use this mode to catch issues that compile cleanly but make an admin console unreliable: unvalidated persisted forms, re-entrant writes, missing loading/empty/error states, destructive actions without confirmation, inaccessible custom navigation, and broken responsive layouts. Do not demand a BootstrapBlazor component when the project deliberately uses a custom implementation that meets the same behavior and accessibility bar.
 
 ## Prerequisites (missing any of these breaks every page)
 
@@ -112,7 +118,7 @@ Page (Index.razor + .razor.cs code-behind)
 - Server query: `OnQueryAsync(QueryPageOptions) → Task<QueryData<TItem>>` returning `{ Items, TotalCount, IsFiltered, IsSorted, IsSearch, IsAdvanceSearch }`. See [references/table.md](references/table.md).
 - Feedback: `ToastService.Success("消息通知", "操作成功")` / `.Error(...)`.
 - Refresh table: `await TableRef.QueryAsync();`.
-- Code-behind convention: `.razor` holds markup only; logic in `.razor.cs` (`partial class : ComponentBase`).
+- Code-behind: follow the repository's existing convention. For a new or growing component, `.razor` markup plus a `.razor.cs` partial class is a useful default; retain an existing compact `@code` component unless splitting improves readability or testability.
 
 ## Reference guide
 
@@ -120,6 +126,7 @@ Load only the reference that matches the task — do not load all by default.
 
 - [references/setup.md](references/setup.md) — install, `AddBootstrapBlazor`, `BootstrapBlazorRoot`, static assets, `Program.cs` / `Startup.cs` template.
 - [references/anti-hallucination.md](references/anti-hallucination.md) — **★ wrong-vs-right API table**. Read this first when writing or auditing any markup.
+- [references/ui-audit.md](references/ui-audit.md) — review-only checklist for form/state/feedback, navigation accessibility, responsiveness, and BootstrapBlazor runtime wiring.
 - [references/table.md](references/table.md) — `<Table TItem>` deep API: data source, columns, sort, search, paging, selection, edit/add/delete, toolbar, templates, server query.
 - [references/forms.md](references/forms.md) — `ValidateForm` / `EditorForm` and every form control's real params.
 - [references/feedback.md](references/feedback.md) — Dialog / Toast / Swal / Message / Modal / Drawer / Tooltip / Popover.
