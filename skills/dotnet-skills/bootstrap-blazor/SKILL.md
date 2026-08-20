@@ -7,42 +7,42 @@ description: Build, review, or refactor Blazor UI using the BootstrapBlazor comp
 
 # BootstrapBlazor (v10.9.2)
 
-Build Blazor pages with the real BootstrapBlazor component library API — prefer its components over hand-rolled HTML/JS, and never guess an API that may belong to another Blazor UI library.
+用真实的 BootstrapBlazor 组件库 API 构建 Blazor 页面——优先使用其组件而非手写 HTML/JS，绝不臆造可能属于其它 Blazor UI 库的 API。
 
-All API facts in this skill are extracted from the BootstrapBlazor **10.9.2** source tree (`D:/SourceCode/blazor/bootstrap/BootstrapBlazor`) and cross-checked against the official `BootstrapBlazor.Server` samples and a real RBAC project (`rbac-blazor`, using 10.6.0). Every param references its `源码文件:行号` in the reference files.
+本 skill 的全部 API 事实提取自 BootstrapBlazor **10.9.2** 源码树（`D:/SourceCode/blazor/bootstrap/BootstrapBlazor`），并与官方 `BootstrapBlazor.Server` 示例及真实 RBAC 项目（`rbac-blazor`，使用 10.6.0）交叉核对。参考文件中每个参数都标注 `源码文件:行号`。
 
-## When to use
+## 适用场景
 
-- The project has `<PackageReference Include="BootstrapBlazor" ... />` (check the `.csproj` / `Directory.Packages.props`).
-- You are adding a page, table, form, dialog, toast, or admin layout that should use BootstrapBlazor — not raw `<table>`/Bootstrap CSS/JS.
-- You are reviewing/auditing Blazor markup for hallucinated or version-mismatched BootstrapBlazor APIs.
+- 项目引用了 `<PackageReference Include="BootstrapBlazor" ... />`（查 `.csproj` / `Directory.Packages.props`）。
+- 正在添加应使用 BootstrapBlazor（而非原生 `<table>` / Bootstrap CSS / JS）的页面、表格、表单、弹窗、Toast 或后台布局。
+- 正在审查/审计 Blazor markup 中臆造或版本不符的 BootstrapBlazor API。
 
-## Core principles
+## 核心原则
 
-1. **Prefer BootstrapBlazor components.** If a `<Table>`, `<Dialog>`, `<Modal>`, or `<Toast>` capability exists, use it — do not reimplement with raw HTML, Bootstrap CSS classes, or JavaScript.
-2. **Never guess APIs.** BootstrapBlazor is NOT MudBlazor / Radzen / Ant Design Blazor / Blazorise. Param names, service method names, and tag names differ. When unsure → read [references/anti-hallucination.md](references/anti-hallucination.md) or the source first.
-3. **Match the 10.9.2 API exactly.** Common traps: `ShowAsync` does not exist (it's `Show`); table paging is `IsPagination` (not `Pageable`); multi-select is `IsMultipleSelect` (not `ShowRowCheckbox`); text inputs are `<BootstrapInput>` / `<BootstrapInputNumber>` (with prefix).
-4. **Follow the project's conventions.** If the repo already uses a Modal-subcomponent + `@ref` pattern for edit dialogs (like rbac-blazor), match it instead of switching to `DialogService`.
+1. **优先用 BootstrapBlazor 组件。** 已有 `<Table>`、`<Dialog>`、`<Modal>`、`<Toast>` 能力的，直接用——不要用原生 HTML、Bootstrap CSS 类或 JavaScript 重造。
+2. **绝不臆造 API。** BootstrapBlazor 不是 MudBlazor / Radzen / Ant Design Blazor / Blazorise。参数名、服务方法名、标签名都不同。拿不准 → 先读 [references/anti-hallucination.md](references/anti-hallucination.md) 或源码。
+3. **严格对齐 10.9.2 API。** 常见陷阱：`ShowAsync` 不存在（是 `Show`）；表格分页是 `IsPagination`（非 `Pageable`）；多选是 `IsMultipleSelect`（非 `ShowRowCheckbox`）；文本输入是 `<BootstrapInput>` / `<BootstrapInputNumber>`（带前缀）。
+4. **遵循项目既有约定。** 仓库已用 Modal 子组件 + `@ref` 模式做编辑弹窗（如 rbac-blazor）时，照着用，不要换成 `DialogService`。
 
-## UI review mode
+## UI 审查模式
 
-For a UI/interaction audit, first read [references/anti-hallucination.md](references/anti-hallucination.md) and then [references/ui-audit.md](references/ui-audit.md). Report only findings supported by markup, code, configuration, or a rendered page; distinguish an API defect from a product/design recommendation.
+做 UI/交互审查时，先读 [references/anti-hallucination.md](references/anti-hallucination.md)，再读 [references/ui-audit.md](references/ui-audit.md)。只报告有 markup、代码、配置或渲染页面证据支撑的发现；区分 API 缺陷与产品/设计建议。
 
-Use this mode to catch issues that compile cleanly but make an admin console unreliable: unvalidated persisted forms, re-entrant writes, missing loading/empty/error states, destructive actions without confirmation, inaccessible custom navigation, and broken responsive layouts. Do not demand a BootstrapBlazor component when the project deliberately uses a custom implementation that meets the same behavior and accessibility bar.
+用此模式捕捉编译能过、但让后台系统不可靠的问题：未校验的持久化表单、可重复写入、缺失 loading/空/错误三态、无确认的破坏性操作、键盘不可达的自定义导航、破损的响应式布局。若项目刻意使用满足同样行为与可访问性标准的自定义实现，不强制要求换成 BootstrapBlazor 组件。
 
-## Prerequisites (missing any of these breaks every page)
+## 前置条件（缺一项则所有页面失效）
 
-Before any BootstrapBlazor page works, the host must be set up. See [references/setup.md](references/setup.md).
+任何 BootstrapBlazor 页面能工作之前，宿主必须先配置好。见 [references/setup.md](references/setup.md)。
 
-- `builder.Services.AddBootstrapBlazor();` — registers ALL popup/tool services in one call (namespace `Microsoft.Extensions.DependencyInjection`).
-- **`<BootstrapBlazorRoot>` in the interactive Layout** — place it in `MainLayout.razor` wrapping `@Body`, **not** in `App.razor` wrapping `<Routes>`. Popup components (Modal/Toast/Dialog/Swal/Drawer) portal their DOM to it via `<BootstrapBlazorRootContent>`, so it must share the page's interactive circuit. Wrong placement → popups never show and `Show()` throws **no exception** (silent JS failure; the hardest bug to find). Two related traps (can't add `@rendermode` to it; `ChildContent` not serializable) in [references/setup.md](references/setup.md) and [references/anti-hallucination.md](references/anti-hallucination.md).
-- Static bundles in `App.razor`: `_content/BootstrapBlazor/css/bootstrap.blazor.bundle.min.css` + `_content/BootstrapBlazor/js/bootstrap.blazor.bundle.min.js`.
-- `_Imports.razor` has `@using BootstrapBlazor.Components`.
-- `UseBootstrapBlazor()` middleware comes from the **separate** `BootstrapBlazor.Middleware` package — the core library does not require it.
+- `builder.Services.AddBootstrapBlazor();` —— 一行注册全部弹窗/工具服务（命名空间 `Microsoft.Extensions.DependencyInjection`）。
+- **交互 Layout 内放 `<BootstrapBlazorRoot>`** —— 放在 `MainLayout.razor` 内包裹 `@Body`，**不是**放 `App.razor` 包 `<Routes>`。弹窗组件（Modal/Toast/Dialog/Swal/Drawer）的 DOM 通过 `<BootstrapBlazorRootContent>` portal 到它，因此它必须与页面处于同一交互 circuit。放错位置 → 弹窗永不显示，且 `Show()` **不抛任何异常**（JS 静默失败；最难排查的 bug）。两个相关陷阱（不能给它加 `@rendermode`；`ChildContent` 不可序列化）见 [references/setup.md](references/setup.md) 与 [references/anti-hallucination.md](references/anti-hallucination.md)。
+- `App.razor` 内的静态资源：`_content/BootstrapBlazor/css/bootstrap.blazor.bundle.min.css` + `_content/BootstrapBlazor/js/bootstrap.blazor.bundle.min.js`。
+- `_Imports.razor` 有 `@using BootstrapBlazor.Components`。
+- `UseBootstrapBlazor()` 中间件来自**独立的** `BootstrapBlazor.Middleware` 包——核心库不依赖它。
 
-## Services — inject by concrete class, method is `Show`
+## 服务——注入具体类，方法是 `Show`
 
-There are no `IXxxService` interfaces. Inject the concrete class:
+没有 `IXxxService` 接口，注入具体类：
 
 ```razor
 @inject DialogService DialogService
@@ -52,117 +52,117 @@ There are no `IXxxService` interfaces. Inject the concrete class:
 @inject DrawerService DrawerService
 ```
 
-| Service | Core method | Shortcut extensions |
+| 服务 | 核心方法 | 快捷扩展 |
 |---|---|---|
-| `DialogService` | `Show(DialogOption)` | `Show<T>()`, `ShowEditDialog<T>()`, `ShowModal()`→`Task<DialogResult>` |
-| `ToastService` | `Show(ToastOption)` | `Success/Error/Information/Warning(title,content)` (**no `Question`**) |
-| `SwalService` | `Show(SwalOption)` | `ShowModal()`→`Task<bool>` (confirm) |
-| `MessageService` | `Show(MessageOption)` | (none) |
-| `DrawerService` | `Show(DrawerOption)` | (none) |
-| `NotificationService` | `Dispatch(NotificationItem)` | browser-native notifications, not an in-page popup |
-| `FullScreenService` | `Toggle(...)` | (no Open/Close) |
+| `DialogService` | `Show(DialogOption)` | `Show<T>()`、`ShowEditDialog<T>()`、`ShowModal()`→`Task<DialogResult>` |
+| `ToastService` | `Show(ToastOption)` | `Success/Error/Information/Warning(title,content)`（**无 `Question`**） |
+| `SwalService` | `Show(SwalOption)` | `ShowModal()`→`Task<bool>`（确认框） |
+| `MessageService` | `Show(MessageOption)` | （无） |
+| `DrawerService` | `Show(DrawerOption)` | （无） |
+| `NotificationService` | `Dispatch(NotificationItem)` | 浏览器原生通知，非页面内弹窗 |
+| `FullScreenService` | `Toggle(...)` | （无 Open/Close） |
 
-Full service list + options classes: [references/di-services.md](references/di-services.md).
+完整服务清单 + 选项类：[references/di-services.md](references/di-services.md)。
 
-## Code generation priority (highest first)
+## 代码生成优先级（从高到低）
 
 ```text
-BootstrapBlazor recommended pattern (from Samples / rbac-blazor)
+BootstrapBlazor 推荐模式（来自 Samples / rbac-blazor）
         ↓
-BootstrapBlazor component + its params
+BootstrapBlazor 组件 + 其参数
         ↓
-Bootstrap utility / CSS
+Bootstrap 工具类 / CSS
         ↓
-Custom Razor component
+自定义 Razor 组件
         ↓
-Custom HTML/CSS
+自定义 HTML/CSS
         ↓
-JavaScript   ← last resort; almost never needed
+JavaScript   ← 最后手段；几乎不需要
 ```
 
-## Component selection (quick)
+## 组件速选
 
-| Need | Use |
+| 需求 | 用法 |
 |---|---|
-| Data table | `<Table TItem>` — `Items` (client) or `OnQueryAsync` (server) |
-| Validated form | `<ValidateForm Model OnValidSubmit>` |
-| Auto-generated form | `<EditorForm TModel>` inside a `<ValidateForm>` |
-| Text input | `<BootstrapInput @bind-Value>` / `<BootstrapInputNumber>` / `<Textarea>` |
-| Dropdown | `<Select @bind-Value Items>`; multi → `<MultiSelect>`; typed items → `<SelectGeneric>` |
-| Checkbox group | `<CheckboxList @bind-Value Items>` |
-| Toggle | `<Switch @bind-Value OnText OffText>` |
-| Date | `<DateTimePicker @bind-Value>` |
-| Success/error toast | `ToastService.Success(title, content)` |
-| Delete confirm | `<TableCellPopConfirmButton>` inline (preferred) or `SwalService.ShowModal()` |
-| Edit dialog | `<Modal><ModalDialog>` sub-component + `@ref` (preferred) or `DialogService.Show<T>()` |
-| Drawer panel | `<Drawer @bind-IsOpen>` or `DrawerService.Show()` |
-| Admin shell | `<Layout>` with `Header/Side/Main/Footer` + `Menus` + `UseTabSet` |
+| 数据表格 | `<Table TItem>` —— `Items`（客户端）或 `OnQueryAsync`（服务端） |
+| 带校验表单 | `<ValidateForm Model OnValidSubmit>` |
+| 自动生成表单 | `<ValidateForm>` 内嵌 `<EditorForm TModel>` |
+| 文本输入 | `<BootstrapInput @bind-Value>` / `<BootstrapInputNumber>` / `<Textarea>` |
+| 下拉 | `<Select @bind-Value Items>`；多选 → `<MultiSelect>`；强类型项 → `<SelectGeneric>` |
+| 复选组 | `<CheckboxList @bind-Value Items>` |
+| 开关 | `<Switch @bind-Value OnText OffText>` |
+| 日期 | `<DateTimePicker @bind-Value>` |
+| 成功/错误 Toast | `ToastService.Success(title, content)` |
+| 删除确认 | 行内 `<TableCellPopConfirmButton>`（首选）或 `SwalService.ShowModal()` |
+| 编辑弹窗 | `<Modal><ModalDialog>` 子组件 + `@ref`（首选）或 `DialogService.Show<T>()` |
+| 抽屉面板 | `<Drawer @bind-IsOpen>` 或 `DrawerService.Show()` |
+| 后台主壳 | `<Layout>` 的 `Header/Side/Main/Footer` + `Menus` + `UseTabSet` |
 
-Tag-name gotcha: `<BootstrapInput>`, `<BootstrapInputNumber>`, `<BootstrapInputGroup>` carry the `Bootstrap` prefix; `<Select>`, `<Switch>`, `<Checkbox>`, `<CheckboxList>`, `<RadioList>`, `<DateTimePicker>`, `<Cascader>`, `<AutoComplete>`, `<AutoFill>`, `<ValidateForm>`, `<EditorForm>`, `<Textarea>` do **not**.
+标签名坑：`<BootstrapInput>`、`<BootstrapInputNumber>`、`<BootstrapInputGroup>` 带 `Bootstrap` 前缀；`<Select>`、`<Switch>`、`<Checkbox>`、`<CheckboxList>`、`<RadioList>`、`<DateTimePicker>`、`<Cascader>`、`<AutoComplete>`、`<AutoFill>`、`<ValidateForm>`、`<EditorForm>`、`<Textarea>` **不带**。
 
-## CRUD page recipe
+## CRUD 页面配方
 
-When asked to "create a user-management page", derive this structure (from rbac-blazor). Full code: [references/crud-recipes.md](references/crud-recipes.md) and [examples/](examples/).
+被要求"建一个用户管理页"时，按此结构生成（源自 rbac-blazor）。完整代码：[references/crud-recipes.md](references/crud-recipes.md) 与 [examples/](examples/)。
 
 ```text
-Page (Index.razor + .razor.cs code-behind)
-  ├─ Toolbar: <Card><BodyTemplate> buttons </BodyTemplate></Card>
+页面（Index.razor + .razor.cs code-behind）
+  ├─ 工具栏：<Card><BodyTemplate> 按钮组 </BodyTemplate></Card>
   ├─ <Table TItem OnQueryAsync IsPagination IsMultipleSelect ShowSearch>
   │     ├─ <TableColumns>...<TableColumn @bind-Field>...</TableColumns>
-  │     ├─ <CustomerSearchTemplate> search fields </CustomerSearchTemplate>
-  │     └─ <RowButtonTemplate> edit + <TableCellPopConfirmButton> delete </RowButtonTemplate>
-  ├─ <Add @ref OnSaveCallback/>   ← Modal sub-component
-  └─ <Edit @ref OnSaveCallback/>  ← Modal sub-component
+  │     ├─ <CustomerSearchTemplate> 搜索字段 </CustomerSearchTemplate>
+  │     └─ <RowButtonTemplate> 编辑 + <TableCellPopConfirmButton> 删除 </RowButtonTemplate>
+  ├─ <Add @ref OnSaveCallback/>   ← Modal 子组件
+  └─ <Edit @ref OnSaveCallback/>  ← Modal 子组件
 ```
 
-- Server query: `OnQueryAsync(QueryPageOptions) → Task<QueryData<TItem>>` returning `{ Items, TotalCount, IsFiltered, IsSorted, IsSearch, IsAdvanceSearch }`. See [references/table.md](references/table.md).
-- Feedback: `ToastService.Success("消息通知", "操作成功")` / `.Error(...)`.
-- Refresh table: `await TableRef.QueryAsync();`.
-- Code-behind: follow the repository's existing convention. For a new or growing component, `.razor` markup plus a `.razor.cs` partial class is a useful default; retain an existing compact `@code` component unless splitting improves readability or testability.
+- 服务端查询：`OnQueryAsync(QueryPageOptions) → Task<QueryData<TItem>>`，返回 `{ Items, TotalCount, IsFiltered, IsSorted, IsSearch, IsAdvanceSearch }`。见 [references/table.md](references/table.md)。
+- 反馈：`ToastService.Success("消息通知", "操作成功")` / `.Error(...)`。
+- 刷新表格：`await TableRef.QueryAsync();`。
+- code-behind：遵循仓库既有约定。新建或持续成长的组件，`.razor` markup + `.razor.cs` partial 类是有用的默认；已存在的紧凑 `@code` 组件保持原样，除非拆分能改善可读性或可测试性。
 
-## Reference guide
+## 参考文档
 
-Load only the reference that matches the task — do not load all by default.
+只加载与任务匹配的参考文件——默认不要全部加载。
 
-- [references/setup.md](references/setup.md) — install, `AddBootstrapBlazor`, `BootstrapBlazorRoot`, static assets, `Program.cs` / `Startup.cs` template.
-- [references/anti-hallucination.md](references/anti-hallucination.md) — **★ wrong-vs-right API table**. Read this first when writing or auditing any markup.
-- [references/ui-audit.md](references/ui-audit.md) — review-only checklist for form/state/feedback, navigation accessibility, responsiveness, and BootstrapBlazor runtime wiring.
-- [references/table.md](references/table.md) — `<Table TItem>` deep API: data source, columns, sort, search, paging, selection, edit/add/delete, toolbar, templates, server query.
-- [references/forms.md](references/forms.md) — `ValidateForm` / `EditorForm` and every form control's real params.
-- [references/feedback.md](references/feedback.md) — Dialog / Toast / Swal / Message / Modal / Drawer / Tooltip / Popover.
-- [references/layout.md](references/layout.md) — `Layout` / `Menu` / `Tab` / `Breadcrumb` / `Pagination` / `Step` / `Card` / `Row`.
-- [references/components.md](references/components.md) — other frequent components (Upload / TreeView / Validate / Badge / Tag / Avatar / Spinner / Skeleton).
-- [references/di-services.md](references/di-services.md) — full service registry + options classes.
-- [references/crud-recipes.md](references/crud-recipes.md) — the four standard recipes (list / form / layout / feedback) with skeletons.
-- examples/: `BasicPage.razor`, `Login.razor`, `CrudTable.razor`, `FormModal.razor`, `AdminLayout.razor`.
+- [references/setup.md](references/setup.md) —— 安装、`AddBootstrapBlazor`、`BootstrapBlazorRoot`、静态资源、`Program.cs` / `Startup.cs` 模板。
+- [references/anti-hallucination.md](references/anti-hallucination.md) —— **★ 错误 vs 正确 API 对照表**。写或审查任何 markup 前先读它。
+- [references/ui-audit.md](references/ui-audit.md) —— 仅审查用的清单：表单/状态/反馈、导航可访问性、响应式、BootstrapBlazor 运行时接线。
+- [references/table.md](references/table.md) —— `<Table TItem>` 深度 API：数据源、列、排序、搜索、分页、选择、编辑/增删改、工具栏、模板、服务端查询。
+- [references/forms.md](references/forms.md) —— `ValidateForm` / `EditorForm` 与每个表单控件的真实参数。
+- [references/feedback.md](references/feedback.md) —— Dialog / Toast / Swal / Message / Modal / Drawer / Tooltip / Popover。
+- [references/layout.md](references/layout.md) —— `Layout` / `Menu` / `Tab` / `Breadcrumb` / `Pagination` / `Step` / `Card` / `Row`。
+- [references/components.md](references/components.md) —— 其它高频组件（Upload / TreeView / Validate / Badge / Tag / Avatar / Spinner / Skeleton）。
+- [references/di-services.md](references/di-services.md) —— 完整服务注册表 + 选项类。
+- [references/crud-recipes.md](references/crud-recipes.md) —— 四个标准配方（列表 / 表单 / 布局 / 反馈）及骨架。
+- examples/：`BasicPage.razor`、`Login.razor`、`CrudTable.razor`、`FormModal.razor`、`AdminLayout.razor`。
 
-## Prohibitions
+## 禁止事项
 
-- Do NOT invent components, params, `EventCallback`s, services, or extension methods. If not confirmed in source/reference, search the source tree (`D:/SourceCode/blazor/bootstrap/BootstrapBlazor/src/BootstrapBlazor/Components/`) first.
-- Do NOT port APIs from MudBlazor / Radzen / Ant Design Blazor / DevExpress / Telerik / Blazorise.
-- Do NOT set `Items` and `OnQueryAsync` together on a `<Table>` — they are mutually exclusive and throw.
-- Do NOT bind `SortName`/`SortOrder` from markup (not `[Parameter]`); use column `DefaultSort`/`DefaultSortOrder`.
-- Do NOT omit `<BootstrapBlazorRoot>` — every popup service call will throw.
-- Do NOT write `ShowAsync`/`ShowModalAsync` — the method is `Show` (extensions like `ShowModal` exist, `ShowAsync` does not).
+- 不得臆造组件、参数、`EventCallback`、服务或扩展方法。未在源码/参考文件确认的，先搜源码树（`D:/SourceCode/blazor/bootstrap/BootstrapBlazor/src/BootstrapBlazor/Components/`）。
+- 不得从 MudBlazor / Radzen / Ant Design Blazor / DevExpress / Telerik / Blazorise 移植 API。
+- 不得在 `<Table>` 上同时设 `Items` 与 `OnQueryAsync`——二者互斥，同设抛异常。
+- 不得从 markup 绑定 `SortName`/`SortOrder`（非 `[Parameter]`）；初始排序用列的 `DefaultSort`/`DefaultSortOrder`。
+- 不得漏放 `<BootstrapBlazorRoot>`——否则每个弹窗服务调用都会抛异常。
+- 不得写 `ShowAsync`/`ShowModalAsync`——方法名是 `Show`（存在 `ShowModal` 等扩展，不存在 `ShowAsync`）。
 
-## Version & provenance
+## 版本与来源
 
 ```text
-BootstrapBlazor Version : 10.9.2   (source HEAD, multi-target net6–net10)
-Skill Generated        : 2026-08-13
-API Source             : D:/SourceCode/blazor/bootstrap/BootstrapBlazor (src/BootstrapBlazor/Components/*)
-Cross-checked against  : BootstrapBlazor.Server official Samples + rbac-blazor (10.6.0)
-Build-verified         : examples/ compiled CLEAN (0 warning, 0 error) against BootstrapBlazor 10.9.2
-                         on .NET 10.0.400 Blazor Server. Covers the high-frequency API surface —
-                         ValidateForm/BootstrapInput(+/Number)/Textarea/Select(+Options/SelectOption)/
-                         CheckboxList/Switch/DateTimePicker, Table(OnQueryAsync, IsPagination, IsMultipleSelect,
-                         TableColumn, RowButtonTemplate, TableCellButton/TableCellPopConfirmButton), Modal+
-                         ModalDialog, Card/Row/Divider/Badge/Spinner/Progress, Layout/Menu/Logout/ErrorLogger,
-                         ToastService.Success/Error, QueryData<T>/QueryPageOptions/SortOrder.
-                         Reference-file params beyond the examples are sourced line-by-line from the 10.9.2
-                         tree (each carries 文件:行号) but not all are build-exercised — verify before relying.
+BootstrapBlazor 版本 : 10.9.2   （源码 HEAD，多目标 net6–net10）
+Skill 生成时间       : 2026-08-13
+API 来源             : D:/SourceCode/blazor/bootstrap/BootstrapBlazor (src/BootstrapBlazor/Components/*)
+交叉核对             : BootstrapBlazor.Server 官方 Samples + rbac-blazor (10.6.0)
+构建验证             : examples/ 针对 BootstrapBlazor 10.9.2 + .NET 10.0.400 Blazor Server
+                       编译通过（0 警告、0 错误）。覆盖高频 API 面——
+                       ValidateForm/BootstrapInput(+/Number)/Textarea/Select(+Options/SelectOption)/
+                       CheckboxList/Switch/DateTimePicker, Table(OnQueryAsync, IsPagination, IsMultipleSelect,
+                       TableColumn, RowButtonTemplate, TableCellButton/TableCellPopConfirmButton), Modal+
+                       ModalDialog, Card/Row/Divider/Badge/Spinner/Progress, Layout/Menu/Logout/ErrorLogger,
+                       ToastService.Success/Error, QueryData<T>/QueryPageOptions/SortOrder.
+                       参考文件中超出示例范围的参数逐行取自 10.9.2 源码树（均带 文件:行号），
+                       但并非全部经编译验证——依赖前先核实。
 ```
 
-Reproduce the build check: `dotnet new blazor --interactivity Server`, `dotnet add package BootstrapBlazor --version 10.9.2`, add `AddBootstrapBlazor()` + `<BootstrapBlazorRoot>` + the two bundle assets, drop the `examples/` files in, then `dotnet build`.
+复现构建验证：`dotnet new blazor --interactivity Server`、`dotnet add package BootstrapBlazor --version 10.9.2`，加 `AddBootstrapBlazor()` + `<BootstrapBlazorRoot>` + 两个 bundle 静态资源，放入 `examples/` 文件后 `dotnet build`。
 
-If the source is upgraded, re-scan the `Components/` tree and update the reference files; param names (spelling, whether `@bind`-able, types) are the stable signal, line numbers drift.
+若源码升级，重扫 `Components/` 树并更新参考文件；参数名（拼写、能否 `@bind`、类型）是稳定信号，行号会漂移。
