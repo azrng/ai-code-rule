@@ -357,3 +357,4 @@ NUL
 # RuleAssembler 构建产物
 app/RuleAssembler/bin/
 app/RuleAssembler/obj/
+/dist/

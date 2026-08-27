@@ -1,7 +1,7 @@
 ---
 rule_id: ai-agents
-version: 1.12.0
-last_updated: 2026-08-14
+version: 1.13.0
+last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
 

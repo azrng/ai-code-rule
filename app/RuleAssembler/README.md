@@ -1,58 +1,55 @@
 # RuleAssembler — 交互式 AI Rule 拼接器
 
-把一套完整 AI rule 释放到当前目录：交互选择技术大类 → 架构模板，确认后输出 AGENTS.md + 子规则 + 入口指针（CLAUDE/GEMINI/GROK），**不输出 TASK.md**。
+把一套完整 AI rule 释放到当前目录：双击启动 → 选择技术大类 → 选择 Profile → 直接释放。默认不使用命令行参数完成业务选择。
 
-## 工作原理
+## 设计
 
-拼接器把各模板的共同内容抽成**公共片段**（`fragments/root/`、`fragments/pointers/`），按架构填入**差异片段**（`fragments/arch/<架构>/` 子规则整文件 + `manifest.json` 里的变量槽）。修改公共规则只改片段源一处，重新构建后所有架构生效——根治"改一处改一堆"。
+`fragments/` 是唯一维护源，生成器把公共模块、Profile 根变量和 Profile 专属规则组合成目标文件：
 
-## 片段源结构
-
-```
+```text
 fragments/
-├── root/AGENTS.md            # 根 AGENTS 骨架，含 {{变量槽}}
-├── pointers/                 # CLAUDE/GEMINI/GROK 指针（逐字公共）
-├── arch/<架构>/*.md          # 各架构的子规则整文件（backend/doc/infra 等）
-└── manifest.json             # 架构配方：变量槽取值 + 子规则清单 + 指针 + 大类
+├── root/AGENTS.md         # 公共根骨架，含变量槽
+├── pointers/              # 公共入口指针
+├── arch/<id>/             # 当前 Profile 的专属规则片段
+├── manifest.json          # 模块、家族、Profile 和输出配方
+└── ...                    # design-system 等能力片段
 ```
 
-`manifest.json` 的变量槽：内容级 `{{target-list}}` `{{subrule-index}}` `{{dev-stage}}` `{{understanding-checklist}}`（多行）`{{reading-order}}` `{{extra-sections}}`（可选整段，如 AI 家族的技术栈总览）；短语级（缺省回退纯后端家族默认值）`{{search-nouns}}` `{{contract-error-line}}` `{{root-scope-nouns}}` `{{context-scope-nouns}}` `{{high-risk-nouns}}` `{{high-risk-prefix}}` `{{task-kind-nouns}}` `{{evidence-nouns}}` `{{reuse-noun}}` `{{persistence-line}}` `{{destructive-nouns}}` `{{boundary-nouns}}` `{{rollback-scope}}` 等；追加型可空槽 `{{intro-quote}}` `{{model-behavior-extra}}` `{{verify-quote}}` 等，空值占位行自动清理。`designSystem: true` 时额外释放 `arch/<架构>/design-system.yaml` 为 `design-system.yaml`。
+公共能力通过 `modules` 复用。例如 `core` 提供根入口和指针，`ai-capability` 提供 `ai-AGENTS.md`。现有技术栈专属文件暂按 Profile 保留，避免为一次模块化迁移改写大量规则正文；新增组合优先使用模块，不再复制整套 Profile。
 
 ## 构建
 
 ```powershell
 ./publish.ps1
-# 产物：app/RuleAssembler/bin/Release/net10.0/win-x64/publish/use-rule.exe（约 260KB，框架相关）
 ```
 
-框架相关单文件，目标机需有 .NET 运行时。如需自包含（零依赖、约 60MB），改 `publish.ps1` 为 `--self-contained true`。
+产物位于仓库根目录 `dist/use-rule.exe`（底层发布目录仍保留在 `bin/Release/net10.0/win-x64/publish/`）。当前发布为 Windows x64、框架相关单文件，目标机需要安装对应的 .NET 10 运行时；这是体积和部署依赖之间的明确取舍。
 
 ## 使用
 
-```powershell
-# 把 use-rule.exe 拷到目标项目根目录，运行：
-./use-rule.exe
-# 1) 选技术大类  2) 选架构模板  3) 确认释放  → 当前目录出现完整一套规则
+```text
+1. 把 use-rule.exe 拷贝到目标项目根目录
+2. 双击启动
+3. 选择技术大类
+4. 选择 Profile
+5. 确认释放
 ```
 
-目标目录已有同名文件时会提示覆盖（y/N/all）。
+目标目录已有同名文件时会直接覆盖。文件会先写入临时目录，全部准备成功后再提交；提交中途失败会回滚本次已经写入的文件。不会释放 `TASK.md`、`rulelog` 或 `devlog`。
 
-## 已接入架构（8 大类 19 架构，全部 1.12.0 基准）
+维护和 CI 可以使用只读校验：
 
-| 大类 | 架构 |
-| --- | --- |
-| .NET 后端 | dotnet-layered（分层）、dotnet-core-single（单层） |
-| Python 后端 | python-backend（FastAPI + uv） |
-| Web 前后端分离 / 全栈 | reactLinkdotNet、vueLinkdotNet、reactLinkdotNet-ai（含 ai-AGENTS 与技术栈总览）、nextFullstack |
-| 桌面应用 | avaloniaExe、wpfExe、dotnetBlazor、dotnetConsole |
-| 跨平台混合桌面 | electronDotNetExe、reactTauriExe、reactWailsExe、vueWailsExe |
-| 移动应用 | mauiMobile、flutterMobile |
-| 纯前端 / 静态站点 | staticHtml |
-| 通用项目 | generalProject |
+```powershell
+dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --check
+```
 
-新增架构：在 `fragments/arch/<id>/` 放子规则整文件，在 `manifest.json` 加一条配方即可。
+## 当前 Profile
 
-## 等价性验证
+manifest 当前包含 8 个技术大类、19 个 Profile。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用。
 
-19 个架构生成产物与仓库目录**全量 161 文件字节级一致**（哈希逐一比对）。各目录均已升级为 1.12.0 精简基准：根 AGENTS.md 由模板再生成，子规则保留技术栈内容、统一结构外壳（frontmatter 版本、标题去编号、删"阅读摘要"段）。
+## 版本与格式
 
+- 规则版本和更新时间由 `manifest.json` 的 `vars` 统一控制。
+- 所有生成文件统一使用 UTF-8 无 BOM 和 manifest 指定的 LF 行尾。
+- 指针文件保留自身独立的 `rule_id` 和版本元数据。
+- 根目录现有的 19 套架构目录仅是历史/生成快照，不是维护入口。

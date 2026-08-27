@@ -1,9 +1,33 @@
 {
-  "note": "架构配方：每个架构 = root 骨架变量 + 子规则整文件 + 指针。生成器读此文件决定如何拼装。顶层 version 是 manifest 配方版本，与规则版本无关；规则版本见 vars。",
+  "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.12.0",
-    "last_updated": "2026-08-14"
+    "version": "1.13.0",
+    "last_updated": "2026-08-27"
   },
+  "schema_version": 2,
+  "line_ending": "LF",
+  "modules": [
+    {
+      "id": "core",
+      "label": "公共核心模块",
+      "rootSource": "root/AGENTS.md",
+      "pointers": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        "GROK.md"
+      ]
+    },
+    {
+      "id": "ai-capability",
+      "label": "AI 产品能力模块",
+      "files": [
+        {
+          "source": "arch/reactLinkdotNet-ai/ai-AGENTS.md",
+          "output": "ai-AGENTS.md"
+        }
+      ]
+    }
+  ],
   "families": [
     {
       "id": "dotnet-backend",
@@ -46,7 +70,7 @@
       "desc": "技术栈未定或混合形态，子规则按需命中"
     }
   ],
-  "architectures": [
+  "profiles": [
     {
       "id": "dotnet-layered",
       "label": ".NET 分层 API 后端",
@@ -107,11 +131,6 @@
           "source": "arch/dotnet-layered/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": false
     },
@@ -177,15 +196,10 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": false
     },
     {
-      "id": "python-backend",
+      "id": "python",
       "label": "Python FastAPI 后端",
       "family": "python-backend",
       "desc": "FastAPI + Pydantic + SQLAlchemy（可选）+ uv，中小型 API 服务",
@@ -245,11 +259,6 @@
           "source": "arch/python/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": false
     },
@@ -341,11 +350,6 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
@@ -436,11 +440,6 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
@@ -448,6 +447,10 @@
       "label": "React + .NET + AI Agent 全栈",
       "family": "web-fullstack",
       "desc": "单项目整洁架构 + Microsoft.Extensions.AI / Agent Framework + React，AI 产品 MVP",
+      "moduleIds": [
+        "core",
+        "ai-capability"
+      ],
       "root": {
         "target-list": [
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
@@ -539,10 +542,6 @@
           "output": "backend-AGENTS.md"
         },
         {
-          "source": "arch/reactLinkdotNet-ai/ai-AGENTS.md",
-          "output": "ai-AGENTS.md"
-        },
-        {
           "source": "arch/reactLinkdotNet-ai/doc-AGENTS.md",
           "output": "doc-AGENTS.md"
         },
@@ -550,11 +549,6 @@
           "source": "arch/reactLinkdotNet-ai/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": true
     },
@@ -645,11 +639,6 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
@@ -737,11 +726,6 @@
           "source": "arch/avaloniaExe/doc-AGENTS.md",
           "output": "doc-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": true
     },
@@ -831,18 +815,13 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
       "id": "dotnetBlazor",
-      "label": "Blazor 混合桌面应用",
-      "family": "desktop",
-      "desc": "Blazor + .NET，Web UI 技术栈的桌面/混合应用",
+      "label": ".NET Blazor 全栈 Web",
+      "family": "web-fullstack",
+      "desc": "Blazor + .NET 的全栈 Web 应用",
       "root": {
         "target-list": [
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
@@ -924,11 +903,6 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
@@ -997,11 +971,6 @@
           "source": "arch/dotnetConsole/doc-AGENTS.md",
           "output": "doc-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": false
     },
@@ -1089,11 +1058,6 @@
           "source": "arch/electronDotNetExe/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": true
     },
@@ -1183,11 +1147,6 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
@@ -1274,11 +1233,6 @@
           "source": "arch/reactWailsExe/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": true
     },
@@ -1367,11 +1321,6 @@
           "source": "arch/vueWailsExe/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": true
     },
@@ -1462,11 +1411,6 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
@@ -1556,11 +1500,6 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
-      ],
       "designSystem": true
     },
     {
@@ -1633,11 +1572,6 @@
           "source": "arch/staticHtml/doc-AGENTS.md",
           "output": "doc-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": true
     },
@@ -1726,11 +1660,6 @@
           "source": "arch/generalProject/infra-AGENTS.md",
           "output": "infra-AGENTS.md"
         }
-      ],
-      "pointers": [
-        "CLAUDE.md",
-        "GEMINI.md",
-        "GROK.md"
       ],
       "designSystem": true
     }
