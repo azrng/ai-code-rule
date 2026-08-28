@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
 version: 1.15.0
-last_updated: 2026-08-27
+last_updated: 2026-08-28
 dependencies: [agents-root]
 ---
 
