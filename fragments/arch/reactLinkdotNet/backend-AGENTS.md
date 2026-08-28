@@ -1,22 +1,15 @@
 ---
 rule_id: backend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
 
 # 后端规则
 
-## 适用范围
+<!-- include: shared/backend/scope.md -->
 
-- 作用域：服务端实现、接口、服务、数据访问、缓存、异常处理与后端测试
-- 触发场景：涉及接口、Service、Repository、缓存、权限、异常处理或测试时阅读
-
-### 常见任务入口
-- 改接口响应或状态码：先看接口 / 路由规则与异常处理规范
-- 改业务流程或状态流转：先看 Service / 应用层规则与权限约束
-- 改查询、分页、缓存、迁移：先看数据访问规则与验证要求
-- 补服务端回归：先看 `提交前最小回归` 与测试规则
+<!-- include: shared/backend/common-tasks.md -->
 
 ---
 
@@ -49,10 +42,7 @@ dependencies: [agents-root]
 
 ---
 
-## 主动建议规则
-- 发现业务逻辑放错层、Controller 与 Service 职责混杂、权限校验缺失、事务边界不清或异常处理不一致时，应主动提醒
-- 发现接口契约、DTO、存储结构、缓存策略或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+<!-- include: shared/backend/advisory.md -->
 
 ## 推荐目录结构
 
@@ -143,12 +133,7 @@ API → Application → Domain ← Infrastructure
 - 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
 - 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；业务逻辑放到 Infrastructure。
 
-### 核心逻辑可读性（KISS）
-- 以下场景优先显式直写，不要本能压成一条链：聚合、分组排序后取 Top N、多层字典构造、有失败边界的控制流、需要稳定输出顺序的逻辑。
-- 优先形式：`foreach`、`if / else`、中间变量、明确命名的临时集合、显式排序 / 裁剪 / 显式异常。
-- 谨慎使用：多层嵌套 LINQ、一次性 `GroupBy + Select + ToDictionary + ToList` 链、只为“看起来干净”而拆的 helper。
-- helper / 拆分只在降低认知负担时才成立：让职责边界更清楚、真正复用、让调用方少理解细节；若拆完读者要在多个位置来回跳，或用 helper 隐藏本该直说的业务判断，就退回直白写法。
-- 共性的“先读再写”“范围最小扰动”见根 `AGENTS.md`「理解检查清单」与「全局工作规则」
+<!-- include: shared/application/kiss.md -->
 
 ### 数据访问规则
 - 使用 Entity Framework Core 进行数据访问
@@ -211,40 +196,17 @@ API → Application → Domain ← Infrastructure
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
-### 反模式与修根因清单
-- 这是根 `AGENTS.md`「修 Bug 必须定位根因」在 .NET 中的具体禁止项，禁止用下列方式掩盖问题：
-  - 空 `catch` 或 `catch (Exception)` 吞异常后静默继续
-  - 用 `!`（null-forgiving）压制可空告警而非真正处理 null
-  - 在异步上下文用 `.Result` / `.Wait()` 同步阻塞
-  - `#pragma warning disable` 关闭编译 / 分析器告警掩盖问题
-  - 删除或注释测试让构建通过
-  - 用一层抽象重写掩盖原始复杂度，而不是简化它
-- 出现这些倾向时立刻回退一步：复杂 LINQ 比业务逻辑本身更难读；helper 数量增加但理解成本没下降；核心逻辑缺注释只能靠猜。
+<!-- include: shared/application/anti-patterns.md -->
 
-### 可维护性自检（提交前）
-提交前对核心逻辑至少问一遍：
-- 维护者能否一遍看懂这段核心逻辑？
-- 是否必须跳转多个 helper 才知道发生了什么？
-- 关键方法和关键逻辑有没有注释？
-- 这是不是当前需求的最简单可行实现？
-- 我是不是为了“写得像高手”而牺牲了可读性？
-- 犹豫写“抽象版”还是“直白版”时，默认选直白版。
+<!-- include: shared/application/maintainability-check.md -->
 
 ---
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：项目现有的静态检查、类型检查或编译校验
-- 业务逻辑改动：至少补一项业务规则、权限判断或状态流转验证
-- 接口 / 路由 / 控制器改动：至少补一项输入输出、状态码或异常分支验证
-- 数据访问、缓存、迁移改动：至少补一项查询结果、缓存行为、事务或迁移同步验证
-- 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
+<!-- include: shared/backend/pre-commit-regression.md -->
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为
+<!-- include: shared/application/general-requirements.md -->
 
 ### 后端测试
 - 单元测试使用 xUnit + Moq
@@ -253,14 +215,8 @@ API → Application → Domain ← Infrastructure
 - Repository 测试：使用 In-Memory 数据库或 Testcontainers
 - 集成测试：使用 WebApplicationFactory 测试完整请求管道
 
-### 外部依赖与数据
-- 测试中不要真实调用第三方服务，统一使用 mock
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态
+<!-- include: shared/external-dependencies.md -->
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

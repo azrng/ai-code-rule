@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -31,9 +31,7 @@ dependencies: [agents-root]
 - 浏览器端同站点请求优先使用相对地址 `/api`，禁止在客户端代码中硬编码完整后端地址。
 - 外部服务地址、数据库连接串、鉴权密钥等必须通过环境变量配置。
 
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -73,5 +71,7 @@ dependencies: [agents-root]
 - 修改 Dockerfile、Compose、启动命令或端口映射时：至少执行一次构建与启动验证
 - 修改环境变量时：确认 `.env.example`、文档和运行方式同步更新
 - 若本次改动同时影响应用访问链路，应至少补一次容器内或启动后的核心链路检查
+
+<!-- include: shared/no-test-fallback.md -->
 
 ---

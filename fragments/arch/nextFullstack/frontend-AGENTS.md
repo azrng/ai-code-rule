@@ -1,6 +1,6 @@
 ---
 rule_id: frontend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -36,9 +36,7 @@ dependencies: [agents-root]
 - 优先复用项目已有组件、布局、样式变量与交互模式
 - 禁止 inline style，禁止硬编码颜色、间距、圆角、阴影、断点
 
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -121,12 +119,7 @@ dependencies: [agents-root]
 - 业务写操作优先 Server Action，成功后使用 `revalidatePath` / `revalidateTag`
 - 客户端不得直接持有数据库连接、服务端密钥或服务端专用环境变量
 
-### 代码组织规范
-- 一个文件只放一个主对象：页面组件、布局组件、通用组件、Hook、Store 各自独立文件，文件名与导出的主对象一致。
-- 组件职责单一：一个组件只做一件事，发现持续膨胀或多个不相关职责堆在同一文件时，应拆分为更小的子组件、Hook 或工具函数。
-- 触发拆分的信号：单文件出现多个主组件、props 或状态持续堆叠、组件跨多个不相关业务、阅读成本明显升高。
-- 允许例外：仅服务当前组件的局部子组件、紧耦合的类型定义、测试文件中的 fixture。
-- 反模式：一个文件同时导出页面、表单、列表、弹窗等多个组件；把多个不相关 Hook 或工具函数堆在同一文件。
+<!-- include: shared/frontend/code-organization.md -->
 
 ---
 
@@ -148,9 +141,6 @@ dependencies: [agents-root]
 - 关键页面至少应完成一次手工或 Playwright smoke test
 - Client Component 的交互、校验、禁用态、错误态应有验证
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围与风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

@@ -1,6 +1,6 @@
 ---
 rule_id: infrastructure-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -20,16 +20,11 @@ dependencies: [agents-root]
 
 ---
 
-## 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/infra/tech-choice.md -->
 
 ---
 
-## 主动建议规则
-- 发现 Repository、数据访问、依赖注入、配置、迁移脚本、构建脚本或发布链路存在不一致、不可复现或文档缺失时，应主动提醒
-- 涉及清理环境、删除数据、执行破坏性迁移、停止未知进程、修改发布配置等高风险操作时，只能提出建议，必须等待明确确认后执行
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+<!-- include: shared/infrastructure/advisory.md -->
 
 ---
 
@@ -104,10 +99,7 @@ dependencies: [agents-root]
 - 测试数据应尽量最小化、可读、可重复执行
 - 不要让测试依赖本地人工状态或手工残留数据库
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ### 提交前最小回归
 - 修改发布配置、单文件发布配置、安装包脚本、启动命令或运行时依赖时：至少执行一次构建与启动验证

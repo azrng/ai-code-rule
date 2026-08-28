@@ -75,12 +75,38 @@ internal static class Program
             return 0;
         }
 
+        if (args.Length == 2 && args[0].Equals("--emit", StringComparison.OrdinalIgnoreCase))
+        {
+            var outDir = Path.GetFullPath(args[1]);
+            Directory.CreateDirectory(outDir);
+            var renderer = new RuleRenderer(resources);
+            foreach (var profile in manifest.Profiles)
+            {
+                var files = renderer.Plan(manifest, profile);
+                var profileDir = Path.Combine(outDir, profile.Id);
+                foreach (var file in files)
+                {
+                    var path = Path.Combine(profileDir, file.Output);
+                    var directory = Path.GetDirectoryName(path);
+                    if (!string.IsNullOrEmpty(directory))
+                        Directory.CreateDirectory(directory);
+                    File.WriteAllText(path, file.Content, new UTF8Encoding(false));
+                }
+
+                Console.WriteLine($"已输出：{profile.Id}（{files.Count} 个文件）");
+            }
+
+            Console.WriteLine($"输出完成：{manifest.Profiles.Count} 个 Profile → {outDir}");
+            return 0;
+        }
+
         if (args.Length == 1 && (args[0].Equals("--help", StringComparison.OrdinalIgnoreCase)
             || args[0].Equals("-h", StringComparison.OrdinalIgnoreCase)))
         {
             Console.WriteLine(Banner);
             Console.WriteLine("直接双击或不带参数运行：进入交互式选择并释放规则。");
             Console.WriteLine("--check：只校验 manifest、片段和全部 Profile，不写入文件。");
+            Console.WriteLine("--emit <目录>：把全部 Profile 的生成结果输出到指定目录，仅用于批量预览与对比，不覆盖工作目录。");
             Console.WriteLine("--help：显示帮助。");
             return 0;
         }

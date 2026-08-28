@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -20,9 +20,7 @@ dependencies: [agents-root]
 
 ---
 
-## 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/infra/tech-choice.md -->
 
 ---
 
@@ -87,5 +85,7 @@ dependencies: [agents-root]
 - 修改 `tauri.conf.json`、构建脚本、打包脚本、签名或更新配置时：至少执行一次构建与启动验证
 - 修改数据库目录、应用路径、缓存路径或文件权限策略时：至少补一项真实链路或等价验证
 - 若本次改动同时影响应用访问链路，应至少补一次核心链路检查
+
+<!-- include: shared/no-test-fallback.md -->
 
 ---

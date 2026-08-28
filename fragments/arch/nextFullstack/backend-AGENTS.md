@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -29,9 +29,7 @@ dependencies: [agents-root]
 - PostgreSQL
 - Zod（入参与出参校验）
 
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -134,26 +132,15 @@ Route Handler / Server Action
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：`lint`、`typecheck`
-- Service 改动：至少补一项业务规则、权限判断或状态流转验证
-- Route Handler / Server Action 改动：至少补一项输入输出、状态码或异常分支验证
-- Repository / Prisma 改动：至少补一项查询结果、分页排序、事务或 migration 同步验证
-- 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调或脚本验证替代，但必须能证明核心逻辑真实生效
+<!-- include: shared/backend/pre-commit-regression.md -->
 
 ### 服务端测试
 - Service 测试：验证业务规则、权限校验、状态流转
 - Route Handler / Server Action 测试：验证输入、输出、状态码与异常分支
 - Repository 测试：验证查询条件、分页、排序、事务或数据库映射
 
-### 外部依赖与数据
-- 测试中不应真实调用第三方服务，统一使用 mock
-- 测试数据应最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态
+<!-- include: shared/external-dependencies.md -->
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围与风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

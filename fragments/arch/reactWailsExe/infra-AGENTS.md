@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -20,17 +20,11 @@ dependencies: [agents-root]
 
 ---
 
-## 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/infra/tech-choice.md -->
 
 ---
 
-## 主动建议规则
-- 发现环境变量、端口、启动方式、构建脚本、部署脚本、CI/CD 或发布链路存在不一致、不可复现或文档缺失时，应主动提醒
-- 发现可以复用现有启动脚本、打包脚本、Dockerfile、Compose、CI/CD、环境变量命名或发布脚本时，应优先建议复用，不新增平行部署链路
-- 不确定端口占用、外部服务地址、密钥来源、安装路径或运行命令时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验写死配置
-- 涉及清理环境、删除数据、停止未知进程、修改部署配置等高风险操作时，只能提出建议，必须等待明确确认后执行
+<!-- include: shared/infra/advisory-cicd.md -->
 
 ---
 
@@ -58,8 +52,6 @@ dependencies: [agents-root]
 - 新增环境变量时必须同步更新 `.env.example` 或对应配置示例
 - 禁止把密钥、连接串或敏感信息硬编码在源码、配置文件或安装包模板中
 
-### 提交前最小回归
-- 修改 Dockerfile、Compose、启动命令、打包脚本或端口映射时：至少执行一次构建与启动验证
-- 修改环境变量、配置项或连接串时：确认示例配置、文档和运行方式同步更新
-- 修改数据库、仓储、依赖注入或外部服务集成时：至少补一项真实链路或等价验证
-- 若本次改动同时影响应用访问链路，应至少补一次核心链路检查
+<!-- include: shared/infra/pre-commit-regression.md -->
+
+<!-- include: shared/no-test-fallback.md -->

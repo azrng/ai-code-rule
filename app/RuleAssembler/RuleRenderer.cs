@@ -12,11 +12,11 @@ internal sealed class RuleRenderer
         "{{verify-quote}}"
     };
 
-    private readonly ResourceStore _resources;
+    private readonly FragmentExpander _expander;
 
     public RuleRenderer(ResourceStore resources)
     {
-        _resources = resources;
+        _expander = new FragmentExpander(resources);
     }
 
     public List<PlannedFile> Plan(Manifest manifest, Profile profile)
@@ -94,8 +94,8 @@ internal sealed class RuleRenderer
 
     private string ReadRequired(string path)
     {
-        return _resources.Read(path)
-            ?? throw new InvalidOperationException($"缺失片段：{path}");
+        // 统一走 include 展开，保证根模板、子规则、指针与设计系统都能引用共享小节
+        return _expander.Expand(path);
     }
 
     private static string FillRootTemplate(string template, Manifest manifest, Profile profile)

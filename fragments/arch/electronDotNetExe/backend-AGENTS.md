@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -177,12 +177,7 @@ IPC Handler / Event（JSON-RPC method）
 - 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
 - 反模式：`Models.cs` 长期堆放多个 DTO / Model；把 IPC Handler 专用 request 内联写在 Handler 文件里；JSON-RPC 协议类型与业务模型混在同一文件。
 
-### 核心逻辑可读性（KISS）
-- 以下场景优先显式直写，不要本能压成一条链：聚合、分组排序后取 Top N、多层字典构造、有失败边界的控制流、需要稳定输出顺序的逻辑。
-- 优先形式：`foreach`、`if / else`、中间变量、明确命名的临时集合、显式排序 / 裁剪 / 显式异常。
-- 谨慎使用：多层嵌套 LINQ、一次性 `GroupBy + Select + ToDictionary + ToList` 链、只为“看起来干净”而拆的 helper。
-- helper / 拆分只在降低认知负担时才成立：让职责边界更清楚、真正复用、让调用方少理解细节；若拆完读者要在多个位置来回跳，或用 helper 隐藏本该直说的业务判断，就退回直白写法。
-- 共性的“先读再写”“范围最小扰动”见根 `AGENTS.md`「理解检查清单」与「全局工作规则」
+<!-- include: shared/application/kiss.md -->
 
 ### 异常处理规范
 - 自定义业务异常统一收敛到 `Errors/`
@@ -207,24 +202,9 @@ IPC Handler / Event（JSON-RPC method）
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
-### 反模式与修根因清单
-- 这是根 `AGENTS.md`「修 Bug 必须定位根因」在 .NET 中的具体禁止项，禁止用下列方式掩盖问题：
-  - 空 `catch` 或 `catch (Exception)` 吞异常后静默继续
-  - 用 `!`（null-forgiving）压制可空告警而非真正处理 null
-  - 在异步上下文用 `.Result` / `.Wait()` 同步阻塞
-  - `#pragma warning disable` 关闭编译 / 分析器告警掩盖问题
-  - 删除或注释测试让构建通过
-  - 用一层抽象重写掩盖原始复杂度，而不是简化它
-- 出现这些倾向时立刻回退一步：复杂 LINQ 比业务逻辑本身更难读；helper 数量增加但理解成本没下降；核心逻辑缺注释只能靠猜。
+<!-- include: shared/application/anti-patterns.md -->
 
-### 可维护性自检（提交前）
-提交前对核心逻辑至少问一遍：
-- 维护者能否一遍看懂这段核心逻辑？
-- 是否必须跳转多个 helper 才知道发生了什么？
-- 关键方法和关键逻辑有没有注释？
-- 这是不是当前需求的最简单可行实现？
-- 我是不是为了“写得像高手”而牺牲了可读性？
-- 犹豫写“抽象版”还是“直白版”时，默认选直白版。
+<!-- include: shared/application/maintainability-check.md -->
 
 ---
 
@@ -243,9 +223,6 @@ IPC Handler / Event（JSON-RPC method）
 - Handler 测试：验证输入输出结构和错误分支
 - 涉及文件系统或系统能力时，优先通过可控临时目录和测试替身验证
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围与风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

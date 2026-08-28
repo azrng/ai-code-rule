@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root, ai-agents]
 ---
@@ -239,15 +239,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串、模型密钥或真实生产地址。
 
-### 反模式与修根因清单
-- 这是根 `AGENTS.md`「修 Bug 必须定位根因」在 .NET 中的具体禁止项，禁止用下列方式掩盖问题：
-  - 空 `catch` 或 `catch (Exception)` 吞异常后静默继续
-  - 用 `!`（null-forgiving）压制可空告警而非真正处理 null
-  - 在异步上下文用 `.Result` / `.Wait()` 同步阻塞
-  - `#pragma warning disable` 关闭编译 / 分析器告警掩盖问题
-  - 删除或注释测试让构建通过
-  - 用一层抽象重写掩盖原始复杂度，而不是简化它
-- 出现这些倾向时立刻回退一步：复杂 LINQ 比业务逻辑本身更难读；helper 数量增加但理解成本没下降；核心逻辑缺注释只能靠猜。
+<!-- include: shared/application/anti-patterns.md -->
 
 ### 可维护性自检（提交前）
 提交前对核心逻辑至少问一遍：
@@ -270,10 +262,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - AI / Agent 改动：按 `ai-AGENTS.md` 用 mock `IChatClient` 验证链路
 - 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为
+<!-- include: shared/application/general-requirements.md -->
 
 ### 后端测试
 - 单元测试使用 xUnit + Moq
@@ -283,14 +272,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 集成测试：使用 WebApplicationFactory 测试完整请求管道
 - AI 测试：mock `IChatClient`，不真实调用模型服务
 
-### 外部依赖与数据
-- 测试中不要真实调用第三方服务，统一使用 mock
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态
+<!-- include: shared/external-dependencies.md -->
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

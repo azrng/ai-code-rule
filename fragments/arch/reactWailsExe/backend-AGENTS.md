@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -20,9 +20,7 @@ dependencies: [agents-root]
 
 ---
 
-## 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/infra/tech-choice.md -->
 
 ---
 
@@ -131,25 +129,15 @@ Handler → Service → Repository → Model
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：项目现有的静态检查、类型检查或编译校验
-- 业务逻辑改动：至少补一项业务规则、权限判断或状态流转验证
-- 接口 / 路由 / 控制器改动：至少补一项输入输出、状态码或异常分支验证
-- 数据访问、缓存、迁移改动：至少补一项查询结果、缓存行为、事务或迁移同步验证
-- 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
+<!-- include: shared/backend/pre-commit-regression.md -->
 
-### 总体要求
-- 测试暂时不作为强制要求
-- 若补充测试，应覆盖真实业务行为
+<!-- include: shared/backend/general-requirements.md -->
 
 ### Go 后端测试（可选）
 - 使用标准 `testing` 包
 - Service 层测试 mock Repository
 - Repository 层测试使用 SQLite 内存数据库
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

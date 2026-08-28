@@ -1,22 +1,15 @@
 ---
 rule_id: backend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
 
 # 后端规则
 
-## 适用范围
+<!-- include: shared/backend/scope.md -->
 
-- 作用域：服务端实现、接口、服务、数据访问、缓存、异常处理与后端测试
-- 触发场景：涉及接口、Service、Repository、缓存、权限、异常处理或测试时阅读
-
-### 常见任务入口
-- 改接口响应或状态码：先看接口 / 路由规则与异常处理规范
-- 改业务流程或状态流转：先看 Service / 应用层规则与权限约束
-- 改查询、分页、缓存、迁移：先看数据访问规则与验证要求
-- 补服务端回归：先看 `提交前最小回归` 与测试规则
+<!-- include: shared/backend/common-tasks.md -->
 
 ---
 
@@ -289,26 +282,13 @@ src/
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
-### 反模式与修根因清单
-- 这是根 `AGENTS.md`「修 Bug 必须定位根因」在 .NET 中的具体禁止项，禁止用下列方式掩盖问题：
-  - 空 `catch` 或 `catch (Exception)` 吞异常后静默继续
-  - 用 `!`（null-forgiving）压制可空告警而非真正处理 null
-  - 在异步上下文用 `.Result` / `.Wait()` 同步阻塞
-  - `#pragma warning disable` 关闭编译 / 分析器告警掩盖问题
-  - 删除或注释测试让构建通过
-  - 用一层抽象重写掩盖原始复杂度，而不是简化它
-- 出现这些倾向时立刻回退一步：复杂 LINQ 比业务逻辑本身更难读；helper 数量增加但理解成本没下降；核心逻辑缺注释只能靠猜。
+<!-- include: shared/application/anti-patterns.md -->
 
 ---
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：项目现有的静态检查、类型检查或编译校验
-- 业务逻辑改动：至少补一项业务规则、权限判断或状态流转验证
-- 接口 / 路由 / 控制器改动：至少补一项输入输出、状态码或异常分支验证
-- 数据访问、缓存、迁移改动：至少补一项查询结果、缓存行为、事务或迁移同步验证
-- 若仓库暂时缺少自动化测试基础，可使用接口调用、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
+<!-- include: shared/backend/pre-commit-regression.md -->
 
 ### 总体要求
 - 影响行为的改动应优先补充或更新测试。
@@ -322,9 +302,8 @@ src/
 - 数据访问测试：使用 In-Memory 数据库或 Testcontainers
 - 集成测试：使用 `WebApplicationFactory` 测试完整请求管道
 
-### 外部依赖与数据
-- 测试中不要真实调用第三方服务，统一使用 mock。
-- 测试数据应尽量最小化、可读、可重复执行。
-- 不要让测试依赖本地人工状态。
+<!-- include: shared/external-dependencies.md -->
+
+<!-- include: shared/no-test-fallback.md -->
 
 ---

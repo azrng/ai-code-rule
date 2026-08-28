@@ -1,6 +1,6 @@
 ---
 rule_id: application-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -197,14 +197,8 @@ class Failure<T> extends Result<T> {
 - Service 层业务逻辑、数据转换、异常处理发生变化时，应补充对应测试
 - 推荐使用 `flutter_test` + `mocktail` / `mockito`
 
-### 外部依赖与数据
-- 测试中不要真实调用外部服务，统一使用 mock、stub 或测试替身
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态或不可控外部环境
+<!-- include: shared/desktop/external-dependencies.md -->
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

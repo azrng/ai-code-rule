@@ -10,12 +10,15 @@
 fragments/
 ├── root/AGENTS.md         # 公共根骨架，含变量槽
 ├── pointers/              # 公共入口指针
+├── shared/                # 跨架构共享小节，供 include 指令引用
 ├── arch/<id>/             # 当前 Profile 的专属规则片段
 ├── manifest.json          # 模块、家族、Profile 和输出配方
 └── ...                    # design-system 等能力片段
 ```
 
 公共能力通过 `modules` 复用。例如 `core` 提供根入口和指针，`ai-capability` 提供 `ai-AGENTS.md`。现有技术栈专属文件暂按 Profile 保留，避免为一次模块化迁移改写大量规则正文；新增组合优先使用模块，不再复制整套 Profile。
+
+子规则内部的共性小节通过 include 指令复用：片段中独占一行的 `<!-- include: shared/xxx.md -->`（路径相对 `fragments/`）会在生成时被展开为对应共享小节的内容，支持嵌套引用并做循环检测。当前 `shared/` 维护「提交前最小回归」「无法执行测试时」「外部依赖与数据」「主动建议规则」等小节，按 backend / frontend / ui / application / infra 等子规则类型分目录归档；只有逐字节相同或纯措辞漂移的小节才收敛进共享，含技术栈实质差异的版本保留在各架构片段本地。
 
 ## 构建
 
@@ -37,10 +40,14 @@ fragments/
 
 目标目录已有同名文件时会直接覆盖。文件会先写入临时目录，全部准备成功后再提交；提交中途失败会回滚本次已经写入的文件。不会释放 `TASK.md`、`rulelog` 或 `devlog`。
 
-维护和 CI 可以使用只读校验：
+维护和 CI 可以使用只读校验与批量预览：
 
 ```powershell
+# 只校验 manifest、片段和全部 Profile，不写入文件
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --check
+
+# 把全部 Profile 的生成结果输出到指定目录，用于批量对比验证
+dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit <目录>
 ```
 
 ## 当前 Profile

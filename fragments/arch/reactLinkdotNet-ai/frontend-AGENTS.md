@@ -1,6 +1,6 @@
 ---
 rule_id: frontend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -172,10 +172,7 @@ frontend/
 - 仅样式或文案微调：至少确认受影响页面的关键状态、布局与核心交互未回退
 - 若改动影响共享组件、布局或状态流转，优先验证影响范围最大的页面，而不是只看局部组件
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为
+<!-- include: shared/application/general-requirements.md -->
 
 ### 前端测试
 - 鼓励用 AI 辅助生成关键交互与组件的单元测试（Vitest + React Testing Library）；样板与边缘用例也可借助 AI 生成
@@ -186,9 +183,6 @@ frontend/
 - 测试数据应尽量最小化、可读、可重复执行
 - 不要让测试依赖本地人工状态
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

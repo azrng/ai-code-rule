@@ -1,6 +1,6 @@
 ---
 rule_id: infrastructure-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -50,9 +50,7 @@ dependencies: [agents-root]
   - `Scoped`：需与页面生命周期绑定、或需共享同一实例的服务
   - `Singleton`：全局唯一服务（如配置、日志、HTTP 客户端）
 
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -168,10 +166,7 @@ src/AppName/
 - 涉及数据库初始化、迁移、升级时，应至少验证一次从空环境到可运行状态的链路
 - 不要让测试或验证依赖手工准备的本地状态
 
-### 无法执行验证时
-- 必须说明未执行的验证类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ### 提交前最小回归
 - 修改构建配置、启动命令、打包脚本或平台清单时：至少执行一次构建与启动验证

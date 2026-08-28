@@ -1,6 +1,6 @@
 ---
 rule_id: ui-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -36,9 +36,7 @@ dependencies: [agents-root]
 - 样式必须使用 MAUI ResourceDictionary（`.xaml`），禁止把颜色、间距、圆角直接硬编码在控件属性中
 - 颜色、间距、圆角必须来自样式资源，使用 `StaticResource` 或 `DynamicResource` 引用
 
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -191,14 +189,8 @@ src/AppName/
 - 若涉及数据请求、筛选、提交等关键路径，应验证主要交互结果
 - 推荐使用 xUnit + 项目既有 UI 测试方案
 
-### 外部依赖与数据
-- 测试中不要真实调用外部服务，统一使用 mock、stub 或测试替身
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态或不可控外部环境
+<!-- include: shared/desktop/external-dependencies.md -->
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

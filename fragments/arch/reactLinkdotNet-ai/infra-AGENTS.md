@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root, ai-agents]
 ---
@@ -108,5 +108,7 @@ dependencies: [agents-root, ai-agents]
 - 修改环境变量、模型密钥配置、配置项或连接串时：确认示例配置、文档和运行方式同步更新
 - 修改数据库 Provider、仓储、依赖注入或外部服务集成时：至少补一项真实链路或等价验证
 - 若本次改动同时影响应用访问链路或模型调用链路，应至少补一次核心链路检查
+
+<!-- include: shared/no-test-fallback.md -->
 
 ---

@@ -1,22 +1,15 @@
 ---
 rule_id: infra-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
 
 # 基础设施规则
 
-## 适用范围
+<!-- include: shared/infra/scope.md -->
 
-- 作用域：端口、环境变量、Docker、构建发布与交付验证规则
-- 触发场景：涉及 Docker、端口、环境变量、启动方式、构建打包、部署链路时阅读
-
-### 常见任务入口
-- 改容器或构建配置：先看 Docker / 构建规则
-- 改端口、环境变量、连接串：先看默认端口与配置约束
-- 改启动命令、发布或打包链路：先看交付规则与验证要求
-- 补交付回归：先看 `提交前最小回归`
+<!-- include: shared/infra/common-tasks.md -->
 
 ---
 
@@ -26,16 +19,11 @@ dependencies: [agents-root]
 - 生产镜像优先采用多阶段构建
 - 部署链路要可追踪，可定位到镜像版本和配置来源
 
-### 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
-## 主动建议规则
-- 发现环境变量、端口、Docker、构建脚本、启动命令或部署链路存在不一致、不可复现或文档缺失时，应主动提醒
-- 涉及清理环境、删除数据、停止未知进程、修改部署配置等高风险操作时，只能提出建议，必须等待明确确认后执行
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+<!-- include: shared/infra/advisory-docker.md -->
 
 ---
 
@@ -72,10 +60,8 @@ dependencies: [agents-root]
 - 新增镜像构建链路时，应同步补充 `.dockerignore`。
 
 
-### 提交前最小回归
-- 修改 Dockerfile、Compose、启动命令、打包脚本或端口映射时：至少执行一次构建与启动验证
-- 修改环境变量、配置项或连接串时：确认示例配置、文档和运行方式同步更新
-- 修改数据库、仓储、依赖注入或外部服务集成时：至少补一项真实链路或等价验证
-- 若本次改动同时影响应用访问链路，应至少补一次核心链路检查
+<!-- include: shared/infra/pre-commit-regression.md -->
+
+<!-- include: shared/no-test-fallback.md -->
 
 ---

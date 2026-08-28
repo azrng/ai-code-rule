@@ -1,6 +1,6 @@
 ---
 rule_id: ui-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -236,14 +236,8 @@ lib/
 - 若涉及数据请求、筛选、提交等关键路径，应验证主要交互结果
 - 推荐使用 `flutter_test` + `mocktail`
 
-### 外部依赖与数据
-- 测试中不要真实调用外部服务，统一使用 mock、stub 或测试替身
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态或不可控外部环境
+<!-- include: shared/desktop/external-dependencies.md -->
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围和风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

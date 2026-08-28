@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -182,9 +182,6 @@ Tauri Command / Event
 - Command 测试：验证输入输出结构和错误分支
 - 涉及文件系统或系统能力时，优先通过可控临时目录和测试替身验证
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围与风险
+<!-- include: shared/no-test-fallback.md -->
 
 ---

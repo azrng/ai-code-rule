@@ -1,22 +1,15 @@
 ---
 rule_id: frontend-agents
-version: 1.13.0
+version: 1.14.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
 
 # 前端规则
 
-## 适用范围
+<!-- include: shared/frontend/scope.md -->
 
-- 作用域：前端实现、页面、组件、路由、状态、样式与前端测试
-- 触发场景：涉及页面、布局、组件、交互、样式、前端 smoke test 时阅读
-
-### 常见任务入口
-- 新增页面或布局：先看页面 / 组件规则与目录约定
-- 改表单、筛选、交互：先看状态管理、请求规则与校验约定
-- 改样式、组件展示：先看样式规则与设计系统约束
-- 补前端回归：先看 `提交前最小回归` 与测试规则
+<!-- include: shared/frontend/common-tasks.md -->
 
 ---
 
@@ -435,10 +428,7 @@ project-root/
 - localStorage 相关改动需验证刷新后的数据持久化效果
 - 图表、弹窗、表单、导航等关键交互应有验证
 
-### 无法执行测试时
-- 必须说明未执行的测试类型
-- 必须说明未执行原因
-- 必须说明潜在影响范围与风险
+<!-- include: shared/no-test-fallback.md -->
 
 ## Git 与提交流程
 
