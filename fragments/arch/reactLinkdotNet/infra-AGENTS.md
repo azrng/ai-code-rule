@@ -44,13 +44,7 @@ dependencies: [agents-root]
 
 ## Docker 规则
 
-### 总体要求
-- 优先复用现有 Docker 与 Compose 文件
-- 首次创建 `Dockerfile`、`docker-compose.yml`、`.dockerignore` 或其他部署文件前，必须把"将新增部署文件"作为独立一项向用户确认并获得同意；不得因为方案骨架或阶段计划里提及过就默认生成，用户确认后再创建。
-- 生产镜像优先采用多阶段构建
-- 不要把密钥写入镜像
-- 部署链路要可追踪
-- 清理旧镜像时要保留最小回滚窗口
+<!-- include: shared/infra/general-requirements-v2.md -->
 
 ### Docker 交付规则
 - 只要本次任务新增或修改了 Dockerfile、`docker-compose.yml`、运行端口、环境变量或启动命令，完成实现后应主动执行一次镜像构建和容器化启动验证；若因环境限制无法执行，必须明确说明

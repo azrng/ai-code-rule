@@ -7,16 +7,9 @@ dependencies: [agents-root]
 
 # 应用规则
 
-## 适用范围
+<!-- include: shared/application/scope.md -->
 
-- 作用域：ViewModel、Service、命令、业务编排、结果包装与应用层测试
-- 触发场景：涉及业务流程、命令逻辑、状态流转、应用服务或应用层测试时阅读
-
-### 常见任务入口
-- 改命令流程或状态切换：先看 ViewModel / 命令规则与结果处理约束
-- 改 Service 或业务规则：先看应用层职责边界与异常处理规范
-- 改 DTO、映射、结果包装：先看输入输出结构与边界约定
-- 补应用层回归：先看 `提交前最小回归` 与测试规则
+<!-- include: shared/application/common-tasks.md -->
 
 ---
 
@@ -123,15 +116,9 @@ dependencies: [agents-root]
 ## 测试规则
 
 <!-- include: shared/application/pre-commit-regression.md -->
-### 总体要求
-- 影响行为的改动应优先补充或更新测试，而不是只修改实现代码
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为，不要只覆盖静态渲染或无意义分支
+<!-- include: shared/application/general-requirements-v2.md -->
 
-### 视图层测试
-- 页面交互、表单校验、列表行为、状态展示、异常状态发生变化时，应补充对应测试
-- 至少关注以下关键状态：`loading`、`empty`、`error`、`no-permission`
-- 若涉及数据请求、筛选、分页、提交等用户关键路径，应验证主要交互结果
+<!-- include: shared/application/view-layer-testing.md -->
 
 ### 业务逻辑层测试
 - ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试

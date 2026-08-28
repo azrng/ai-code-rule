@@ -33,16 +33,9 @@ dependencies: [agents-root]
 - Zustand（仅用于客户端跨组件共享状态）
 - Electron preload + `contextBridge` 暴露的 IPC SDK（与主进程 / .NET sidecar 通信）
 
-### 测试
-- Vitest + Testing Library
-- MSW（仅在需要模拟外部请求时使用）
+<!-- include: shared/frontend/testing.md -->
 
-### 设计系统
-- 所有视觉规范以 `design-system.yaml` 为唯一事实来源
-- 优先复用项目已有组件、布局、样式变量与交互模式
-- 禁止 inline style，禁止硬编码颜色、间距、圆角、阴影、断点
-
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+<!-- include: shared/frontend/design-system-usage-v1.md -->
 
 ## 主动建议规则
 - 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点
@@ -109,12 +102,7 @@ preload/
 
 ## 前端规则
 
-### React / 路由规范
-- 函数组件 + Hooks 是唯一写法，禁止 class 组件
-- 路由配置集中在 `routes/` 或 `app/`，目录命名必须表达业务语义
-- 页面跳转统一通过 React Router 提供的 API 完成
-- 页面级逻辑优先收敛在业务目录，不要把跨页面逻辑散落在全局
-- 可复用逻辑放在 `hooks/`，优先按业务域收敛
+<!-- include: shared/frontend/react-routing.md -->
 
 ### 数据获取与状态管理
 - 异步数据默认优先使用 TanStack Query
@@ -132,24 +120,11 @@ preload/
 - 除非明确需要，否则不要在 Electron 应用里再额外引入本地 HTTP 服务作为前后端桥接层
 - 若确实需要流式处理、WebSocket、嵌入式代理等能力，再单独论证是否引入额外服务层
 
-### 表单规则
-- 表单优先使用 React Hook Form + Zod
-- 表单 schema、默认值、字段映射尽量与 `schemas/` 中的 Zod 定义保持一致
-- 错误提示要区分字段校验错误、权限错误、状态冲突、系统异常
-- 禁止在组件中手写大量分散校验逻辑替代 schema
+<!-- include: shared/frontend/form-rules.md -->
 
-### 样式规则
-- 统一使用 Tailwind CSS 与设计 token
-- 基础组件优先通过 cva / 变体模式管理，不在业务组件里堆大量条件 class
-- 禁止 inline style
-- 禁止硬编码颜色值、阴影值、圆角值、z-index、断点
-- 响应式遵循桌面优先，但仍需兼容窗口缩放和不同分辨率
+<!-- include: shared/frontend/styling.md -->
 
-### 组件规则
-- 优先复用 `components/ui` 与业务域组件
-- 只有确认存在复用价值时，才新增共享组件
-- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
-- 不要为单次需求过度抽象组件
+<!-- include: shared/frontend/component-rules-v1.md -->
 
 ### 外部请求规则
 - 本地能力（.NET sidecar）优先通过 IPC 调用，不通过本地 HTTP 绕路
@@ -163,11 +138,7 @@ preload/
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：`lint`、`typecheck`
-- 页面、路由、表单、交互改动：至少补一次受影响页面或组件的 smoke test / 交互验证
-- 仅样式或文案微调：可不补自动化测试，但仍应检查受影响页面显示、状态和关键交互未回退
-- 若改动影响共享组件、布局或状态流转，优先补受影响范围最大的页面验证，而不是只看局部组件
+<!-- include: shared/frontend/pre-commit-regression-v2.md -->
 
 ### 前端测试
 - 组件测试优先使用 Vitest + Testing Library

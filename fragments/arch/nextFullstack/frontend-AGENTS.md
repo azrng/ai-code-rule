@@ -125,10 +125,7 @@ dependencies: [agents-root]
 
 ## 测试规则
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务路径，而不是只验证静态渲染
+<!-- include: shared/frontend/general-requirements.md -->
 
 ### 提交前最小回归
 - 默认执行：`lint`、`typecheck`

@@ -7,16 +7,9 @@ dependencies: [agents-root]
 
 # 界面规则
 
-## 适用范围
+<!-- include: shared/ui/scope.md -->
 
-- 作用域：界面、布局、导航、样式、状态、交互与界面测试
-- 触发场景：涉及页面、窗口、布局、组件、交互、样式、UI smoke test 时阅读
-
-### 常见任务入口
-- 新增页面、窗口或布局：先看界面结构与组件规则
-- 改表单、对话框、导航、交互：先看状态管理与事件处理规则
-- 改样式、主题、视觉展示：先看样式规则与设计系统约束
-- 补界面回归：先看 `提交前最小回归` 与测试规则
+<!-- include: shared/ui/common-tasks.md -->
 
 ---
 
@@ -203,15 +196,9 @@ project-root/
 ## 测试规则
 
 <!-- include: shared/ui/pre-commit-regression.md -->
-### 总体要求
-- 影响行为的改动应优先补充或更新测试，而不是只修改实现代码
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实业务行为，不要只覆盖静态渲染或无意义分支
+<!-- include: shared/application/general-requirements-v2.md -->
 
-### 视图层测试
-- 页面交互、表单校验、列表行为、状态展示、异常状态发生变化时，应补充对应测试
-- 至少关注以下关键状态：`loading`、`empty`、`error`、`no-permission`
-- 若涉及数据请求、筛选、分页、提交等用户关键路径，应验证主要交互结果
+<!-- include: shared/application/view-layer-testing.md -->
 
 ### 业务逻辑层测试
 - ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试

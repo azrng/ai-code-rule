@@ -46,16 +46,7 @@ dependencies: [agents-root, ai-agents]
 ### AI 集成
 - `Microsoft.Extensions.AI` + Microsoft Agent Framework，规则全部以 `ai-AGENTS.md` 为准
 
-### 依赖注入规范
-- 使用 Azrng 标记接口方式：
-  - `ITransientDependency`：临时注入
-  - `IScopedDependency`：作用域注入
-  - `ISingletonDependency`：单例注入
-- 在 Program.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
-- 服务类实现对应标记接口，自动被扫描注册到 DI 容器
-
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/backend/di-rules-v2.md -->
 
 ---
 
@@ -142,10 +133,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 业务异常抛出继承自 `BaseException` 的自定义异常
 - Agent 编排与工具调度放此层（物理上在 `AI/Agents/`，见 `ai-AGENTS.md` 方案 A）；模型调用细节委托给 `AI/Clients/` 的客户端封装，不在此层手拼模型请求
 
-### Domain 层规则
-- 实体类继承自基类（包含 Id、创建时间等公共属性）
-- 值对象使用 record 类型，实现值相等比较
-- 禁止依赖外部库，保持纯净
+<!-- include: shared/backend/domain-layer.md -->
 
 ### Infrastructure 层规则
 - DbContext 实现数据上下文，配置连接和映射
@@ -168,12 +156,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - helper / 拆分只在降低认知负担时才成立：让职责边界更清楚、真正复用、让调用方少理解细节；若拆完读者要在多个位置来回跳，或用 helper 隐藏本该直说的业务判断，就退回直白写法。
 - 共性的"先读再写""范围最小扰动"见根 `AGENTS.md`「理解检查清单」与「全局工作规则」
 
-### 数据访问规则
-- 使用 Entity Framework Core 进行数据访问
-- DbContext 通过构造函数注入
-- 使用 LINQ 查询，避免原生 SQL
-- 涉及事务时使用 `IDbContextTransaction`
-- 软删除通过全局查询过滤器实现
+<!-- include: shared/backend/data-access-rules.md -->
 
 ### 数据库切换规范（SQLite ↔ PostgreSQL）
 - 默认 Provider：SQLite（`UseSqlite`），连接串指向本地文件（如 `Data Source=app.db`）

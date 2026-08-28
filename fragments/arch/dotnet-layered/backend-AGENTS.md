@@ -19,24 +19,9 @@ dependencies: [agents-root]
 - .NET 10（2025 年已发布正式版）+ ASP.NET Core Web API
 - 分层架构（9 个项目），按职责严格划分
 
-### 核心库
-- `Azrng.Core`：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
-- `Azrng.Core.Json`：JSON 序列化（基于 `System.Text.Json`）
-- `Azrng.AspNetCore.Core`：API 基础设施（统一响应、模型校验、异常中间件）
-- `Azrng.Swashbuckle`：Swagger 扩展（简化配置、自动 XML 注释、JWT 认证支持）
-- `Azrng.SqlMigration`：SQL 脚本迁移执行
-- `Common.Cache.Redis`：Redis 缓存封装（基于 StackExchange.Redis）
-- `Common.Cache.MemoryCache`：内存缓存封装（基于 `IMemoryCacheProvider`）
-- `Common.HttpClients`：HTTP 客户端封装（基于 `IHttpClientFactory`，支持依赖注入和弹性策略）
+<!-- include: shared/backend/core-libs-v1.md -->
 
-### 数据库访问库
-- `Common.EFCore`：EF Core 基础封装（必须安装，所有 Provider 都依赖它）
-- 根据项目使用的数据库，按需选择以下其中一个 Provider 包：
-  - `Common.EFCore.PostgresSql`：PostgreSQL（默认推荐；注意实际 NuGet 包 id 拼写为 `PostgresSql`）
-  - `Common.EFCore.MySQL`：MySQL / MariaDB
-  - `Common.EFCore.SQLServer`：SQL Server
-  - `Common.EFCore.SQLite`：SQLite
-  - `Common.EFCore.InMemory`：内存数据库（仅用于测试）
+<!-- include: shared/backend/database-libs.md -->
 
 ### 数据库
 - 默认使用 PostgreSQL
@@ -206,32 +191,11 @@ src/
 - 接口层（IApplication / IDomain）只定义 DTO 和接口，不包含实现。
 - 禁止在 DTO 中暴露数据库内部字段。
 
-### 统一响应格式
-- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
-  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
-  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
-  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
-- AppService 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
-- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
+<!-- include: shared/backend/response-format-v1.md -->
 
-### 依赖注入规范
-- 服务类必须实现以下接口之一：
-  - `ITransientDependency`：每次请求创建新实例
-  - `IScopedDependency`：每个请求作用域内单例
-  - `ISingletonDependency`：应用程序生命周期单例
-- Controller 通过构造函数注入服务。
-- 禁止使用静态服务定位器 pattern。
-- 禁止手动在 `Program.cs` 中逐一注册服务，应使用 `RegisterBusinessServices` 批量扫描注册。
+<!-- include: shared/backend/di-rules-v1.md -->
 
-### 异常处理规范
-- 业务异常继承 Azrng 异常体系：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `ForbiddenException`：禁止访问
-  - `InternalServerException`：服务器内部错误
-- 异常由中间件统一捕获并转换为 `ResultModel` 响应。
-- 业务失败一律通过抛出上述异常表达；禁止在业务层手工构造失败 `ResultModel` 或直接设置错误状态码。
+<!-- include: shared/backend/exception-handling-v1.md -->
 
 ### Redis 缓存使用规范
 - 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口。
@@ -241,21 +205,9 @@ src/
 - 发布订阅场景使用 `PublishAsync` / `SubscribeAsync`。
 - 禁止在循环中频繁调用 Redis。
 
-### 内存缓存使用规范
-- 使用 `Common.Cache.MemoryCache` 封装的 `IMemoryCacheProvider` 接口。
-- 通过 `services.AddMemoryCacheStore()` 注册内存缓存服务，配置项使用 `MemoryCacheOptions`。
-- `MemoryCacheOptions.DefaultExpiry` 默认仅 5 秒，业务缓存必须显式传入过期时间，不依赖默认值。
-- 适用于单实例部署、不需要分布式共享的缓存场景。
-- 与 Redis 搭配使用时作为一级缓存，Redis 作为二级缓存。
+<!-- include: shared/backend/memory-cache.md -->
 
-### Swagger 规范
-- 使用 `Azrng.Swashbuckle` 包，禁止直接引用 `Swashbuckle.AspNetCore`。
-- 服务注册：`services.AddDefaultSwaggerGen(title: "项目名称", showJwtToken: true)`。
-- 中间件启用：`app.UseDefaultSwagger(onlyDevelopmentEnabled: true)`。
-- 项目必须启用 XML 文档生成：`<GenerateDocumentationFile>true</GenerateDocumentationFile>`。
-- Controller 和公开方法必须添加 XML 注释，Swagger 会自动展示；XML 注释内容统一使用中文。
-- AppService / DomainService 的方法 XML 注释按 `代码注释规范` 处理（不依赖 Swagger 自动展示，但需保证可读与可维护）。
-- 接口需通过 Swagger UI 独立验证，确保请求 / 响应结构正确。
+<!-- include: shared/backend/swagger.md -->
 
 ### 数据库迁移规则
 - 使用 `Azrng.SqlMigration` 进行数据库脚本迁移，不使用 EF Core Code-First Migrations。
@@ -264,10 +216,7 @@ src/
 - 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本。
 - 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式。
 
-### 字段命名约定
-- C# 属性：PascalCase
-- JSON 输出：camelCase（通过 `System.Text.Json` 配置自动转换）
-- 数据库字段：snake_case（通过 EF Core 命名约定配置）
+<!-- include: shared/backend/field-naming.md -->
 
 ### 代码注释规范
 - 必须补 XML 注释的位置：

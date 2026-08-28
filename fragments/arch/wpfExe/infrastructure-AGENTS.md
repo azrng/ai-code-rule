@@ -7,16 +7,9 @@ dependencies: [agents-root]
 
 # 基础设施规则
 
-## 适用范围
+<!-- include: shared/infrastructure/scope.md -->
 
-- 作用域：仓储、数据访问、依赖注入、配置、构建发布与交付验证规则
-- 触发场景：涉及 Repository、数据库、依赖注入、配置、启动方式、打包发布时阅读
-
-### 常见任务入口
-- 改 Repository 或数据库结构：先看数据访问规则与迁移约束
-- 改依赖注入、配置、连接串：先看配置规则与运行约束
-- 改构建、发布、打包流程：先看交付规则与验证要求
-- 补基础设施回归：先看 `提交前最小回归`
+<!-- include: shared/infrastructure/common-tasks.md -->
 
 ---
 
@@ -101,10 +94,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/no-test-fallback.md -->
 
-### 提交前最小回归
-- 修改发布配置、单文件发布配置、安装包脚本、启动命令或运行时依赖时：至少执行一次构建与启动验证
-- 修改环境变量、配置项或连接串时：确认示例配置、文档和运行方式同步更新
-- 修改数据库、仓储、依赖注入或外部服务集成时：至少补一项真实链路或等价验证
-- 若本次改动同时影响应用访问链路，应至少补一次核心链路检查
+<!-- include: shared/infrastructure/pre-commit-regression.md -->
 
 ---

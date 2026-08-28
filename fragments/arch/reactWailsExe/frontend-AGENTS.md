@@ -12,11 +12,7 @@ dependencies: [agents-root]
 - 作用域：界面、视图、页面、组件、交互、样式与前端测试
 - 触发场景：涉及任何用户可见界面、前端交互、客户端状态、组件拆分、界面回归时阅读
 
-### 常见任务入口
-- 新增页面或布局：先看 `阶段 1`、`页面与组件规范`
-- 改表单、筛选、交互：先看 `状态与数据流规则`、`表单规则`
-- 改样式、组件展示：先看 `样式规则`、`组件规则`
-- 补前端回归：先看 `提交前最小回归`、`前端测试`
+<!-- include: shared/frontend/common-tasks-v2.md -->
 
 ---
 
@@ -115,41 +111,15 @@ project-root/
 
 ## 前端规则
 
-### React Hooks 规范
-- 函数组件 + Hooks 是唯一写法，禁止 class 组件
-- 响应式数据使用 `useState`，复杂状态使用 `useReducer`
-- 计算属性使用 `useMemo`，回调缓存使用 `useCallback`
-- 副作用使用 `useEffect`，清理逻辑在返回函数中处理
-- 可复用逻辑封装为自定义 Hook（`useXxx`），放在 `hooks/` 目录
+<!-- include: shared/frontend/react-hooks.md -->
 
-### 组件通信规范
-- **父传子**：通过 Props 传递，子组件只读不可修改
-- **子传父**：通过回调函数 Props（`onXxx` 命名）
-- **跨级传值**：优先使用 Zustand，其次使用 React Context
-- **兄弟组件**：通过共同父组件或 Zustand 中转
-- 避免直接修改 props，需要双向绑定时使用受控组件模式（value + onChange）
+<!-- include: shared/frontend/component-communication-v1.md -->
 
-### 路由管理规范
-- 路由配置集中放在 `src/router/routes.tsx`
-- 使用 React Router 6 的 `createBrowserRouter` + `RouterProvider`
-- 路由守卫通过 `loader` 函数或 `ProtectedRoute` 包裹组件实现
-- 路由跳转使用 `useNavigate()` hook
-- 获取路由参数使用 `useParams()` 和 `useSearchParams()`
-- 路由命名使用有意义的路径（如 `/users/list`、`/users/detail/:id`）
+<!-- include: shared/frontend/routing-management-v1.md -->
 
-### Zustand 状态管理规范
-- Store 按业务域拆分，放在 `src/stores/` 目录
-- 使用 `create` 函数定义 store
-- Store 命名：`use[Domain]Store`（如 `useUserStore`、`usePermissionStore`）
-- 修改 store 状态直接通过 set 方法，推荐使用 immer 中间件简化不可变更新
-- 异步操作直接在 store actions 或组件中通过 async/await 处理
+<!-- include: shared/frontend/zustand.md -->
 
-### Wails 绑定调用规范
-- 通过 `src/bindings/` 下自动生成的模块调用 Go 方法
-- 绑定方法返回 Promise，必须使用 `await` 或 `.then()/.catch()` 处理
-- 禁止绕过 Wails 绑定直接通过 HTTP 请求与 Go 后端通信
-- 绑定方法调用应封装在 hooks 或 store 中，不直接散落在页面组件内
-- 修改 Go 方法签名后必须重新运行 `wails generate module`
+<!-- include: shared/frontend/wails-binding-call.md -->
 
 ### 样式规则
 - 优先使用 Ant Design 组件内置样式和 Design Token
@@ -158,11 +128,7 @@ project-root/
 - 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
 - Wails 窗口为固定大小，不需要考虑移动端响应式
 
-### 组件规则
-- 优先复用 `src/components/` 下已有组件，禁止重复创建
-- 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象
-- 页面状态必须完整：`loading`（Spin / Skeleton）、`empty`（Empty）、`error`（Result）、`no-permission`
-- 除非仓库已在使用，否则不要引入新的组件库或样式体系
+<!-- include: shared/frontend/component-rules-v2.md -->
 
 ### 外部 API 请求规则
 - 仅在需要调用外部服务时使用 Axios

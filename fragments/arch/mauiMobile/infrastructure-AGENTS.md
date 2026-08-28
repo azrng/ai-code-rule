@@ -12,12 +12,7 @@ dependencies: [agents-root]
 - 作用域：仓储、数据访问、依赖注入、平台服务、配置、构建发布与交付验证规则
 - 触发场景：涉及 Repository、数据库、依赖注入、平台服务、配置、启动方式、打包发布时阅读
 
-### 常见任务入口
-- 改 Repository 或数据库结构：先看数据访问规则与迁移约束
-- 改依赖注入、配置、连接串：先看配置规则与运行约束
-- 改平台服务（相机、位置、传感器等）：先看平台服务规则
-- 改构建、发布、打包流程：先看交付规则与验证要求
-- 补基础设施回归：先看 `提交前最小回归`
+<!-- include: shared/backend/common-tasks-v2.md -->
 
 ---
 
@@ -36,10 +31,7 @@ dependencies: [agents-root]
 - `Microsoft.Maui.Storage`：Preferences、SecureStorage、FileSystem
 - `CommunityToolkit.Maui`：平台扩展能力
 
-### 发布
-- Android：AAB / APK 签名发布
-- iOS：IPA 发布（需 macOS 构建环境）
-- 版本、发布目录和运行命令必须可追踪
+<!-- include: shared/backend/release.md -->
 
 ### 依赖注入规范
 - 使用 MAUI 内置 `MauiAppBuilder` 配置 DI 容器
@@ -129,24 +121,11 @@ src/AppName/
 
 ## 发布规则
 
-### 总体要求
-- 优先复用现有打包配置
-- Android 发布优先使用 AAB 格式，上传 Google Play / 国内应用商店
-- iOS 发布需在 macOS 环境下构建，使用 IPA 格式
-- 不要把密钥、签名证书或发布凭据写入仓库
-- 发布链路要可追踪
-- 清理旧版本时要保留最小回滚窗口
+<!-- include: shared/backend/general-requirements-v2.md -->
 
-### Android 发布规则
-- 签名密钥通过安全渠道管理，禁止提交到仓库
-- `AndroidManifest.xml` 中的权限声明必须与实际使用一致，不多申请无用权限
-- Target SDK Version 和 Minimum SDK Version 需与目标市场要求匹配
-- ProGuard / R8 混淆规则如启用，需确认反射和序列化类不被错误混淆
+<!-- include: shared/backend/android-release.md -->
 
-### iOS 发布规则
-- Info.plist 中的 `NS*UsageDescription` 必须为每个使用的权限提供用户可见说明
-- 最低支持版本需与目标市场要求匹配
-- App Store 审核相关配置（隐私政策 URL、应用类别等）需在发布前确认
+<!-- include: shared/backend/ios-release.md -->
 
 ### 发布交付规则
 - 只要本次任务涉及发布配置、版本号、运行命令或环境依赖，完成实现后应主动执行一次构建验证

@@ -23,19 +23,9 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-### 后端
-- .NET 10 (2025 年已经发布正式版) + ASP.NET Core Web API
-- Clean Architecture 分层架构：
-  - `API`（表现层）→ `Application`（应用层）→ `Domain`（领域层）← `Infrastructure`（基础设施层）
-- ORM：Entity Framework Core
-- 测试框架：xUnit + Moq
+<!-- include: shared/backend/stack-backend-v1.md -->
 
-### 核心库
-- `Azrng.Core` (1.15.8)：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
-- `Azrng.Core.Json` (1.3.1)：JSON 序列化（基于 System.Text.Json）
-- `Azrng.AspNetCore.Core` (1.3.0)：API 基础设施（统一响应、模型校验、异常中间件）
-- `Azrng.SqlMigration` (0.4.0)：SQL 脚本迁移执行
-- `Common.Cache.Redis` (2.0.0)：Redis 缓存封装（基于 StackExchange.Redis）
+<!-- include: shared/backend/core-libs-v2.md -->
 
 ### 依赖注入规范
 - 使用 Azrng 标记接口方式：
@@ -71,15 +61,7 @@ dependencies: [agents-root]
 
 ## 后端规则（Clean Architecture）
 
-### 分层依赖规则
-```
-API → Application → Domain ← Infrastructure
-                ↑_______________|
-```
-- `Domain` 层：无外部依赖，包含核心业务模型
-- `Application` 层：依赖 Domain，定义服务接口和 DTO
-- `API` 层：依赖 Application，处理 HTTP 请求
-- `Infrastructure` 层：依赖 Application 和 Domain，实现具体技术细节
+<!-- include: shared/backend/layering-rules.md -->
 
 ### 层内目录组织
 
@@ -98,12 +80,7 @@ API → Application → Domain ← Infrastructure
 | 仓储实现 | `Infrastructure/Data/Repositories/` | `{实体名}Repository.cs` |
 | SQL 迁移脚本 | `API/MigrationSql/` | `版本号.sql` / `版本号.txt`（如 `1.0.0.sql`、`1.1.0.txt`，不含描述文字） |
 
-### Controller 层规则
-- Controller 只负责 HTTP 处理，不包含业务逻辑
-- 使用 `[ApiController]` 特性，自动处理 400 响应
-- 使用 `[Route("api/[controller]")]` 统一路由前缀
-- 注入 Application 层的服务接口，不直接依赖 Infrastructure
-- Controller action 直接返回 `Task<T>` 并一行转发 Service；不写 `Ok()`，不手动构造 `ResultModel`，统一包装由全局过滤器与异常中间件完成（见 `统一响应格式`）
+<!-- include: shared/backend/controller-layer.md -->
 
 ### Application 层规则
 - 服务类实现接口，接口定义在 `Interfaces/` 目录
@@ -113,16 +90,9 @@ API → Application → Domain ← Infrastructure
 - 业务异常抛出继承自 `BaseException` 的自定义异常
 - 禁止在 Controller、Service、Repository、Entity、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数
 
-### Domain 层规则
-- 实体类继承自基类（包含 Id、创建时间等公共属性）
-- 值对象使用 record 类型，实现值相等比较
-- 禁止依赖外部库，保持纯净
+<!-- include: shared/backend/domain-layer.md -->
 
-### Infrastructure 层规则
-- DbContext 实现数据上下文，配置连接和映射
-- 数据库结构变更通过 `Azrng.SqlMigration` SQL 脚本迁移管理（见 `数据库迁移规则`），不使用 EF Core Code-First Migrations
-- 仓储实现依赖注入，遵循仓储模式
-- 外部服务（邮件、文件存储等）实现在此层
+<!-- include: shared/backend/infrastructure-layer.md -->
 
 ### 代码组织规范
 - 一个文件只放一个主类型：Controller、Service 接口与实现、Entity、值对象、DTO 等，默认一个类一个文件，文件名与类名一致。
@@ -133,53 +103,17 @@ API → Application → Domain ← Infrastructure
 
 <!-- include: shared/application/kiss.md -->
 
-### 数据访问规则
-- 使用 Entity Framework Core 进行数据访问
-- DbContext 通过构造函数注入
-- 使用 LINQ 查询，避免原生 SQL
-- 涉及事务时使用 `IDbContextTransaction`
-- 软删除通过全局查询过滤器实现
+<!-- include: shared/backend/data-access-rules.md -->
 
-### 统一响应格式
-- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
-  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
-  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
-  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
-- Service 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
-- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
+<!-- include: shared/backend/response-format-v2.md -->
 
-### 依赖注入规范
-- 服务类必须实现以下接口之一：
-  - `ITransientDependency`：每次请求创建新实例
-  - `IScopedDependency`：每个请求作用域内单例
-  - `ISingletonDependency`：应用程序生命周期单例
-- Controller 通过构造函数注入服务
-- 禁止使用静态服务定位器 pattern
+<!-- include: shared/backend/di-rules-v3.md -->
 
-### 异常处理规范
-- 业务异常继承 `BaseException` 或其子类：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `ForbiddenException`：禁止访问
-  - `InternalServerException`：服务器内部错误
-- 异常由中间件统一捕获并转换为 `ResultModel` 响应
-- 业务失败一律通过抛出上述异常表达；禁止在业务层手工构造失败 `ResultModel` 或直接设置错误状态码
+<!-- include: shared/backend/exception-handling-v2.md -->
 
-### Redis 缓存使用规范
-- 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口
-- 通过 `services.AddRedisCacheStore()` 注册 Redis 服务
-- 缓存操作必须设置合理的过期时间
-- 热点数据使用本地缓存 + Redis 二级缓存
-- 发布订阅场景使用 `PublishAsync`/`SubscribeAsync`
-- 禁止在循环中频繁调用 Redis
+<!-- include: shared/backend/redis-cache.md -->
 
-### 数据库迁移规则
-- 使用 `Azrng.SqlMigration` 进行数据库脚本迁移，不使用 EF Core Code-First Migrations
-- 迁移脚本放在宿主项目下 `API/MigrationSql/` 目录，文件名按 `版本号.sql` 或 `版本号.txt` 命名（如 `1.0.0.sql`、`1.1.0.txt`），不含描述文字——去掉版本前缀与扩展名后的剩余部分会被整体解析为版本号；按版本号顺序执行
-- 通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本；已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表
-- 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本
-- 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式
+<!-- include: shared/backend/db-migration.md -->
 
 ### 代码注释规范
 - 必须补 XML 注释的位置：

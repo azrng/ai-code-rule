@@ -97,19 +97,9 @@ frontend/
 
 ## 前端规则
 
-### React Hooks 规范
-- 函数组件 + Hooks 是唯一写法，禁止 class 组件
-- 响应式数据使用 `useState`，复杂状态使用 `useReducer`
-- 计算属性使用 `useMemo`，回调缓存使用 `useCallback`
-- 副作用使用 `useEffect`，清理逻辑在返回函数中处理
-- 可复用逻辑封装为自定义 Hook（`useXxx`），放在 `hooks/` 目录
+<!-- include: shared/frontend/react-hooks.md -->
 
-### 组件通信规范
-- **父传子**：通过 Props 传递，子组件只读不可修改
-- **子传父**：通过回调函数 Props（`onXxx` 命名）
-- **跨级传值**：优先使用 Zustand，其次使用 React Context
-- **兄弟组件**：通过共同父组件或 Zustand 中转
-- 避免直接修改 props，需要双向绑定时使用受控组件模式（value + onChange）
+<!-- include: shared/frontend/component-communication-v1.md -->
 
 ### 路由管理规范
 - 路由配置集中放在 `src/router/routes.tsx`

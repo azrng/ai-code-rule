@@ -9,10 +9,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/scope-v2.md -->
 
-### 常见任务入口
-- 新增功能方案：先看阶段 0 设计文档
-- 更新字段、接口、DTO 或 schema：先看契约说明规范
-- 更新通用说明或文档结构：先看文档更新要求与文档目录约定
+<!-- include: shared/doc/common-tasks-v2.md -->
 
 ---
 
@@ -57,9 +54,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/doc-update.md -->
 
-### 文档目录约定
-- `doc/requirement.md`：需求文档。若文件已存在，AI 应基于用户新增需求进行补充或修订；若文件不存在，AI 必须根据用户输入先自动生成详细初稿。该文件仅承载业务需求，不写入设计说明或开发过程记录
-- `doc/design/设计文档.md`：项目设计文档，全项目一份。包含架构设计、功能需求、接口契约与处理流程。由用户与 AI 协作产出，用户确认后作为开发的唯一需求基准。AI 可在文件中追加新功能章节，不删除已有内容，不新建平行文件
+<!-- include: shared/doc/doc-directory.md -->
 
 ### requirement 要求
 - 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留“待补充”空壳。

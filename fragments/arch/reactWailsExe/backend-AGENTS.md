@@ -34,16 +34,9 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-### 后端
-- Go + Wails v3
-- 标准分层架构：`Handler → Service → Repository → Model`
-- ORM：GORM
-- 数据库：SQLite（本地默认）
+<!-- include: shared/backend/stack-backend-v2.md -->
 
-### 前后端通信
-- **Wails 原生绑定**：Go 方法通过 `wails:generate` 暴露给前端 JS/TS 调用
-- 禁止使用 HTTP 请求与 Go 后端通信（Wails 不是 B/S 架构）
-- 如需调用外部 API，使用 Axios 通过前端发起
+<!-- include: shared/backend/fe-be-communication.md -->
 
 ---
 
@@ -72,58 +65,21 @@ dependencies: [agents-root]
 
 ## Go 后端规则
 
-### 分层架构
-```
-Handler → Service → Repository → Model
-```
-- `Handler`：参数校验、调用 Service、返回结果
-- `Service`：业务逻辑处理
-- `Repository`：数据访问
-- `Model`：GORM 实体与 DTO
+<!-- include: shared/backend/layered-arch.md -->
 
-### Handler 层规则
-- Handler 方法定义在 App 结构体上（Wails 绑定要求）
-- 只做参数校验和转发，不写业务逻辑
-- 方法命名使用 PascalCase
-- 参数和返回值必须是可序列化类型
-- 错误通过返回 error 传递
+<!-- include: shared/backend/handler-layer.md -->
 
-### Service 层规则
-- 服务方法接收接口（非 struct），方便测试
-- 服务方法必须是幂等的，相同输入得到相同输出
-- 业务错误返回自定义错误类型
-- 禁止在 Service 中直接操作数据库
+<!-- include: shared/backend/service-layer.md -->
 
-### Repository 层规则
-- 使用 GORM 进行数据访问
-- 数据库连接通过依赖注入传入
-- 涉及事务时使用 `db.Transaction()`
-- 复杂查询使用 GORM Scope 封装
+<!-- include: shared/backend/repository-layer.md -->
 
-### Model 层规则
-- GORM 实体使用 struct tag 定义字段映射
-- 表名使用 snake_case
-- 软删除使用 `gorm.DeletedAt`
-- 公共字段（ID、创建时间、更新时间）提取为 BaseModel
+<!-- include: shared/backend/model-layer.md -->
 
-### 数据库规则
-- 使用 GORM AutoMigrate 管理表结构
-- 数据库文件默认存储在应用数据目录
-- 禁止硬编码数据库连接字符串
-- 所有查询必须使用参数化查询（GORM 自动处理）
+<!-- include: shared/backend/database-rules.md -->
 
-### Wails 绑定规则
-- 暴露给前端的方法必须有 Go doc 注释，注释内容统一使用中文
-- 方法签名变更后必须运行 `wails generate module`
-- 前端 `src/bindings/` 目录下的文件由 Wails 自动生成，禁止手动修改
-- 方法参数不支持 chan、func、unsafe.Pointer 等类型
+<!-- include: shared/backend/wails-binding.md -->
 
-### 代码组织规范
-- 一个文件只放一个主对象：handler、service、repository、struct（数据模型 / DTO）、配置各自独立文件，文件名与主对象一致。
-- 数据契约（请求 / 响应 / DTO struct）按业务域分文件定义，不合并到一个 `models.go` / 大杂烩文件。
-- 触发拆分的信号：单文件出现多个主 struct、函数或字段持续堆叠、模块跨多个不相关业务。
-- 允许例外：紧耦合的常量、接口分组、测试 fixture。
-- 反模式：一个 `models.go` 堆放所有 struct；把多个不相关 service 塞进同一文件。
+<!-- include: shared/backend/code-organization.md -->
 
 ---
 

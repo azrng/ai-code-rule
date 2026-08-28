@@ -23,12 +23,7 @@ dependencies: [agents-root]
 - Pinia（全局状态管理：用户信息、权限、通知等跨组件共享状态）
 - Axios（HTTP 客户端，仅用于外部 API 调用）
 
-### 设计系统
-- 使用 Element Plus 主题系统，所有视觉规范在 `design-system.yaml` 中定义
-- 优先使用 Element Plus 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
-
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/frontend/design-system-usage-v2.md -->
 
 ---
 
@@ -108,40 +103,15 @@ project-root/
 
 ## 前端规则
 
-### Composition API 规范
-- **必须使用** `<script setup lang="ts">` 语法糖
-- 响应式数据使用 `ref`（基础类型）和 `reactive`（对象类型）
-- 计算属性使用 `computed`，副作用使用 `watch` 和 `watchEffect`
-- 生命周期钩子使用 `onMounted`、`onUnmounted` 等
-- 可复用逻辑封装为组合式函数（`useXxx`），放在 `hooks/` 目录
+<!-- include: shared/frontend/composition-api.md -->
 
-### 组件通信规范
-- **父传子**：使用 `defineProps` 定义，只读不可修改
-- **子传父**：使用 `defineEmits` 定义事件
-- **跨级传值**：优先使用 Pinia，其次使用 `provide`/`inject`
-- **兄弟组件**：通过共同父组件或 Pinia 中转
-- 避免直接修改 props，需要修改时使用 v-model 或 emit
+<!-- include: shared/frontend/component-communication-v2.md -->
 
-### 路由管理规范
-- 路由配置集中放在 `src/router/routes.ts`
-- 路由守卫统一在 `src/router/index.ts` 中配置
-- 路由跳转使用 `router.push` 和 `router.replace`
-- 获取路由参数使用 `useRoute().params` 或 `useRoute().query`
-- 路由命名使用有意义的名称（如 `UserList`、`OrderDetail`）
+<!-- include: shared/frontend/routing-management-v2.md -->
 
-### Pinia 状态管理规范
-- Store 按业务域拆分，放在 `src/stores/` 目录
-- 使用 `defineStore` 定义 store
-- State 定义数据，Getters 定义计算属性，Actions 定义修改逻辑
-- 修改 state 必须通过 actions，禁止在组件中直接修改 store 状态
-- 异步操作放在 actions 中，同步计算放在 getters 中
+<!-- include: shared/frontend/pinia.md -->
 
-### Wails 绑定调用规范
-- 通过 `src/bindings/` 下自动生成的模块调用 Go 方法
-- 绑定方法返回 Promise，必须使用 `await` 或 `.then()/.catch()` 处理
-- 禁止绕过 Wails 绑定直接通过 HTTP 请求与 Go 后端通信
-- 绑定方法调用应封装在 hooks 或 store 中，不直接散落在页面组件内
-- 修改 Go 方法签名后必须重新运行 `wails generate module`
+<!-- include: shared/frontend/wails-binding-call.md -->
 
 ### 样式规则
 - 优先使用 Element Plus 组件内置样式和 class
@@ -149,11 +119,7 @@ project-root/
 - 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）
 - Wails 窗口为固定大小，不需要考虑移动端响应式
 
-### 组件规则
-- 优先复用 `src/components/` 下已有组件，禁止重复创建
-- 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象
-- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
-- 除非仓库已在使用，否则不要引入新的组件库或样式体系
+<!-- include: shared/frontend/component-rules-v3.md -->
 
 ### 外部 API 请求规则
 - 仅在需要调用外部服务时使用 Axios

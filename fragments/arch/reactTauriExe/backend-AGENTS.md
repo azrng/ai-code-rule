@@ -153,10 +153,7 @@ Tauri Command / Event
 - 禁止把原始数据库错误、IO 错误或底层插件错误直接透传给页面
 - 日志中允许保留详细错误，但给前端的错误文案应稳定且可理解
 
-### 不推荐的默认方案
-- 不要默认把桌面应用实现成“前端 + 本地 HTTP 服务”的双套架构
-- 不要在没有必要时把简单本地 CRUD 设计成过度复杂的微服务式模块
-- 不要为了“看起来像 Web 后端”而引入多余的本地网关层
+<!-- include: shared/backend/not-recommended.md -->
 
 ### 代码组织规范
 - 一个文件只放一个主对象：Tauri command、service、repository、struct（数据模型 / DTO）、配置各自独立文件，文件名与主对象一致。

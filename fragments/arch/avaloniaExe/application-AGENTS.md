@@ -7,24 +7,15 @@ dependencies: [agents-root]
 
 # 应用层规则
 
-## 适用范围
+<!-- include: shared/application/scope.md -->
 
-- 作用域：ViewModel、Service、命令、业务编排、结果包装与应用层测试
-- 触发场景：涉及业务流程、命令逻辑、状态流转、应用服务或应用层测试时阅读
-
-### 常见任务入口
-- 改命令流程或状态切换：先看 ViewModel / 命令规则与结果处理约束
-- 改 Service 或业务规则：先看应用层职责边界与异常处理规范
-- 改 DTO、映射、结果包装：先看输入输出结构与边界约定
-- 补应用层回归：先看 `提交前最小回归` 与测试规则
+<!-- include: shared/application/common-tasks.md -->
 
 ---
 
 ## 技术栈
 
-### 分层架构
-- `View → ViewModel → Service → Repository → Model`
-- View 负责展示，ViewModel 负责状态与命令编排，Service 负责业务逻辑，Repository 负责数据访问边界，Model 负责领域数据表达
+<!-- include: shared/application/layered-arch.md -->
 
 ### 核心库
 - `CommunityToolkit.Mvvm`：`[ObservableProperty]`、`[RelayCommand]`、`IMessenger`
@@ -72,25 +63,7 @@ src/AppName/
 
 ---
 
-## 阶段 2 — 业务逻辑实现（业务实现角色主导）
-
-**触发条件**：用户发出「开始业务逻辑开发」指令
-
-**入场要求**：前端视图已完成，`src/AppName/Models/DTOs/` 契约文件已明确
-
-**工作内容**：
-1. 严格按照 DTO 中的类型定义实现 ViewModel 命令编排与 Service 层逻辑。
-2. 遵循 `ViewModel → Service → Repository → Model` 完整分层。
-3. 涉及数据访问或数据库结构变更时，结合 `infrastructure-AGENTS.md` 同步补齐仓储实现与迁移脚本。
-4. 每个关键服务方法和关键 ViewModel 命令都应能通过测试独立验证。
-
-**字段命名约定**：
-- C# 类型 / 属性：PascalCase
-- DTO / 序列化字段：遵循当前协议约定并保持一致
-- 数据库存储字段和映射规则见 `infrastructure-AGENTS.md`
-
-**门控规则**：
-- 核心业务逻辑测试通过后，才允许进入阶段 3。
+<!-- include: shared/application/stage2-impl.md -->
 
 ---
 
