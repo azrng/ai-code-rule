@@ -179,7 +179,7 @@ class Failure<T> extends Result<T> {
 - DTO、映射、结果包装改动：至少验证输入输出结构和边界条件
 - 与数据访问、集成或配置相关的改动：至少补一项联调或等价验证，证明真实链路生效
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### 应用层测试
 - Provider 状态变更、命令执行、消息发送发生变化时，应补充对应测试

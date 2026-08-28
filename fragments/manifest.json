@@ -32,66 +32,8 @@
     {
       "id": "dotnet-backend",
       "label": ".NET 后端",
-      "desc": "纯后端 API，无前端界面"
-    },
-    {
-      "id": "python-backend",
-      "label": "Python 后端",
-      "desc": "FastAPI / Pydantic / SQLAlchemy 技术栈的纯后端 API"
-    },
-    {
-      "id": "web-fullstack",
-      "label": "Web 前后端分离 / 全栈",
-      "desc": "前端 SPA/SSR + 独立后端或同构全栈"
-    },
-    {
-      "id": "desktop",
-      "label": "桌面应用",
-      "desc": "Windows / 跨平台桌面客户端与控制台程序"
-    },
-    {
-      "id": "hybrid-app",
-      "label": "跨平台混合桌面",
-      "desc": "Web 前端 + 原生/托管后端的打包桌面应用"
-    },
-    {
-      "id": "mobile",
-      "label": "移动应用",
-      "desc": "iOS / Android 移动客户端"
-    },
-    {
-      "id": "frontend-static",
-      "label": "纯前端 / 静态站点",
-      "desc": "无独立后端的页面与静态站点"
-    },
-    {
-      "id": "general",
-      "label": "通用项目",
-      "desc": "技术栈未定或混合形态，子规则按需命中"
-    }
-  ],
-  "profiles": [
-    {
-      "id": "dotnet-layered",
-      "label": ".NET 分层 API 后端",
-      "family": "dotnet-backend",
-      "desc": "中大型业务系统、DDD、Controller/Service/Repository 多项目拆分",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
-          "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、Service、Repository、脚本或数据链路时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
-        ],
+      "desc": "纯后端 API，无前端界面",
+      "rootDefaults": {
         "dev-stage": [
           "### 三个阶段",
           "",
@@ -113,6 +55,156 @@
           "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、Service、Repository、脚本或数据链路时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
+          "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+        ],
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
+          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ]
+      }
+    },
+    {
+      "id": "python-backend",
+      "label": "Python 后端",
+      "desc": "FastAPI / Pydantic / SQLAlchemy 技术栈的纯后端 API"
+    },
+    {
+      "id": "web-fullstack",
+      "label": "Web 前后端分离 / 全栈",
+      "desc": "前端 SPA/SSR + 独立后端或同构全栈",
+      "rootDefaults": {
+        "evidence-nouns": "日志、数据、断点、测试",
+        "high-risk-prefix": "联调、",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 类型后同步前端、后端、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "task-kind-nouns": "前端、后端还是基础设施",
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "context-scope-nouns": "前后端或跨多个领域",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "reuse-noun": "配置",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "boundary-nouns": "跨模块职责"
+      }
+    },
+    {
+      "id": "desktop",
+      "label": "桌面应用",
+      "desc": "Windows / 跨平台桌面客户端与控制台程序",
+      "rootDefaults": {
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                  阶段 3",
+          "设计文档   →   视图与交互实现   →   应用层与数据实现   →   联调与交付",
+          "（用户确认）    （视图实现角色）      （业务实现角色）         （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、发布脚本调整",
+          "  - 单个字段增删改，且不引入新窗口或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "- 阶段 1：视图骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
+          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
+          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "root-scope-nouns": "界面、应用层、基础设施、文档",
+        "context-scope-nouns": "视图、业务、数据访问与发布链路",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "high-risk-prefix": "联调、"
+      }
+    },
+    {
+      "id": "hybrid-app",
+      "label": "跨平台混合桌面",
+      "desc": "Web 前端 + 原生/托管后端的打包桌面应用",
+      "rootDefaults": {
+        "context-scope-nouns": "前后端或跨多个领域",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "high-risk-prefix": "联调、",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "root-scope-nouns": "前端、后端、文档、基础设施",
+        "task-kind-nouns": "前端、后端还是基础设施",
+        "destructive-nouns": "数据库破坏性变更、环境清理",
+        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更"
+      }
+    },
+    {
+      "id": "mobile",
+      "label": "移动应用",
+      "desc": "iOS / Android 移动客户端",
+      "rootDefaults": {
+        "context-scope-nouns": "视图、业务、数据访问与发布链路",
+        "destructive-nouns": "数据破坏性变更、环境清理",
+        "evidence-nouns": "日志、数据、断点、测试",
+        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、平台权限配置、第三方集成",
+        "high-risk-prefix": "联调、",
+        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "reuse-noun": "配置",
+        "root-scope-nouns": "界面、应用层、基础设施、文档",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施"
+      }
+    },
+    {
+      "id": "frontend-static",
+      "label": "纯前端 / 静态站点",
+      "desc": "无独立后端的页面与静态站点"
+    },
+    {
+      "id": "general",
+      "label": "通用项目",
+      "desc": "技术栈未定或混合形态，子规则按需命中"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "dotnet-layered",
+      "label": ".NET 分层 API 后端",
+      "family": "dotnet-backend",
+      "desc": "中大型业务系统、DDD、Controller/Service/Repository 多项目拆分",
+      "root": {
         "understanding-checklist": [
           "- 涉及后端时，已查看相关 Controller、Application、Domain、Repository / EntityFramework、DTO、调用方和现有测试"
         ],
@@ -140,42 +232,6 @@
       "family": "dotnet-backend",
       "desc": "中小型 REST API、单一职责微服务、单项目整洁架构（文件夹分层）",
       "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
-          "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、Service、Repository、脚本或数据链路时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
-        ],
-        "dev-stage": [
-          "### 三个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1                阶段 2",
-          "设计文档   →   服务端与数据实现   →   验证与交付",
-          "（用户确认）    （后端实现角色）        （交付验证角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 轻量配置、环境变量或部署说明调整",
-          "  - 单个字段增删改，且不引入新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-          "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
-        ],
         "understanding-checklist": [
           "- 涉及后端时，已查看相关 Controller、AppService、DomainService、数据访问、DTO、调用方和现有测试"
         ],
@@ -309,28 +365,11 @@
           "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
           "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO / 类型定义、调用方和现有测试"
         ],
-        "contract-error-line": "阶段 1 输出的前端契约、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 类型后同步前端、后端、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、组件、Controller、Service、Repository、DTO / 类型定义和测试实现",
-        "task-kind-nouns": "前端、后端还是基础设施",
-        "root-scope-nouns": "前端、后端、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
-        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "reuse-noun": "配置",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "high-risk-prefix": "联调、",
-        "boundary-nouns": "跨模块职责"
+        "search-nouns": "页面、组件、Controller、Service、Repository、DTO / 类型定义和测试实现"
       },
       "subrules": [
         {
@@ -399,28 +438,12 @@
           "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
           "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、组件、Controller、Service、DTO 和测试实现",
-        "task-kind-nouns": "前端、后端还是基础设施",
-        "root-scope-nouns": "前端、后端、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
-        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "reuse-noun": "配置",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "high-risk-prefix": "联调、",
-        "boundary-nouns": "跨模块职责"
+        "search-nouns": "页面、组件、Controller、Service、DTO 和测试实现"
       },
       "subrules": [
         {
@@ -509,16 +532,10 @@
           "- 涉及后端时，已查看相关端点 / Controller、Service、Repository、DTO / 类型定义、调用方和现有测试",
           "- 涉及 AI 时，已查看现有 Agent、工具、Skills、Prompt、模型客户端封装与流式处理实现"
         ],
-        "contract-error-line": "阶段 1 输出的前端契约、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 类型后同步前端、后端、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "页面、组件、端点、Service、Repository、Agent、工具、DTO / 类型定义和测试实现",
         "task-kind-nouns": "前端、后端、AI 还是基础设施",
         "root-scope-nouns": "前端、后端、AI、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
         "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、模型对接变更、Prompt 核心逻辑变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "reuse-noun": "配置",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "destructive-nouns": "数据破坏性变更、环境清理",
         "extra-sections": [
           "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET 10 + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
           "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n2. **核心 vs 可选**：`IChatClient` + Agent Framework 是核心；向量库、记忆、多 Agent、MCP、Redis、PostgreSQL 都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：技术栈文档与示例要充分、项目结构边界要清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程、本地运行可上云。\n5. **先做闭环，再做扩张**：先把\"用户输入 → Agent 运行 → 结果展示 → 用户确认 → 下一步\"跑通，再补 Skills / Memory / Middleware。"
@@ -528,9 +545,7 @@
         "model-behavior-extra": "- **模型调用不得散落**：业务代码不得直接依赖具体模型 SDK，统一走 `IChatClient`；细则见 `ai-AGENTS.md`",
         "verify-nouns": "模型能力、",
         "verify-quote": "> AI 领域包名与 API 演进较快（如 Microsoft Agent Framework、Microsoft.Extensions.AI），调用前以官方最新文档与项目锁定版本为准。",
-        "rollback-scope": "Docker 镜像",
-        "high-risk-prefix": "联调、",
-        "boundary-nouns": "跨模块职责"
+        "rollback-scope": "Docker 镜像"
       },
       "subrules": [
         {
@@ -599,27 +614,13 @@
           "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
           "- 涉及后端时，已查看相关 Route Handler、Server Action、Service、Repository、schema / Prisma、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、Service、Repository、Prisma 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "页面、组件、Route Handler、Server Action、Service、Repository、Prisma 与测试实现",
-        "task-kind-nouns": "前端、后端还是基础设施",
-        "root-scope-nouns": "前端、后端、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "reuse-noun": "配置",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "destructive-nouns": "数据库破坏性变更、环境清理",
-        "high-risk-prefix": "联调、",
-        "boundary-nouns": "跨模块职责"
+        "destructive-nouns": "数据库破坏性变更、环境清理"
       },
       "subrules": [
         {
@@ -665,35 +666,6 @@
           "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
           "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |"
         ],
-        "dev-stage": [
-          "### 四个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1            阶段 2                  阶段 3",
-          "设计文档   →   视图与交互实现   →   应用层与数据实现   →   联调与交付",
-          "（用户确认）    （视图实现角色）      （业务实现角色）         （协作联调角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量、发布脚本调整",
-          "  - 单个字段增删改，且不引入新窗口或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-          "- 阶段 1：视图骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
-          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
-        ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关 View、ViewModel、样式资源和设计 token",
           "- 涉及业务逻辑时，已查看相关 ViewModel、Service、DTO / Model、调用方和现有测试"
@@ -701,13 +673,7 @@
         "contract-error-line": "阶段 1 输出的 DTO / 契约在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO 后同步 ViewModel、Service、Repository 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "View、ViewModel、Service、Repository、DTO、样式资源与测试实现",
         "task-kind-nouns": "界面、应用层还是基础设施",
-        "root-scope-nouns": "界面、应用层、基础设施、文档",
-        "context-scope-nouns": "视图、业务、数据访问与发布链路",
-        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、第三方集成",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "high-risk-prefix": "联调、"
+        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、第三方集成"
       },
       "subrules": [
         {
@@ -753,49 +719,13 @@
           "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
           "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |"
         ],
-        "dev-stage": [
-          "### 四个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1            阶段 2                  阶段 3",
-          "设计文档   →   视图与交互实现   →   应用层与数据实现   →   联调与交付",
-          "（用户确认）    （视图实现角色）      （业务实现角色）         （协作联调角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量、发布脚本调整",
-          "  - 单个字段增删改，且不引入新窗口或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-          "- 阶段 1：视图骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
-          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
-        ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关窗口、视图、控件、样式资源、设计 token 和现有交互模式",
           "- 涉及业务逻辑时，已查看相关 ViewModel、Service、DTO、Repository、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的界面契约、控件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步界面、ViewModel、Service、Repository 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "窗口、控件、ViewModel、Service、Repository、DTO 和测试实现",
-        "task-kind-nouns": "界面、业务逻辑还是基础设施",
-        "root-scope-nouns": "界面、应用层、基础设施、文档",
-        "context-scope-nouns": "视图、业务、数据访问与发布链路",
-        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "high-risk-prefix": "联调、"
+        "task-kind-nouns": "界面、业务逻辑还是基础设施"
       },
       "subrules": [
         {
@@ -878,12 +808,7 @@
         "search-nouns": "Razor 页面、组件、服务、数据访问、DTO 和测试实现",
         "task-kind-nouns": "界面、业务逻辑还是基础设施",
         "root-scope-nouns": "界面、服务、文档、基础设施",
-        "context-scope-nouns": "界面、服务与发布链路",
-        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "high-risk-prefix": "联调、"
+        "context-scope-nouns": "界面、服务与发布链路"
       },
       "subrules": [
         {
@@ -957,7 +882,6 @@
         "search-nouns": "命令解析、Service、配置、DTO 和测试实现",
         "root-scope-nouns": "实现与文档",
         "context-scope-nouns": "需求说明、命令实现与交付验证",
-        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
         "evidence-nouns": "日志、输出结果、测试和运行验证",
         "destructive-nouns": "环境清理",
         "task-kind-nouns": "还是控制台实现"
@@ -1021,25 +945,12 @@
           "- 阶段 2：IPC handler、.NET 服务、数据访问、本地能力与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
           "- 涉及后端时，已查看相关 IPC handler、Service、Repository、DTO / schema、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、IPC handler、Service、Repository、DTO 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、组件、IPC handler、Service、Repository、DTO / schema 与测试实现",
-        "task-kind-nouns": "前端、后端还是基础设施",
-        "root-scope-nouns": "前端、后端、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据库破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "high-risk-prefix": "联调、"
+        "search-nouns": "页面、组件、IPC handler、Service、Repository、DTO / schema 与测试实现"
       },
       "subrules": [
         {
@@ -1108,12 +1019,6 @@
           "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
           "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
@@ -1121,13 +1026,7 @@
         "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
         "task-kind-nouns": "前端、Rust 后端还是基础设施",
-        "root-scope-nouns": "前端、后端、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
-        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "high-risk-prefix": "联调、"
+        "destructive-nouns": "数据破坏性变更、环境清理"
       },
       "subrules": [
         {
@@ -1196,25 +1095,13 @@
           "- 阶段 2：业务逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、部署与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关页面、视图、组件、样式资源、设计 token 和现有交互模式",
           "- 涉及业务逻辑时，已查看相关入口层、服务层、数据访问层、schema / DTO / 类型定义、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的显示层契约、schema、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO / 类型后同步界面、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "页面、视图、组件、入口层、服务层、数据访问层、schema / DTO / 类型定义和测试实现",
-        "task-kind-nouns": "界面、业务逻辑还是基础设施",
-        "root-scope-nouns": "前端、后端、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据库破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "high-risk-prefix": "联调、"
+        "task-kind-nouns": "界面、业务逻辑还是基础设施"
       },
       "subrules": [
         {
@@ -1283,26 +1170,13 @@
           "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
           "- 涉及后端时，已查看相关 Go 服务、数据访问、绑定结构体、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Go 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "页面、组件、Go 服务、绑定结构体和测试实现",
-        "task-kind-nouns": "前端、后端还是基础设施",
-        "root-scope-nouns": "前端、后端、文档、基础设施",
-        "context-scope-nouns": "前后端或跨多个领域",
-        "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "high-risk-prefix": "联调、"
+        "destructive-nouns": "数据破坏性变更、环境清理"
       },
       "subrules": [
         {
@@ -1371,27 +1245,12 @@
           "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关页面、布局、控件、样式资源、设计 token、移动端适配和现有交互模式",
           "- 涉及业务逻辑时，已查看相关 ViewModel、Service、DTO、Repository、平台服务、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的界面契约、控件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步界面、ViewModel、Service、Repository 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、控件、ViewModel、Service、Repository、DTO 和测试实现",
-        "task-kind-nouns": "界面、业务逻辑还是基础设施",
-        "root-scope-nouns": "界面、应用层、基础设施、文档",
-        "context-scope-nouns": "视图、业务、数据访问与发布链路",
-        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、平台权限配置、第三方集成",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "reuse-noun": "配置",
-        "high-risk-prefix": "联调、"
+        "search-nouns": "页面、控件、ViewModel、Service、Repository、DTO 和测试实现"
       },
       "subrules": [
         {
@@ -1460,27 +1319,12 @@
           "- 阶段 2：Riverpod Provider、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
         ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关页面、布局、控件、样式资源、设计 token、移动端适配和现有交互模式",
           "- 涉及业务逻辑时，已查看相关 Provider、Service、DTO、Repository、平台服务、调用方和现有测试"
         ],
         "contract-error-line": "阶段 1 输出的界面契约、控件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步界面、Provider、Service、Repository 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、控件、Provider、Service、Repository、DTO 和测试实现",
-        "task-kind-nouns": "界面、业务逻辑还是基础设施",
-        "root-scope-nouns": "界面、应用层、基础设施、文档",
-        "context-scope-nouns": "视图、业务、数据访问与发布链路",
-        "high-risk-nouns": "数据库迁移、配置结构变更、发布链路调整、平台权限配置、第三方集成",
-        "evidence-nouns": "日志、数据、断点、测试",
-        "destructive-nouns": "数据破坏性变更、环境清理",
-        "persistence-suffix": "；若当前阶段允许 mock，需在后续阶段补全真实链路",
-        "reuse-noun": "配置",
-        "high-risk-prefix": "联调、"
+        "search-nouns": "页面、控件、Provider、Service、Repository、DTO 和测试实现"
       },
       "subrules": [
         {

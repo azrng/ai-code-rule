@@ -111,7 +111,7 @@ fragments/
 # 不释放 TASK.md（运行时任务清单，不随规则分发）。
 ```
 
-当前 EXE 是 Windows x64 框架相关单文件，目标机器需要对应的 .NET 10 运行时。拼接器把公共入口、指针和可复用能力抽成模块，按所选 Profile 填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部 Profile。后续只维护 `fragments/`，重新构建即可让所有 Profile 生效。根目录现有 19 套目录是历史快照，删除与否不影响生成器。详见 `app/RuleAssembler/` 与 `fragments/`。
+当前 EXE 是 Windows x64 框架相关单文件，目标机器需要对应的 .NET 10 运行时。拼接器把公共入口、指针和可复用能力抽成模块，按所选 Profile 填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部 Profile。后续只维护 `fragments/`，重新构建即可让所有 Profile 生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。
 
 ## 共同规则
 

@@ -141,7 +141,7 @@ src/AppName/
 
 <!-- include: shared/application/pre-commit-regression.md -->
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### 应用层测试
 - ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试

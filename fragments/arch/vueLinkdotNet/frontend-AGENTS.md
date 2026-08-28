@@ -133,7 +133,7 @@ project-root/
 
 <!-- include: shared/frontend/pre-commit-regression.md -->
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### 前端测试
 - 前端暂时不考虑单元测试

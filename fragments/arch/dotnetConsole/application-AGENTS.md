@@ -267,7 +267,7 @@ project-root/
 - DTO、映射、结果包装改动：至少验证输入输出结构和边界条件
 - 与数据访问、集成或配置相关的改动：至少补一项集成验证或等价验证，证明真实链路生效
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### 测试分类
 - 测试框架：xUnit + Moq

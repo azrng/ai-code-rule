@@ -20,6 +20,9 @@ internal sealed class ManifestLoader
         Manifest? manifest;
         try
         {
+            // 先在 JSON 层做 family rootDefaults 继承：Profile 的 root 中未显式出现的字段
+            // 从所属 family 的 rootDefaults 复制，保证「未写则继承、写了则覆盖」的语义
+            json = MergeFamilyDefaults(json);
             manifest = JsonSerializer.Deserialize<Manifest>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -35,6 +38,65 @@ internal sealed class ManifestLoader
 
         Validate(manifest);
         return manifest;
+    }
+
+    private static string MergeFamilyDefaults(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("families", out var familiesEl)
+            || familiesEl.ValueKind != JsonValueKind.Array
+            || !root.TryGetProperty("profiles", out var profilesEl)
+            || profilesEl.ValueKind != JsonValueKind.Array)
+            return json;
+
+        var defaultsByFamily = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+        foreach (var family in familiesEl.EnumerateArray())
+        {
+            if (family.ValueKind != JsonValueKind.Object
+                || !family.TryGetProperty("id", out var idEl)
+                || idEl.ValueKind != JsonValueKind.String)
+                continue;
+            if (family.TryGetProperty("rootDefaults", out var defaults)
+                && defaults.ValueKind == JsonValueKind.Object)
+                defaultsByFamily[idEl.GetString() ?? ""] = defaults.Clone();
+        }
+
+        if (defaultsByFamily.Count == 0)
+            return json;
+
+        var rootObj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+        var profiles = new List<JsonElement>();
+        foreach (var profile in profilesEl.EnumerateArray())
+        {
+            if (profile.ValueKind != JsonValueKind.Object
+                || !profile.TryGetProperty("family", out var famEl)
+                || famEl.ValueKind != JsonValueKind.String
+                || !defaultsByFamily.TryGetValue(famEl.GetString() ?? "", out var defaults))
+            {
+                profiles.Add(profile.Clone());
+                continue;
+            }
+
+            var profileObj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(profile.GetRawText());
+            if (!profileObj.TryGetValue("root", out var rootVarEl)
+                || rootVarEl.ValueKind != JsonValueKind.Object)
+                rootVarEl = JsonDocument.Parse("{}").RootElement.Clone();
+
+            var rootVars = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(rootVarEl.GetRawText())!;
+            foreach (var pair in defaults)
+            {
+                if (!rootVars.ContainsKey(pair.Key))
+                    rootVars[pair.Key] = pair.Value.Clone();
+            }
+
+            profileObj["root"] = JsonDocument.Parse(JsonSerializer.Serialize(rootVars)).RootElement.Clone();
+            profiles.Add(JsonDocument.Parse(JsonSerializer.Serialize(profileObj)).RootElement.Clone());
+        }
+
+        rootObj!["profiles"] = JsonDocument.Parse(JsonSerializer.Serialize(profiles)).RootElement.Clone();
+        return JsonSerializer.Serialize(rootObj);
     }
 
     private void Validate(Manifest manifest)

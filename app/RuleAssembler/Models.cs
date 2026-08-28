@@ -42,6 +42,10 @@ internal sealed class Family
 
     [JsonPropertyName("desc")]
     public string Desc { get; set; } = "";
+
+    // 家族级根变量默认值：Profile 的 root 中未显式出现的字段继承这里的值
+    [JsonPropertyName("rootDefaults")]
+    public RootVariables? RootDefaults { get; set; }
 }
 
 internal sealed class ModuleDefinition

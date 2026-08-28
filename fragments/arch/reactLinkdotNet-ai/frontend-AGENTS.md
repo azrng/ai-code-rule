@@ -163,7 +163,7 @@ frontend/
 - 仅样式或文案微调：至少确认受影响页面的关键状态、布局与核心交互未回退
 - 若改动影响共享组件、布局或状态流转，优先验证影响范围最大的页面，而不是只看局部组件
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### 前端测试
 - 鼓励用 AI 辅助生成关键交互与组件的单元测试（Vitest + React Testing Library）；样板与边缘用例也可借助 AI 生成

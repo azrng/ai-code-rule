@@ -138,7 +138,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/pre-commit-regression.md -->
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### 后端测试
 - 单元测试使用 xUnit + Moq

@@ -221,7 +221,7 @@ await foreach (var update in agent.RunStreamingAsync("帮我列三个选题。")
 - 工具 / Skills 改动：至少验证工具被正确选择并真实生效（可用等价验证替代真实模型调用）
 - 若仓库暂时缺少自动化测试基础，可使用脚本 / 命令行 / 真实模型小样例验证替代，但必须能证明核心链路真实生效
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### AI 测试
 - 单元 / 集成测试统一 mock `IChatClient`，不真实调用第三方模型服务（避免成本、不稳定与隐私问题）

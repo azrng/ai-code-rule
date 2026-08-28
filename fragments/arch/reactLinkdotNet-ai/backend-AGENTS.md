@@ -246,7 +246,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - AI / Agent 改动：按 `ai-AGENTS.md` 用 mock `IChatClient` 验证链路
 - 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
 
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 ### 后端测试
 - 单元测试使用 xUnit + Moq

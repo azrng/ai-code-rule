@@ -113,7 +113,7 @@ dependencies: [agents-root]
 ## 测试规则
 
 <!-- include: shared/application/pre-commit-regression.md -->
-<!-- include: shared/application/general-requirements.md -->
+<!-- include: shared/common/general-requirements.md -->
 
 <!-- include: shared/application/view-layer-testing.md -->
 
