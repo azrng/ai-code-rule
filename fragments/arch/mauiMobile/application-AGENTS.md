@@ -1,6 +1,6 @@
 ---
 rule_id: application-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -141,7 +141,7 @@ src/AppName/
 
 <!-- include: shared/application/pre-commit-regression.md -->
 
-<!-- include: shared/application/general-requirements-v1.md -->
+<!-- include: shared/application/general-requirements.md -->
 
 ### 应用层测试
 - ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试

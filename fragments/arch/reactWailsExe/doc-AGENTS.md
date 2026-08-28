@@ -1,6 +1,6 @@
 ---
 rule_id: doc-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -11,7 +11,7 @@ dependencies: [agents-root]
 
 ---
 
-<!-- include: shared/doc/advisory-facts.md -->
+<!-- include: shared/doc/advisory.md -->
 
 ---
 
@@ -56,7 +56,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/doc-update.md -->
 
-<!-- include: shared/doc/doc-directory-v1.md -->
+<!-- include: shared/doc/doc-directory.md -->
 
 ### requirement 要求
 - 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留”待补充”空壳。

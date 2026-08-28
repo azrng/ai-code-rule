@@ -1,6 +1,6 @@
 ---
 rule_id: application-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -17,10 +17,7 @@ dependencies: [agents-root]
 
 ---
 
-## 主动建议规则
-- 发现业务逻辑放错层、ViewModel 与 Service 职责混杂、DTO 契约不稳定、结果包装不一致或异常处理不统一时，应主动提醒
-- 发现状态流转、命令执行、消息传递或业务规则可能影响既有流程、用户可见结果或数据一致性时，必须先说明风险，不得直接扩大修改
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+<!-- include: shared/application/advisory.md -->
 
 ---
 
@@ -116,7 +113,7 @@ dependencies: [agents-root]
 ## 测试规则
 
 <!-- include: shared/application/pre-commit-regression.md -->
-<!-- include: shared/application/general-requirements-v2.md -->
+<!-- include: shared/application/general-requirements.md -->
 
 <!-- include: shared/application/view-layer-testing.md -->
 

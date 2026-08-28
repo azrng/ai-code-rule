@@ -5,3 +5,4 @@
   - `ISingletonDependency`：应用程序生命周期单例
 - Controller 通过构造函数注入服务
 - 禁止使用静态服务定位器 pattern
+- 禁止手动在 `Program.cs` 中逐一注册服务，应使用 `RegisterBusinessServices` 批量扫描注册

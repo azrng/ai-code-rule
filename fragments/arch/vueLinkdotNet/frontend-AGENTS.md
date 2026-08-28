@@ -1,6 +1,6 @@
 ---
 rule_id: frontend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -30,7 +30,8 @@ dependencies: [agents-root]
 ## 主动建议规则
 - 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点
 - 发现样式与 `design-system.yaml`、现有主题或组件库冲突时，应先说明差异和影响，不直接引入平行视觉体系
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+- 发现可以复用已有页面基座、组件、hook / store、请求封装或工具函数时，应优先建议复用
+- 不确定交互规则、字段含义或前端数据来源时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验补写规则
 
 ---
 

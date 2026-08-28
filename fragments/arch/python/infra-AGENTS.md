@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -27,7 +27,7 @@ dependencies: [agents-root]
 
 ## Docker 规范
 
-### 6.1 Dockerfile
+### Dockerfile
 
 - 使用多阶段构建
 - 基础镜像选择 `python:3.12-slim`
@@ -53,7 +53,7 @@ EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-### 6.2 Docker Compose
+### Docker Compose
 
 - 包含 `app`、`db`（PostgreSQL）、`redis` 服务
 - 配置健康检查（`healthcheck`）

@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -64,7 +64,8 @@ dependencies: [agents-root]
 ## 主动建议规则
 - 发现 IPC handler 与 .NET 服务职责混杂、SQLite 访问封装不一致或错误处理缺失时，应主动提醒
 - 发现接口契约、DTO、SQLite 表结构或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+- 发现可以复用既有服务、数据访问封装、DTO、校验器或错误处理封装时，应优先建议复用
+- 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
 

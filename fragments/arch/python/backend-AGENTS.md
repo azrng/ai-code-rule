@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -27,14 +27,14 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-### 1.1 核心框架
+### 核心框架
 
 - **Python 3.12+**，使用类型注解（type hints）
 - **FastAPI** 作为 Web 框架，基于 ASGI（推荐 Uvicorn 作为服务器）
 - **Pydantic V2** 用于数据验证和序列化
 - **SQLAlchemy 2.0+**（异步模式）作为 ORM，配合 Alembic 进行数据库迁移（**可选**，无数据库需求的项目不使用）
 
-### 1.2 常用库
+### 常用库
 
 | 用途 | 库 | 说明 |
 |------|----|------|
@@ -51,7 +51,7 @@ dependencies: [agents-root]
 | 测试 | `pytest` + `pytest-asyncio` + `httpx` | 异步测试支持 |
 | 代码质量 | `ruff` | Linter + Formatter（替代 flake8、isort、black） |
 
-### 1.3 包管理
+### 包管理
 
 使用 **uv** 作为包管理工具（替代 pip），统一管理依赖和虚拟环境。
 
@@ -69,7 +69,7 @@ uv add --dev pytest pytest-asyncio ruff
 uv sync
 ```
 
-### 1.4 数据库支持（可选）
+### 数据库支持（可选）
 
 当项目需要数据库时，默认 PostgreSQL（推荐 `asyncpg` 驱动），可选：
 
@@ -77,7 +77,7 @@ uv sync
 - SQLite（`aiosqlite`，仅开发/测试）
 - SQL Server（`aioodbc`）
 
-### 1.5 依赖注入
+### 依赖注入
 
 使用 FastAPI 原生 `Depends` 机制进行依赖注入，结合 `Annotated` 类型注解实现声明式注入。
 
@@ -157,7 +157,7 @@ project/
 
 ## 后端开发规则
 
-### 3.1 API 路由层（Controller）
+### API 路由层（Controller）
 
 - **职责**：仅处理 HTTP 请求/响应，不包含业务逻辑
 - 使用 `APIRouter` 组织路由，按版本隔离（`api/v1/`）
@@ -185,7 +185,7 @@ async def create_user(
     return ResultResponse.success(data=user)
 ```
 
-### 3.2 服务层（Service）
+### 服务层（Service）
 
 - **职责**：承载核心业务逻辑
 - 使用 `Protocol` 定义服务接口（Python 的结构化子类型）
@@ -205,7 +205,7 @@ class IUserService(Protocol):
     async def delete(self, user_id: int) -> None: ...
 ```
 
-### 3.3 数据模型（Model）
+### 数据模型（Model）
 
 #### ORM 模型（SQLAlchemy，可选）
 
@@ -253,7 +253,7 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 ```
 
-### 3.4 数据访问层（Repository，可选）
+### 数据访问层（Repository，可选）
 
 - 使用 SQLAlchemy 2.0 异步查询风格（`select` / `execute`）
 - 通过 `AsyncSession` 进行数据库操作
@@ -282,7 +282,7 @@ class BaseRepository(Generic[ModelType]):
         return result.scalar_one_or_none()
 ```
 
-### 3.5 统一响应格式
+### 统一响应格式
 
 ```python
 from typing import TypeVar, Generic
@@ -304,7 +304,7 @@ class ResultResponse(BaseModel, Generic[T]):
         return cls(code=code, message=message, data=None)
 ```
 
-### 3.6 异常处理
+### 异常处理
 
 定义五种标准业务异常，由全局异常处理中间件统一捕获：
 
@@ -328,7 +328,7 @@ async def business_exception_handler(request: Request, exc: BusinessException) -
     )
 ```
 
-### 3.7 缓存
+### 缓存
 
 - **分布式缓存**：使用 `redis.asyncio` 封装 `RedisProvider`
 - **本地缓存**：使用 `cachetools` 的 `TTLCache`
@@ -351,7 +351,7 @@ class RedisProvider:
         await self.redis.delete(key)
 ```
 
-### 3.8 数据库迁移（可选）
+### 数据库迁移（可选）
 
 - 使用 **Alembic** 进行数据库版本管理
 - 迁移脚本自动生成后必须检查并确认
@@ -369,7 +369,7 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
-### 3.9 API 文档
+### API 文档
 
 FastAPI 自带 Swagger UI 和 ReDoc，确保：
 - 所有路由添加 `summary` 和 `description`
@@ -377,7 +377,7 @@ FastAPI 自带 Swagger UI 和 ReDoc，确保：
 - Pydantic 模型添加 `description` 字段说明
 - 按 `tags` 分组管理接口
 
-### 3.10 命名规范
+### 命名规范
 
 | 场景 | 规范 | 示例 |
 |------|------|------|
@@ -404,13 +404,13 @@ FastAPI 自带 Swagger UI 和 ReDoc，确保：
 
 <!-- include: shared/backend/pre-commit-regression.md -->
 
-### 4.1 测试框架
+### 测试框架
 
 - **pytest** + **pytest-asyncio** 作为测试框架
 - **httpx** 用于 API 集成测试（`AsyncClient`）
 - 测试中使用 `aiosqlite` 内存数据库，不依赖真实数据库
 
-### 4.2 测试分类
+### 测试分类
 
 | 类型 | 说明 | 示例 |
 |------|------|------|
@@ -418,7 +418,7 @@ FastAPI 自带 Swagger UI 和 ReDoc，确保：
 | 集成测试 | 测试多组件协作，使用内存数据库 | Repository 数据访问测试 |
 | API 测试 | 通过 TestClient 测试完整请求链路 | 端到端接口测试 |
 
-### 4.3 测试规范
+### 测试规范
 
 - 测试文件命名：`test_*.py`
 - 测试函数命名：`test_<功能>_<场景>_<预期结果>`

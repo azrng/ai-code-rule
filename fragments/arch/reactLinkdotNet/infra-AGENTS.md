@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -20,7 +20,8 @@ dependencies: [agents-root]
 ## 主动建议规则
 - 发现环境变量、端口、Docker 配置、构建脚本、部署脚本或发布链路存在不一致、不可复现或文档缺失时，应主动提醒
 - 涉及清理环境、删除数据、停止未知进程、修改部署配置等高风险操作时，只能提出建议，必须等待明确确认后执行
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+- 发现可以复用现有启动脚本、Dockerfile、Compose 或发布脚本时，应优先建议复用，不新增平行部署链路
+- 不确定端口占用、外部服务地址或密钥来源时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验写死配置
 
 ## 技术栈
 
@@ -44,7 +45,7 @@ dependencies: [agents-root]
 
 ## Docker 规则
 
-<!-- include: shared/infra/general-requirements-v2.md -->
+<!-- include: shared/infra/general-requirements.md -->
 
 ### Docker 交付规则
 - 只要本次任务新增或修改了 Dockerfile、`docker-compose.yml`、运行端口、环境变量或启动命令，完成实现后应主动执行一次镜像构建和容器化启动验证；若因环境限制无法执行，必须明确说明

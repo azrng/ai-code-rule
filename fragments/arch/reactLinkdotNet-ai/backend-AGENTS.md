@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root, ai-agents]
 ---
@@ -54,7 +54,8 @@ dependencies: [agents-root, ai-agents]
 - 发现业务逻辑放错层、端点与 Service 职责混杂、权限校验缺失、事务边界不清或异常处理不一致时，应主动提醒
 - 发现接口契约、DTO、存储结构、缓存策略或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
 - 发现模型调用绕过 `IChatClient`、Agent 越界直接操作 Repository、或 Prompt 散落业务代码时，应提醒并指向 `ai-AGENTS.md`
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+- 发现可以复用既有服务、数据访问封装、DTO、校验器或错误处理封装时，应优先建议复用
+- 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 ## 推荐目录结构（单项目整洁架构）
 

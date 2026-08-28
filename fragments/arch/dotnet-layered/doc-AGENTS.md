@@ -1,6 +1,6 @@
 ---
 rule_id: doc-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -21,7 +21,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/stage0-design-v1.md -->
 
-<!-- include: shared/doc/design-checklist-v2.md -->
+<!-- include: shared/doc/design-checklist.md -->
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 rule_id: frontend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -54,7 +54,8 @@ dependencies: [agents-root]
 - 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点
 - 发现样式与 `design-system.yaml`、shadcn CSS 变量或现有交互模式冲突，或绕过 shadcn 手写重复基础组件时，应先说明差异和影响，不直接引入平行视觉体系
 - 发现表单校验、权限展示、页面状态、流式展示、刷新策略或错误处理缺失时，应主动提醒
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+- 发现可以复用已有页面基座、组件、hook / store、请求封装或工具函数时，应优先建议复用
+- 不确定交互规则、字段含义或前端数据来源时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验补写规则
 - 发现 Agent 输出展示缺少 loading / 流式中断 / error / empty 反馈时，应主动提醒
 
 ## 推荐目录结构

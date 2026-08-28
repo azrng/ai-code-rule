@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -44,7 +44,8 @@ dependencies: [agents-root]
 ## 主动建议规则
 - 发现业务逻辑放错层、Controller 与 AppService 职责混杂、文件夹依赖方向被破坏、权限校验缺失、事务边界不清或异常处理不一致时，应主动提醒
 - 发现接口契约、DTO、存储结构、缓存策略或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+- 发现可以复用既有服务、数据访问封装、DTO、校验器或错误处理封装时，应优先建议复用
+- 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 ---
 
@@ -189,11 +190,11 @@ Controllers → Application → Domain ← Infrastructure
 - 软删除统一使用实体基类的 `Deleted` 字段；包不自动做全局过滤，默认在查询中显式过滤 `!x.Deleted`，或在实体配置类中统一配置查询过滤器。
 - DbContext 与 EF Core 实体配置类（`{实体名}Etc.cs`）放 `Infrastructure/Data/`，DbContext 通过 `ApplyConfigurationsFromAssembly` 扫描应用配置。
 
-<!-- include: shared/backend/response-format-v1.md -->
+<!-- include: shared/backend/response-format.md -->
 
-<!-- include: shared/backend/di-rules-v1.md -->
+<!-- include: shared/backend/di-rules.md -->
 
-<!-- include: shared/backend/exception-handling-v1.md -->
+<!-- include: shared/backend/exception-handling.md -->
 
 ### Redis 缓存使用规范
 - 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口。

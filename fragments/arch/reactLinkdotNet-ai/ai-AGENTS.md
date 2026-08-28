@@ -1,6 +1,6 @@
 ---
 rule_id: ai-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -73,7 +73,8 @@ dependencies: [agents-root]
 - 发现模型密钥、Base URL、模型名硬编码在源码或前端时，必须提醒迁移到环境变量 / 配置
 - 发现 Prompt 散落在 Service / Controller 字符串里、难以维护或测试时，建议沉淀到 Prompt 目录
 - 发现 Agent 一开始就堆 Skills、记忆、多 Agent、向量库而尚未跑通基础闭环时，建议先回退到最小 Agent
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+- 发现可以复用既有 Prompt、工具注册、模型客户端封装或流式处理模式时，应优先建议复用
+- 不确定模型能力、工具边界或包版本行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 ---
 

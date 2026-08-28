@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -105,11 +105,11 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/data-access-rules.md -->
 
-<!-- include: shared/backend/response-format-v2.md -->
+<!-- include: shared/backend/response-format.md -->
 
-<!-- include: shared/backend/di-rules-v3.md -->
+<!-- include: shared/backend/di-rules.md -->
 
-<!-- include: shared/backend/exception-handling-v2.md -->
+<!-- include: shared/backend/exception-handling.md -->
 
 <!-- include: shared/backend/redis-cache.md -->
 

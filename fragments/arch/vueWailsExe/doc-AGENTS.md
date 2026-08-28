@@ -1,6 +1,6 @@
 ---
 rule_id: doc-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -48,8 +48,8 @@ dependencies: [agents-root]
 
 优先更新已有文档，不新增重复说明。
 
-<!-- include: shared/doc/doc-directory-v1.md -->
+<!-- include: shared/doc/doc-directory.md -->
 
 <!-- include: shared/doc/requirement.md -->
 
-<!-- include: shared/doc/retro-format-v2.md -->
+<!-- include: shared/doc/retro-format-v1.md -->

@@ -1,6 +1,6 @@
 ---
 rule_id: frontend-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -129,7 +129,7 @@ src/
 
 ## 测试规则
 
-<!-- include: shared/frontend/pre-commit-regression-v2.md -->
+<!-- include: shared/frontend/pre-commit-regression.md -->
 
 ### 前端测试
 - 组件测试优先使用 Vitest + Testing Library

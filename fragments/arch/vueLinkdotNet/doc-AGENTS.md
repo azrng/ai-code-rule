@@ -1,6 +1,6 @@
 ---
 rule_id: doc-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -13,16 +13,13 @@ dependencies: [agents-root]
 
 ---
 
-## 主动建议规则
-- 发现需求描述缺少角色、流程、字段、权限、边界场景、验收标准或非功能要求时，应主动补充为待确认项
-- 发现实现方案与设计文档、接口契约、需求基准或设计系统不一致时，应主动提醒并建议同步修订
-- 复用、查证优先级等共性规则见根 `AGENTS.md`「模型行为约束与主动建议」
+<!-- include: shared/doc/advisory.md -->
 
 ---
 
-<!-- include: shared/doc/stage0-design-v3.md -->
+<!-- include: shared/doc/stage0-design-v2.md -->
 
-<!-- include: shared/doc/design-checklist-v1.md -->
+<!-- include: shared/doc/design-checklist.md -->
 
 ---
 
@@ -51,8 +48,8 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/doc-update.md -->
 
-<!-- include: shared/doc/doc-directory-v1.md -->
+<!-- include: shared/doc/doc-directory.md -->
 
 <!-- include: shared/doc/requirement.md -->
 
-<!-- include: shared/doc/retro-format-v2.md -->
+<!-- include: shared/doc/retro-format-v1.md -->

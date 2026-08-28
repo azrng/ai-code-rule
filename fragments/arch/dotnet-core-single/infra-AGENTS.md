@@ -1,6 +1,6 @@
 ---
 rule_id: infra-agents
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-08-27
 dependencies: [agents-root]
 ---
@@ -33,7 +33,7 @@ dependencies: [agents-root]
 
 ## Docker 规则
 
-<!-- include: shared/infra/general-requirements-v1.md -->
+<!-- include: shared/infra/general-requirements.md -->
 
 ### Docker 交付规则
 - 只要本次任务新增或修改了 Dockerfile、`docker-compose.yml`、运行端口、环境变量或启动命令，完成实现后应主动执行一次镜像构建和容器化启动验证；若因环境限制无法执行，必须明确说明。
