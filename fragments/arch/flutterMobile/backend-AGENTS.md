@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.16.0
+last_updated: 2026-08-29
 dependencies: [agents-root]
 ---
 
@@ -19,9 +19,9 @@ dependencies: [agents-root]
 ## 技术栈
 
 ### 数据与配置
-- 数据访问：sqflite（本地默认）/ REST API（远程服务）
-- HTTP 客户端：`dio`（推荐，含拦截器）/ `http`
-- 序列化：`json_serializable` / `freezed` / 手动 `fromJson` / `toJson`
+- 数据访问：drift（本地 SQLite，响应式查询；表定义 + build_runner 生成实体类）
+- 序列化：drift 生成数据类为主，对外 JSON 等格式用手动映射；`freezed` / `json_serializable` 仅在确有需要时引入
+- 网络（可选，仅需要远程服务的项目）：`dio`（推荐，含拦截器）/ `http`，必须有超时控制、错误处理和重试策略
 - 依赖注入：Riverpod（Provider 注入）
 
 ### 平台服务
@@ -69,26 +69,23 @@ final itemListProvider = AsyncNotifierProvider.autoDispose<ItemListNotifier, Lis
 
 ## 推荐目录结构
 
-- 基础设施目录建议聚焦在 `lib/repositories/`、`lib/services/`、`lib/config/` 下组织，优先复用现有结构，不强制迁移。
+- 基础设施目录建议按 `lib/data/`（数据访问）与 `lib/core/`（主题、常量、工具）组织，优先复用现有结构，不强制迁移。
 
 ```text
 lib/
-├── repositories/
-│   ├── interfaces/            # 仓储接口定义（abstract class）
-│   └── [module]/
-│       └── xxx_repository.dart
-├── services/
-│   └── platform/              # 平台服务抽象与实现
-├── config/
-│   ├── theme.dart             # 主题配置
-│   ├── routes.dart            # 路由配置
-│   ├── constants.dart         # 常量
-│   └── env.dart               # 环境配置
-├── utils/                     # 工具函数
-│   ├── result.dart            # 统一结果包装
-│   └── exceptions.dart        # 异常定义
-├── main.dart                  # 应用入口 + ProviderScope
-└── app.dart                   # MaterialApp + GoRouter
+├── data/
+│   ├── database/              # drift 表定义（tables.dart）与生成的实体类
+│   ├── models/                # 视图 / 展示 DTO
+│   ├── repositories/          # 仓储（abstract class + drift 实现）
+│   └── services/              # 业务服务（含平台服务封装）
+├── core/
+│   ├── theme/                 # 设计 token 落地
+│   ├── constants/             # 预置数据、阈值、常量
+│   └── utils/                 # 工具函数（Result 包装、异常定义、格式化）
+├── providers/                 # Riverpod DI、状态与命令编排
+├── router/                    # GoRouter 路由定义
+├── main.dart                  # 应用入口 + 目录装配 + ProviderScope
+└── app.dart                   # MaterialApp.router + 主题
 ```
 
 ---
@@ -99,36 +96,33 @@ lib/
 - Repository 类应定义清晰的公共 API（abstract class）
 - Repository 实现负责具体数据访问，不把 SQL、连接串或事务细节泄漏到 Provider / Service
 - Repository 方法必须优先采用异步形式（返回 `Future<T>`）
-- 涉及事务时，使用 sqflite 的 `transaction` 方法统一管理
+- 涉及事务时，使用 drift 的 `transaction` 方法统一管理
 - Repository 通过 Riverpod Provider 注入
 
 ### 数据访问规则
-- 本地数据访问使用 sqflite
-- 远程数据访问通过 `dio` 或 `http` 调用 REST API
-- SQL 查询必须使用参数化查询，禁止字符串拼接构造可注入 SQL
-- 数据库连接通过 `openDatabase` 管理，移动端注意及时释放资源
-- 数据库存储字段建议使用 `snake_case`，Dart 属性使用 `camelCase`，映射通过 `fromJson` / `toJson` 处理
-- 网络请求必须有超时控制、错误处理和重试策略
-- 移动端网络请求需考虑离线场景，关键操作应支持本地缓存或队列
+- 本地数据访问使用 drift，查询优先使用 drift DSL / 参数化变量，禁止字符串拼接构造可注入 SQL
+- 数据库连接通过 `NativeDatabase` / `LazyDatabase` 管理并集中封装，移动端注意及时释放资源
+- 数据库存储字段建议使用 `snake_case`，Dart 属性使用 `camelCase`，对外 JSON 通过显式映射函数处理
+- 需要远程服务的项目：网络请求必须有超时控制、错误处理和重试策略，关键操作考虑离线缓存或队列
 
 ### 数据库迁移规则
 - 涉及数据库结构变更时，必须同步补齐迁移脚本或等价初始化逻辑
 - 迁移脚本应保持可追踪、可重复执行，并尽量说明适用版本
 - 若支持回滚，回滚方式应与正向变更一起说明
 - 不能确认迁移影响范围时，先说明风险，不要直接执行破坏性变更
-- sqflite 迁移通过 `onCreate` / `onUpgrade` 回调管理
+- drift 迁移通过 `schemaVersion` 与 `MigrationStrategy`（`onCreate` / `onUpgrade`）管理
 
 ### 配置与环境规则
 - 运行路径、数据库文件路径、API 地址、环境依赖必须通过配置管理，禁止散落在代码常量中
 - 敏感信息（API 密钥、令牌等）使用 `flutter_secure_storage` 存储，禁止明文保存到 `shared_preferences` 或配置文件
 - 本地默认配置应尽量可直接运行，同时避免把密钥、真实凭据写入仓库
 - 新增配置项、命令或环境依赖时，必须同步更新相关文档
-- API 基地址等环境相关配置统一在 `lib/config/env.dart` 中管理
-- 环境变量通过 `--dart-define` 在构建时注入
+- 需要环境配置的项目：API 基地址等统一集中管理，环境变量通过 `--dart-define` 在构建时注入
+- 纯本地应用将数据库、图片、备份等目录在启动期统一装配后注入（Provider override），不散落硬编码路径
 
 ### 平台服务规则
 - 平台特定功能（相机、位置、传感器、生物识别、推送通知等）必须通过接口抽象
-- 接口定义在共享项目中（`lib/services/platform/`），实现使用对应平台插件
+- 接口定义在 `lib/data/services/`，实现使用对应平台插件
 - 平台特定代码使用 Flutter 插件（如 `image_picker`、`geolocator`），不直接编写 Platform Channel（除非插件不满足需求）
 - 权限请求必须在用户触发相关操作时才发起，禁止启动时批量请求所有权限
 - 平台服务变更时必须同步测试所有受影响平台

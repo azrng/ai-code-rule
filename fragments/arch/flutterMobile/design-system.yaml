@@ -4,8 +4,8 @@
 
 meta:
   name: "Flutter 移动端设计系统"
-  version: "1.0.0"
-  last_updated: "2026-06-05"
+  version: "1.1.0"
+  last_updated: "2026-08-29"
   status: "启用中"
   owners:
     - "design"
@@ -16,8 +16,8 @@ meta:
     ui: "Material 3（Flutter 内置）"
     state_management: "Riverpod"
     routing: "GoRouter"
-    http: "Dio / http"
-    local_db: "sqflite"
+    http: "Dio / http（仅需要远程服务的项目）"
+    local_db: "drift"
     target_platforms:
       - "Android"
       - "iOS"
@@ -445,18 +445,21 @@ page_states:
 component_rules:
   reuse_first: true
   file_placement:
-    pages: "lib/pages/"
-    widgets: "lib/widgets/"
+    pages: "lib/features/<module>/（每目录对应一个屏幕）"
+    widgets: "lib/widgets/（跨模块复用）"
     providers: "lib/providers/"
-    models: "lib/models/"
-    services: "lib/services/"
-    repositories: "lib/repositories/"
-    config: "lib/config/"
+    database: "lib/data/database/（drift 表定义与生成实体类）"
+    models: "lib/data/models/（视图 / 展示 DTO）"
+    services: "lib/data/services/"
+    repositories: "lib/data/repositories/"
+    theme: "lib/core/theme/"
+    constants: "lib/core/constants/"
+    router: "lib/router/"
   naming:
     pages: "PascalCase，以 Page / Screen 结尾"
     widgets: "PascalCase，以 Widget 结尾（可复用组件）"
     providers: "snake_case 文件名，PascalCase 类名"
-    models: "PascalCase，以 Model / Entity / DTO 结尾"
+    models: "视图 DTO 按业务域 PascalCase 命名；实体类以 drift 生成结果为准"
     services: "PascalCase，以 Service 结尾"
     repositories: "PascalCase，以 Repository 结尾"
   rules:

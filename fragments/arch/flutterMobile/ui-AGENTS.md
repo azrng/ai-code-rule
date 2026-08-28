@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.16.0
+last_updated: 2026-08-29
 dependencies: [agents-root]
 ---
 
@@ -70,9 +70,11 @@ lib/
 │   ├── common/
 │   └── layout/
 ├── providers/                   # Riverpod Provider
-├── models/                      # 数据模型、DTO
-├── services/                    # 业务服务
-├── repositories/                # 数据仓储
+├── data/                        # 数据契约与访问
+│   ├── database/                # drift 表定义与生成实体类
+│   ├── models/                  # 视图 / 展示 DTO
+│   ├── repositories/            # 数据仓储
+│   └── services/                # 业务服务
 └── utils/                       # 工具函数
 ```
 
@@ -87,11 +89,11 @@ lib/
 **工作内容**：
 1. 按设计文档实现页面和 Widget，遵循 `design-system.yaml` 和 Material 3 样式规范。
 2. 数据层使用 mock（静态 mock 数据），不依赖真实服务。
-3. 同步输出数据模型文件 `lib/models/`，定义所有数据传输对象。
+3. 同步明确数据契约：drift 表定义（`lib/data/database/`）与视图 DTO（`lib/data/models/`）。
 
 **产物**：
 - 可运行的 Flutter 页面
-- `lib/models/` 数据模型
+- `lib/data/` 数据契约（drift 实体 + 视图 DTO）
 
 **门控规则**：
 - 用户确认页面符合设计文档预期。
