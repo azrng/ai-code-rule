@@ -88,7 +88,7 @@ frontend/
 - 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
 - 响应式设计遵循移动优先原则，使用 Ant Design 的 Grid 系统（Row / Col）
 
-<!-- include: shared/frontend/component-rules-v3.md -->
+<!-- include: shared/frontend/component-rules.md -->
 
 ### 请求规则
 - 禁止在组件中直接调用后端 API，统一通过 `src/api/` 下的请求模块封装

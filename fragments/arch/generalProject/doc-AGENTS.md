@@ -7,7 +7,7 @@ dependencies: [agents-root]
 
 # 文档规则
 
-<!-- include: shared/doc/scope-v3.md -->
+<!-- include: shared/doc/scope.md -->
 
 ---
 

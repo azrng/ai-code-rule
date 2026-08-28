@@ -15,16 +15,13 @@ internal sealed class ResourceStore
 
     public string? Read(string relativePath)
     {
-        var normalized = relativePath.Replace('\\', '/');
-        var wanted = "Fragments." + normalized;
+        var normalized = relativePath.Replace('\\', '/').TrimStart('/');
+        var wanted = "Fragments/" + normalized;
         var name = _resourceNames.FirstOrDefault(resource =>
-            string.Equals(resource, wanted, StringComparison.OrdinalIgnoreCase));
-
-        if (name is null)
-        {
-            name = _resourceNames.FirstOrDefault(resource =>
-                resource.Replace('\\', '/').EndsWith(normalized, StringComparison.OrdinalIgnoreCase));
-        }
+            string.Equals(
+                resource.Replace('\\', '/').Replace("Fragments.", "Fragments/", StringComparison.OrdinalIgnoreCase),
+                wanted,
+                StringComparison.OrdinalIgnoreCase));
 
         if (name is null)
             return null;

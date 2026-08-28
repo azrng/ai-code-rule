@@ -31,7 +31,7 @@ dependencies: [agents-root]
 - `Microsoft.Maui.Storage`：Preferences、SecureStorage、FileSystem
 - `CommunityToolkit.Maui`：平台扩展能力
 
-<!-- include: shared/backend/release.md -->
+<!-- include: shared/mobile/release.md -->
 
 ### 依赖注入规范
 - 使用 MAUI 内置 `MauiAppBuilder` 配置 DI 容器
@@ -122,11 +122,11 @@ src/AppName/
 
 ## 发布规则
 
-<!-- include: shared/backend/general-requirements-v2.md -->
+<!-- include: shared/mobile/release.md -->
 
-<!-- include: shared/backend/android-release.md -->
+<!-- include: shared/mobile/android-release.md -->
 
-<!-- include: shared/backend/ios-release.md -->
+<!-- include: shared/mobile/ios-release.md -->
 
 ### 发布交付规则
 - 只要本次任务涉及发布配置、版本号、运行命令或环境依赖，完成实现后应主动执行一次构建验证

@@ -45,13 +45,11 @@ internal sealed class RuleRenderer
         foreach (var file in profile.Subrules)
             AddRuleFile(result, outputs, file, manifest);
 
-        var modulePointers = modules
+        var pointers = modules
             .SelectMany(module => module.Pointers)
+            .Concat(profile.Pointers)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var pointers = modulePointers.Count > 0
-            ? modulePointers
-            : profile.Pointers.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         foreach (var pointer in pointers)
             AddFile(result, outputs, pointer, NormalizeNewlines(ReadRequired($"pointers/{pointer}"), manifest.LineEnding));
 

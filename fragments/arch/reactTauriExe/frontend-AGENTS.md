@@ -115,7 +115,7 @@ src/
 
 <!-- include: shared/frontend/styling.md -->
 
-<!-- include: shared/frontend/component-rules-v1.md -->
+<!-- include: shared/frontend/component-rules.md -->
 
 ### 外部请求规则
 - Tauri 本地能力优先通过 Command / plugin 调用，不通过本地 HTTP 绕路

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/app/">
+    <Project Path="app/RuleAssembler/RuleAssembler.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/RuleAssembler.Tests/RuleAssembler.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -20,9 +20,9 @@ meta:
     dependency_injection: "Microsoft.Extensions.DependencyInjection"
   usage:
     read_order:
-      - "进行任何 UI 改动前先阅读本文件"
-      - "然后阅读 AGENTS.md 中的 WPF 视图层规则"
-      - "然后查看现有 Views、ViewModels、Styles 与 Controls 实现"
+      - "先阅读根 `AGENTS.md`，确认全局规则、任务阶段和交付要求"
+      - "涉及界面时，再阅读 `ui-AGENTS.md` 中的 WPF 视图层规则"
+      - "然后阅读本文件，并查看现有 Views、ViewModels、Styles 与 Controls 实现"
     principles:
       - "优先复用，而不是重新创建"
       - "优先使用语义化资源，而不是直接写视觉值"

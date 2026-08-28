@@ -46,7 +46,7 @@ dependencies: [agents-root, ai-agents]
 ### AI 集成
 - `Microsoft.Extensions.AI` + Microsoft Agent Framework，规则全部以 `ai-AGENTS.md` 为准
 
-<!-- include: shared/backend/di-rules-v2.md -->
+<!-- include: shared/backend/di-rules.md -->
 
 ---
 

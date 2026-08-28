@@ -67,7 +67,7 @@
           "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明",
           "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ]
       }
@@ -265,7 +265,7 @@
           "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明",
           "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -330,7 +330,7 @@
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
           "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -403,7 +403,7 @@
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明",
           "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -482,7 +482,7 @@
           "- `ai-AGENTS.md`：模型调用（Microsoft.Extensions.AI）、Agent 框架、工具 / Skills、Prompt、流式、向量与记忆等可选能力",
           "- `doc-AGENTS.md`：设计文档、契约说明、设计系统、AI 产品交互补充",
           "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -512,7 +512,7 @@
           "  - 调 Prompt、换模型、调工具参数等不影响契约与数据结构的实验性改动",
           "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "- **Agent 闭环优先**：新 Agent 功能鼓励先在阶段 2 用最小端点跑通\"输入→Agent→输出→确认\"闭环，再在阶段 1 补正式界面",
+          "- **Agent 闭环优先**：新 Agent 功能应先在阶段 1 明确界面与前端契约，再在阶段 2 用最小端点跑通\"输入→Agent→输出→确认\"闭环，再在阶段 1 补正式界面",
           "",
           "### 阶段职责",
           "- 阶段 0：需求整理、设计文档、契约说明、AI 产品交互补充，细则见 `doc-AGENTS.md`",
@@ -579,7 +579,7 @@
           "- `backend-AGENTS.md`：Route Handlers、Server Actions、Service、Repository、Prisma、服务端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
           "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -654,7 +654,7 @@
           "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
           "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证",
           "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -707,7 +707,7 @@
           "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
           "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证",
           "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -749,9 +749,9 @@
     },
     {
       "id": "dotnetBlazor",
-      "label": ".NET Blazor 全栈 Web",
+      "label": ".NET Blazor Server（传统）",
       "family": "web-fullstack",
-      "desc": "Blazor + .NET 的全栈 Web 应用",
+      "desc": "传统 Blazor Server 应用，保留 SignalR 长连接、服务器端组件状态和旧项目兼容规则",
       "root": {
         "target-list": [
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
@@ -759,7 +759,7 @@
           "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
           "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -831,6 +831,69 @@
       "designSystem": true
     },
     {
+      "id": "dotnetBlazorWebApp",
+      "label": ".NET Blazor Web App",
+      "family": "web-fullstack",
+      "desc": "支持 Static SSR、Interactive Server、Interactive WebAssembly 与 Interactive Auto 的现代 Blazor Web App",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `ui-AGENTS.md`：渲染模式、页面、组件、状态、预渲染、断线恢复与 JS interop",
+          "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
+          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `design-system.yaml`：设计 token 与 UI 规范",
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `ui-AGENTS.md` | Razor Components、渲染模式、预渲染、状态、断线恢复、JS interop 与界面测试 | 涉及页面、组件或交互执行位置时 |",
+          "| `backend-AGENTS.md` | 服务、数据访问、业务逻辑、鉴权与后端测试 | 涉及服务端实现、API 或安全边界时 |",
+          "| `infra-AGENTS.md` | 端口、环境变量、Docker、构建发布链路 | 涉及配置、部署、容量或交付时 |",
+          "| `doc-AGENTS.md` | 设计文档、契约说明与设计系统 | 涉及阶段 0、架构契约或文档维护时 |"
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          "3. 涉及 Razor Components 或交互时，先读 `ui-AGENTS.md` 并明确 Static SSR、Interactive Server、Interactive WebAssembly 或 Interactive Auto。",
+          "4. 涉及界面时再读 `design-system.yaml`；设计系统不得覆盖根规则优先级。",
+          "5. 再阅读相关模块与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 已确认目标组件使用的渲染模式、实际执行位置、预渲染行为和 DI 可用范围",
+          "- 涉及界面时，已查看相关 Razor 组件、布局、样式资源、设计 token 和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关服务、API、DTO、授权边界、调用方和现有测试"
+        ],
+        "contract-error-line": "界面契约、组件参数、DTO 或字段说明发现缺口时，应先回到契约变更流程，同步修改组件、双端服务实现、API、数据访问映射、测试和相关文档；不得绕过渲染模式与安全边界直接补临时字段",
+        "search-nouns": "Razor Components、渲染模式、页面、服务、API、DTO 和测试实现",
+        "task-kind-nouns": "界面、渲染模式、业务逻辑还是基础设施",
+        "root-scope-nouns": "界面、渲染模式、服务、文档、基础设施",
+        "context-scope-nouns": "界面、执行位置、服务与发布链路"
+      },
+      "subrules": [
+        {
+          "source": "arch/dotnetBlazorWebApp/ui-AGENTS.md",
+          "output": "ui-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnetBlazor/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnetBlazor/infra-AGENTS.md",
+          "output": "infra-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnetBlazor/doc-AGENTS.md",
+          "output": "doc-AGENTS.md"
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
+    },
+    {
       "id": "dotnetConsole",
       "label": ".NET 控制台程序",
       "family": "desktop",
@@ -840,7 +903,7 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `application-AGENTS.md`：命令、Service、业务流程、配置、日志与测试",
           "- `doc-AGENTS.md`：需求文档",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -910,7 +973,7 @@
           "- `backend-AGENTS.md`：IPC handler、.NET 服务、数据访问、本地能力、后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
           "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -984,7 +1047,7 @@
           "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明",
           "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1060,7 +1123,7 @@
           "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
           "- `doc-AGENTS.md`：设计文档、契约说明",
           "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1135,7 +1198,7 @@
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
           "- `doc-AGENTS.md`：设计文档、契约说明",
           "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1210,7 +1273,7 @@
           "- `application-AGENTS.md`：ViewModel、Service、命令、业务编排、结果包装、应用层测试",
           "- `infrastructure-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证",
           "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与移动端 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1284,7 +1347,7 @@
           "- `application-AGENTS.md`：Riverpod Provider、Service、命令、业务编排、结果包装、应用层测试",
           "- `backend-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证",
           "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token、移动端 UI 规范与动效规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1356,7 +1419,7 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、样式、交互与前端测试",
           "- `doc-AGENTS.md`：设计文档、设计系统",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1431,7 +1494,7 @@
           "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
           "- `doc-AGENTS.md`：设计文档、契约说明",
           "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证",
-          "- `CLAUDE.md` / `GEMINI.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `design-system.yaml`：设计 token 与 UI 规范",
           "- `TASK.md`：唯一活动任务记录文件"
         ],

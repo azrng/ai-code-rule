@@ -215,7 +215,7 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/pre-commit-regression.md -->
 
-<!-- include: shared/backend/general-requirements-v1.md -->
+<!-- include: shared/backend/general-requirements.md -->
 
 ### 后端测试
 - 单元测试使用 xUnit + Moq。

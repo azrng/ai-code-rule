@@ -25,7 +25,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/stack-backend-v1.md -->
 
-<!-- include: shared/backend/core-libs-v2.md -->
+<!-- include: shared/backend/core-libs.md -->
 
 ### 依赖注入规范
 - 使用 Azrng 标记接口方式：

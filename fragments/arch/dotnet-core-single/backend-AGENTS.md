@@ -26,7 +26,7 @@ dependencies: [agents-root]
 - .NET 10（2025 年已发布正式版）+ ASP.NET Core Web API
 - 单项目整洁架构：一个 Web API 项目内以文件夹划分层（Domain / Application / Infrastructure / 宿主入口），层职责与依赖方向和多项目模板 `dotnetLayered` 保持一致
 
-<!-- include: shared/backend/core-libs-v1.md -->
+<!-- include: shared/backend/core-libs.md -->
 
 <!-- include: shared/backend/database-libs.md -->
 
@@ -239,7 +239,7 @@ Controllers → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/pre-commit-regression.md -->
 
-<!-- include: shared/backend/general-requirements-v1.md -->
+<!-- include: shared/backend/general-requirements.md -->
 
 ### 后端测试
 - 测试框架：xUnit + Moq

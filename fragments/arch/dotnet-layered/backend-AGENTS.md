@@ -19,7 +19,7 @@ dependencies: [agents-root]
 - .NET 10（2025 年已发布正式版）+ ASP.NET Core Web API
 - 分层架构（9 个项目），按职责严格划分
 
-<!-- include: shared/backend/core-libs-v1.md -->
+<!-- include: shared/backend/core-libs.md -->
 
 <!-- include: shared/backend/database-libs.md -->
 

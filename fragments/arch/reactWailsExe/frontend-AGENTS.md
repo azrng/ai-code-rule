@@ -128,7 +128,7 @@ project-root/
 - 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
 - Wails 窗口为固定大小，不需要考虑移动端响应式
 
-<!-- include: shared/frontend/component-rules-v3.md -->
+<!-- include: shared/frontend/component-rules.md -->
 
 ### 外部 API 请求规则
 - 仅在需要调用外部服务时使用 Axios

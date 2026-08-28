@@ -17,9 +17,9 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/stack-backend-v1.md -->
 
-<!-- include: shared/backend/core-libs-v2.md -->
+<!-- include: shared/backend/core-libs.md -->
 
-<!-- include: shared/backend/di-rules-v2.md -->
+<!-- include: shared/backend/di-rules.md -->
 
 ---
 
@@ -99,8 +99,6 @@ backend/
 <!-- include: shared/backend/data-access-rules.md -->
 
 <!-- include: shared/backend/response-format.md -->
-
-<!-- include: shared/backend/di-rules.md -->
 
 <!-- include: shared/backend/exception-handling.md -->
 

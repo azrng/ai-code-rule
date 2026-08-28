@@ -7,7 +7,7 @@ dependencies: [agents-root]
 
 # 文档规则
 
-<!-- include: shared/doc/scope-v2.md -->
+<!-- include: shared/doc/scope.md -->
 
 ### 常见任务入口
 - 新增功能方案：先看阶段 0 设计文档

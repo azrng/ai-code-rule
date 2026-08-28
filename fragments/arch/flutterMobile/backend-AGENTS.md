@@ -32,7 +32,7 @@ dependencies: [agents-root]
 - `flutter_secure_storage`：安全存储
 - `permission_handler`：权限管理
 
-<!-- include: shared/backend/release.md -->
+<!-- include: shared/mobile/release.md -->
 
 ### 依赖注入规范（Riverpod）
 - 使用 Riverpod Provider 配置依赖注入
@@ -137,11 +137,11 @@ lib/
 
 ## 发布规则
 
-<!-- include: shared/backend/general-requirements-v2.md -->
+<!-- include: shared/mobile/release.md -->
 
-<!-- include: shared/backend/android-release.md -->
+<!-- include: shared/mobile/android-release.md -->
 
-<!-- include: shared/backend/ios-release.md -->
+<!-- include: shared/mobile/ios-release.md -->
 
 ### 发布交付规则
 - 只要本次任务涉及发布配置、版本号、运行命令或环境依赖，完成实现后应主动执行一次构建验证

@@ -9,7 +9,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/infrastructure/scope.md -->
 
-<!-- include: shared/infrastructure/common-tasks.md -->
+<!-- include: shared/infra/common-tasks.md -->
 
 ---
 

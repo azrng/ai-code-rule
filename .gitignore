@@ -358,3 +358,4 @@ NUL
 app/RuleAssembler/bin/
 app/RuleAssembler/obj/
 /dist/
+.workflow/profile-validation

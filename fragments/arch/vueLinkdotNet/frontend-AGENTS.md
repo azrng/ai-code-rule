@@ -117,7 +117,7 @@ project-root/
 - 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）
 - 响应式设计遵循移动优先原则，必须在不同断点下测试
 
-<!-- include: shared/frontend/component-rules-v3.md -->
+<!-- include: shared/frontend/component-rules.md -->
 
 ### 请求规则
 - 禁止在组件中直接调用后端 API，统一通过 `src/api/` 下的请求模块封装

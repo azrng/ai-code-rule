@@ -125,7 +125,7 @@ preload/
 
 <!-- include: shared/frontend/styling.md -->
 
-<!-- include: shared/frontend/component-rules-v1.md -->
+<!-- include: shared/frontend/component-rules.md -->
 
 ### 外部请求规则
 - 本地能力（.NET sidecar）优先通过 IPC 调用，不通过本地 HTTP 绕路

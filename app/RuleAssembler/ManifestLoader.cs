@@ -79,16 +79,16 @@ internal sealed class ManifestLoader
                 continue;
             }
 
-            var profileObj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(profile.GetRawText());
+            var profileObj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(profile.GetRawText())!;
             if (!profileObj.TryGetValue("root", out var rootVarEl)
                 || rootVarEl.ValueKind != JsonValueKind.Object)
                 rootVarEl = JsonDocument.Parse("{}").RootElement.Clone();
 
             var rootVars = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(rootVarEl.GetRawText())!;
-            foreach (var pair in defaults)
+            foreach (var pair in defaults.EnumerateObject())
             {
-                if (!rootVars.ContainsKey(pair.Key))
-                    rootVars[pair.Key] = pair.Value.Clone();
+                if (!rootVars.ContainsKey(pair.Name))
+                    rootVars[pair.Name] = pair.Value.Clone();
             }
 
             profileObj["root"] = JsonDocument.Parse(JsonSerializer.Serialize(rootVars)).RootElement.Clone();
@@ -99,7 +99,7 @@ internal sealed class ManifestLoader
         return JsonSerializer.Serialize(rootObj);
     }
 
-    private void Validate(Manifest manifest)
+    internal void Validate(Manifest manifest)
     {
         var errors = new List<string>();
 
@@ -131,8 +131,12 @@ internal sealed class ManifestLoader
         foreach (var module in manifest.Modules)
         {
             ValidateResourcePath(module.RootSource, $"module {module.Id} rootSource", errors, allowEmpty: true);
+            if (!string.IsNullOrWhiteSpace(module.RootSource) && _resources.Read(module.RootSource) is null)
+                errors.Add($"module {module.Id} 找不到根模板：{module.RootSource}");
+
+            ValidateUniqueOutputs(module.Pointers, $"module {module.Id} pointer", errors);
             foreach (var pointer in module.Pointers)
-                ValidateResourcePath($"pointers/{pointer}", $"module {module.Id} pointer", errors);
+                ValidateRequiredResource($"pointers/{pointer}", $"module {module.Id} pointer", errors);
             foreach (var file in module.Files)
                 ValidateRuleFile(file, $"module {module.Id}", errors);
         }
@@ -153,18 +157,28 @@ internal sealed class ManifestLoader
 
             foreach (var file in profile.Subrules)
                 ValidateRuleFile(file, $"Profile {profile.Id}", errors);
+            ValidateUniqueOutputs(profile.Pointers, $"Profile {profile.Id} pointer", errors);
             foreach (var pointer in profile.Pointers)
-                ValidateResourcePath($"pointers/{pointer}", $"Profile {profile.Id} pointer", errors);
+                ValidateRequiredResource($"pointers/{pointer}", $"Profile {profile.Id} pointer", errors);
 
             if (profile.DesignSystem)
             {
                 var source = GetDesignSystemSource(profile);
-                ValidateResourcePath(source, $"Profile {profile.Id} design-system", errors);
+                ValidateRequiredResource(source, $"Profile {profile.Id} design-system", errors);
             }
+
+            ValidateProfileOutputConflicts(profile, moduleMap, errors);
         }
 
         if (errors.Count > 0)
             throw new InvalidOperationException("manifest 校验失败：\n- " + string.Join("\n- ", errors));
+    }
+
+    private void ValidateRequiredResource(string path, string field, ICollection<string> errors)
+    {
+        ValidateResourcePath(path, field, errors);
+        if (!string.IsNullOrWhiteSpace(path) && _resources.Read(path) is null)
+            errors.Add($"{field} 找不到资源：{path}");
     }
 
     private void ValidateRuleFile(Subrule file, string owner, ICollection<string> errors)
@@ -198,6 +212,46 @@ internal sealed class ManifestLoader
 
         if (Path.IsPathRooted(path) || path.Replace('\\', '/').Split('/').Any(part => part == ".."))
             errors.Add($"{field} 不能包含绝对路径或 ..：{path}");
+    }
+
+    private static void ValidateProfileOutputConflicts(
+        Profile profile,
+        IReadOnlyDictionary<string, ModuleDefinition> moduleMap,
+        ICollection<string> errors)
+    {
+        var outputs = new List<string> { "AGENTS.md" };
+        var moduleIds = profile.ModuleIds.Count > 0
+            ? profile.ModuleIds
+            : new List<string> { "core" };
+        var modules = moduleIds
+            .Where(moduleMap.ContainsKey)
+            .Select(id => moduleMap[id])
+            .ToList();
+
+        outputs.AddRange(modules.SelectMany(module => module.Files).Select(file => file.Output));
+        outputs.AddRange(profile.Subrules.Select(file => file.Output));
+        outputs.AddRange(modules
+            .SelectMany(module => module.Pointers)
+            .Concat(profile.Pointers)
+            .Distinct(StringComparer.OrdinalIgnoreCase));
+
+        if (profile.DesignSystem)
+            outputs.Add("design-system.yaml");
+
+        ValidateUniqueOutputs(outputs, $"Profile {profile.Id}", errors);
+    }
+
+    private static void ValidateUniqueOutputs(IEnumerable<string> outputs, string kind, ICollection<string> errors)
+    {
+        var duplicates = outputs
+            .Where(output => !string.IsNullOrWhiteSpace(output))
+            .GroupBy(output => output, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+
+        if (duplicates.Count > 0)
+            errors.Add($"{kind} 输出重复：{string.Join("、", duplicates)}");
     }
 
     private static void ValidateUniqueIds(IEnumerable<string> ids, string kind, ICollection<string> errors)

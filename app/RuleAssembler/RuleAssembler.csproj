@@ -16,4 +16,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="RuleAssembler.Tests" />
+  </ItemGroup>
+
 </Project>
