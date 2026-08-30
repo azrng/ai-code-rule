@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.17.0
+last_updated: 2026-08-30
 dependencies: [agents-root]
 ---
 
@@ -17,7 +17,7 @@ dependencies: [agents-root]
 
 ---
 
-<!-- include: shared/doc/stage0-design-v2.md -->
+<!-- include: shared/doc/stage0-design.md -->
 
 ---
 
@@ -52,4 +52,4 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/requirement.md -->
 
-<!-- include: shared/doc/retro-format-v1.md -->
+<!-- include: shared/doc/retro-format.md -->

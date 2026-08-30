@@ -35,7 +35,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/frontend/testing.md -->
 
-<!-- include: shared/frontend/design-system-usage-v1.md -->
+<!-- include: shared/frontend/design-system-usage.md -->
 
 ## 主动建议规则
 - 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点

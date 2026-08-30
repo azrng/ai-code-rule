@@ -23,7 +23,7 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-<!-- include: shared/backend/stack-backend-v1.md -->
+<!-- include: shared/backend/stack-backend-dotnet.md -->
 
 <!-- include: shared/backend/core-libs.md -->
 

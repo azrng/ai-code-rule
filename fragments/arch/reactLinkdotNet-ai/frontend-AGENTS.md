@@ -100,7 +100,7 @@ frontend/
 
 <!-- include: shared/frontend/react-hooks.md -->
 
-<!-- include: shared/frontend/component-communication-v1.md -->
+<!-- include: shared/frontend/component-communication-react.md -->
 
 ### 路由管理规范
 - 路由配置集中放在 `src/router/routes.tsx`

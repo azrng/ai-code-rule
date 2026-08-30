@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.17.0
+last_updated: 2026-08-30
 dependencies: [agents-root]
 ---
 
@@ -9,7 +9,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/scope.md -->
 
-<!-- include: shared/doc/common-tasks-v2.md -->
+<!-- include: shared/doc/common-tasks.md -->
 
 ---
 
@@ -19,7 +19,7 @@ dependencies: [agents-root]
 
 ## 阶段 0 设计文档
 
-<!-- include: shared/doc/stage0-design-v1.md -->
+<!-- include: shared/doc/stage0-design-api.md -->
 
 <!-- include: shared/doc/design-checklist.md -->
 
@@ -35,6 +35,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/doc-directory.md -->
 
-<!-- include: shared/doc/requirement-v2.md -->
+<!-- include: shared/doc/requirement.md -->
 
 ---

@@ -34,7 +34,7 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-<!-- include: shared/backend/stack-backend-v2.md -->
+<!-- include: shared/backend/stack-backend-go-wails.md -->
 
 <!-- include: shared/backend/fe-be-communication.md -->
 

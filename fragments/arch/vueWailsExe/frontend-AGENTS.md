@@ -23,7 +23,7 @@ dependencies: [agents-root]
 - Pinia（全局状态管理：用户信息、权限、通知等跨组件共享状态）
 - Axios（HTTP 客户端，仅用于外部 API 调用）
 
-<!-- include: shared/frontend/design-system-usage-v2.md -->
+<!-- include: shared/frontend/design-system-usage-element-plus.md -->
 
 ---
 
@@ -105,9 +105,9 @@ project-root/
 
 <!-- include: shared/frontend/composition-api.md -->
 
-<!-- include: shared/frontend/component-communication-v2.md -->
+<!-- include: shared/frontend/component-communication-vue.md -->
 
-<!-- include: shared/frontend/routing-management-v2.md -->
+<!-- include: shared/frontend/routing-management-vue.md -->
 
 <!-- include: shared/frontend/pinia.md -->
 

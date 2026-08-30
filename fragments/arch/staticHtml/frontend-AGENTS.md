@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.17.0
+last_updated: 2026-08-30
 dependencies: [agents-root]
 ---
 
@@ -125,7 +125,7 @@ project-root/
 
 ---
 
-<!-- include: shared/doc/stage0-design-v4.md -->
+<!-- include: shared/doc/stage0-design.md -->
 
 ---
 

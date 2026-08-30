@@ -12,7 +12,7 @@ dependencies: [agents-root]
 - 作用域：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证规则
 - 触发场景：涉及 Repository、数据库、Riverpod 依赖注入、平台服务、配置、启动方式、打包发布时阅读
 
-<!-- include: shared/backend/common-tasks-v2.md -->
+<!-- include: shared/backend/common-tasks-infra.md -->
 
 ---
 

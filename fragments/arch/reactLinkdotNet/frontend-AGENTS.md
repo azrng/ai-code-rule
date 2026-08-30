@@ -75,9 +75,9 @@ frontend/
 
 <!-- include: shared/frontend/react-hooks.md -->
 
-<!-- include: shared/frontend/component-communication-v1.md -->
+<!-- include: shared/frontend/component-communication-react.md -->
 
-<!-- include: shared/frontend/routing-management-v1.md -->
+<!-- include: shared/frontend/routing-management-react.md -->
 
 <!-- include: shared/frontend/zustand.md -->
 
