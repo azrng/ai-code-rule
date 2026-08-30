@@ -141,10 +141,7 @@ src/AppName/
 
 ## 测试与验证规则
 
-### 仓储与数据验证
-- Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试或最小化验证步骤
-- 涉及数据库初始化、迁移、升级时，应至少验证一次从空环境到可运行状态的链路
-- 不要让测试或验证依赖手工准备的本地状态
+<!-- include: shared/mobile/repository-regression.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

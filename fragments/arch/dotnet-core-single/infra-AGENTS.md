@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.18.0
+last_updated: 2026-08-30
 dependencies: [agents-root]
 ---
 
@@ -45,6 +45,7 @@ dependencies: [agents-root]
 - 若发现宿主机端口冲突，不要直接停止未知本地进程；优先调整 Compose 映射端口，并同步更新文档。
 - 新增镜像构建链路时，应同步补充 `.dockerignore`。
 
+<!-- include: shared/infra/local-data-safety.md -->
 
 <!-- include: shared/infra/pre-commit-regression.md -->
 

@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.18.0
+last_updated: 2026-08-30
 dependencies: [agents-root]
 ---
 
@@ -106,18 +106,7 @@ backend/
 
 <!-- include: shared/backend/db-migration.md -->
 
-### 代码注释规范
-- 必须补 XML 注释的位置：
-  - Controller action：用 `<summary>` 说明接口用途、关键参数、返回结果。
-  - Application 层服务接口方法：说明应用能力，不写实现细节。
-  - Domain 核心业务规则方法：说明规则意图。
-  - 不来自接口的实现类自有方法（接口未约束的核心方法）：补 `<summary>` 说明该能力做什么。
-- 接口已注释时，实现方法不重复注释，也不加 `/// <inheritdoc />`；只有实现类自有的、接口未定义的方法才需要补注释。
-- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按"不写实现细节"原则省略。
-  - 例外：Controller action 需要向调用方暴露事件格式、鉴权要求、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
-- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明“为什么这样做”——包括 fail fast 的原因、为什么跳过某类脏数据、为什么保留某一层结构。
-- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
-- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
+<!-- include: shared/backend/comment-rules.md -->
 
 <!-- include: shared/application/anti-patterns.md -->
 
@@ -131,12 +120,7 @@ backend/
 
 <!-- include: shared/common/general-requirements.md -->
 
-### 后端测试
-- 单元测试使用 xUnit + Moq
-- Controller 测试：验证状态码、响应结构、参数校验
-- Service 测试：验证业务逻辑分支，使用 mock 隔离依赖
-- Repository 测试：使用 In-Memory 数据库或 Testcontainers
-- 集成测试：使用 WebApplicationFactory 测试完整请求管道
+<!-- include: shared/backend/backend-testing.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

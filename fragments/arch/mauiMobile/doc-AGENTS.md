@@ -1,6 +1,6 @@
 ---
 rule_id: doc-agents
-version: 1.17.0
+version: 1.18.0
 last_updated: 2026-08-30
 dependencies: [agents-root]
 ---
@@ -81,10 +81,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/doc-directory.md -->
 
-### requirement 要求
-- 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留"待补充"空壳。
-- 需求文档建议固定包含以下章节：项目背景、目标与范围、用户角色、页面或模块清单、核心业务流程、关键数据与字段、权限与可见范围、边界场景与异常、非功能要求、待确认项。
-- 自动生成需求文档时，优先写清业务事实、流程与边界，不提前写入技术实现方案。
+<!-- include: shared/doc/requirement.md -->
 
 <!-- include: shared/doc/retro-format.md -->
 

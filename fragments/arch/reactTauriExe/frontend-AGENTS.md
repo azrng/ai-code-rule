@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.18.0
+last_updated: 2026-08-30
 dependencies: [agents-root]
 ---
 
@@ -117,11 +117,7 @@ src/
 
 <!-- include: shared/frontend/component-rules.md -->
 
-### 外部请求规则
-- Tauri 本地能力优先通过 Command / plugin 调用，不通过本地 HTTP 绕路
-- 如果需要访问外部服务，可使用 `fetch` 或统一封装的请求层
-- 外部请求必须统一处理超时、错误和取消逻辑
-- 若仓库已经使用 MSW，测试时优先通过 MSW 模拟外部请求
+<!-- include: shared/frontend/external-request-desktop.md -->
 
 <!-- include: shared/frontend/code-organization.md -->
 
@@ -131,11 +127,7 @@ src/
 
 <!-- include: shared/frontend/pre-commit-regression.md -->
 
-### 前端测试
-- 组件测试优先使用 Vitest + Testing Library
-- Query、表单、交互、禁用态、错误态应有验证
-- 仅在需要模拟外部请求时才引入 MSW
-- 对 Tauri 调用统一使用 mock 封装层，不直接 mock 页面内部实现细节
+<!-- include: shared/frontend/frontend-testing-desktop.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 
