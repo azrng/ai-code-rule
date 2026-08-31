@@ -1,6 +1,6 @@
 ---
 rule_id: application-agents
-version: 1.21.0
+version: 1.23.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -72,10 +72,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/application/kiss.md -->
 
-### 统一结果包装
-- 服务层方法返回值统一使用 `ResultModel<T>` 包装
-- 成功响应：`ResultModel<T>.Success(data)`
-- 错误响应：`ResultModel<T>.Failure(message, errorCode)`
+<!-- include: shared/application/result-wrapping.md -->
 - 异常处理使用 Azrng.Core 异常体系
 
 ### 异常处理规范

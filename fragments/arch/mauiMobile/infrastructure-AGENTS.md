@@ -1,6 +1,6 @@
 ---
 rule_id: infrastructure-agents
-version: 1.22.0
+version: 1.23.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -122,14 +122,7 @@ src/AppName/
 
 <!-- include: shared/mobile/ios-release.md -->
 
-### 发布交付规则
-- 只要本次任务涉及发布配置、版本号、运行命令或环境依赖，完成实现后应主动执行一次构建验证
-- 发布验证至少包括：
-  - 构建是否成功
-  - 应用是否成功启动
-  - 关键功能是否处于可用状态
-  - 核心访问链路是否可用
-- 若因环境限制无法执行，必须明确说明
+<!-- include: shared/desktop/release-delivery.md -->
 
 ---
 
@@ -141,9 +134,7 @@ src/AppName/
 
 ### 提交前最小回归
 - 修改构建配置、启动命令、打包脚本或平台清单时：至少执行一次构建与启动验证
-- 修改环境变量、配置项或连接串时：确认示例配置、文档和运行方式同步更新
-- 修改数据库、仓储、依赖注入或外部服务集成时：至少补一项真实链路或等价验证
+<!-- include: shared/infrastructure/pre-commit-core.md -->
 - 修改平台特定代码时：在受影响平台执行验证
-- 若本次改动同时影响应用访问链路，应至少补一次核心链路检查
 
 ---

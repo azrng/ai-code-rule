@@ -1,6 +1,6 @@
 ---
 rule_id: ui-agents
-version: 1.22.0
+version: 1.23.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -141,11 +141,8 @@ src/AppName/
 
 <!-- include: shared/ui/general-requirements.md -->
 
-### 视图层测试
-- 页面交互、表单校验、列表行为、状态展示、异常状态变化时，应补充对应测试。
-- 至少关注以下关键状态：`loading`、`empty`、`error`、`no-permission`。
-- 若涉及数据请求、筛选、提交等关键路径，应验证主要交互结果。
-- 推荐使用 Avalonia Headless 或项目既有 UI 测试方案。
+<!-- include: shared/application/view-layer-testing.md -->
+- 推荐使用 Avalonia Headless 或项目既有 UI 测试方案
 
 <!-- include: shared/desktop/external-dependencies.md -->
 

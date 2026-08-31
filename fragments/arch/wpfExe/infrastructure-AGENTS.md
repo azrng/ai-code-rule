@@ -1,6 +1,6 @@
 ---
 rule_id: infrastructure-agents
-version: 1.21.0
+version: 1.23.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -58,20 +58,10 @@ dependencies: [agents-root]
 - 构建前确认引用、配置文件、资源文件和迁移脚本已被正确纳入输出
 - 若项目包含数据库文件、模板资源或本地依赖，需明确复制策略与目标目录
 
-### 发布规则
-- 生产发布优先采用单文件发布（Single File Publish）或当前仓库既有发布方式
-- 不要把密钥写入配置文件或发布包
+<!-- include: shared/desktop/release.md -->
 - 发布链路要可追踪，至少能定位版本号、构建时间和核心变更来源
-- 清理旧版本时要保留最小回滚窗口
 
-### 发布交付规则
-- 只要本次任务涉及发布配置、版本号和启动命令，完成实现后应主动执行一次构建验证
-- 若因环境限制无法执行，必须明确说明
-- 发布验证至少包括：
-  - 构建是否成功
-  - 应用是否成功启动
-  - 关键功能是否处于可用状态
-  - 核心访问链路是否可用
+<!-- include: shared/desktop/release-delivery.md -->
 
 ---
 
