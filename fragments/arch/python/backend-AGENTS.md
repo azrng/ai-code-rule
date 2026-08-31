@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.20.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -445,6 +445,13 @@ async def test_create_user_success(client):
     assert data["code"] == 200
     assert data["data"]["username"] == "test"
 ```
+
+### 验证命令
+
+Python 验证优先使用 uv 的临时依赖执行方式，不要求预装开发依赖：
+
+- 测试：`uv run --with pytest pytest ...`
+- 代码质量检查：`uv run --with ruff ruff check ...`
 
 <!-- include: shared/no-test-fallback.md -->
 
