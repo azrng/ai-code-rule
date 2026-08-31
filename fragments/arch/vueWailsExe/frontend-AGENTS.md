@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -133,8 +133,6 @@ project-root/
 
 <!-- include: shared/backend/general-requirements.md -->
 
-### 前端测试（可选）
-- 暂时不考虑单元测试
-- 但必须进行手动 smoke test 验证核心功能
+<!-- include: shared/frontend/frontend-testing-minimal.md -->
 
 <!-- include: shared/no-test-fallback.md -->

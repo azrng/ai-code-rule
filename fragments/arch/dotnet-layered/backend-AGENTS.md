@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -177,14 +177,7 @@ src/
 - 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
 - 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；跨层把多个不相关类型塞进同一文件。
 
-### 核心逻辑可读性（KISS）
-- 以下场景优先显式直写，不要本能压成一条链：聚合、分组排序后取 Top N、多层字典构造、有失败边界的控制流、需要稳定输出顺序的逻辑。
-- 优先形式：`foreach`、`if / else`、中间变量、明确命名的临时集合、显式排序 / 裁剪 / 显式异常。
-- 谨慎使用：多层嵌套 LINQ、一次性 `GroupBy + Select + ToDictionary + ToList` 链、只为"看起来干净"而拆的 helper。
-- helper / 拆分只在降低认知负担时才成立：让职责边界更清楚、真正复用、让调用方少理解细节；若拆完读者要在多个位置来回跳，或用 helper 隐藏本该直说的业务判断，就退回直白写法。
-- 单调用点判定：私有方法、局部映射 / 包装方法若仅有一个调用点，且不承载复杂业务规则、边界隔离、异常处理或类型收窄，也无复用预期，必须直接内联回调用处；不得为形式整洁抽取只被调用一次的方法。
-- 提交前自检：维护者能否一遍看懂核心逻辑？是否要跳转多个 helper 才知道发生了什么？这是不是当前需求的最简单可行实现？犹豫写"抽象版"还是"直白版"时，默认选直白版。
-- 共性的"先读再写""范围最小扰动"见根 `AGENTS.md`「理解检查清单」与「全局工作规则」
+<!-- include: shared/application/kiss.md -->
 
 ### 数据模型规则
 - 实体类继承自 Azrng 基类（如 `IdentityOperatorStatusEntity`，自带雪花 Id、审计与软删除字段）。
@@ -198,13 +191,7 @@ src/
 
 <!-- include: shared/backend/exception-handling.md -->
 
-### Redis 缓存使用规范
-- 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口。
-- 通过 `services.AddRedisCacheStore()` 注册 Redis 服务。
-- 缓存操作必须设置合理的过期时间。
-- 热点数据使用本地缓存 + Redis 二级缓存。
-- 发布订阅场景使用 `PublishAsync` / `SubscribeAsync`。
-- 禁止在循环中频繁调用 Redis。
+<!-- include: shared/backend/redis-cache.md -->
 
 <!-- include: shared/backend/memory-cache.md -->
 
@@ -240,9 +227,7 @@ src/
 
 <!-- include: shared/backend/pre-commit-regression.md -->
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试。
-- 测试应覆盖真实业务行为。
+<!-- include: shared/common/general-requirements.md -->
 
 ### 后端测试
 - 测试框架：xUnit + Moq

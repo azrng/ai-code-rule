@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -46,7 +46,7 @@ dependencies: [agents-root]
   - 需要对接必须通过 HTTP 语义运行的第三方模块
   - 已证明子进程 IPC 无法满足能力要求
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
+<!-- include: shared/application/tech-choice.md -->
 
 ### JSON-RPC 路由与契约
 - 渲染进程到主进程优先维护单一通用 IPC 通道（如 `sidecar:invoke`），以 `method + params` 转发；不要为每个 sidecar 方法平铺注册独立的 `ipcMain.handle`。
@@ -66,8 +66,6 @@ dependencies: [agents-root]
 - 发现接口契约、DTO、SQLite 表结构或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
 - 发现可以复用既有服务、数据访问封装、DTO、校验器或错误处理封装时，应优先建议复用
 - 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
-
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
 
 ---
 

@@ -1,4 +1,4 @@
-### 统一响应格式
+### 统一响应格式（如提供 API 接口）
 - 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
   - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
   - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`

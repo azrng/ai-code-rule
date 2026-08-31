@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.18.0
-last_updated: 2026-08-30
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -36,13 +36,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/frontend/design-system-usage.md -->
 
-## 主动建议规则
-- 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点
-- 发现样式与 `design-system.yaml`、现有主题或组件库冲突时，应先说明差异和影响，不直接引入平行视觉体系
-- 发现可以复用已有组件、hook、store、请求封装或工具函数时，应优先建议复用
-- 不确定组件行为、路由规则、状态管理模式或设计 token 时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验硬编码
-
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/frontend/advisory.md -->
 
 ---
 

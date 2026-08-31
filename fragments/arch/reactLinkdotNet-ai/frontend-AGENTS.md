@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -45,8 +45,7 @@ dependencies: [agents-root]
 - 新增组件优先用 CLI（`npx shadcn@latest add <component>`）拉取到本地，再按需定制；不要手写已被 shadcn 覆盖的基础组件
 - 复制进来的组件仍受本规则与 `design-system.yaml` 约束（颜色用 token、尺寸用 Tailwind 工具类）
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 

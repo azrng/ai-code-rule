@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.18.0
-last_updated: 2026-08-30
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -75,24 +75,13 @@ backend/
 
 <!-- include: shared/backend/controller-layer.md -->
 
-### Application 层规则
-- 服务类实现接口，接口定义在 `Interfaces/` 目录
-- 服务方法必须是异步的（返回 `Task<T>`）
-- 使用 DTO 进行数据传递，不直接暴露 Domain 实体
-- 使用 AutoMapper 进行对象映射（如需要）
-- 禁止在 Controller、Service、Repository、Entity、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数
-- 业务异常抛出继承自 `BaseException` 的自定义异常
+<!-- include: shared/backend/application-layer.md -->
 
 <!-- include: shared/backend/domain-layer.md -->
 
 <!-- include: shared/backend/infrastructure-layer.md -->
 
-### 代码组织规范
-- 一个文件只放一个主类型：Controller、Service 接口与实现、Entity、值对象、DTO 等，默认一个类一个文件，文件名与类名一致。
-- DTO 目录组织：应用层 DTO 放 `Application/DTOs/{业务域}/`，Request 与 Response 各自独立文件；领域事件放 `Domain/Events/`，不合并到 `Dtos.cs`。
-- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
-- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
-- 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；业务逻辑放到 Infrastructure。
+<!-- include: shared/backend/code-organization-dotnet.md -->
 
 <!-- include: shared/application/kiss.md -->
 

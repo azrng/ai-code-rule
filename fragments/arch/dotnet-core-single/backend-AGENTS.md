@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -36,8 +36,7 @@ dependencies: [agents-root]
 - ORM：Entity Framework Core，通过 `Common.EFCore` 系列包访问
 - 测试环境可使用 `Common.EFCore.InMemory` 内存数据库
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -196,13 +195,7 @@ Controllers → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/exception-handling.md -->
 
-### Redis 缓存使用规范
-- 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口。
-- 通过 `services.AddRedisCacheStore()` 注册 Redis 服务，配置项使用 `RedisCacheOptions`。
-- 缓存操作必须设置合理的过期时间。
-- 热点数据使用本地缓存 + Redis 二级缓存。
-- 发布订阅场景使用 `PublishAsync` / `SubscribeAsync`。
-- 禁止在循环中频繁调用 Redis。
+<!-- include: shared/backend/redis-cache.md -->
 
 <!-- include: shared/backend/memory-cache.md -->
 

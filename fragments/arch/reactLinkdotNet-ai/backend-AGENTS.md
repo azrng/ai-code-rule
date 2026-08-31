@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root, ai-agents]
 ---
 
@@ -150,12 +150,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
 - 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把端点专用 request 内联写在端点文件里；业务逻辑放到 Infrastructure。
 
-### 核心逻辑可读性（KISS）
-- 以下场景优先显式直写，不要本能压成一条链：聚合、分组排序后取 Top N、多层字典构造、有失败边界的控制流、需要稳定输出顺序的逻辑。
-- 优先形式：`foreach`、`if / else`、中间变量、明确命名的临时集合、显式排序 / 裁剪 / 显式异常。
-- 谨慎使用：多层嵌套 LINQ、一次性 `GroupBy + Select + ToDictionary + ToList` 链、只为"看起来干净"而拆的 helper。
-- helper / 拆分只在降低认知负担时才成立：让职责边界更清楚、真正复用、让调用方少理解细节；若拆完读者要在多个位置来回跳，或用 helper 隐藏本该直说的业务判断，就退回直白写法。
-- 共性的"先读再写""范围最小扰动"见根 `AGENTS.md`「理解检查清单」与「全局工作规则」
+<!-- include: shared/application/kiss.md -->
 
 <!-- include: shared/backend/data-access-rules.md -->
 
@@ -165,13 +160,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 不同 Provider 的差异（如大小写敏感、JSON、数组类型、并发）需在迁移与查询中注意，必要时在 `doc/design/设计文档.md` 记录
 - 迁移脚本必须保证在两种 Provider 下都可执行或分别提供，避免只跑通一边
 
-### 统一响应格式
-- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
-  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
-  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
-  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
-- Service 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
-- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
+<!-- include: shared/backend/response-format.md -->
 - 流式接口（如 Agent 输出）可不套 `ResultModel<T>`，按 `ai-AGENTS.md` 与 `doc-AGENTS.md` 约定的事件结构返回
 
 ### 依赖注入规范
@@ -183,15 +172,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - `IChatClient` 按 `ai-AGENTS.md` 注册，业务层注入抽象
 - 禁止使用静态服务定位器 pattern
 
-### 异常处理规范
-- 业务异常继承 `BaseException` 或其子类：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `ForbiddenException`：禁止访问
-  - `InternalServerException`：服务器内部错误
-- 异常由中间件统一捕获并转换为 `ResultModel` 响应
-- 业务失败一律通过抛出上述异常表达；禁止在业务层手工构造失败 `ResultModel` 或直接设置错误状态码
+<!-- include: shared/backend/exception-handling.md -->
 - 模型调用异常（超时、限流、空响应）需转换为可读的业务异常，不向上层泄漏 SDK 细节
 
 ### Redis 缓存使用规范（可选）
@@ -225,14 +206,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 
 <!-- include: shared/application/anti-patterns.md -->
 
-### 可维护性自检（提交前）
-提交前对核心逻辑至少问一遍：
-- 维护者能否一遍看懂这段核心逻辑？
-- 是否必须跳转多个 helper 才知道发生了什么？
-- 关键方法和关键逻辑有没有注释？
-- 这是不是当前需求的最简单可行实现？
-- 我是不是为了"写得像高手"而牺牲了可读性？
-- 犹豫写"抽象版"还是"直白版"时，默认选直白版。
+<!-- include: shared/application/maintainability-check.md -->
 
 ---
 

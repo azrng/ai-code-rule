@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -27,17 +27,11 @@ dependencies: [agents-root]
 - 使用 Ant Design 主题系统（ConfigProvider + Design Token），所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 Ant Design 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
-## 主动建议规则
-- 发现页面、组件、状态管理或请求逻辑职责混杂，导致文件膨胀、复用困难或测试困难时，应主动提醒并建议最小拆分点
-- 发现样式与 `design-system.yaml`、现有主题、组件库或交互模式冲突时，应先说明差异和影响，不直接引入平行视觉体系
-- 发现表单校验、权限展示、页面状态、刷新策略或错误处理缺失时，应主动提醒
-- 发现可以复用已有页面基座、组件、hook / store、请求封装或工具函数时，应优先建议复用
-- 不确定交互规则、字段含义或前端数据来源时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验补写规则
+<!-- include: shared/frontend/advisory.md -->
 
 ## 推荐目录结构
 

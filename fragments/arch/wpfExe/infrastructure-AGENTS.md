@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -13,7 +13,7 @@ dependencies: [agents-root]
 
 ---
 
-<!-- include: shared/infra/tech-choice.md -->
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 

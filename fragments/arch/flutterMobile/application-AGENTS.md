@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.16.0
-last_updated: 2026-08-29
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -32,8 +32,7 @@ dependencies: [agents-root]
 - `go_router`：路由
 - `freezed` / `json_serializable` / `dio`：仅在项目确有需要时引入，不作为默认推荐
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.18.0
-last_updated: 2026-08-30
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -37,8 +37,7 @@ dependencies: [agents-root]
 - 在 `Program.cs` 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
 - Blazor Server 中 Scoped 服务基于 SignalR 连接生命周期
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -118,12 +117,7 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - `Application` 层：依赖 Domain，定义服务接口和 DTO。
 - `Infrastructure` 层：依赖 Application 和 Domain，实现具体技术细节。
 
-### Controller 层规则（如提供 API 接口）
-- Controller 只负责 HTTP 处理，不包含业务逻辑。
-- 使用 `[ApiController]` 特性，自动处理 400 响应。
-- 使用 `[Route("api/[controller]")]` 统一路由前缀。
-- 注入 Application 层的服务接口，不直接依赖 Infrastructure。
-- Controller action 直接返回 `Task<T>` 并一行转发 Service；不写 `Ok()`，不手动构造 `ResultModel`，统一包装由全局过滤器与异常中间件完成（见 `统一响应格式`）。
+<!-- include: shared/backend/controller-layer.md -->
 
 ### Service 层规则
 - 服务类实现接口，接口定义在 `Interfaces/` 目录。
@@ -132,10 +126,7 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 业务异常抛出继承自 `BaseException` 的自定义异常。
 - 禁止在 Controller、Service、Domain 实体、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
 
-### Domain 层规则
-- 实体类继承自基类（包含 Id、创建时间等公共属性）。
-- 值对象使用 record 类型，实现值相等比较。
-- 禁止依赖外部库，保持纯净。
+<!-- include: shared/backend/domain-layer.md -->
 
 ### 代码组织规范
 - 一个文件只放一个主类型：实体、值对象、DTO、Service 接口与实现等公开契约类，默认一个类一个文件，文件名与类名一致。
@@ -153,13 +144,7 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 涉及事务时使用 `IDbContextTransaction`。
 - 软删除通过全局查询过滤器实现。
 
-### 统一响应格式（如提供 API 接口）
-- 所有 API 响应统一为 `ResultModel<T>` 结构，由框架三件套自动完成，业务代码不手动包装：
-  - `services.AddMvcResultPackFilter("/swagger")`：成功路径自动把 action 返回值包成 `ResultModel<T>`
-  - `services.AddMvcModelVerifyFilter()`：模型校验失败统一转为失败 `ResultModel`
-  - `app.UseGlobalException()`：业务异常与未处理异常统一映射为失败 `ResultModel`，必须放在中间件管道最外层
-- Service 成功直接返回业务对象（`Task<T>`），失败抛出 Azrng 业务异常；新代码禁止手写 `ResultModel<T>.Success / Error` 手动包装（该写法仅存量代码迁移期可容忍）。
-- HTTP 状态码默认按异常类型返回真实状态码（400 / 401 / 404 / 500）；`ResultModel` 的 `code` 字段承载业务码。
+<!-- include: shared/backend/response-format.md -->
 
 ### 依赖注入规范
 - 服务类必须实现以下接口之一：

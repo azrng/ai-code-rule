@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -49,8 +49,7 @@ dependencies: [agents-root]
 - 颜色、间距、圆角必须来自样式资源，使用 `{StaticResource}` 或 `{DynamicResource}` 引用
 - Wpf.Ui 内置 Fluent 主题，在此基础上扩展自定义样式
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
@@ -207,10 +206,7 @@ project-root/
 - Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试
 - 使用 xUnit 作为测试框架
 
-### 外部依赖与数据
-- 测试中不要真实调用外部服务，统一使用 mock、stub 或测试替身
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态或不可控外部环境
+<!-- include: shared/desktop/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

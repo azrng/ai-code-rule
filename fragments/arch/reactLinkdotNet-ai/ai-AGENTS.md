@@ -1,7 +1,7 @@
 ---
 rule_id: ai-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.21.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -63,8 +63,7 @@ dependencies: [agents-root]
 
 > 上述包名与类型已对照官方源码（Microsoft Agent Framework，`dotnet/src`）核对。仍以项目锁定的 `*.csproj` 版本为准；类型随版本可能有调整，落地时按官方文档校准，禁止凭记忆写死 API。
 
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循根 `AGENTS.md` 的全局规则。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 
