@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.22.0
+version: 1.26.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -138,10 +138,7 @@ lib/
 - 只要本次任务涉及发布配置、版本号、运行命令或环境依赖，完成实现后应主动执行一次构建验证
 - 发布验证至少包括：
   - `flutter build apk` / `flutter build ios` 是否成功
-  - 应用是否成功启动
-  - 关键功能是否处于可用状态
-  - 核心访问链路是否可用
-- 若因环境限制无法执行，必须明确说明
+<!-- include: shared/desktop/release-delivery-core.md -->
 
 ### 代码组织规范
 - 一个文件只放一个主对象：Repository、数据访问实现、平台服务封装、配置类各自独立文件，文件名与主对象一致。
