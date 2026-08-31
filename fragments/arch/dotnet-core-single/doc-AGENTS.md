@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.17.0
-last_updated: 2026-08-30
+version: 1.19.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -36,6 +36,10 @@ dependencies: [agents-root]
 | 接口契约 | 请求参数、响应结构、错误码、示例数据 |
 | 处理流程 | 核心处理链路、状态流转、边界场景、异常处理方式 |
 
+**门控规则**：
+- 用户明确确认设计文档后，才允许进入阶段 1
+- AI 在此阶段只输出文档内容，不写任何实现代码
+
 <!-- include: shared/doc/design-checklist.md -->
 
 ---
@@ -56,10 +60,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/doc-directory.md -->
 
-### requirement 要求
-- 若 `doc/requirement.md` 为模板初始状态，AI 应根据用户输入将占位内容替换为项目真实需求，而不是长期保留“待补充”空壳。
-- 需求文档建议固定包含以下章节：项目背景、目标与范围、用户角色、接口或模块清单、核心业务流程、关键数据与字段、权限与可见范围、边界场景与异常、非功能要求、待确认项。
-- 自动生成需求文档时，优先写清业务事实、流程与边界，不提前写入技术实现方案。
+<!-- include: shared/doc/requirement.md -->
 
 <!-- include: shared/doc/retro-format.md -->
 

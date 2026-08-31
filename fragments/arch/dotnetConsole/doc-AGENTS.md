@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.19.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -42,6 +42,10 @@ dependencies: [agents-root]
 | 功能需求 | 命令列表、核心业务规则、关键状态说明 |
 | 命令与输入输出 | 子命令、参数、选项、输出格式、退出码约定 |
 | 处理流程 | 核心处理链路、状态流转、边界场景、异常处理方式 |
+
+**门控规则**：
+- 用户明确确认设计文档后，才允许进入阶段 1
+- AI 在此阶段只输出文档内容，不写任何实现代码
 
 <!-- include: shared/doc/design-checklist.md -->
 

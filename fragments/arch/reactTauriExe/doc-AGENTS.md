@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.17.0
-last_updated: 2026-08-30
+version: 1.19.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -41,7 +41,7 @@ dependencies: [agents-root]
 
 **门控规则**：
 - 用户明确确认设计文档后，才允许进入阶段 1
-- AI 在此阶段只输出文档内容，不编写实现代码
+- AI 在此阶段只输出文档内容，不写任何实现代码
 
 ---
 

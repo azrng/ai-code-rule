@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.17.0
-last_updated: 2026-08-30
+version: 1.19.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -34,19 +34,7 @@ dependencies: [agents-root]
 
 ---
 
-## 文档更新要求
-
----
-
-以下内容发生变化时，必须同步更新相关文档：
-- 命令、脚本或启动方式
-- 环境变量
-- 配置项
-- 构建、发布或部署流程
-- 数据库结构、迁移或初始化方式
-- 对外使用方式或接口约定
-
-优先更新已有文档，不新增重复说明。
+<!-- include: shared/doc/doc-update.md -->
 
 <!-- include: shared/doc/doc-directory.md -->
 

@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.18.0
-last_updated: 2026-08-30
+version: 1.19.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -25,9 +25,7 @@ dependencies: [agents-root]
 
 **执行方式**：由用户与 AI 对话协作产出，用户最终确认定稿
 
-- 若 `doc/requirement.md` 不存在，AI 必须先根据用户当前输入自动生成一版详细需求文档初稿，再进入设计文档整理。
-- 自动生成的需求文档至少应包含：业务目标、用户角色、页面 / 模块范围、核心流程、关键字段、权限规则、边界场景、已知约束。
-- 若用户输入不足以支撑完整需求，AI 必须显式写出"待确认项"与"当前假设"，可以先形成初稿，但不得将假设内容表述为已确认事实。
+<!-- include: shared/doc/requirement-autogen.md -->
 
 **产物**：`doc/design/设计文档.md`（全项目一份，新功能以新章节追加，不新建文件）
 
@@ -39,6 +37,10 @@ dependencies: [agents-root]
 | 功能需求 | 页面列表、功能点明细、业务规则、关键状态说明 |
 | 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / empty / error），需标注移动端布局差异 |
 | 交互说明 | 操作流程、状态流转、边界场景、错误处理方式、平台差异说明 |
+
+**门控规则**：
+- 用户明确确认设计文档后，才允许进入阶段 1
+- AI 在此阶段只输出文档内容，不写任何实现代码
 
 <!-- include: shared/doc/design-checklist.md -->
 

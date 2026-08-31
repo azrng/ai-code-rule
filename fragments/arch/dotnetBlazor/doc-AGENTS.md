@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.17.0
-last_updated: 2026-08-30
+version: 1.19.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -35,6 +35,10 @@ dependencies: [agents-root]
 | 功能需求 | 页面列表、功能点明细、业务规则、权限矩阵 |
 | 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / empty / error） |
 | 交互说明 | 操作流程、状态流转、边界场景、错误处理方式 |
+
+**门控规则**：
+- 用户明确确认设计文档后，才允许进入阶段 1
+- AI 在此阶段只输出文档内容，不写任何实现代码
 
 <!-- include: shared/doc/design-checklist.md -->
 
