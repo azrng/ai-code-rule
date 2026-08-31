@@ -168,7 +168,7 @@ internal sealed class RuleRenderer
             : normalized;
     }
 
-    private static string AlignVersion(string content, Manifest manifest)
+    internal static string AlignVersion(string content, Manifest manifest)
     {
         content = ReplaceFirstInFrontmatter(content, "version", manifest.Vars.Version);
         return ReplaceFirstInFrontmatter(content, "last_updated", manifest.Vars.LastUpdated);
@@ -184,7 +184,8 @@ internal sealed class RuleRenderer
             return content;
 
         var header = content[..end];
-        var pattern = new Regex($"^{Regex.Escape(key)}:[^\\r\\n]*$", RegexOptions.Multiline);
+        // 行尾允许可选 \r：CRLF 片段的 $ 只匹配 \n 之前，不带 \r? 会整行匹配失败导致版本盖写被跳过
+        var pattern = new Regex($"^{Regex.Escape(key)}:[^\\r\\n]*\\r?$", RegexOptions.Multiline);
         var replaced = pattern.Replace(header, $"{key}: {value}", 1);
         return replaced + content[end..];
     }
