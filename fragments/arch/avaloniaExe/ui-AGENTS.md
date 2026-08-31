@@ -1,6 +1,6 @@
 ---
 rule_id: ui-agents
-version: 1.23.0
+version: 1.24.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -96,11 +96,10 @@ src/AppName/
 - 响应式设计遵循窗口大小变化，必须在不同窗口尺寸下测试。
 
 ### 组件规则
-- 优先复用 `src/AppName/Views/Controls/` 下已有组件，禁止重复创建。
-- 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象。
-- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`。
-- 使用 Ursa.Avalonia 控件库优先，必要时使用 Avalonia 官方控件。
-- 图标统一使用 Avalonia 官方图形能力、Ursa 组件能力或仓库既有素材。
+- 优先复用 `src/AppName/Views/Controls/` 下已有组件，禁止重复创建
+<!-- include: shared/ui/component-rules-core.md -->
+- 使用 Ursa.Avalonia 控件库优先，必要时使用 Avalonia 官方控件
+- 图标统一使用 Avalonia 官方图形能力、Ursa 组件能力或仓库既有素材
 
 <!-- include: shared/ui/mvvm-rules.md -->
 
@@ -116,17 +115,9 @@ src/AppName/
 - 对话框结果通过异步返回，禁止依赖隐式全局状态。
 - 危险操作需提供明确的二次确认。
 
-### 数据绑定规则
-- 列表数据使用 `ObservableCollection<T>` 或适合当前项目的可观察集合。
-- 复杂集合变更优先使用批量更新策略，而不是简单清空后重添。
-- 异步数据加载必须支持取消（`CancellationToken`）。
-- 绑定路径必须可维护，禁止依赖脆弱的控件查找方式。
+<!-- include: shared/ui/data-binding.md -->
 
-### 状态管理规则
-- 本地状态使用 `[ObservableProperty]` 管理。
-- 全局共享状态使用 `IMessenger` 传递跨 ViewModel 消息。
-- 禁止使用静态全局类存储业务状态。
-- 主题、语言等低频全局配置才放入应用级资源或全局上下文。
+<!-- include: shared/ui/state-management.md -->
 
 ---
 

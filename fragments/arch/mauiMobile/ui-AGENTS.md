@@ -1,6 +1,6 @@
 ---
 rule_id: ui-agents
-version: 1.23.0
+version: 1.24.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -121,8 +121,7 @@ src/AppName/
 
 ### 组件规则
 - 优先复用 `src/AppName/Controls/` 下已有控件，禁止重复创建
-- 只有确实有复用价值时才新增共享控件，避免为单次需求过度抽象
-- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
+<!-- include: shared/ui/component-rules-core.md -->
 - 优先使用 Syncfusion.Maui.Toolkit 控件，不满足需求时再使用 MAUI 内置控件或自定义控件
 - 图标使用 MAUI 内置图形能力（Font Image Source）或项目既有素材
 
@@ -143,18 +142,10 @@ src/AppName/
 - 弹窗结果通过异步返回，禁止依赖隐式全局状态
 - 危险操作需提供明确的二次确认
 
-### 数据绑定规则
-- 列表数据使用 `ObservableCollection<T>`
-- 复杂集合变更优先使用批量更新策略，而不是简单清空后重添
-- 异步数据加载必须支持取消（`CancellationToken`）
-- 绑定路径必须可维护，禁止依赖脆弱的控件查找方式
+<!-- include: shared/ui/data-binding.md -->
 - 使用 `x:DataType` 启用编译时绑定检查，提升性能和类型安全
 
-### 状态管理规则
-- 本地状态使用 `[ObservableProperty]` 管理
-- 全局共享状态使用 `IMessenger` 传递跨 ViewModel 消息
-- 禁止使用静态全局类存储业务状态
-- 主题、语言等低频全局配置才放入应用级资源或全局上下文
+<!-- include: shared/ui/state-management.md -->
 - 页面生命周期事件（`OnNavigatedTo`、`OnNavigatedFrom`）中只做初始化和清理，不承载业务逻辑
 
 ### 主题规则

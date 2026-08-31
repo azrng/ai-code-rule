@@ -1,0 +1,2 @@
+- 只有确实有复用价值时才新增共享控件，避免为单次需求过度抽象
+- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
