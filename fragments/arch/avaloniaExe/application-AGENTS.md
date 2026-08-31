@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.18.0
-last_updated: 2026-08-30
+version: 1.22.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -69,19 +69,9 @@ src/AppName/
 
 ## 应用层规则
 
-### 分层边界规则
-- View 只负责展示，不承载业务逻辑。
-- ViewModel 负责状态管理、命令触发、调用 Service 与处理用户可见结果。
-- Service 负责业务逻辑、流程编排和规则校验，不直接操作 View。
-- Repository 是数据访问边界，具体实现细则见 `infrastructure-AGENTS.md`。
-- Model / DTO 负责承载业务数据，不在其中夹带 UI 行为。
+<!-- include: shared/application/layering-rules.md -->
 
-### ViewModel 规则
-- ViewModel 中可以组织用户操作流程，但禁止直接写 SQL 或直接依赖存储细节。
-- 命令执行后的成功、失败、空状态必须显式反馈到界面状态。
-- 异常在 ViewModel 层转换为用户友好的提示信息，不把底层异常原样暴露给用户。
-- 跨 ViewModel 协作优先使用 `IMessenger` 或显式服务，不依赖静态全局状态。
-- 禁止在 ViewModel、Service、Repository、Model、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
+<!-- include: shared/application/viewmodel-rules.md -->
 
 ### Service 层规则
 - 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录。
@@ -90,20 +80,13 @@ src/AppName/
 - 服务层异常必须统一封装，抛出 Azrng 异常体系中的业务异常类型。
 - 服务类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册。
 
-### DTO 与模型规则
-- DTO 是视图层与业务逻辑层之间的稳定契约，变更时必须同步更新相关映射和调用方。
-- 若仓库已有真实实体或 DTO 结构，优先沿用现状，不为模板强行改名或重组。
-- 数据转换规则应集中放在 Service 或明确的映射层，不散落在 View 或 Repository 调用点。
+<!-- include: shared/application/dto-rules.md -->
 
 <!-- include: shared/application/code-organization.md -->
 
 <!-- include: shared/application/kiss.md -->
 
-### 统一结果包装
-- 服务层方法返回值统一使用 `ResultModel<T>` 包装。
-- 成功响应：`ResultModel<T>.Success(data)`。
-- 错误响应：`ResultModel<T>.Failure(message, errorCode)`。
-- 对于仅表示操作结果的方法，也应保持统一的结果语义，不返回随意结构。
+<!-- include: shared/application/result-wrapping.md -->
 
 ### 异常处理规范
 - 业务异常继承 `BaseException` 或其子类：
@@ -127,15 +110,9 @@ src/AppName/
 
 <!-- include: shared/application/pre-commit-regression.md -->
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试。
-- 若本次改动未补测试，必须在最终说明中写明原因和风险。
-- 测试应覆盖真实业务行为，而不是只覆盖静态分支。
+<!-- include: shared/common/general-requirements.md -->
 
-### 应用层测试
-- ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试。
-- Service 层业务逻辑、数据转换、异常处理发生变化时，应补充对应测试。
-- 推荐使用 xUnit 作为测试框架。
+<!-- include: shared/application/application-layer-testing.md -->
 
 <!-- include: shared/desktop/external-dependencies.md -->
 

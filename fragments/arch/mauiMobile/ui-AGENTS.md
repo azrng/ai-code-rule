@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.22.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -126,12 +126,7 @@ src/AppName/
 - 优先使用 Syncfusion.Maui.Toolkit 控件，不满足需求时再使用 MAUI 内置控件或自定义控件
 - 图标使用 MAUI 内置图形能力（Font Image Source）或项目既有素材
 
-### MVVM 模式规则
-- 所有 ViewModel 最终都必须继承 `ObservableObject`；若项目已有 `BaseViewModel`，应由基类继承 `ObservableObject` 后统一复用
-- 属性通知使用 `[ObservableProperty]` 特性自动生成，禁止手写重复样板
-- 命令定义使用 `[RelayCommand]` 特性生成，禁止手动拼装重复命令逻辑
-- ViewModel 依赖通过构造函数注入
-- 禁止在 Code-behind（`.xaml.cs`）中编写业务逻辑
+<!-- include: shared/ui/mvvm-rules.md -->
 
 ### 导航规则
 - 使用 MAUI Shell 导航（`Shell.Current.GoToAsync`）进行页面切换

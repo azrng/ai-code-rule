@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.22.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -102,12 +102,7 @@ src/AppName/
 - 使用 Ursa.Avalonia 控件库优先，必要时使用 Avalonia 官方控件。
 - 图标统一使用 Avalonia 官方图形能力、Ursa 组件能力或仓库既有素材。
 
-### MVVM 模式规则
-- 所有 ViewModel 最终都必须继承 `ObservableObject`；若项目已有 `BaseViewModel`，应由基类继承 `ObservableObject` 后统一复用。
-- 属性通知使用 `[ObservableProperty]` 特性自动生成，禁止手写重复样板。
-- 命令定义使用 `[RelayCommand]` 特性生成，禁止手动拼装重复命令逻辑。
-- ViewModel 依赖通过构造函数注入。
-- 禁止在 Code-behind（`.axaml.cs`）中编写业务逻辑。
+<!-- include: shared/ui/mvvm-rules.md -->
 
 ### 导航规则
 - 使用项目既有导航方案或 Ursa 导航能力进行页面切换。
@@ -144,10 +139,7 @@ src/AppName/
 - 仅样式或视觉改动：至少确认受影响界面的关键状态、布局与主要交互未回退
 - 若影响共享组件、布局或状态流转，优先验证影响范围最大的界面，而不是只看局部组件
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试。
-- 若本次改动未补测试，必须在最终说明中写明原因和风险。
-- 测试应覆盖真实业务行为，不要只验证静态渲染。
+<!-- include: shared/ui/general-requirements.md -->
 
 ### 视图层测试
 - 页面交互、表单校验、列表行为、状态展示、异常状态变化时，应补充对应测试。

@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.22.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -30,8 +30,6 @@ dependencies: [agents-root]
 - `Microsoft.Maui.ApplicationModel`：权限、launcher、share、App Actions
 - `Microsoft.Maui.Storage`：Preferences、SecureStorage、FileSystem
 - `CommunityToolkit.Maui`：平台扩展能力
-
-<!-- include: shared/mobile/release.md -->
 
 ### 依赖注入规范
 - 使用 MAUI 内置 `MauiAppBuilder` 配置 DI 容器
@@ -98,11 +96,7 @@ src/AppName/
 - 网络请求必须有超时控制、错误处理和重试策略
 - 移动端网络请求需考虑离线场景，关键操作应支持本地缓存或队列
 
-### 数据库迁移规则
-- 涉及数据库结构变更时，必须同步补齐迁移脚本或等价初始化逻辑
-- 迁移脚本应保持可追踪、可重复执行，并尽量说明适用版本
-- 若支持回滚，回滚方式应与正向变更一起说明
-- 不能确认迁移影响范围时，先说明风险，不要直接执行破坏性变更
+<!-- include: shared/desktop/db-migration.md -->
 
 ### 配置与环境规则
 - 运行路径、数据库文件路径、API 地址、环境依赖必须通过配置管理，禁止散落在代码常量中
@@ -141,7 +135,7 @@ src/AppName/
 
 ## 测试与验证规则
 
-<!-- include: shared/mobile/repository-regression.md -->
+<!-- include: shared/desktop/repository-regression.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

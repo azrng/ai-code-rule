@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.22.0
+last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
 
@@ -74,11 +74,7 @@ src/AppName/
 - 数据库连接必须正确管理生命周期。
 - 数据库存储字段建议使用 `snake_case`，映射通过 `Column` 特性或显式映射处理。
 
-### 数据库迁移规则
-- 涉及数据库结构变更时，必须同步补齐迁移脚本或等价初始化逻辑。
-- 迁移脚本应保持可追踪、可重复执行，并尽量说明适用版本。
-- 若支持回滚，回滚方式应与正向变更一起说明。
-- 不能确认迁移影响范围时，先说明风险，不要直接执行破坏性变更。
+<!-- include: shared/desktop/db-migration.md -->
 
 ### 配置与环境规则
 - 运行路径、数据库文件路径、连接串、环境依赖必须通过配置管理，禁止散落在代码常量中。
@@ -95,12 +91,7 @@ src/AppName/
 
 ## 发布规则
 
-### 总体要求
-- 优先复用现有打包配置。
-- 生产发布优先采用单文件发布（Single File Publish）。
-- 不要把密钥写入配置文件或发布产物。
-- 发布链路要可追踪。
-- 清理旧版本时要保留最小回滚窗口。
+<!-- include: shared/desktop/release.md -->
 
 ### 发布交付规则
 - 只要本次任务涉及发布配置、版本号、运行命令或环境依赖，完成实现后应主动执行一次构建验证。
@@ -115,10 +106,7 @@ src/AppName/
 
 ## 测试与验证规则
 
-### 仓储与数据验证
-- Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试或最小化验证步骤。
-- 涉及数据库初始化、迁移、升级时，应至少验证一次从空环境到可运行状态的链路。
-- 不要让测试或验证依赖手工准备的本地状态。
+<!-- include: shared/desktop/repository-regression.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

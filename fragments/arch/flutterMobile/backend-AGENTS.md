@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.21.0
+version: 1.22.0
 last_updated: 2026-08-31
 dependencies: [agents-root]
 ---
@@ -31,8 +31,6 @@ dependencies: [agents-root]
 - `shared_preferences`：轻量存储
 - `flutter_secure_storage`：安全存储
 - `permission_handler`：权限管理
-
-<!-- include: shared/mobile/release.md -->
 
 ### 依赖注入规范（Riverpod）
 - 使用 Riverpod Provider 配置依赖注入
@@ -156,7 +154,7 @@ lib/
 
 ## 测试与验证规则
 
-<!-- include: shared/mobile/repository-regression.md -->
+<!-- include: shared/desktop/repository-regression.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 
