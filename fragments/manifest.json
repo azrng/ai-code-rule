@@ -1,7 +1,7 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.28.0",
+    "version": "1.30.0",
     "last_updated": "2026-09-01"
   },
   "schema_version": 2,
@@ -106,6 +106,7 @@
       "label": "桌面应用",
       "desc": "Windows / 跨平台桌面客户端与控制台程序",
       "rootDefaults": {
+        "checklist-infra": "- 涉及基础设施时，已查看构建、打包、数据访问封装、环境变量和运行验证方式",
         "dev-stage": [
           "### 四个阶段",
           "",
@@ -149,6 +150,7 @@
       "label": "跨平台混合桌面",
       "desc": "Web 前端 + 原生/托管后端的打包桌面应用",
       "rootDefaults": {
+        "checklist-infra": "- 涉及基础设施时，已查看前端构建、外壳构建、签名打包脚本、环境变量和发布文档",
         "context-scope-nouns": "前后端或跨多个领域",
         "evidence-nouns": "日志、数据、断点、测试",
         "high-risk-prefix": "联调、",
@@ -170,6 +172,7 @@
       "label": "移动应用",
       "desc": "iOS / Android 移动客户端",
       "rootDefaults": {
+        "checklist-infra": "- 涉及基础设施时，已查看构建发布配置、平台权限配置、签名、环境变量和发布文档",
         "context-scope-nouns": "视图、业务、数据访问与发布链路",
         "destructive-nouns": "数据破坏性变更、环境清理",
         "evidence-nouns": "日志、数据、断点、测试",
@@ -190,7 +193,10 @@
     {
       "id": "frontend-static",
       "label": "纯前端 / 静态站点",
-      "desc": "无独立后端的页面与静态站点"
+      "desc": "无独立后端的页面与静态站点",
+      "rootDefaults": {
+        "checklist-infra": "- 涉及基础设施时，已查看资源引用、构建与部署说明"
+      }
     },
     {
       "id": "general",

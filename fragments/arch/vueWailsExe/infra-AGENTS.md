@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.29.0
+last_updated: 2026-09-01
 dependencies: [agents-root]
 ---
 
@@ -9,7 +9,9 @@ dependencies: [agents-root]
 
 <!-- include: shared/infra/scope.md -->
 
-<!-- include: shared/infra/common-tasks.md -->
+### 常见任务入口
+- 改构建命令、打包配置或发布链路：先看发布交付规则
+- 补基础设施或交付回归：先看 `提交前最小回归`
 
 ---
 

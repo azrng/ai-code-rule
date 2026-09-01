@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.30.0
+last_updated: 2026-09-01
 dependencies: [agents-root]
 ---
 
@@ -13,9 +13,9 @@ dependencies: [agents-root]
 - 触发场景：涉及 `src-dotnet/`、子进程 IPC、SQLite、文件系统、系统权限、异常处理或测试时阅读
 
 ### 常见任务入口
-- 改前后端调用契约：先看 IPC handler 规则与输入输出约束
-- 改业务流程或状态流转：先看服务层规则与异常处理规范
-- 改本地数据库、文件、配置读写：先看数据访问规则与本地能力规则
+- 改前后端调用契约：先看 IPC Handler 规则与前后端契约规则
+- 改业务流程或状态流转：先看 Service 规则与异常处理规范
+- 改本地数据库、文件、配置读写：先看 Repository / 数据访问规则与本地能力规则
 - 改子进程启动、健康检查或关闭行为：先看进程生命周期规则
 - 补 .NET 回归：先看 `提交前最小回归` 与测试规则
 

@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
-version: 1.23.0
-last_updated: 2026-08-31
+version: 1.29.0
+last_updated: 2026-09-01
 dependencies: [agents-root]
 ---
 
@@ -9,7 +9,12 @@ dependencies: [agents-root]
 
 <!-- include: shared/infrastructure/scope.md -->
 
-<!-- include: shared/infra/common-tasks.md -->
+### 常见任务入口
+- 改数据访问、数据库结构或迁移：先看 Repository 层规则、数据访问规则与数据库迁移规则
+- 改配置、连接串或环境依赖：先看配置与环境规则
+- 改本地数据、文件路径或隐私数据处理：先看本地数据安全规则
+- 改打包发布：先看发布规则与发布交付规则
+- 补基础设施回归：先看 `提交前最小回归`
 
 ---
 

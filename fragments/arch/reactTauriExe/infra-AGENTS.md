@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.29.0
+last_updated: 2026-09-01
 dependencies: [agents-root]
 ---
 
@@ -12,7 +12,7 @@ dependencies: [agents-root]
 - 作用域：环境变量、构建、签名、打包、更新与交付验证规则
 - 触发场景：涉及 `tauri.conf.json`、环境变量、打包、签名、自动更新、发布链路时阅读
 
-<!-- include: shared/infra/common-tasks.md -->
+<!-- include: shared/infra/common-tasks-desktop.md -->
 
 ---
 

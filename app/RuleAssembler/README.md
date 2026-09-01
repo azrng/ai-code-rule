@@ -34,8 +34,7 @@ fragments/
 1. 把 use-rule.exe 拷贝到目标项目根目录
 2. 双击启动
 3. 选择技术大类
-4. 选择 Profile
-5. 确认释放
+4. 选择 Profile 后自动释放（会先打印文件清单，不二次确认）
 ```
 
 目标目录已有同名文件时会直接覆盖。文件会先写入临时目录，全部准备成功后再提交；提交中途失败会回滚本次已经写入的文件。不会释放 `TASK.md`、`rulelog` 或 `devlog`。
@@ -52,7 +51,7 @@ dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit <目录>
 
 ## 当前 Profile
 
-manifest 当前包含 8 个技术大类、19 个 Profile。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用。
+manifest 当前包含 8 个技术大类、20 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用。
 
 ## 版本与格式
 

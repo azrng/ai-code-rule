@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.30.0
+last_updated: 2026-09-01
 dependencies: [agents-root]
 ---
 
@@ -9,7 +9,11 @@ dependencies: [agents-root]
 
 <!-- include: shared/ui/scope.md -->
 
-<!-- include: shared/ui/common-tasks.md -->
+### 常见任务入口
+- 新增页面或交互：先看渲染模式选择，明确组件执行位置
+- 改组件、状态或数据流：先看组件与状态规则与 JS interop 约束
+- 改样式与视觉：先看设计系统，并遵循 `design-system.yaml`
+- 补界面回归：先看 `提交前最小回归`
 
 ---
 
