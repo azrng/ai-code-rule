@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.26.0
-last_updated: 2026-08-31
+version: 1.28.0
+last_updated: 2026-09-01
 dependencies: [agents-root]
 ---
 
@@ -48,12 +48,7 @@ dependencies: [agents-root]
 
 ## DTO 契约规范
 
-### 契约要求
-
-- **唯一来源**：`src/AppName/Models/DTOs/` 中最终定稿的 DTO / 契约类。
-- **定义时机**：阶段 1 视图实现时同步产出，阶段 2 严格按其实现业务逻辑。
-- **变更规则**：DTO 变更时，必须先修改契约类，再同步修改 ViewModel、Service、Repository 映射和相关文档。
-- **文件结构建议**：按业务域拆分 DTO，避免单文件堆叠所有契约。
+<!-- include: shared/desktop/dto-contract.md -->
 
 ---
 
