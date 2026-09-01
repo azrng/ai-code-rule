@@ -78,23 +78,25 @@ internal static class Program
         if (args.Length == 2 && args[0].Equals("--emit", StringComparison.OrdinalIgnoreCase))
         {
             var outDir = Path.GetFullPath(args[1]);
-            Directory.CreateDirectory(outDir);
             var renderer = new RuleRenderer(resources);
+            var plannedProfiles = new List<(Profile Profile, List<PlannedFile> Files)>();
             foreach (var profile in manifest.Profiles)
             {
                 var files = renderer.Plan(manifest, profile);
-                var profileDir = Path.Combine(outDir, profile.Id);
-                foreach (var file in files)
-                {
-                    var path = Path.Combine(profileDir, file.Output);
-                    var directory = Path.GetDirectoryName(path);
-                    if (!string.IsNullOrEmpty(directory))
-                        Directory.CreateDirectory(directory);
-                    File.WriteAllText(path, file.Content, new UTF8Encoding(false));
-                }
-
-                Console.WriteLine($"已输出：{profile.Id}（{files.Count} 个文件）");
+                plannedProfiles.Add((profile, files));
             }
+
+            Directory.CreateDirectory(outDir);
+            var allFiles = plannedProfiles
+                .SelectMany(item => item.Files.Select(file => new PlannedFile
+                {
+                    Output = $"{item.Profile.Id}/{file.Output}",
+                    Content = file.Content
+                }))
+                .ToList();
+            new OutputWriter().WriteFiles(outDir, allFiles);
+            foreach (var item in plannedProfiles)
+                Console.WriteLine($"已输出：{item.Profile.Id}（{item.Files.Count} 个文件）");
 
             Console.WriteLine($"输出完成：{manifest.Profiles.Count} 个 Profile → {outDir}");
             return 0;

@@ -6,11 +6,16 @@ internal sealed class OutputWriter
 {
     public int WriteFiles(IReadOnlyList<PlannedFile> files)
     {
-        var cwd = Environment.CurrentDirectory;
-        var existing = files.Where(file => File.Exists(Path.Combine(cwd, file.Output))).ToList();
+        return WriteFiles(Environment.CurrentDirectory, files);
+    }
+
+    internal int WriteFiles(string rootDirectory, IReadOnlyList<PlannedFile> files)
+    {
+        var cwd = Path.GetFullPath(rootDirectory);
+        var existing = files.Where(file => File.Exists(PathGuard.GetPathWithin(cwd, file.Output))).ToList();
         foreach (var file in files)
         {
-            var path = Path.Combine(cwd, file.Output);
+            var path = PathGuard.GetPathWithin(cwd, file.Output);
             if (Directory.Exists(path))
                 throw new IOException($"目标路径是目录，无法写入文件：{file.Output}");
         }
@@ -36,7 +41,7 @@ internal sealed class OutputWriter
 
             foreach (var file in files)
             {
-                var targetPath = Path.Combine(cwd, file.Output);
+                var targetPath = PathGuard.GetPathWithin(cwd, file.Output);
                 var stagedPath = GetStagedPath(staging, file.Output);
                 var existed = File.Exists(targetPath);
                 var backupPath = existed ? GetStagedPath(backup, file.Output) : "";
@@ -100,12 +105,7 @@ internal sealed class OutputWriter
 
     private static string GetStagedPath(string staging, string output)
     {
-        var path = Path.Combine(staging, output);
-        var fullStaging = Path.GetFullPath(staging).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        var fullPath = Path.GetFullPath(path);
-        if (!fullPath.StartsWith(fullStaging, StringComparison.OrdinalIgnoreCase))
-            throw new IOException($"输出路径越界：{output}");
-        return fullPath;
+        return PathGuard.GetPathWithin(staging, output);
     }
 
     private sealed class CommitRecord

@@ -60,3 +60,25 @@ public sealed class RuleRendererVersionTests
         Assert.Contains("---\nversion: 1.24.0\n---\nversion: 9.9.9\n", result);
     }
 }
+
+public sealed class RuleRendererPlanTests
+{
+    [Fact]
+    public void Plan_ReactTauri_ExpandsSharedFragmentsAndPointers()
+    {
+        var resources = new ResourceStore();
+        var manifest = new ManifestLoader(resources).Load();
+        var profile = Assert.Single(manifest.Profiles, item => item.Id == "reactTauriExe");
+
+        var files = new RuleRenderer(resources).Plan(manifest, profile);
+
+        Assert.Equal(9, files.Count);
+        Assert.All(files, file => Assert.DoesNotContain("<!-- include:", file.Content));
+        Assert.Contains(files, file => file.Output == "frontend-AGENTS.md"
+            && file.Content.Contains("所有 Tauri 调用统一收敛", StringComparison.Ordinal));
+        Assert.Contains(files, file => file.Output == "backend-AGENTS.md"
+            && file.Content.Contains("Tauri Command / event / plugin 体系", StringComparison.Ordinal));
+        Assert.Contains(files, file => file.Output == "GROK.md"
+            && file.Content.Contains("version: 1.3.1", StringComparison.Ordinal));
+    }
+}

@@ -20,6 +20,10 @@ public sealed class ManifestLoaderTests
         Assert.Contains(blazorWebApp.Subrules, rule => rule.Source == "arch/dotnetBlazorWebApp/ui-AGENTS.md");
         Assert.Contains(blazorWebApp.Subrules, rule => rule.Source == "arch/dotnetBlazor/backend-AGENTS.md");
         Assert.Equal("arch/dotnetBlazor/design-system.yaml", blazorWebApp.DesignSystemSource);
+
+        var reactTauri = Assert.Single(manifest.Profiles, profile => profile.Id == "reactTauriExe");
+        Assert.Equal("前后端或跨多个领域", reactTauri.Root.ContextScopeNouns);
+        Assert.Equal("前端、Rust 后端还是基础设施", reactTauri.Root.TaskKindNouns);
     }
 
     [Fact]
@@ -63,5 +67,32 @@ public sealed class ManifestLoaderTests
         Assert.Contains("Profile", exception.Message);
         Assert.Contains("输出重复", exception.Message);
         Assert.Contains("agents.md", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Validate_ProfileIdWithTraversal_Throws()
+    {
+        var loader = new ManifestLoader(new ResourceStore());
+        var manifest = loader.Load();
+        manifest.Profiles[0].Id = "../outside";
+
+        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+
+        Assert.Contains("安全的单级目录名", exception.Message);
+    }
+
+    [Fact]
+    public void Validate_OutputPathAliases_Throws()
+    {
+        var loader = new ManifestLoader(new ResourceStore());
+        var manifest = loader.Load();
+        var profile = manifest.Profiles[0];
+        var source = manifest.Modules.SelectMany(module => module.Files).First().Source;
+        profile.Subrules.Add(new Subrule { Source = source, Output = "nested/./rule.md" });
+        profile.Subrules.Add(new Subrule { Source = source, Output = "nested\\rule.md" });
+
+        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+
+        Assert.Contains("nested/rule.md", exception.Message);
     }
 }

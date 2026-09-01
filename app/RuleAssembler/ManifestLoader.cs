@@ -143,6 +143,11 @@ internal sealed class ManifestLoader
 
         foreach (var profile in manifest.Profiles)
         {
+            if (string.IsNullOrWhiteSpace(profile.Id))
+                errors.Add("Profile ID 不能为空");
+            else if (!PathGuard.IsSafeProfileId(profile.Id))
+                errors.Add($"Profile {profile.Id} ID 必须是安全的单级目录名");
+
             if (!familyIds.Contains(profile.Family))
                 errors.Add($"Profile {profile.Id} 引用了不存在的 family：{profile.Family}");
 
@@ -210,7 +215,7 @@ internal sealed class ManifestLoader
             return;
         }
 
-        if (Path.IsPathRooted(path) || path.Replace('\\', '/').Split('/').Any(part => part == ".."))
+        if (!PathGuard.TryNormalizeRelative(path, out _))
             errors.Add($"{field} 不能包含绝对路径或 ..：{path}");
     }
 
@@ -245,7 +250,9 @@ internal sealed class ManifestLoader
     {
         var duplicates = outputs
             .Where(output => !string.IsNullOrWhiteSpace(output))
-            .GroupBy(output => output, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(output => PathGuard.TryNormalizeRelative(output, out var canonical)
+                ? canonical
+                : output.Trim().Replace('\\', '/'), StringComparer.OrdinalIgnoreCase)
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
             .ToList();

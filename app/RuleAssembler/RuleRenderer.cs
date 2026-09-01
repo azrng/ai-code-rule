@@ -70,7 +70,9 @@ internal sealed class RuleRenderer
 
     private static void AddFile(List<PlannedFile> result, HashSet<string> outputs, string output, string content)
     {
-        if (!outputs.Add(output))
+        if (!PathGuard.TryNormalizeRelative(output, out var canonical))
+            throw new InvalidOperationException($"生成结果存在无效输出路径：{output}");
+        if (!outputs.Add(canonical))
             throw new InvalidOperationException($"生成结果存在重复输出文件：{output}");
         result.Add(new PlannedFile { Output = output, Content = content });
     }
