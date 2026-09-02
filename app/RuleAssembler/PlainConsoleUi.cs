@@ -26,6 +26,30 @@ internal sealed class PlainConsoleUi : IConsoleUi
         }
     }
 
+    public IReadOnlyList<int> ChooseMany(string title, IReadOnlyList<UiChoice> choices, IReadOnlyList<int> selected)
+    {
+        var state = choices.Select((_, index) => selected.Contains(index)).ToArray();
+        while (true)
+        {
+            Console.WriteLine(title);
+            for (var i = 0; i < choices.Count; i++)
+            {
+                var suffix = string.IsNullOrWhiteSpace(choices[i].Desc) ? "" : $" — {choices[i].Desc}";
+                Console.WriteLine($"  {i + 1}. [{(state[i] ? "x" : " ")}] {choices[i].Label}{suffix}");
+            }
+
+            Console.Write("输入编号切换勾选（可多个，如 1,3），直接回车确认：");
+            var input = Console.ReadLine()?.Trim();
+            if (string.IsNullOrEmpty(input))
+                return Enumerable.Range(0, state.Length).Where(index => state[index]).ToList();
+            foreach (var token in input.Split(',', ' ', '，', '、', ';', '；'))
+            {
+                if (int.TryParse(token.Trim(), out var number) && number >= 1 && number <= state.Length)
+                    state[number - 1] = !state[number - 1];
+            }
+        }
+    }
+
     public void Head(string text)
     {
         Console.WriteLine(text);

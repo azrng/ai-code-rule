@@ -58,7 +58,9 @@ internal static class Program
             return 0;
         }
 
-        var files = renderer.Plan(manifest, selection.Profile);
+        // Q5 能力开关：所有入口统一在选择之后、汇总确认之前执行
+        var features = ChooseFeatures(manifest, ui, selection.Profile);
+        var files = renderer.Plan(manifest, selection.Profile, features);
         Console.WriteLine();
         Console.WriteLine($"已选择：{selection.Profile.Label}");
         Console.WriteLine("将释放以下文件：");
@@ -67,24 +69,21 @@ internal static class Program
         Console.WriteLine("（不释放 TASK.md / rulelog / devlog）");
         Console.WriteLine();
 
-        // 汇总确认：detected 路径在入口已带文件预览确认过，wizard / classic 在生成前补一次
-        if (selection.Mode != "detected")
+        // 汇总确认：能力开关可能增减产物，所有路径在此统一确认一次
+        var confirm = ui.Choose(
+            $"确认在当前目录生成 {files.Count} 个文件？",
+            "取消",
+            new List<UiChoice> { new("开始生成", "") });
+        if (confirm is null)
         {
-            var confirm = ui.Choose(
-                $"确认在当前目录生成 {files.Count} 个文件？",
-                "取消",
-                new List<UiChoice> { new("开始生成", "") });
-            if (confirm is null)
-            {
-                Console.WriteLine("已取消。");
-                return 0;
-            }
+            Console.WriteLine("已取消。");
+            return 0;
         }
 
         var written = new OutputWriter().WriteFiles(files);
 
         var recorder = new RecipeRecorder();
-        var record = RecipeRecorder.Build(manifest, selection.Profile, selection.Mode, selection.Answers, selection.AnswerSources, files);
+        var record = RecipeRecorder.Build(manifest, selection.Profile, selection.Mode, selection.Answers, selection.AnswerSources, features, files);
         recorder.Write(Environment.CurrentDirectory, record);
         var gitignoreMessage = recorder.EnsureGitignored(
             Environment.CurrentDirectory,
@@ -126,12 +125,10 @@ internal static class Program
 
         // 部分检测结果：证据不足以锁定唯一组合，不伪造推荐，进入补答流程
         if (!detection.Converged)
-            return OfferSupplement(manifest, renderer, wizard, ui, detection);
+            return OfferSupplement(manifest, wizard, ui, detection);
 
         var profile = detection.LegacyProfile;
-        var previewFiles = renderer.Plan(manifest, profile);
         ui.Line($"推荐组合：{profile.Label}");
-        ui.FileTable("将生成的文件", previewFiles.Select(file => file.Output));
 
         while (true)
         {
@@ -140,7 +137,7 @@ internal static class Program
                 "取消",
                 new List<UiChoice>
                 {
-                    new("使用推荐组合并生成", ""),
+                    new("使用推荐组合", "随后可选择能力开关并确认生成"),
                     new("问答选择（重新回答）", ""),
                     new("经典选择", "技术大类 → Profile")
                 });
@@ -162,11 +159,47 @@ internal static class Program
         }
     }
 
+    // Q5 能力开关：只列出可用能力（不可用能力隐藏）；
+    // ai-capability 的启用由向导 AI 问答这一唯一事实来源决定，这里仅展示不调整
+    private static HashSet<string> ChooseFeatures(Manifest manifest, IConsoleUi ui, Profile profile)
+    {
+        var defaults = FeatureSelection.Defaults(manifest, profile);
+        var aiFeature = manifest.Features
+            .FirstOrDefault(feature => feature.Id.Equals("ai-capability", StringComparison.OrdinalIgnoreCase));
+        if (aiFeature is not null && defaults.Contains(aiFeature.Id))
+            ui.Line($"AI 能力：已启用（{aiFeature.Desc}）；是否启用由 AI 问答决定，此处不调整");
+
+        // 能力选择只覆盖 doc / infra / design-system 等可开关能力；AI 保持向导回答的状态
+        var toggleable = FeatureSelection.Available(manifest, profile)
+            .Where(feature => !feature.Id.Equals("ai-capability", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var final = toggleable.Count == 0
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : ui.ChooseMany(
+                    "选择本次生成的能力：",
+                    toggleable.Select(feature => new UiChoice(feature.Label, feature.Desc)).ToList(),
+                    toggleable
+                        .Select((feature, index) => (feature, index))
+                        .Where(pair => defaults.Contains(pair.feature.Id))
+                        .Select(pair => pair.index)
+                        .ToList())
+                .Select(index => toggleable[index].Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // 用勾选结果覆盖可开关能力的默认值，AI 能力保留向导回答的状态，再按可用性归一化
+        foreach (var id in defaults)
+        {
+            if (id.Equals("ai-capability", StringComparison.OrdinalIgnoreCase))
+                final.Add(id);
+        }
+
+        return FeatureSelection.Normalize(manifest, profile, final);
+    }
+
     // 检测部分结果的补答入口：展示已确认维度与候选组合，回答只针对未收敛的维度；
-    // 补答 / 重答完成后补一次文件预览与汇总确认
+    // 选择完成后交回主流程，与其它入口一样经过 Q5 能力开关与统一汇总确认
     private static ProfileSelection? OfferSupplement(
         Manifest manifest,
-        RuleRenderer renderer,
         ConsoleWizard wizard,
         IConsoleUi ui,
         DetectionResult detection)
@@ -200,24 +233,12 @@ internal static class Program
         if (choice is null)
             return null;
 
-        var selection = choice switch
+        return choice switch
         {
             0 => wizard.SupplementByWizard(manifest, detection),
             1 => wizard.SelectByWizard(manifest),
             _ => wizard.SelectProfile(manifest)
         };
-        if (selection is null)
-            return null;
-
-        var files = renderer.Plan(manifest, selection.Profile);
-        ui.Line("");
-        ui.Line($"已选择：{selection.Profile.Label}");
-        ui.FileTable("将生成的文件", files.Select(file => file.Output));
-        var confirm = ui.Choose(
-            $"确认在当前目录生成 {files.Count} 个文件？",
-            "取消",
-            new List<UiChoice> { new("开始生成", "") });
-        return confirm is null ? null : selection;
     }
 
     private static string DescribeTraitValue(Manifest manifest, string trait, string value)

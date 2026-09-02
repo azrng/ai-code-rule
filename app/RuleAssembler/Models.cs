@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace RuleAssembler;
@@ -255,25 +256,111 @@ internal sealed class ProfileTraits
     }
 }
 
+// 根变量条目：普通文本始终渲染；带 features 的条目仅在所列能力全部启用时渲染；
+// when 提供按启用能力的多档文案，取第一个满足条件的档位，全部不满足时整条丢弃
+[JsonConverter(typeof(RootLineJsonConverter))]
+internal sealed class RootLine
+{
+    [JsonPropertyName("line")]
+    public string Text { get; set; } = "";
+
+    // 需要全部启用的能力 ID；空表示无条件渲染
+    [JsonPropertyName("features")]
+    public List<string> Features { get; set; } = new();
+
+    [JsonPropertyName("when")]
+    public List<RootLineVariant>? When { get; set; }
+}
+
+// 多档文案的一档：features 全部启用时采用该档文案
+internal sealed class RootLineVariant
+{
+    [JsonPropertyName("line")]
+    public string Text { get; set; } = "";
+
+    [JsonPropertyName("features")]
+    public List<string> Features { get; set; } = new();
+}
+
+// 根变量条目的 JSON 读取兼容：字符串等价于无条件的 RootLine
+internal sealed class RootLineJsonConverter : JsonConverter<RootLine>
+{
+    public override RootLine? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.String:
+                return new RootLine { Text = reader.GetString() ?? "" };
+            case JsonTokenType.StartObject:
+            {
+                // 手工解析对象：options 仍含本转换器，直接反序列化 RootLine 会无限递归
+                var line = new RootLine();
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                {
+                    if (reader.TokenType != JsonTokenType.PropertyName)
+                        continue;
+                    var property = reader.GetString();
+                    reader.Read();
+                    switch (property)
+                    {
+                        case "line":
+                            line.Text = reader.GetString() ?? "";
+                            break;
+                        case "features":
+                            if (reader.TokenType == JsonTokenType.StartArray)
+                            {
+                                while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                                    line.Features.Add(reader.GetString() ?? "");
+                            }
+                            break;
+                        case "when":
+                            if (reader.TokenType == JsonTokenType.StartArray)
+                                line.When = JsonSerializer.Deserialize<List<RootLineVariant>>(ref reader, options);
+                            break;
+                        default:
+                            reader.Skip();
+                            break;
+                    }
+                }
+
+                return line;
+            }
+            default:
+                throw new JsonException("根变量条目必须是字符串或 { line, features } 对象。");
+        }
+    }
+
+    public override void Write(Utf8JsonWriter writer, RootLine value, JsonSerializerOptions options)
+    {
+        if (value.When is null && value.Features.Count == 0)
+        {
+            writer.WriteStringValue(value.Text);
+            return;
+        }
+
+        JsonSerializer.Serialize(writer, value, options);
+    }
+}
+
 internal sealed class RootVariables
 {
     [JsonPropertyName("target-list")]
-    public List<string> TargetList { get; set; } = new();
+    public List<RootLine> TargetList { get; set; } = new();
 
     [JsonPropertyName("subrule-index")]
-    public List<string> SubruleIndex { get; set; } = new();
+    public List<RootLine> SubruleIndex { get; set; } = new();
 
     [JsonPropertyName("dev-stage")]
-    public List<string> DevStage { get; set; } = new();
+    public List<RootLine> DevStage { get; set; } = new();
 
     [JsonPropertyName("understanding-checklist")]
-    public List<string> UnderstandingChecklist { get; set; } = new();
+    public List<RootLine> UnderstandingChecklist { get; set; } = new();
 
     [JsonPropertyName("search-nouns")]
     public string SearchNouns { get; set; } = "";
 
     [JsonPropertyName("extra-sections")]
-    public List<string> ExtraSections { get; set; } = new();
+    public List<RootLine> ExtraSections { get; set; } = new();
 
     [JsonPropertyName("root-scope-nouns")]
     public string RootScopeNouns { get; set; } = "后端、文档、基础设施";
@@ -306,7 +393,7 @@ internal sealed class RootVariables
     public string ContractErrorLine { get; set; } = "阶段 0 输出的接口契约、DTO 或字段说明在阶段 1 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步 Application、Domain、EntityFramework 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段";
 
     [JsonPropertyName("reading-order")]
-    public List<string> ReadingOrder { get; set; } = new();
+    public List<RootLine> ReadingOrder { get; set; } = new();
 
     [JsonPropertyName("intro-quote")]
     public string IntroQuote { get; set; } = "";
@@ -397,6 +484,10 @@ internal sealed class RecipeRecord
     // 回答来源：detected = 检测证据确认；manual = 人工补答。无检测参与时为空，字段为增量兼容
     [JsonPropertyName("answer_sources")]
     public Dictionary<string, string> AnswerSources { get; init; } = new();
+
+    // Q5 启用的能力 ID 集；旧 profile_id 保留为迁移兼容，能力状态以本字段为准
+    [JsonPropertyName("features")]
+    public List<string> Features { get; init; } = new();
 
     [JsonPropertyName("files")]
     public List<string> Files { get; init; } = new();

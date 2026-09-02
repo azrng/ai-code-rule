@@ -11,15 +11,21 @@ internal sealed class RootConsistencyValidator
 
     public List<string> Validate(Manifest manifest, RuleRenderer renderer, Profile profile)
     {
+        // 兼容路径：按默认能力集校验（与旧调用方行为一致）
+        return Validate(manifest, renderer, profile, FeatureSelection.Defaults(manifest, profile));
+    }
+
+    public List<string> Validate(Manifest manifest, RuleRenderer renderer, Profile profile, IReadOnlySet<string> features)
+    {
         var errors = new List<string>();
-        var (generated, referenced) = CollectDeclarations(manifest, profile, errors);
+        var (generated, referenced) = CollectDeclarations(manifest, profile, features, errors);
 
         // 声明本身非法时不再比对产物，避免错误噪音掩盖根因
         if (errors.Count > 0)
             return errors;
 
         var actual = renderer
-            .Plan(manifest, profile)
+            .Plan(manifest, profile, features)
             .Select(file => file.Output)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -44,10 +50,12 @@ internal sealed class RootConsistencyValidator
         return errors;
     }
 
-    // 汇总声明：返回（generated 规范化路径集合, referenced-existing 规范化路径集合）
+    // 汇总声明：返回（generated 规范化路径集合, referenced-existing 规范化路径集合）；
+    // 声明被关闭能力过滤，与按同一能力集渲染的实际产物对比
     private static (HashSet<string> Generated, HashSet<string> Referenced) CollectDeclarations(
         Manifest manifest,
         Profile profile,
+        IReadOnlySet<string> features,
         ICollection<string> errors)
     {
         var generated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -55,6 +63,8 @@ internal sealed class RootConsistencyValidator
 
         void AddGenerated(string path, string feature, string merge)
         {
+            if (!IsFeatureEnabled(features, feature))
+                return;
             if (!PathGuard.TryNormalizeRelative(path, out var canonical))
             {
                 errors.Add(Illegal(profile, path, "路径无效或越界"));
@@ -87,7 +97,7 @@ internal sealed class RootConsistencyValidator
         foreach (var pointer in pointers)
             AddGenerated(pointer, "", OutputDeclaration.MergeReplace);
 
-        if (profile.DesignSystem)
+        if (profile.DesignSystem && features.Contains(DesignSystemFeature))
             AddGenerated("design-system.yaml", DesignSystemFeature, OutputDeclaration.MergeReplace);
 
         // 全局“引用现有文件”默认清单，作用于所有 Profile
@@ -140,6 +150,11 @@ internal sealed class RootConsistencyValidator
             errors.Add(Illegal(profile, canonical, "同时声明为 generated 与 referenced-existing"));
 
         return (generated, referenced);
+    }
+
+    private static bool IsFeatureEnabled(IReadOnlySet<string> features, string feature)
+    {
+        return string.IsNullOrWhiteSpace(feature) || features.Contains(feature);
     }
 
     private static List<ModuleDefinition> ResolveModules(Manifest manifest, Profile profile)

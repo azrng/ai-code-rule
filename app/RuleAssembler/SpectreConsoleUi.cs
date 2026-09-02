@@ -29,6 +29,27 @@ internal sealed class SpectreConsoleUi : IConsoleUi
         return display.IndexOf(selected);
     }
 
+    public IReadOnlyList<int> ChooseMany(string title, IReadOnlyList<UiChoice> choices, IReadOnlyList<int> selected)
+    {
+        var display = new List<string>();
+        for (var i = 0; i < choices.Count; i++)
+        {
+            var suffix = string.IsNullOrWhiteSpace(choices[i].Desc) ? "" : $" — {choices[i].Desc}";
+            display.Add($"{i + 1}. {choices[i].Label}{suffix}");
+        }
+
+        var prompt = new MultiSelectionPrompt<string>()
+            .Title(Markup.Escape(title))
+            .InstructionsText("[grey](空格切换勾选，回车确认)[/]")
+            .PageSize(Math.Min(display.Count, 12))
+            .AddChoices(display);
+        foreach (var index in selected)
+            prompt.Select(display[index]);
+
+        var chosen = AnsiConsole.Prompt(prompt);
+        return chosen.Select(item => display.IndexOf(item)).ToList();
+    }
+
     public void Head(string text)
     {
         AnsiConsole.MarkupLine($"[bold cyan]{Markup.Escape(text)}[/]");

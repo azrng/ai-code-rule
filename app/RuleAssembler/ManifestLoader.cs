@@ -142,6 +142,12 @@ internal sealed class ManifestLoader
             .GroupBy(m => m.Id, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
 
+        // 根变量条目的能力引用必须已注册，防止导航过滤因拼写错误静默失效
+        foreach (var family in manifest.Families)
+            ValidateRootVariables(family.RootDefaults, $"family {family.Id} rootDefaults", featureIds, errors);
+        foreach (var profile in manifest.Profiles)
+            ValidateRootVariables(profile.Root, $"Profile {profile.Id} root", featureIds, errors);
+
         if (!moduleMap.Values.Any(m => !string.IsNullOrWhiteSpace(m.RootSource)))
             errors.Add("至少需要一个提供 rootSource 的公共模块");
 
@@ -270,6 +276,53 @@ internal sealed class ManifestLoader
                     errors.Add($"Profile {profile.Id} traits.{trait} 值 {value} 缺少 wizard.options 文案");
                 }
             }
+        }
+    }
+
+    // 根变量条目的能力引用校验：带 features 的条目必须引用已注册能力；when 多档每档都必须声明条件
+    private static void ValidateRootVariables(
+        RootVariables? root,
+        string owner,
+        IReadOnlySet<string> featureIds,
+        ICollection<string> errors)
+    {
+        if (root is null)
+            return;
+
+        var lists = new (string Name, List<RootLine> Lines)[]
+        {
+            ("target-list", root.TargetList),
+            ("subrule-index", root.SubruleIndex),
+            ("dev-stage", root.DevStage),
+            ("understanding-checklist", root.UnderstandingChecklist),
+            ("reading-order", root.ReadingOrder),
+            ("extra-sections", root.ExtraSections)
+        };
+
+        foreach (var (name, lines) in lists)
+        {
+            foreach (var entry in lines)
+            {
+                ValidateRootLineFeatures(entry.Features, $"{owner} {name}", featureIds, errors);
+                if (entry.When is { Count: > 0 })
+                {
+                    foreach (var variant in entry.When)
+                        ValidateRootLineFeatures(variant.Features, $"{owner} {name} when", featureIds, errors);
+                }
+            }
+        }
+    }
+
+    private static void ValidateRootLineFeatures(
+        List<string> features,
+        string field,
+        IReadOnlySet<string> featureIds,
+        ICollection<string> errors)
+    {
+        foreach (var feature in features)
+        {
+            if (!featureIds.Contains(feature))
+                errors.Add($"{field} 的能力引用未在 manifest.features 注册：{feature}");
         }
     }
 

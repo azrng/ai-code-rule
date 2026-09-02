@@ -16,4 +16,7 @@ internal interface IConsoleUi
     void Bullets(IEnumerable<string> items);
 
     void FileTable(string title, IEnumerable<string> files);
+
+    // 能力多选：selected 为默认勾选的下标集合；确认后返回勾选的下标集合
+    IReadOnlyList<int> ChooseMany(string title, IReadOnlyList<UiChoice> choices, IReadOnlyList<int> selected);
 }

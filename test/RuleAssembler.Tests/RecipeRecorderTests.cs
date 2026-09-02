@@ -26,7 +26,7 @@ public sealed class RecipeRecorderTests : IDisposable
         var sources = new Dictionary<string, string> { ["form"] = "manual" };
         var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
 
-        var record = RecipeRecorder.Build(manifest, profile, "wizard", answers, sources, files);
+        var record = RecipeRecorder.Build(manifest, profile, "wizard", answers, sources, new[] { "doc", "infra" }, files);
         new RecipeRecorder().Write(_root, record);
 
         var path = Path.Combine(_root, RecipeRecorder.RecordFileName);
@@ -56,7 +56,7 @@ public sealed class RecipeRecorderTests : IDisposable
         };
         var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
 
-        var record = RecipeRecorder.Build(manifest, profile, "detected", answers, sources, files);
+        var record = RecipeRecorder.Build(manifest, profile, "detected", answers, sources, new[] { "doc", "infra", "design-system" }, files);
         new RecipeRecorder().Write(_root, record);
 
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));

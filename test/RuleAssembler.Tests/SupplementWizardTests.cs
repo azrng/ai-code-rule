@@ -20,6 +20,21 @@ internal sealed class ScriptedConsoleUi : IConsoleUi
         return _choices.Count > 0 ? _choices.Dequeue() : null;
     }
 
+    public IReadOnlyList<int> ChooseMany(string title, IReadOnlyList<UiChoice> choices, IReadOnlyList<int> selected)
+    {
+        Titles.Add(title);
+        // 脚本化多选：预设的正整数按序切换勾选，遇 null 或队列耗尽即按当前状态确认
+        var state = choices.Select((_, index) => selected.Contains(index)).ToArray();
+        while (_choices.Count > 0 && _choices.Peek() is { } number)
+        {
+            _choices.Dequeue();
+            if (number >= 1 && number <= state.Length)
+                state[number - 1] = !state[number - 1];
+        }
+
+        return Enumerable.Range(0, state.Length).Where(index => state[index]).ToList();
+    }
+
     public void Head(string text) => Lines.Add(text);
 
     public void Line(string text) => Lines.Add(text);

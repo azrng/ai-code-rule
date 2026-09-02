@@ -1,7 +1,7 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.39.0",
+    "version": "1.40.0",
     "last_updated": "2026-09-02"
   },
   "schema_version": 2,
@@ -77,22 +77,22 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "subrule-index": [
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
           "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、Service、Repository、脚本或数据链路时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "target-list": [
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ]
@@ -114,7 +114,7 @@
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
         "contract-error-line": "阶段 1 输出的前端契约、DTO、类型定义或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 类型后同步前端、后端、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
@@ -151,15 +151,15 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：视图骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
-          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
+          { "line": "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`", "features": ["infra"] },
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
         ],
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
         "root-scope-nouns": "界面、应用层、基础设施、文档",
@@ -184,7 +184,7 @@
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
         "root-scope-nouns": "前端、后端、文档、基础设施",
@@ -208,7 +208,7 @@
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
         "reuse-noun": "配置",
@@ -317,8 +317,8 @@
         "target-list": [
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -326,8 +326,8 @@
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
           "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、Service、Repository、脚本或数据链路时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、契约说明时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、契约说明时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 三个阶段",
@@ -346,9 +346,9 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 2：构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及后端时，已查看相关路由、服务、数据访问、DTO、调用方和现有测试"
@@ -393,10 +393,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -404,8 +404,13 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
           "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -425,10 +430,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
@@ -481,10 +486,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -492,8 +497,8 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
           "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -513,10 +518,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
@@ -575,10 +580,10 @@
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试（单项目整洁架构）",
           "- `ai-AGENTS.md`：模型调用（Microsoft.Extensions.AI）、Agent 框架、工具 / Skills、Prompt、流式、向量与记忆等可选能力",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统、AI 产品交互补充",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统、AI 产品交互补充", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -587,8 +592,13 @@
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
           "| `backend-AGENTS.md` | 单项目整洁架构、服务端逻辑、数据访问、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
           "| `ai-AGENTS.md` | 模型调用、Agent、工具 / Skills、Prompt、流式、向量与记忆等可选能力 | 涉及任何 AI / Agent / 模型对接时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、AI 产品交互补充、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、模型密钥、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、AI 产品交互补充、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、AI 产品交互补充 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、模型密钥、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -610,15 +620,15 @@
           "- **Agent 闭环优先**：新 Agent 功能应先在阶段 1 明确界面与前端契约，再在阶段 2 用最小端点跑通\"输入→Agent→输出→确认\"闭环，再在阶段 1 补正式界面",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明、AI 产品交互补充，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明、AI 产品交互补充，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：服务端逻辑、数据访问、AI / Agent 集成、权限控制与测试，细则见 `backend-AGENTS.md` 与 `ai-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 涉及 AI 能力时，无论是否动前端展示，都应先读 `ai-AGENTS.md`，确认模型调用与 Agent 编排规则。",
           "5. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
@@ -683,10 +693,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：Route Handlers、Server Actions、Service、Repository、Prisma、服务端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -694,8 +704,13 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Next.js 页面与交互时 |",
           "| `backend-AGENTS.md` | 服务端逻辑、数据库、鉴权、缓存、异常处理、服务端测试 | 涉及 Route Handler、Server Action、Prisma、Service 时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护、设计系统时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、发布链路 | 涉及部署、容器化、环境变量时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护、设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、发布链路 | 涉及部署、容器化、环境变量时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -715,10 +730,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
@@ -769,10 +784,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `ui-AGENTS.md`：视图、布局、导航、样式、状态、界面测试",
           "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
-          "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          { "line": "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证", "features": ["infra"] },
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -780,8 +795,13 @@
           "| --- | --- | --- |",
           "| `ui-AGENTS.md` | 视图、布局、导航、样式、交互、界面 smoke test | 涉及界面实现与交互时 |",
           "| `application-AGENTS.md` | ViewModel、Service、命令、状态流转、应用层测试 | 涉及业务编排、命令逻辑或应用层实现时 |",
-          "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |"
+          { "line": "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |", "features": ["infra"] },
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          }
         ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关 View、ViewModel、样式资源和设计 token",
@@ -835,10 +855,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `ui-AGENTS.md`：视图、布局、导航、样式、状态、界面测试",
           "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
-          "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
+          { "line": "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证", "features": ["infra"] },
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -846,8 +866,8 @@
           "| --- | --- | --- |",
           "| `ui-AGENTS.md` | 视图、布局、导航、样式、交互、界面 smoke test | 涉及界面实现与交互时 |",
           "| `application-AGENTS.md` | ViewModel、Service、命令、状态流转、应用层测试 | 涉及业务编排、命令逻辑或应用层实现时 |",
-          "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |"
+          { "line": "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |", "features": ["infra"] },
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc"] }
         ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关窗口、视图、控件、样式资源、设计 token 和现有交互模式",
@@ -900,10 +920,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `ui-AGENTS.md`：页面、布局、组件、导航、状态、样式、界面测试",
           "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -911,8 +931,13 @@
           "| --- | --- | --- |",
           "| `ui-AGENTS.md` | Razor 页面、布局、组件、交互、样式、界面 smoke test | 涉及界面实现与交互时 |",
           "| `backend-AGENTS.md` | 服务、数据访问、鉴权、状态流转、服务端测试 | 涉及服务实现、数据链路或后端逻辑时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建发布链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建发布链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -932,15 +957,15 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、布局、交互与界面验证，细则见 `ui-AGENTS.md`",
           "- 阶段 2：服务端逻辑、数据访问、权限与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
         "understanding-checklist": [
@@ -994,10 +1019,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `ui-AGENTS.md`：渲染模式、页面、组件、状态、预渲染、断线恢复与 JS interop",
           "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1005,14 +1030,14 @@
           "| --- | --- | --- |",
           "| `ui-AGENTS.md` | Razor Components、渲染模式、预渲染、状态、断线恢复、JS interop 与界面测试 | 涉及页面、组件或交互执行位置时 |",
           "| `backend-AGENTS.md` | 服务、数据访问、业务逻辑、鉴权与后端测试 | 涉及服务端实现、API 或安全边界时 |",
-          "| `infra-AGENTS.md` | 端口、环境变量、Docker、构建发布链路 | 涉及配置、部署、容量或交付时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明与设计系统 | 涉及阶段 0、架构契约或文档维护时 |"
+          { "line": "| `infra-AGENTS.md` | 端口、环境变量、Docker、构建发布链路 | 涉及配置、部署、容量或交付时 |", "features": ["infra"] },
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明与设计系统 | 涉及阶段 0、架构契约或文档维护时 |", "features": ["doc"] }
         ],
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
           "3. 涉及 Razor Components 或交互时，先读 `ui-AGENTS.md` 并明确 Static SSR、Interactive Server、Interactive WebAssembly 或 Interactive Auto。",
-          "4. 涉及界面时再读 `design-system.yaml`；设计系统不得覆盖根规则优先级。",
+          { "line": "4. 涉及界面时再读 `design-system.yaml`；设计系统不得覆盖根规则优先级。", "features": ["design-system"] },
           "5. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
         "understanding-checklist": [
@@ -1067,7 +1092,7 @@
         "target-list": [
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `application-AGENTS.md`：命令、Service、业务流程、配置、日志与测试",
-          "- `doc-AGENTS.md`：需求文档",
+          { "line": "- `doc-AGENTS.md`：需求文档", "features": ["doc"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1075,7 +1100,7 @@
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
           "| `application-AGENTS.md` | 命令解析、Service、配置、日志、异常处理与测试 | 涉及控制台实现与验证时 |",
-          "| `doc-AGENTS.md` | 需求文档 | 涉及需求整理、文档维护或归档时 |"
+          { "line": "| `doc-AGENTS.md` | 需求文档 | 涉及需求整理、文档维护或归档时 |", "features": ["doc"] }
         ],
         "dev-stage": [
           "### 三个阶段",
@@ -1094,7 +1119,7 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、用法说明与文档维护，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、用法说明与文档维护，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：命令解析、Service、配置、日志与测试，细则见 `application-AGENTS.md`",
           "- 阶段 2：构建、运行、结果验证与交付收口，结合当前文件与命中的子规则执行"
         ],
@@ -1146,10 +1171,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：IPC handler、.NET 服务、数据访问、本地能力、后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1157,8 +1182,13 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Electron 渲染进程界面实现与交互时 |",
           "| `backend-AGENTS.md` | IPC handler、.NET 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-dotnet/`、子进程 IPC 或本地能力实现时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1178,10 +1208,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：IPC handler、.NET 服务、数据访问、本地能力与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
@@ -1237,10 +1267,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：IPC handler、.NET 服务、数据访问、本地能力、后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-          "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1248,8 +1278,13 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Electron 渲染进程界面实现与交互时 |",
           "| `backend-AGENTS.md` | IPC handler、.NET 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-dotnet/`、子进程 IPC 或本地能力实现时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1269,10 +1304,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：IPC handler、.NET 服务、数据访问、本地能力与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
@@ -1328,10 +1363,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1339,8 +1374,8 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 React 界面实现与交互时 |",
           "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |"
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1360,10 +1395,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
@@ -1415,10 +1450,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：界面、视图、页面、组件、交互、样式与前端测试；没有前端或界面层时可跳过",
           "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1426,8 +1461,8 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 界面、页面、视图、表单、交互、样式、前端 smoke test | 涉及任何用户界面或客户端交互时 |",
           "| `backend-AGENTS.md` | 服务逻辑、接口、数据访问、鉴权、缓存、异常处理、后端测试 | 涉及业务服务、接口、任务处理或数据持久化时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、设计系统时 |",
-          "| `infra-AGENTS.md` | 启动方式、环境变量、打包、部署链路 | 涉及运行环境、构建、发布、部署时 |"
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、设计系统时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 启动方式、环境变量、打包、部署链路 | 涉及运行环境、构建、发布、部署时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1447,10 +1482,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：界面骨架、交互、显示层契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：业务逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、部署与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、部署与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及界面时，已查看相关页面、视图、组件、样式资源、设计 token 和现有交互模式",
@@ -1507,10 +1542,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1518,8 +1553,8 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
           "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
-          "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |"
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1539,10 +1574,10 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "understanding-checklist": [
           "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
@@ -1599,10 +1634,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `ui-AGENTS.md`：页面、布局、导航、样式、交互、移动端适配、界面测试",
           "- `application-AGENTS.md`：ViewModel、Service、命令、业务编排、结果包装、应用层测试",
-          "- `infrastructure-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
+          { "line": "- `infrastructure-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证", "features": ["infra"] },
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与移动端 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与移动端 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1610,8 +1645,8 @@
           "| --- | --- | --- |",
           "| `ui-AGENTS.md` | 页面、布局、导航、样式、交互、移动端适配、界面 smoke test | 涉及界面实现与交互时 |",
           "| `application-AGENTS.md` | ViewModel、Service、命令、状态流转、应用层测试 | 涉及业务编排、命令逻辑或应用层实现时 |",
-          "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、平台服务、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |"
+          { "line": "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、平台服务、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |", "features": ["infra"] },
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1631,9 +1666,9 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、样式与界面验证，细则见 `ui-AGENTS.md`",
-          "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`",
+          { "line": "- 阶段 2：ViewModel、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `infrastructure-AGENTS.md`", "features": ["infra"] },
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
         ],
         "understanding-checklist": [
@@ -1685,9 +1720,9 @@
           "- `ui-AGENTS.md`：页面、布局、导航、样式、交互、动效、移动端适配、界面测试",
           "- `application-AGENTS.md`：Riverpod Provider、Service、命令、业务编排、结果包装、应用层测试",
           "- `backend-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证",
-          "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token、移动端 UI 规范与动效规范",
+          { "line": "- `design-system.yaml`：设计 token、移动端 UI 规范与动效规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1696,7 +1731,12 @@
           "| `ui-AGENTS.md` | 页面、布局、导航、样式、交互、动效、移动端适配、界面 smoke test | 涉及界面实现与交互时 |",
           "| `application-AGENTS.md` | Riverpod Provider、Service、状态流转、应用层测试 | 涉及业务编排、状态管理或应用层实现时 |",
           "| `backend-AGENTS.md` | Repository、数据访问、依赖注入、平台服务、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1716,7 +1756,7 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、样式、动效与界面验证，细则见 `ui-AGENTS.md`",
           "- 阶段 2：Riverpod Provider、Service、数据访问、依赖注入与测试，细则见 `application-AGENTS.md` 与 `backend-AGENTS.md`",
           "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与命中的子规则执行"
@@ -1767,16 +1807,21 @@
         "target-list": [
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：页面、布局、组件、样式、交互与前端测试",
-          "- `doc-AGENTS.md`：设计文档、设计系统",
+          { "line": "- `doc-AGENTS.md`：设计文档、设计系统", "features": ["doc"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、交互、样式、前端 smoke test | 涉及静态页实现与交互时 |",
-          "| `doc-AGENTS.md` | 设计文档、`design-system.yaml` | 涉及设计说明、规则维护时 |"
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、`design-system.yaml` | 涉及设计说明、规则维护时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档 | 涉及设计说明、规则维护时 |", "features": ["doc"] }
+          ]
+          }
         ],
         "dev-stage": [
           "### 三个阶段",
@@ -1795,14 +1840,14 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档与页面说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档与页面说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：页面骨架、交互、视觉落地与前端验证，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：构建、部署说明与交付验证，结合当前文件与命中的子规则执行"
         ],
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 再阅读相关页面与资源文件，确认复用点后再动手。"
         ],
         "understanding-checklist": [
@@ -1851,10 +1896,10 @@
           "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
           "- `frontend-AGENTS.md`：界面、视图、页面、组件、交互、样式与前端测试；没有前端或界面层时可跳过",
           "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
-          "- `doc-AGENTS.md`：设计文档、契约说明",
-          "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证", "features": ["infra"] },
           "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
-          "- `design-system.yaml`：设计 token 与 UI 规范",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1862,8 +1907,8 @@
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 界面、页面、视图、表单、交互、样式、前端 smoke test | 涉及任何用户界面或客户端交互时 |",
           "| `backend-AGENTS.md` | 服务逻辑、接口、数据访问、鉴权、缓存、异常处理、后端测试 | 涉及业务服务、接口、任务处理或数据持久化时 |",
-          "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、设计系统时 |",
-          "| `infra-AGENTS.md` | 启动方式、环境变量、打包、部署链路 | 涉及运行环境、构建、发布、部署时 |"
+          { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、设计系统时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 启动方式、环境变量、打包、部署链路 | 涉及运行环境、构建、发布、部署时 |", "features": ["infra"] }
         ],
         "dev-stage": [
           "### 四个阶段",
@@ -1883,15 +1928,15 @@
           "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
           "",
           "### 阶段职责",
-          "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
           "- 阶段 1：界面骨架、交互、显示层契约，细则见 `frontend-AGENTS.md`",
           "- 阶段 2：业务逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
-          "- 阶段 3：联调、构建、启动、部署与交付验证，结合当前文件与 `infra-AGENTS.md`"
+          { "line": "- 阶段 3：联调、构建、启动、部署与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
         ],
         "reading-order": [
           "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
           "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
           "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
         ],
         "understanding-checklist": [
