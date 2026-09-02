@@ -1,11 +1,11 @@
 # 设计与组件规则的唯一事实来源。
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
-# 技术栈：React 18 + TypeScript + Ant Design 5 + ECharts + Zustand
+# 技术栈：React（版本以仓库锁定为准）+ TypeScript + Ant Design 5 + ECharts + Zustand
 # 注意：Wails 桌面应用，无 HTTP 后端，前后端通过 Wails 绑定通信
 
 meta:
   name: "企业级应用设计系统"
-  version: "2.1.0"
+  version: "2.2.0"
   status: "启用中"
   owners:
     - "design"
@@ -31,7 +31,7 @@ meta:
       - "优先使用 Ant Design 组件和 Design Token，而不是硬编码视觉值"
       - "优先使用已有项目组件，而不是先写自定义组件"
       - "图表颜色统一来自 echarts-theme，不在页面层硬编码"
-      - "Wails 窗口为固定大小，不需要考虑移动端响应式"
+      - "以桌面窗口为主，不强制移动端响应式；窗口可调性以项目配置为准"
 
 product:
   style_keywords:
@@ -567,8 +567,8 @@ icons:
 # 响应式设计规范
 # ============================================================
 responsive:
-  principle: "桌面应用固定窗口，不需要响应式设计"
-  note: "Wails 窗口为固定大小，布局以桌面端为主，不考虑移动端适配"
+  principle: "布局以桌面端为主，不强制移动端适配"
+  note: "窗口可调性以项目配置为准；可调窗口需处理窄宽度下的布局"
 
 # ============================================================
 # Do / Don't 规则

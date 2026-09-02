@@ -1,13 +1,13 @@
 ---
 rule_id: ui-agents
-version: 1.31.0
+version: 1.35.0
 last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
 # 界面规则
 
-<!-- include: shared/ui/scope.md -->
+<!-- include: shared/ui/scope-web.md -->
 
 ### 常见任务入口
 - 新增页面或交互：先看渲染模式选择，明确组件执行位置
@@ -131,7 +131,7 @@ dependencies: [agents-root]
 
 ## 测试与验证
 
-<!-- include: shared/ui/pre-commit-regression.md -->
+<!-- include: shared/ui/pre-commit-regression-web.md -->
 
 - 影响行为的改动应优先补充或更新测试；未补测试时必须说明原因和风险。
 - 使用 bUnit 或项目既有组件测试方案验证参数、渲染输出、事件和关键状态。

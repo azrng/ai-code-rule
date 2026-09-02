@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.30.0
-last_updated: 2026-09-01
+version: 1.34.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -112,7 +112,7 @@ src/AppName/
 - 页面布局必须适配不同屏幕尺寸和方向（竖屏 / 横屏）
 - 使用 `OnPlatform` 和 `OnIdiom` 标记处理平台差异，差异逻辑收敛到 XAML 资源或布局层，不散落在代码各处
 - 触摸目标尺寸最小 44x44（iOS）/ 48x48（Android），关键操作区域需考虑拇指热区
-- 安全区域处理：iOS 使用 `SafeArea` 设置，Android 使用系统边衬区
+- 安全区域处理：iOS 默认遵循安全区域，需调整时使用 `ios:Page.UseSafeArea` 平台特定设置（或新版 `SafeAreaEdges` 按边控制）；Android 使用系统边衬区（WindowInsets）适配
 - 列表滚动使用 `CollectionView` 优先，避免 `ListView` 已知性能问题
 - 图片资源按平台提供合适分辨率，优先使用 SVG 矢量图
 - 下拉刷新使用 Syncfusion PullToRefresh 控件
@@ -123,7 +123,7 @@ src/AppName/
 - 优先复用 `src/AppName/Controls/` 下已有控件，禁止重复创建
 <!-- include: shared/ui/component-rules-core.md -->
 - 优先使用 Syncfusion.Maui.Toolkit 控件，不满足需求时再使用 MAUI 内置控件或自定义控件
-- 图标使用 MAUI 内置图形能力（Font Image Source）或项目既有素材
+- 图标使用 MAUI 内置图形能力（`FontImageSource`）或项目既有素材
 
 <!-- include: shared/ui/mvvm-rules.md -->
 
@@ -132,8 +132,8 @@ src/AppName/
 - 导航路由统一在 `AppShell.xaml.cs` 或 `MauiProgram.cs` 中注册
 - 页面参数通过导航查询参数（`ShellNavigationQueryParameters`）或 `IQueryAttributable` 传递，禁止使用静态全局状态
 - 需要历史记录时，应支持前进 / 后退
-- 模态页面使用 `://` 前缀或 `Shell.Current.Navigation.PushModalAsync`
-- 深度链接配置统一在 `AppShell.xaml` 中声明
+- 模态页面通过目标页面标记 `Shell.PresentationMode="Modal"` 配合 `GoToAsync` 实现，或直接使用 `Shell.Current.Navigation.PushModalAsync`；路由前缀 `//` 仅表示绝对路由，与模态无关
+- 深度链接依赖的路由结构在 `AppShell.xaml` 中声明，URI Scheme 等平台级配置在 `AndroidManifest.xml` / `Info.plist` 中维护
 
 ### 弹窗规则
 - 简单提示使用 `CommunityToolkit.Maui.Alerts`（Snackbar / Toast）

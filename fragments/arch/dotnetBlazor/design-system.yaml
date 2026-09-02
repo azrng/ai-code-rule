@@ -4,7 +4,7 @@
 
 meta:
   name: "企业级应用设计系统（Blazor Server + BootstrapBlazor）"
-  version: "1.0.0"
+  version: "1.1.0"
   status: "启用中"
   owners:
     - "design"
@@ -13,8 +13,8 @@ meta:
     ui_framework: "BootstrapBlazor（基于 Bootstrap 5，唯一组件库）"
     styling: "Bootstrap 5 CSS 变量 + 自定义 SCSS/CSS（唯一样式引擎）"
     icons: "Bootstrap Icons（唯一图标库，尺寸 16-24px）"
-    charts: "BootstrapBlazor 内置 Chart 组件 或 ECharts（通过 JSInterop）"
-    state_management: "Blazor Scoped 服务（全局状态）+ @bind/@code（组件本地状态）"
+    charts: "BootstrapBlazor.Chart 扩展包（Chart.js）或 ECharts（通过 JSInterop），按项目现有依赖选用"
+    state_management: "Blazor Scoped 服务（跨页面 / 用户会话状态）+ Singleton（跨用户全局配置）+ @bind/@code（组件本地状态）"
   default_ports:
     blazor_app: 8080 # Blazor Server / 容器内端口
     database: 5432 # PostgreSQL / 容器内端口
@@ -241,6 +241,7 @@ bootstrap_blazor:
     - "禁止使用 style=\"\" 属性硬编码样式"
     - "间距统一用 Bootstrap 工具类：p-3、m-2、gap-3、px-4 等"
     - "响应式遵循 Bootstrap 断点：col-12 col-md-6 col-lg-4"
+    - "组件具体参数与用法不在本文件展开，按 component_specs 的 API 来源约定执行"
 
 # ============================================================
 # 状态管理规范
@@ -254,7 +255,7 @@ state_management:
       - "单个组件的 loading/error 状态"
       - "本地筛选、排序、分页"
   global_state:
-    tool: "Blazor Scoped 服务"
+    tool: "Blazor Scoped 服务（跨页面共享、每用户独立；Blazor Server 中随 Circuit 存活）"
     store_location: "Services/"
     use_for:
       - "当前登录用户信息"
@@ -318,13 +319,10 @@ component_rules:
       description: "基础 UI 组件（优先使用 BootstrapBlazor 内置组件）"
       location: "Components/Common/"
       examples:
-        - "BootstrapBlazor: Button, Table, Modal, Drawer, Form"
-        - "BootstrapBlazor: Select, Input, Checkbox, Radio, Switch"
-        - "BootstrapBlazor: DatePicker, Upload, Pagination"
-        - "BootstrapBlazor: Toast, Alert, Confirm, Badge, Tag"
-        - "BootstrapBlazor: Tooltip, Popover, Tabs, Steps"
-        - "BootstrapBlazor: Spinner, Skeleton, Empty"
-        - "BootstrapBlazor: TreeView, Dropdown, Collapse"
+        - "Button, Table, Modal, Drawer, Dialog"
+        - "Select / MultiSelect, DateTimePicker, ValidateForm / EditorForm"
+        - "Toast / Swal / Message, Layout / Menu / Tab"
+        - "Spinner, Skeleton, Empty, TreeView"
 
 # ============================================================
 # 表单规范
@@ -350,214 +348,32 @@ form_rules:
       form_control: "form-control form-control-lg"
       button: "btn btn-lg"
   validation:
-    bootstrap_blazor: "使用 BootstrapBlazor 的 ValidateForm 组件"
-    error_border: "Bootstrap is-invalid / is-valid 类自动添加"
-    error_message: "<ValidationMessage For=\"@model => model.Field\" />"
+    bootstrap_blazor: "使用 BootstrapBlazor 的 ValidateForm / EditorForm（参数与用法见 skill 或官方文档）"
 
 # ============================================================
-# BootstrapBlazor 组件详细规范
+# 组件使用规范
+# 只管选型口径与红线；具体组件参数、服务用法以 bootstrap-blazor skill
+# （如环境提供）或项目锁定版本的官方文档为准
 # ============================================================
 component_specs:
-  # ----------------------------------------------------------
-  # 数据输入类
-  # ----------------------------------------------------------
-
-  input:
-    description: "文本输入框"
-    bootstrap_blazor_component: "<BootstrapInput />"
-    sizes:
-      sm: "form-control form-control-sm"
-      md: "form-control" # 默认
-      lg: "form-control form-control-lg"
-    variants:
-      default: "单行文本输入 <BootstrapInput @bind-Value=\"model.Name\" />"
-      textarea: "多行文本 <BootstrapInput TextArea=\"true\" Rows=\"4\" />"
-      password: "密码输入 <BootstrapInput type=\"password\" />"
-      search: "搜索输入，配合InputGroup使用"
-    validation: "配合 ValidateForm 使用"
-
-  select:
-    description: "下拉选择器"
-    bootstrap_blazor_component: "<Select />"
-    variants:
-      single: "单选 <Select Items=\"@items\" @bind-Value=\"model.Type\" />"
-      multiple: "多选 <Select IsMultiple=\"true\" />"
-      searchable: "可搜索 <Select ShowSearch=\"true\" />"
-    rules:
-      - "超过 10 个选项时建议启用搜索模式"
-
-  checkbox:
-    description: "多选框"
-    bootstrap_blazor_component: "<Checkbox /> 或 <CheckboxList />"
-    usage: "<Checkbox @bind-Value=\"model.IsActive\">启用</Checkbox>"
-
-  radio:
-    description: "单选框"
-    bootstrap_blazor_component: "<RadioList />"
-    usage: "<RadioList Items=\"@items\" @bind-Value=\"model.Gender\" />"
-
-  switch:
-    description: "开关"
-    bootstrap_blazor_component: "<Switch />"
-    usage: "<Switch @bind-Value=\"model.Enabled\" />"
-    rules:
-      - "影响范围较大的操作需配合确认提示"
-
-  datepicker:
-    description: "日期选择器"
-    bootstrap_blazor_component: "<DatePicker />"
-    variants:
-      date: "日期选择 <DatePicker @bind-Value=\"model.Date\" />"
-      datetime: "日期时间 <DatePicker ShowTime=\"true\" />"
-      range: "日期范围 <DatePicker IsRange=\"true\" />"
-
-  upload:
-    description: "文件上传"
-    bootstrap_blazor_component: "<Upload />"
-    variants:
-      button: "按钮上传 <Upload />"
-      dragger: "拖拽上传 <Upload IsDragDrop=\"true\" />"
-
-  # ----------------------------------------------------------
-  # 数据展示类
-  # ----------------------------------------------------------
-
-  table:
-    description: "数据表格，企业应用核心组件"
-    bootstrap_blazor_component: "<Table />"
-    features:
-      paging: "<Table IsPagination=\"true\" PageItems=\"20\" />"
-      sorting: "列头排序 Sortable=\"true\""
-      filtering: "列筛选 Filterable=\"true\""
-      selection: "行选择 IsMultipleSelect=\"true\""
-      editing: "行内编辑 EditMode=\"EditMode.Inline\""
-      detail_row: "明细行 IsDetailRow=\"true\""
-    rules:
-      - "表格必须处理 loading、empty、error 三种状态"
-      - "使用 BootstrapBlazor Table 组件，不自定义表格实现"
-      - "操作列固定在最右侧"
-
-  pagination:
-    description: "分页器"
-    usage: "使用 Table 组件内置分页，或独立 <Pagination /> 组件"
-
-  tag:
-    description: "标签"
-    bootstrap_blazor_component: "<Tag />"
-    usage: "<Tag Color=\"Color.Primary\">标签名</Tag>"
-
-  tooltip:
-    description: "文字提示"
-    bootstrap_blazor_component: "<Tooltip />"
-    usage: "<Tooltip Title=\"提示内容\"><Button>悬停查看</Button></Tooltip>"
-
-  popover:
-    description: "气泡卡片"
-    bootstrap_blazor_component: "<Popover />"
-    usage: "<Popover Title=\"标题\" Content=\"内容\"><Button>点击查看</Button></Popover>"
-
-  progress:
-    description: "进度条"
-    bootstrap_blazor_component: "<Progress />"
-    usage: "<Progress Value=\"60\" />"
-
-  avatar:
-    description: "头像"
-    bootstrap_blazor_component: "<Avatar />"
-    usage: "<Avatar Url=\"/images/user.png\" IsCircle=\"true\" />"
-
-  badge:
-    description: "状态标记"
-    bootstrap_blazor_component: "<Badge />"
-    usage: "<Badge Color=\"Color.Success\">在线</Badge>"
-
-  empty:
-    description: "空状态"
-    bootstrap_blazor_component: "<Empty />"
-    usage: "<Empty Text=\"暂无数据\" />"
-
-  # ----------------------------------------------------------
-  # 反馈与通知类
-  # ----------------------------------------------------------
-
-  modal:
-    description: "弹窗"
-    bootstrap_blazor_component: "<Modal />"
-    sizes:
-      sm: "小确认框"
-      md: "默认表单弹窗"
-      lg: "复杂表单弹窗"
-      xl: "详情查看"
-    rules:
-      - "表单弹窗提交按钮须有 loading 态，防止重复提交"
-      - "危险操作使用 danger 色确认按钮"
-
-  drawer:
-    description: "抽屉"
-    bootstrap_blazor_component: "<Drawer />"
-    directions:
-      right: "从右侧滑入（默认）"
-      left: "从左侧滑入"
-    rules:
-      - "详情查看用 Drawer，需用户聚焦决策用 Modal"
-
-  alert:
-    description: "内联提示"
-    bootstrap_blazor_component: "<Alert />"
-    usage: "<Alert Color=\"Color.Warning\" ShowDismiss=\"true\">警告信息</Alert>"
-
-  toast:
-    description: "轻提示"
-    bootstrap_blazor: "通过 ToastService 注入服务调用"
-    usage: "await ToastService.Success(\"操作成功\")"
-
-  # ----------------------------------------------------------
-  # 导航类
-  # ----------------------------------------------------------
-
-  steps:
-    description: "步骤条"
-    bootstrap_blazor_component: "<Steps />"
-    usage: "<Steps Items=\"@stepItems\" CurrentStep=\"@currentStep\" />"
-
-  tabs:
-    description: "标签页"
-    bootstrap_blazor_component: "<Tab />"
-    usage: "<TabItem Text=\"基本设置\">内容</TabItem>"
-    rules:
-      - "禁止超过 8 个 Tab"
-
-  breadcrumb:
-    description: "面包屑导航"
-    bootstrap_blazor_component: "<Breadcrumbs />"
-    usage: "<Breadcrumbs Items=\"@breadcrumbItems\" />"
-
-  menu:
-    description: "侧边导航菜单"
-    bootstrap_blazor_component: "<Menu /> 或自定义 NavMenu.razor"
-    rules:
-      - "折叠状态下必须通过 Tooltip 展示菜单名称"
-      - "多级菜单最多 2 层"
-      - "激活项的父级菜单自动展开"
-
-  # ----------------------------------------------------------
-  # 布局增强类
-  # ----------------------------------------------------------
-
-  collapse:
-    description: "折叠面板"
-    bootstrap_blazor_component: "<Collapse />"
-
-  spinner:
-    description: "加载指示器"
-    bootstrap_blazor_component: "<Spinner />"
-    usage: "<Spinner Color=\"Color.Primary\" />"
-    rules:
-      - "表格/列表数据加载优先使用 Skeleton，不用全页 Spinner 遮罩"
-
-  skeleton:
-    description: "骨架屏"
-    bootstrap_blazor_component: "<Skeleton />"
+  api_source:
+    - "环境提供 bootstrap-blazor skill 时，组件选型、参数与服务用法优先以其为准（含反臆造清单）"
+    - "无 skill 时以项目锁定版本的 BootstrapBlazor 官方文档为准；禁止从 MudBlazor / Radzen / Ant Design Blazor 等其它组件库借参数"
+  prerequisites: "AddBootstrapBlazor() 注册服务；交互 Layout 内放置 <BootstrapBlazorRoot>（弹窗 portal 依赖）；按官方要求引入 bundle CSS/JS——缺一项相关页面会静默失效"
+  selection:
+    input: "文本 / 数字用 <BootstrapInput> / <BootstrapInputNumber>，多行用 <Textarea>，密码用 <BootstrapPassword>"
+    date: "日期时间用 <DateTimePicker>（ViewMode 切换 Date/DateTime/Month/Year），范围用 <DateTimeRange>"
+    select: "单选用 <Select>（可 ShowSearch），多选用 <MultiSelect>"
+    upload: "按场景选 ButtonUpload / InputUpload / CardUpload / AvatarUpload / DropUpload"
+    table: "<Table> 服务端查询（OnQueryAsync + IsPagination）；列排序 / 筛选在 <TableColumn> 上设 Sortable / Filterable；明细行 IsDetails 配合 DetailRowTemplate"
+    feedback: "Dialog / Modal / Drawer / Toast / Swal 通过注入具体服务类调用，方法名是 Show"
+    nav: "步骤条 <Step>（Items + StepIndex），面包屑 <Breadcrumb>（Value 传 BreadcrumbItem 集合），标签页 <Tab> + <TabItem>"
+  rules:
+    - "表格必须处理 loading、empty、error 三种状态，操作列固定在最右侧"
+    - "表单弹窗提交按钮须有 loading 态防止重复提交；危险操作用 danger 色确认按钮"
+    - "详情查看用 Drawer，需用户聚焦决策用 Modal"
+    - "表格 / 列表数据加载优先 Skeleton，不用全页 Spinner 遮罩"
+    - "多级菜单最多 2 层，折叠状态下菜单名称通过 Tooltip 展示"
 
 icons:
   library: "Bootstrap Icons"
@@ -592,7 +408,7 @@ do:
   - "优先使用 BootstrapBlazor 组件（Table、Form、Modal 等）"
   - "优先使用 Bootstrap CSS 工具类（text-primary、bg-light、p-3）"
   - "保持完整的页面状态反馈（loading/empty/error/no-permission）"
-  - "全局状态使用 Scoped 服务，组件本地状态使用 @bind/@code"
+  - "跨页面状态使用 Scoped 服务，跨用户全局配置使用 Singleton，组件本地状态使用 @bind/@code"
   - "图标统一使用 Bootstrap Icons"
   - "响应式遵循 Bootstrap 断点体系"
   - "表单验证使用 BootstrapBlazor 的 ValidateForm"

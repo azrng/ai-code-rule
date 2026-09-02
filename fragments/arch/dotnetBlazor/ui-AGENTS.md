@@ -1,15 +1,15 @@
 ---
 rule_id: ui-agents
-version: 1.31.0
+version: 1.35.0
 last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
 # 界面规则
 
-<!-- include: shared/ui/scope.md -->
+<!-- include: shared/ui/scope-web.md -->
 
-<!-- include: shared/ui/common-tasks.md -->
+<!-- include: shared/ui/common-tasks-web.md -->
 
 ---
 
@@ -25,6 +25,7 @@ dependencies: [agents-root]
 ### 设计系统
 - 使用 BootstrapBlazor 主题系统，所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 BootstrapBlazor 组件和样式，禁止 inline style，禁止硬编码颜色 / 间距 / 圆角
+- BootstrapBlazor 组件的具体参数与用法不在本规则展开：环境提供 bootstrap-blazor skill 时优先遵循，否则以项目锁定版本的官方文档为准
 
 <!-- include: shared/application/tech-choice.md -->
 
@@ -99,7 +100,7 @@ src/
 - 父传子：使用 `[Parameter]` 属性，只读不可修改。
 - 子传父：使用 `EventCallback<T>`。
 - 跨级传值：使用 `CascadingValue` / `CascadingParameter`。
-- 全局状态：使用 Scoped 服务注入。
+- 跨页面 / 用户会话状态：使用 Scoped 服务注入（Blazor Server 中随 Circuit 存活）；跨用户全局配置：使用 Singleton 服务。
 - 避免直接修改参数，需要双向绑定时使用 `@bind-Value`。
 
 ### 路由管理规范
@@ -111,8 +112,8 @@ src/
 
 ### 状态管理规范
 - 组件内状态：`@code` 块中的局部变量和 `@bind` 双向绑定。
-- 页面间状态：Scoped 服务（如 `UserStateService`）。
-- 全局共享状态：Singleton 服务（如配置、主题）。
+- 页面间状态：Scoped 服务（如 `UserStateService`，每用户独立）。
+- 全局共享状态（跨用户）：Singleton 服务（如全局配置、缓存）。
 - 修改共享状态必须通过服务方法，禁止直接修改。
 - 异步操作使用 `async Task` 方法，UI 更新通过 `StateHasChanged()` 或 `InvokeAsync(StateHasChanged)`。
 
@@ -138,7 +139,7 @@ src/
 
 ## 测试规则
 
-<!-- include: shared/ui/pre-commit-regression.md -->
+<!-- include: shared/ui/pre-commit-regression-web.md -->
 
 ### 总体要求
 - 影响行为的改动应优先补充或更新测试。

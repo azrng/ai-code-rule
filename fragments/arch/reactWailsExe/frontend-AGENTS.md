@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.34.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -19,11 +19,12 @@ dependencies: [agents-root]
 ## 技术栈
 
 ### 前端
-- React 18 + TypeScript + Vite
+- React + TypeScript + Vite；版本以仓库锁定为准，不主动升级，新项目先联网检索当前最新正式版
 - Ant Design 5 组件库（antd）
 - Ant Design Icons（@ant-design/icons，唯一图标库）
 - React Router 6（路由管理）
 - Zustand（全局状态管理：用户信息、权限、通知等跨组件共享状态）
+- ECharts + echarts-for-react（图表，主题与使用规则见 `design-system.yaml`）
 - Axios（HTTP 客户端，仅用于外部 API 调用）
 
 ### 设计系统
@@ -59,10 +60,10 @@ project-root/
 │   │   ├── utils/             # 纯工具函数
 │   │   ├── bindings/          # Wails 自动生成的 Go 绑定类型声明
 │   │   ├── config/
-│   │   │   └── antd-theme.ts   # Ant Design 主题配置
+│   │   │   ├── antd-theme.ts   # Ant Design 主题配置
+│   │   │   └── echarts-theme.ts # ECharts 图表主题配置
 │   │   ├── App.tsx
 │   │   └── main.tsx
-│   ├── wails.js               # Wails 自动生成的绑定入口
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── tsconfig.json
@@ -76,6 +77,7 @@ project-root/
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── GEMINI.md
+├── GROK.md
 ├── design-system.yaml
 └── TASK.md
 ```
@@ -84,7 +86,7 @@ project-root/
 
 ### 阶段 1 — 界面与交互实现
 
-**触发条件**：用户发出"开始前端开发"或等价指令
+**触发条件**：用户发出“开始前端开发”或等价指令
 
 **入场要求**：阶段 0 设计文档已确认
 
@@ -121,7 +123,7 @@ project-root/
 - 自定义样式使用 CSS Modules 或全局 CSS，变量来自 `design-system.yaml`
 - 禁止 inline style，禁止硬编码颜色值（如 `#1677ff`）
 - 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
-- Wails 窗口为固定大小，不需要考虑移动端响应式
+- 以桌面窗口为主要目标，不强制移动端响应式；窗口是否可调整以项目配置为准，可调窗口需处理窄宽度下的布局
 
 <!-- include: shared/frontend/component-rules.md -->
 

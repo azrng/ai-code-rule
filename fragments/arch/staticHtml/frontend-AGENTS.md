@@ -99,6 +99,7 @@ project-root/
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── GEMINI.md
+├── GROK.md
 ├── design-system.yaml
 └── TASK.md
 ```

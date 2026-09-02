@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.34.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -73,6 +73,7 @@ project-root/
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── GEMINI.md
+├── GROK.md
 ├── design-system.yaml
 └── TASK.md
 ```
@@ -117,7 +118,7 @@ project-root/
 - 优先使用 Element Plus 组件内置样式和 class
 - 自定义样式使用 SCSS，变量来自 `design-system.yaml`
 - 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）
-- Wails 窗口为固定大小，不需要考虑移动端响应式
+- 以桌面窗口为主要目标，不强制移动端响应式；窗口是否可调整以项目配置为准，可调窗口需处理窄宽度下的布局
 
 <!-- include: shared/frontend/component-rules.md -->
 

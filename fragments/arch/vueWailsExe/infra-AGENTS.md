@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.29.0
-last_updated: 2026-09-01
+version: 1.34.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -20,13 +20,16 @@ dependencies: [agents-root]
 ---
 
 ## 主动建议规则
-- 发现环境变量、端口、启动方式、构建脚本、部署脚本或发布链路存在不一致、不可复现或文档缺失时，应主动提醒
+- 发现环境变量、启动方式、构建脚本、打包配置或发布链路存在不一致、不可复现或文档缺失时，应主动提醒
 - 发现可以复用现有启动脚本、打包脚本、环境变量命名或发布脚本时，应优先建议复用，不新增平行部署链路
-- 不确定端口占用、外部服务地址、密钥来源、安装路径或运行命令时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验写死配置
+- 不确定外部服务地址、密钥来源、安装路径或运行命令时，应按根 `AGENTS.md` 的查证优先级处理，禁止凭经验写死配置
 - 涉及清理环境、删除数据、停止未知进程、修改部署配置等高风险操作时，只能提出建议，必须等待明确确认后执行
 
 ---
 
+## 运行与部署原则
+
+### 总体要求
 - 仅支持 Windows 平台发布
 - 使用 `wails build -platform windows/amd64` 构建可执行文件
 - 不要把密钥写入配置文件
@@ -43,9 +46,25 @@ dependencies: [agents-root]
 
 ---
 
-## 任务管理机制
-`TASK.md` 是唯一活动任务记录文件，较早的 `DONE` 任务统一归档到 `doc/task-archive/YYYY-MM.md`。
+## 阶段 3 — 联调与交付
 
-<!-- include: shared/infra/pre-commit-regression.md -->
+**触发条件**：用户发出「开始联调」「开始交付」或等价指令；未明确发出时，阶段 2 门控全部满足后按根 `AGENTS.md`「交付与验证」继续收口
+
+**入场要求**：阶段 2 门控已全部满足；前端 mock 已替换为真实 Wails 绑定调用，发现的契约缺口均已按根 `AGENTS.md` 纠错与回退机制处理完毕
+
+**工作内容**：
+1. 前端从 mock 数据切换到 Wails 绑定调用，逐页面联调核心链路。
+2. 按改动类型执行本文件与 `frontend-AGENTS.md`、`backend-AGENTS.md` 的「提交前最小回归」对应项。
+3. 通过 `wails dev` 完成运行验证，通过 `wails build -platform windows/amd64` 完成构建验证，确认应用可启动、关键功能可用。
+4. 按根 `AGENTS.md`「最终输出要求」汇总交付说明：已执行与未执行的校验、风险与待确认项。
+
+**门控规则**：
+- 前后端联调的核心链路验证通过；未执行的验证项已说明原因、影响范围和建议下一步。
+- 文档、`TASK.md` 与示例配置已同步。
+- 用户未明确要求提交时不得执行 `git commit`；提交时信息符合根 `AGENTS.md`「Commit 规范」。
+
+---
+
+<!-- include: shared/infra/pre-commit-regression-desktop.md -->
 
 <!-- include: shared/no-test-fallback.md -->

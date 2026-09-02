@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.34.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -41,12 +41,12 @@ dependencies: [agents-root]
 
 **工作内容**：
 1. 按照接口需求实现 Go Handler/Service/Repository
-2. Handler 方法需要标记 `//export` 注释以暴露给前端
-3. 运行 `wails generate module` 重新生成前端绑定
+2. 服务结构体通过 `application.NewService` 注册，导出方法自动暴露给前端（无需 `//export` 注释）
+3. 运行 `wails3 generate bindings` 重新生成前端绑定
 4. 涉及数据库结构变更时，使用 GORM AutoMigrate
 
 **Go 方法导出规范**：
-- 需要暴露给前端的方法必须在 App 结构体上定义
+- 需要暴露给前端的方法定义在已通过 `application.NewService` 注册的服务结构体上
 - 方法首字母大写（Go 导出规则）
 - 方法参数和返回值必须是可序列化类型（string、int、struct、slice 等）
 - 返回 error 时，前端会收到 JS Error 对象

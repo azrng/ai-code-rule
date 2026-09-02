@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.33.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -43,7 +43,7 @@ dependencies: [agents-root]
 | ORM | `sqlalchemy[asyncio]`（可选） | 异步 ORM |
 | 数据库迁移 | `alembic`（可选） | 数据库版本管理 |
 | 数据验证 | `pydantic` | 请求/响应模型验证 |
-| Redis | `redis[hiredis]` | 缓存与消息队列 |
+| Redis | `redis[hiredis]`（可选） | 缓存与消息队列 |
 | HTTP 客户端 | `httpx` | 异步 HTTP 客户端 |
 | 任务队列 | `celery[redis]`（可选） | 异步任务处理 |
 | 日志 | `loguru` | 结构化日志 |
@@ -76,6 +76,11 @@ uv sync
 - MySQL / MariaDB（`aiomysql`）
 - SQLite（`aiosqlite`，仅开发/测试）
 - SQL Server（`aioodbc`）
+
+asyncpg 时间语义约定：
+
+- `timestamptz` 列返回带时区的 aware datetime，`timestamp` 列返回 naive datetime；同一项目内统一一种语义，禁止 naive / aware 混用后直接比较或写回数据库
+- 时间字段统一一种约定（如全部 aware UTC 或全部 naive 本地时间），跨语义转换只在服务层显式完成，不在 Pydantic 序列化时隐式处理
 
 ### 依赖注入
 
@@ -150,8 +155,29 @@ project/
 ├── AGENTS.md                   # AI 代理规则
 ├── CLAUDE.md                   # Claude 指针
 ├── GEMINI.md                   # Gemini 指针
+├── GROK.md                     # Grok 指针
 └── TASK.md                     # 当前任务记录
 ```
+
+---
+
+## 阶段 1 — 后端实现
+
+**触发条件**：用户发出「开始开发」或「开始后端开发」指令
+
+**入场要求**：阶段 0 设计文档或接口契约已明确；若为例外情况任务，可直接进入实现
+
+**工作内容**：
+1. 先根据需求定位涉及的层级（路由、服务、数据访问、Schema），再在正确层内实现对应职责。
+2. 保持依赖方向正确：路由只编排服务，服务不感知 HTTP 细节，数据访问不包含业务规则。
+3. 所有增删改必须真实生效，并能通过 Swagger 或测试独立验证。
+4. 涉及数据库结构变更时，同步补齐 Alembic 迁移脚本和初始化说明。
+
+**门控规则**：
+- 关键接口路径已可通过 Swagger 独立验证。
+- 核心业务改动已补测试或在交付说明中解释未补原因。
+- 分层职责与依赖方向未被破坏。
+- 后续实现发现契约缺口时，按根 `AGENTS.md` 的纠错与回退机制回到 Schema / 接口定义变更流程，不在实现层绕过契约。
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
-version: 1.25.0
-last_updated: 2026-08-31
+version: 1.34.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -37,7 +37,7 @@ dependencies: [agents-root]
 - 若项目使用标记接口模式批量注册（如 `ITransientDependency`），沿用现有注册方式
 - 服务生命周期：
   - `Transient`：轻量级、无状态服务
-  - `Scoped`：需与页面生命周期绑定、或需共享同一实例的服务
+  - `Scoped`：MAUI 根容器没有天然页面 / 窗口作用域，直接注册的 Scoped 服务行为等同 Singleton；确需作用域时通过 `IServiceScopeFactory.CreateScope()` 显式创建并管理释放
   - `Singleton`：全局唯一服务（如配置、日志、HTTP 客户端）
 
 <!-- include: shared/application/tech-choice.md -->

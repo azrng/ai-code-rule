@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.35.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -18,16 +18,12 @@ dependencies: [agents-root]
 ### 后端服务层
 - ASP.NET Core Web API（如需独立 API 接口）
 - Clean Architecture 分层架构：
-  - `API`（表现层）→ `Application`（应用层）→ `Domain`（领域层）← `Infrastructure`（基础设施层）
+  - `Web`（Blazor Server 表现层，如需独立 API 再加 `API` 层）→ `Application`（应用层）→ `Domain`（领域层）← `Infrastructure`（基础设施层）
 - ORM：Entity Framework Core（可选）
 - 测试框架：xUnit + Moq
 
-### 核心库
-- `Azrng.Core`（1.15.8）：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
-- `Azrng.Core.Json`（1.3.1）：JSON 序列化（基于 `System.Text.Json`）
-- `Azrng.AspNetCore.Core`（1.3.0）：API 基础设施（统一响应、模型校验、异常中间件）
-- `Azrng.SqlMigration`（0.4.0）：SQL 脚本迁移执行（可选）
-- `Common.Cache.Redis`（2.0.0）：Redis 缓存封装（基于 StackExchange.Redis，可选）
+<!-- include: shared/backend/core-libs.md -->
+- Blazor 项目中数据库、`Azrng.SqlMigration` 迁移与 Redis 缓存为可选能力，按项目实际启用
 
 ### 依赖注入规范
 - 使用 Azrng 标记接口方式：
@@ -94,7 +90,7 @@ src/
 **入场要求**：阶段 0 设计文档已由用户确认；若界面已先行搭建，相关页面状态和交互入口已明确
 
 **工作内容**：
-1. 实现服务层逻辑、数据访问和独立 API（如需要）。
+1. 实现服务层逻辑、数据访问、权限控制和独立 API（如需要）。
 2. 保持服务层、领域层、基础设施层职责清晰，不把复杂业务逻辑塞回 Razor 组件。
 3. 所有增删改必须真实生效，并能通过页面、Swagger 或测试验证。
 4. 涉及数据库结构变更时，使用 `Azrng.SqlMigration` 生成迁移脚本（如使用数据库）。
