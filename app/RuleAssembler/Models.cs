@@ -22,8 +22,36 @@ internal sealed class Manifest
     [JsonPropertyName("profiles")]
     public List<Profile> Profiles { get; set; } = new();
 
+    // 能力注册表：Q5 能力开关与输出声明的能力归属都引用这里的 ID
+    [JsonPropertyName("features")]
+    public List<FeatureDefinition> Features { get; set; } = new();
+
+    // 全局输出契约默认值：所有 Profile 共用的“引用现有文件”清单
+    [JsonPropertyName("outputs")]
+    public OutputsConfig Outputs { get; set; } = new();
+
     [JsonPropertyName("wizard")]
     public WizardConfig Wizard { get; set; } = new();
+}
+
+// 能力定义：仅注册 ID 与展示文案；能力是否可用、默认是否勾选由后续阶段按 Profile/模块声明判断
+internal sealed class FeatureDefinition
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = "";
+
+    [JsonPropertyName("desc")]
+    public string Desc { get; set; } = "";
+}
+
+internal sealed class OutputsConfig
+{
+    // 根规则文案会提到、但生成器不负责创建的目标项目现有文件（如 TASK.md）
+    [JsonPropertyName("referenced-existing")]
+    public List<string> ReferencedExisting { get; set; } = new();
 }
 
 internal sealed class WizardConfig
@@ -150,6 +178,35 @@ internal sealed class Profile
     // 组合画像：问答向导与项目检测按 trait 过滤 Profile；* 表示该项不适用（匹配任意回答）
     [JsonPropertyName("traits")]
     public ProfileTraits? Traits { get; set; }
+
+    // 显式输出声明：补充派生清单之外的条目（如把某文件标记为 referenced-existing），
+    // 与片段结构派生的声明合并后构成该 Profile 的完整输出契约
+    [JsonPropertyName("outputs")]
+    public List<OutputDeclaration> Outputs { get; set; } = new();
+}
+
+// 结构化输出声明：输出契约的事实来源是本结构与片段声明，不通过解析根文件 Markdown 反向推断。
+// kind：generated = 本次确实生成；referenced-existing = 根规则提到但不由生成器创建的目标项目现有文件
+internal sealed class OutputDeclaration
+{
+    // kind 与 merge 的合法取值；校验与比较都以这里为准
+    public const string KindGenerated = "generated";
+    public const string KindReferencedExisting = "referenced-existing";
+    public const string MergeReplace = "replace";
+    public const string MergeAppend = "append";
+
+    [JsonPropertyName("path")]
+    public string Path { get; set; } = "";
+
+    [JsonPropertyName("kind")]
+    public string Kind { get; set; } = KindGenerated;
+
+    // 能力归属：doc / infra / ai-capability / design-system 等，空表示核心输出
+    [JsonPropertyName("feature")]
+    public string Feature { get; set; } = "";
+
+    [JsonPropertyName("merge")]
+    public string Merge { get; set; } = MergeReplace;
 }
 
 internal sealed class ProfileTraits
@@ -288,6 +345,14 @@ internal sealed class Subrule
 
     [JsonPropertyName("output")]
     public string Output { get; set; } = "";
+
+    // 能力归属（doc / infra / ai-capability 等），空表示核心输出；归属必须挂在声明上而非靠文件名推断
+    [JsonPropertyName("feature")]
+    public string Feature { get; set; } = "";
+
+    // 合并方式：replace（默认）或显式 append；当前渲染器全部按 replace 落盘，append 供后续阶段消费
+    [JsonPropertyName("merge")]
+    public string Merge { get; set; } = OutputDeclaration.MergeReplace;
 
     public IReadOnlyList<string> GetSources()
     {

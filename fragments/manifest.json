@@ -6,6 +6,31 @@
   },
   "schema_version": 2,
   "line_ending": "LF",
+  "features": [
+    {
+      "id": "doc",
+      "label": "文档规范",
+      "desc": "设计文档、契约说明子规则（doc-AGENTS.md）"
+    },
+    {
+      "id": "infra",
+      "label": "基础设施",
+      "desc": "部署、环境变量、构建发布子规则（infra / infrastructure-AGENTS.md）"
+    },
+    {
+      "id": "ai-capability",
+      "label": "AI 产品能力",
+      "desc": "AI Agent / 模型调用子规则（ai-AGENTS.md）"
+    },
+    {
+      "id": "design-system",
+      "label": "设计系统",
+      "desc": "设计 token 与 UI 规范（design-system.yaml）"
+    }
+  ],
+  "outputs": {
+    "referenced-existing": ["TASK.md"]
+  },
   "modules": [
     {
       "id": "core",
@@ -23,7 +48,8 @@
       "files": [
         {
           "source": "arch/reactLinkdotNet-ai/ai-AGENTS.md",
-          "output": "ai-AGENTS.md"
+          "output": "ai-AGENTS.md",
+          "feature": "ai-capability"
         }
       ]
     }
@@ -223,11 +249,13 @@
         },
         {
           "source": "arch/dotnet-layered/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "source": "arch/dotnet-layered/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         }
       ],
       "designSystem": false,
@@ -260,11 +288,13 @@
         },
         {
           "source": "arch/dotnet-core-single/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "source": "arch/dotnet-layered/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         }
       ],
       "designSystem": false,
@@ -333,11 +363,13 @@
         },
         {
           "source": "arch/python/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "source": "arch/python/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         }
       ],
       "designSystem": false,
@@ -415,10 +447,12 @@
         },
         {
           "source": "arch/reactLinkdotNet/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "output": "infra-AGENTS.md",
+          "feature": "infra",
           "sources": [
             "shared/skeletons/web-dotnet/infra-head.md",
             "arch/reactLinkdotNet/infra-ports.md",
@@ -502,10 +536,12 @@
         },
         {
           "source": "arch/reactLinkdotNet/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "output": "infra-AGENTS.md",
+          "feature": "infra",
           "sources": [
             "shared/skeletons/web-dotnet/infra-head.md",
             "arch/vueLinkdotNet/infra-ports.md",
@@ -617,11 +653,13 @@
         },
         {
           "source": "arch/reactLinkdotNet-ai/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "source": "arch/reactLinkdotNet-ai/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         }
       ],
       "designSystem": true,
@@ -701,11 +739,13 @@
         },
         {
           "source": "arch/nextFullstack/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "source": "arch/nextFullstack/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         }
       ],
       "designSystem": true,
@@ -763,10 +803,12 @@
         },
         {
           "source": "arch/avaloniaExe/infrastructure-AGENTS.md",
-          "output": "infrastructure-AGENTS.md"
+          "output": "infrastructure-AGENTS.md",
+          "feature": "infra"
         },
         {
           "output": "doc-AGENTS.md",
+          "feature": "doc",
           "sources": [
             "shared/skeletons/desktop-xaml/doc-AGENTS.md"
           ]
@@ -826,10 +868,12 @@
         },
         {
           "source": "arch/wpfExe/infrastructure-AGENTS.md",
-          "output": "infrastructure-AGENTS.md"
+          "output": "infrastructure-AGENTS.md",
+          "feature": "infra"
         },
         {
           "output": "doc-AGENTS.md",
+          "feature": "doc",
           "sources": [
             "shared/skeletons/desktop-xaml/doc-AGENTS.md"
           ]
@@ -920,11 +964,13 @@
         },
         {
           "source": "arch/dotnetBlazor/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         },
         {
           "source": "arch/dotnetBlazor/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         }
       ],
       "designSystem": true,
@@ -991,11 +1037,13 @@
         },
         {
           "source": "arch/dotnetBlazor/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         },
         {
           "source": "arch/dotnetBlazor/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         }
       ],
       "designSystem": true,
@@ -1073,7 +1121,8 @@
         },
         {
           "source": "arch/dotnetConsole/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         }
       ],
       "designSystem": false,
@@ -1154,12 +1203,14 @@
         },
         {
           "output": "doc-AGENTS.md",
+          "feature": "doc",
           "sources": [
             "shared/skeletons/electron-dotnet/doc-AGENTS.md"
           ]
         },
         {
           "output": "infra-AGENTS.md",
+          "feature": "infra",
           "sources": [
             "shared/skeletons/electron-dotnet/infra-AGENTS.md"
           ]
@@ -1243,12 +1294,14 @@
         },
         {
           "output": "doc-AGENTS.md",
+          "feature": "doc",
           "sources": [
             "shared/skeletons/electron-dotnet/doc-AGENTS.md"
           ]
         },
         {
           "output": "infra-AGENTS.md",
+          "feature": "infra",
           "sources": [
             "shared/skeletons/electron-dotnet/infra-AGENTS.md"
           ]
@@ -1332,11 +1385,13 @@
         },
         {
           "source": "arch/reactTauriExe/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "source": "arch/reactTauriExe/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         }
       ],
       "designSystem": true,
@@ -1418,12 +1473,14 @@
         },
         {
           "output": "doc-AGENTS.md",
+          "feature": "doc",
           "sources": [
             "shared/skeletons/wails/doc-AGENTS.md"
           ]
         },
         {
           "output": "infra-AGENTS.md",
+          "feature": "infra",
           "sources": [
             "shared/skeletons/wails/infra-AGENTS.md"
           ]
@@ -1508,12 +1565,14 @@
         },
         {
           "output": "doc-AGENTS.md",
+          "feature": "doc",
           "sources": [
             "shared/skeletons/wails/doc-AGENTS.md"
           ]
         },
         {
           "output": "infra-AGENTS.md",
+          "feature": "infra",
           "sources": [
             "shared/skeletons/wails/infra-AGENTS.md"
           ]
@@ -1595,11 +1654,13 @@
         },
         {
           "source": "arch/mauiMobile/infrastructure-AGENTS.md",
-          "output": "infrastructure-AGENTS.md"
+          "output": "infrastructure-AGENTS.md",
+          "feature": "infra"
         },
         {
           "source": "arch/mauiMobile/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         }
       ],
       "designSystem": true,
@@ -1682,7 +1743,8 @@
         },
         {
           "source": "arch/flutterMobile/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         }
       ],
       "designSystem": true,
@@ -1764,7 +1826,8 @@
         },
         {
           "source": "arch/staticHtml/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         }
       ],
       "designSystem": true,
@@ -1857,11 +1920,13 @@
         },
         {
           "source": "arch/generalProject/doc-AGENTS.md",
-          "output": "doc-AGENTS.md"
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
         },
         {
           "source": "arch/generalProject/infra-AGENTS.md",
-          "output": "infra-AGENTS.md"
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
         }
       ],
       "designSystem": true,

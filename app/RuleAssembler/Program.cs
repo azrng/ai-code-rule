@@ -191,10 +191,28 @@ internal static class Program
         if (args.Length == 1 && args[0].Equals("--check", StringComparison.OrdinalIgnoreCase))
         {
             var renderer = new RuleRenderer(resources);
+            var validator = new RootConsistencyValidator();
+            var contractErrors = new List<string>();
             foreach (var profile in manifest.Profiles)
             {
                 var files = renderer.Plan(manifest, profile);
-                Console.WriteLine($"通过：{profile.Id}（{files.Count} 个文件）");
+                var errors = validator.Validate(manifest, renderer, profile);
+                if (errors.Count == 0)
+                {
+                    Console.WriteLine($"通过：{profile.Id}（{files.Count} 个文件）");
+                    continue;
+                }
+
+                contractErrors.AddRange(errors);
+                Console.WriteLine($"失败：{profile.Id}（输出契约不一致）");
+            }
+
+            if (contractErrors.Count > 0)
+            {
+                Console.Error.WriteLine("输出契约校验失败：");
+                foreach (var error in contractErrors)
+                    Console.Error.WriteLine($"- {error}");
+                return 1;
             }
 
             var wizardErrors = new WizardEngine(manifest).SimulateAll();

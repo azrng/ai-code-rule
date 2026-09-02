@@ -116,6 +116,23 @@ internal sealed class ManifestLoader
         ValidateUniqueIds(manifest.Families.Select(f => f.Id), "family", errors);
         ValidateUniqueIds(manifest.Modules.Select(m => m.Id), "module", errors);
         ValidateUniqueIds(manifest.Profiles.Select(p => p.Id), "Profile", errors);
+        ValidateUniqueIds(manifest.Features.Select(f => f.Id), "feature", errors);
+
+        var featureIds = manifest.Features
+            .Select(f => f.Id)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var feature in manifest.Features)
+        {
+            if (string.IsNullOrWhiteSpace(feature.Id))
+                errors.Add("feature ID 不能为空");
+            if (string.IsNullOrWhiteSpace(feature.Label))
+                errors.Add($"feature {feature.Id} 缺少 label");
+        }
+
+        foreach (var path in manifest.Outputs.ReferencedExisting)
+            ValidateResourcePath(path, $"outputs.referenced-existing 条目 {path}", errors);
 
         var familyIds = manifest.Families
             .Select(f => f.Id)
@@ -138,7 +155,10 @@ internal sealed class ManifestLoader
             foreach (var pointer in module.Pointers)
                 ValidateRequiredResource($"pointers/{pointer}", $"module {module.Id} pointer", errors);
             foreach (var file in module.Files)
+            {
                 ValidateRuleFile(file, $"module {module.Id}", errors);
+                ValidateOutputMetadata(file.Feature, file.Merge, $"module {module.Id} file {file.Output}", featureIds, errors);
+            }
         }
 
         foreach (var profile in manifest.Profiles)
@@ -161,10 +181,15 @@ internal sealed class ManifestLoader
             ValidateResourcePath(profile.DesignSystemSource, $"Profile {profile.Id} designSystemSource", errors, allowEmpty: true);
 
             foreach (var file in profile.Subrules)
+            {
                 ValidateRuleFile(file, $"Profile {profile.Id}", errors);
+                ValidateOutputMetadata(file.Feature, file.Merge, $"Profile {profile.Id} file {file.Output}", featureIds, errors);
+            }
             ValidateUniqueOutputs(profile.Pointers, $"Profile {profile.Id} pointer", errors);
             foreach (var pointer in profile.Pointers)
                 ValidateRequiredResource($"pointers/{pointer}", $"Profile {profile.Id} pointer", errors);
+
+            ValidateProfileOutputDeclarations(profile, featureIds, errors);
 
             if (profile.DesignSystem)
             {
@@ -246,6 +271,42 @@ internal sealed class ManifestLoader
                 }
             }
         }
+    }
+
+    // 输出声明元数据的合法性：feature 必须已注册，merge 只允许 replace / append
+    private static void ValidateOutputMetadata(
+        string feature,
+        string merge,
+        string field,
+        IReadOnlySet<string> featureIds,
+        ICollection<string> errors)
+    {
+        if (!string.IsNullOrWhiteSpace(feature) && !featureIds.Contains(feature))
+            errors.Add($"{field} 的 feature 未在 manifest.features 注册：{feature}");
+        if (merge != OutputDeclaration.MergeReplace && merge != OutputDeclaration.MergeAppend)
+            errors.Add($"{field} 的 merge 只能是 replace 或 append，当前为 {merge}");
+    }
+
+    // Profile 显式输出声明的结构校验；与派生清单的交叉一致性由 RootConsistencyValidator 负责
+    private void ValidateProfileOutputDeclarations(
+        Profile profile,
+        IReadOnlySet<string> featureIds,
+        ICollection<string> errors)
+    {
+        foreach (var declaration in profile.Outputs)
+        {
+            var field = $"Profile {profile.Id} outputs[{declaration.Path}]";
+            ValidateResourcePath(declaration.Path, field, errors);
+            if (declaration.Kind != OutputDeclaration.KindGenerated
+                && declaration.Kind != OutputDeclaration.KindReferencedExisting)
+                errors.Add($"{field} 的 kind 只能是 generated 或 referenced-existing，当前为 {declaration.Kind}");
+            ValidateOutputMetadata(declaration.Feature, declaration.Merge, field, featureIds, errors);
+        }
+
+        ValidateUniqueOutputs(
+            profile.Outputs.Select(declaration => declaration.Path),
+            $"Profile {profile.Id} outputs",
+            errors);
     }
 
     private void ValidateRequiredResource(string path, string field, ICollection<string> errors)
