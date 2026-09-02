@@ -256,7 +256,14 @@ internal sealed class ProjectDetector
 
             if (content.Contains("Microsoft.NET.Sdk.Web", StringComparison.OrdinalIgnoreCase))
             {
-                evidence.Add(new("form", "backend-only", "csproj 使用 Microsoft.NET.Sdk.Web（ASP.NET Core 服务）"));
+                // Web 工程伴随前端框架依赖时按前后端分离处理，避免与 frontend 证据组合出无匹配候选
+                var hasJsFrontend = signals.ReactInPackageJson || signals.VueInPackageJson || signals.NextInPackageJson;
+                evidence.Add(new(
+                    "form",
+                    hasJsFrontend ? "web" : "backend-only",
+                    hasJsFrontend
+                        ? "Web 工程伴随前端框架依赖（前后端分离）"
+                        : "csproj 使用 Microsoft.NET.Sdk.Web（ASP.NET Core 服务）"));
                 evidence.Add(new("backend", "dotnet", "发现 .NET 工程（csproj）"));
                 if (signals.CsprojCount >= 3)
                     evidence.Add(new("arch-style", "layered", $"发现 {signals.CsprojCount} 个 csproj，符合多项目分层结构"));
