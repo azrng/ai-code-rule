@@ -1,10 +1,11 @@
 namespace RuleAssembler;
 
-// 一次选择的结果：Profile + 入口模式（classic/wizard/detected）+ 决策树回答（经典入口为空）
+// 一次选择的结果：Profile + 入口模式（classic/wizard/detected）+ 决策树回答 + 回答来源（detected/manual）
 internal sealed record ProfileSelection(
     Profile Profile,
     string Mode,
-    Dictionary<string, string> Answers);
+    Dictionary<string, string> Answers,
+    Dictionary<string, string> AnswerSources);
 
 // 选择交互逻辑：渲染与输入由 IConsoleUi 承担（Spectre 或纯文本），本类只维护候选过滤与回退栈
 internal sealed class ConsoleWizard
@@ -52,6 +53,7 @@ internal sealed class ConsoleWizard
                 return new ProfileSelection(
                     profiles[profileChoice.Value],
                     "classic",
+                    new Dictionary<string, string>(StringComparer.Ordinal),
                     new Dictionary<string, string>(StringComparer.Ordinal));
             }
         }
@@ -61,10 +63,42 @@ internal sealed class ConsoleWizard
     // 选择 0 返回上一步，第一问选择 0 则交还主菜单
     public ProfileSelection? SelectByWizard(Manifest manifest)
     {
+        return WalkDecisionTree(
+            manifest,
+            manifest.Profiles.ToList(),
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            "wizard");
+    }
+
+    // 检测补答：保留检测已确认的维度（不重复提问、不被覆盖），只对候选间仍有分歧的维度继续提问；
+    // 补答完成的配方沿用 mode=detected，回答来源区分检测确认（detected）与人工补答（manual）
+    public ProfileSelection? SupplementByWizard(Manifest manifest, DetectionResult detection)
+    {
+        var seedSources = detection.Confirmed.Keys
+            .ToDictionary(trait => trait, _ => "detected", StringComparer.Ordinal);
+        return WalkDecisionTree(
+            manifest,
+            detection.Candidates,
+            detection.Confirmed,
+            seedSources,
+            "detected");
+    }
+
+    // 决策树统一遍历：候选按回答逐步过滤，选项永远从当前候选推导；
+    // 种子回答对应的维度因候选已按其过滤而不会被再次提问，因此不会被覆盖
+    private ProfileSelection? WalkDecisionTree(
+        Manifest manifest,
+        List<Profile> initialCandidates,
+        Dictionary<string, string> seedAnswers,
+        Dictionary<string, string> seedSources,
+        string mode)
+    {
         var engine = new WizardEngine(manifest);
-        var candidates = manifest.Profiles.ToList();
-        var answers = new Dictionary<string, string>(StringComparer.Ordinal);
-        var history = new List<(List<Profile> Candidates, Dictionary<string, string> Answers)>();
+        var candidates = initialCandidates;
+        var answers = new Dictionary<string, string>(seedAnswers, StringComparer.Ordinal);
+        var sources = new Dictionary<string, string>(seedSources, StringComparer.Ordinal);
+        var history = new List<(List<Profile> Candidates, Dictionary<string, string> Answers, Dictionary<string, string> Sources)>();
 
         while (true)
         {
@@ -82,18 +116,22 @@ internal sealed class ConsoleWizard
             {
                 if (history.Count == 0)
                     return null;
-                (candidates, answers) = history[^1];
+                (candidates, answers, sources) = history[^1];
                 history.RemoveAt(history.Count - 1);
                 continue;
             }
 
-            history.Add((candidates, new Dictionary<string, string>(answers, StringComparer.Ordinal)));
+            history.Add((
+                candidates,
+                new Dictionary<string, string>(answers, StringComparer.Ordinal),
+                new Dictionary<string, string>(sources, StringComparer.Ordinal)));
             var selected = question.Options[choice.Value];
             answers[selected.Trait] = selected.Value;
+            sources[selected.Trait] = "manual";
             candidates = engine.Filter(candidates, selected.Trait, selected.Value);
         }
 
         var profile = candidates.Single();
-        return new ProfileSelection(profile, "wizard", answers);
+        return new ProfileSelection(profile, mode, answers, sources);
     }
 }

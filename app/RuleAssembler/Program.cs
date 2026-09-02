@@ -84,7 +84,7 @@ internal static class Program
         var written = new OutputWriter().WriteFiles(files);
 
         var recorder = new RecipeRecorder();
-        var record = RecipeRecorder.Build(manifest, selection.Profile, selection.Mode, selection.Answers, files);
+        var record = RecipeRecorder.Build(manifest, selection.Profile, selection.Mode, selection.Answers, selection.AnswerSources, files);
         recorder.Write(Environment.CurrentDirectory, record);
         var gitignoreMessage = recorder.EnsureGitignored(
             Environment.CurrentDirectory,
@@ -124,8 +124,13 @@ internal static class Program
         ui.Bullets(detection.Notes.Take(2));
         ui.Line("");
 
-        var previewFiles = renderer.Plan(manifest, manifest.Profiles.First(profile => profile.Id == detection.ProfileId));
-        ui.Line($"推荐组合：{detection.ProfileLabel}");
+        // 部分检测结果：证据不足以锁定唯一组合，不伪造推荐，进入补答流程
+        if (!detection.Converged)
+            return OfferSupplement(manifest, renderer, wizard, ui, detection);
+
+        var profile = detection.LegacyProfile;
+        var previewFiles = renderer.Plan(manifest, profile);
+        ui.Line($"推荐组合：{profile.Label}");
         ui.FileTable("将生成的文件", previewFiles.Select(file => file.Output));
 
         while (true)
@@ -143,16 +148,85 @@ internal static class Program
                 return null;
             if (choice == 0)
             {
+                var answers = detection.BuildLegacyAnswers();
                 return new ProfileSelection(
-                    manifest.Profiles.First(profile => profile.Id == detection.ProfileId),
+                    profile,
                     "detected",
-                    detection.Answers);
+                    answers,
+                    answers.Keys.ToDictionary(key => key, _ => "detected", StringComparer.Ordinal));
             }
             if (choice == 1)
                 return wizard.SelectByWizard(manifest);
             if (choice == 2)
                 return wizard.SelectProfile(manifest);
         }
+    }
+
+    // 检测部分结果的补答入口：展示已确认维度与候选组合，回答只针对未收敛的维度；
+    // 补答 / 重答完成后补一次文件预览与汇总确认
+    private static ProfileSelection? OfferSupplement(
+        Manifest manifest,
+        RuleRenderer renderer,
+        ConsoleWizard wizard,
+        IConsoleUi ui,
+        DetectionResult detection)
+    {
+        var questionByTrait = manifest.Wizard.Steps
+            .GroupBy(step => step.Trait, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Question, StringComparer.Ordinal);
+
+        ui.Line("已确认维度：" + string.Join(
+            "，",
+            detection.Confirmed.Select(pair => DescribeTraitValue(manifest, pair.Key, pair.Value))));
+        if (detection.Unconfirmed.Count > 0)
+        {
+            ui.Bullets(detection.Unconfirmed.Select(trait =>
+                $"{trait} 证据不足，待确认（{questionByTrait.GetValueOrDefault(trait, trait)}）"));
+        }
+
+        ui.Line("候选组合：");
+        ui.Bullets(detection.Candidates.Select(profile => $"{profile.Label}（{profile.Id}）"));
+        ui.Line("");
+
+        var choice = ui.Choose(
+            "请选择：",
+            "取消",
+            new List<UiChoice>
+            {
+                new("补答确认（保留已确认结果，只回答缺失项）", ""),
+                new("问答选择（重新回答）", ""),
+                new("经典选择", "技术大类 → Profile")
+            });
+        if (choice is null)
+            return null;
+
+        var selection = choice switch
+        {
+            0 => wizard.SupplementByWizard(manifest, detection),
+            1 => wizard.SelectByWizard(manifest),
+            _ => wizard.SelectProfile(manifest)
+        };
+        if (selection is null)
+            return null;
+
+        var files = renderer.Plan(manifest, selection.Profile);
+        ui.Line("");
+        ui.Line($"已选择：{selection.Profile.Label}");
+        ui.FileTable("将生成的文件", files.Select(file => file.Output));
+        var confirm = ui.Choose(
+            $"确认在当前目录生成 {files.Count} 个文件？",
+            "取消",
+            new List<UiChoice> { new("开始生成", "") });
+        return confirm is null ? null : selection;
+    }
+
+    private static string DescribeTraitValue(Manifest manifest, string trait, string value)
+    {
+        var label = manifest.Wizard.Options.TryGetValue(trait, out var options)
+            && options.TryGetValue(value, out var option)
+            ? option.Label
+            : value;
+        return $"{label}（{trait}={value}）";
     }
 
     private static IConsoleUi CreateUi()
@@ -244,8 +318,25 @@ internal static class Program
                 Console.WriteLine($"  - {reason}");
             foreach (var note in result.Notes)
                 Console.WriteLine($"  - {note}");
-            Console.WriteLine($"推荐组合：{result.ProfileLabel}（{result.ProfileId}）");
-            Console.WriteLine("回答组合：" + string.Join("，", result.Answers.Select(pair => $"{pair.Key}={pair.Value}")));
+
+            if (result.Converged)
+            {
+                Console.WriteLine($"推荐组合：{result.LegacyProfileLabel}（{result.LegacyProfileId}）");
+                Console.WriteLine("回答组合：" + string.Join(
+                    "，",
+                    result.BuildLegacyAnswers().Select(pair => $"{pair.Key}={pair.Value}")));
+                return 0;
+            }
+
+            // 部分有效但未收敛：打印待确认维度与候选，不伪造完整推荐
+            Console.WriteLine("检测未收敛，以下维度已确认：" + string.Join(
+                "，",
+                result.Confirmed.Select(pair => $"{pair.Key}={pair.Value}")));
+            foreach (var trait in result.Unconfirmed)
+                Console.WriteLine($"待确认维度：{trait}");
+            Console.WriteLine("候选组合：");
+            foreach (var candidate in result.Candidates)
+                Console.WriteLine($"  - {candidate.Label}（{candidate.Id}）");
             return 0;
         }
 
@@ -282,7 +373,7 @@ internal static class Program
             Console.WriteLine(Banner);
             Console.WriteLine("直接双击或不带参数运行：自动检测当前项目给出推荐，也可进入问答选择并释放规则。");
             Console.WriteLine("--check：只校验 manifest、片段、全部 Profile 与决策树，不写入文件。");
-            Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合，不写入文件。");
+            Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合；证据不足时打印待确认维度与候选组合，不写入文件。");
             Console.WriteLine("--emit <目录>：把全部 Profile 的生成结果输出到指定目录，仅用于批量预览与对比，不覆盖工作目录。");
             Console.WriteLine("--help：显示帮助。");
             return 0;

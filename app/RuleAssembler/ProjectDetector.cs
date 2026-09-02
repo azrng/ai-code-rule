@@ -4,12 +4,40 @@ namespace RuleAssembler;
 
 internal sealed record DetectionEvidence(string Trait, string Value, string Reason);
 
+// 检测结果：既可能是收敛到唯一 Profile 的完整结果，也可能是带待确认维度的部分结果。
+// 部分结果不伪造完整推荐；Legacy* 成员仅在候选唯一时给出，供旧「推荐组合」路径迁移兼容。
 internal sealed record DetectionResult(
-    string ProfileId,
-    string ProfileLabel,
-    Dictionary<string, string> Answers,
+    Dictionary<string, string> Confirmed,
+    List<string> Unconfirmed,
+    List<Profile> Candidates,
     List<string> Reasons,
-    List<string> Notes);
+    List<string> Notes)
+{
+    public bool Converged => Candidates.Count == 1;
+
+    // 迁移期兼容：旧路径需要的唯一候选与其完整回答组合
+    public Profile LegacyProfile => Candidates[0];
+
+    public string? LegacyProfileId => Converged ? Candidates[0].Id : null;
+
+    public string? LegacyProfileLabel => Converged ? Candidates[0].Label : null;
+
+    // 完整回答组合取候选 Profile 的全部具体 trait，保证按配方能还原到同一 Profile
+    public Dictionary<string, string> BuildLegacyAnswers()
+    {
+        var answers = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (!Converged)
+            return answers;
+        foreach (var trait in ProfileTraits.KnownTraits)
+        {
+            var value = Candidates[0].Traits?.Get(trait);
+            if (!string.IsNullOrEmpty(value) && value != ProfileTraits.Wildcard)
+                answers[trait] = value;
+        }
+
+        return answers;
+    }
+}
 
 // 目标项目技术栈检测：扫描目录中的特征文件（sln/csproj/package.json/wails.json/tauri/pubspec 等），
 // 产出 trait 证据，再沿决策树贪心走到底，保证推荐的一定是可生成的 Profile。
@@ -40,42 +68,71 @@ internal sealed class ProjectDetector
         if (evidence.Count == 0)
             return null;
 
-        // 全局打分而非逐问贪心：证据强弱不同，逐问过滤会让先问到的弱证据
-        // 提前淘汰强证据指向的候选（如 Electron+React+.NET 项目被推成 Tauri）
-        Profile? best = null;
-        double bestScore = double.NegativeInfinity;
-        foreach (var profile in _manifest.Profiles)
+        // 证据按维度归并：同一维度出现多个不同值视为证据冲突，该维度不确认，留待人工补答；
+        // 证据不足的维度不做默认推断（如 Electron + .NET 无 React/Vue 依赖时 frontend 保持未确认）
+        var confirmed = new Dictionary<string, string>(StringComparer.Ordinal);
+        var notes = new List<string>();
+        foreach (var group in evidence.GroupBy(item => item.Trait, StringComparer.Ordinal))
         {
-            var score = ScoreProfile(profile, evidence);
-            if (score > bestScore)
+            var values = group.Select(item => item.Value).Distinct(StringComparer.Ordinal).ToList();
+            if (values.Count == 1)
             {
-                bestScore = score;
-                best = profile;
+                confirmed[group.Key] = values[0];
+            }
+            else
+            {
+                var descriptions = values.Select(value => Describe(group.Key, value));
+                notes.Add($"维度 {DescribeTraitKey(group.Key)} 证据冲突（{string.Join(" / ", descriptions)}），交由人工确认");
             }
         }
 
-        if (best is null || bestScore <= 0)
-            return null;
-
-        var reasons = evidence
-            .Where(item => best.Traits?.Get(item.Trait) == item.Value)
-            .Select(item => item.Reason)
+        // 候选 = 匹配全部已确认维度的 Profile；不满足时才退回整体打分取最接近
+        var candidates = _manifest.Profiles
+            .Where(profile => confirmed.All(pair => WizardEngine.Matches(profile, pair.Key, pair.Value)))
             .ToList();
-        var notes = evidence
-            .Where(item => best.Traits?.Get(item.Trait) != item.Value)
-            .Select(item => $"特征 {Describe(item.Trait, item.Value)} 未被推荐组合逐一对应，按整体最接近处理")
-            .ToList();
-
-        // 回答组合取 Profile 的全部具体 trait，保证按配方能还原到同一 Profile
-        var answers = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var trait in ProfileTraits.KnownTraits)
+        if (candidates.Count == 0)
         {
-            var value = best.Traits?.Get(trait);
-            if (!string.IsNullOrEmpty(value) && value != ProfileTraits.Wildcard)
-                answers[trait] = value;
+            // 已确认组合在候选空间没有精确匹配（跨族组合尚未接入）：仅供旧推荐路径就近处理
+            Profile? best = null;
+            double bestScore = double.NegativeInfinity;
+            foreach (var profile in _manifest.Profiles)
+            {
+                var score = ScoreProfile(profile, evidence);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = profile;
+                }
+            }
+
+            if (best is null || bestScore <= 0)
+                return null;
+            candidates = new List<Profile> { best };
+            notes.Add("已确认组合没有完全匹配的 Profile，按整体最接近处理");
         }
 
-        return new DetectionResult(best.Id, best.Label, answers, reasons, notes);
+        var reasons = evidence
+            .Where(item => confirmed.TryGetValue(item.Trait, out var value) && value == item.Value)
+            .Select(item => item.Reason)
+            .ToList();
+
+        // 未确认维度：按问答顺序取「证据未覆盖且候选之间仍有分歧」的维度；
+        // 候选之间无分歧的维度由唯一候选补全，不需要人工回答
+        var unconfirmed = new List<string>();
+        foreach (var step in _manifest.Wizard.Steps)
+        {
+            if (confirmed.ContainsKey(step.Trait))
+                continue;
+            var distinctValues = candidates
+                .Select(profile => profile.Traits?.Get(step.Trait))
+                .Where(value => value is not null && value != ProfileTraits.Wildcard)
+                .Distinct(StringComparer.Ordinal)
+                .Count();
+            if (distinctValues > 1)
+                unconfirmed.Add(step.Trait);
+        }
+
+        return new DetectionResult(confirmed, unconfirmed, candidates, reasons, notes);
     }
 
     // Profile 与证据的匹配分：匹配加权重、矛盾减权重；稀有证据权重更高（值越少见指向性越强）
@@ -106,6 +163,12 @@ internal sealed class ProjectDetector
             && options.TryGetValue(value, out var option)
             ? option.Label
             : value;
+    }
+
+    // 维度的展示名：优先取问答步骤的问题文案，找不到时退回 trait 键
+    private string DescribeTraitKey(string trait)
+    {
+        return _manifest.Wizard.Steps.FirstOrDefault(step => step.Trait == trait)?.Question ?? trait;
     }
 
     private static List<DetectionEvidence> CollectEvidence(ScanSignals signals)
@@ -451,7 +514,18 @@ internal sealed class ScanSignals
 
     public bool PackageJsonWithoutBackend
     {
-        get { return HasPackageJson && !HasWailsJson && !HasTauriConf && CsprojCount == 0 && !NextInPackageJson; }
+        // Electron 是桌面壳而非纯前端工程，存在 Electron 信号时不得再给 form=web 兜底证据，
+        // 否则与壳证据的 form=desktop 冲突会把 form 维度打回未确认
+        get
+        {
+            return HasPackageJson
+                && !HasWailsJson
+                && !HasTauriConf
+                && !HasElectronConfig
+                && !ElectronInPackageJson
+                && CsprojCount == 0
+                && !NextInPackageJson;
+        }
     }
 
     public bool OnlyStaticHtml

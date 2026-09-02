@@ -14,6 +14,7 @@ internal sealed class RecipeRecorder
         Profile profile,
         string mode,
         IReadOnlyDictionary<string, string> answers,
+        IReadOnlyDictionary<string, string> answerSources,
         IReadOnlyList<PlannedFile> files)
     {
         return new RecipeRecord
@@ -25,6 +26,7 @@ internal sealed class RecipeRecorder
             ProfileLabel = profile.Label,
             Family = profile.Family,
             Answers = new Dictionary<string, string>(answers, StringComparer.Ordinal),
+            AnswerSources = new Dictionary<string, string>(answerSources, StringComparer.Ordinal),
             Files = files.Select(file => file.Output).ToList()
         };
     }

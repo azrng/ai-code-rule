@@ -23,9 +23,10 @@ public sealed class RecipeRecorderTests : IDisposable
         var manifest = new Manifest { Vars = new ManifestVars { Version = "1.36.0", LastUpdated = "2026-09-02" } };
         var profile = new Profile { Id = "reactWailsExe", Label = "React + Wails 桌面应用", Family = "hybrid-app" };
         var answers = new Dictionary<string, string> { ["form"] = "desktop" };
+        var sources = new Dictionary<string, string> { ["form"] = "manual" };
         var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
 
-        var record = RecipeRecorder.Build(manifest, profile, "wizard", answers, files);
+        var record = RecipeRecorder.Build(manifest, profile, "wizard", answers, sources, files);
         new RecipeRecorder().Write(_root, record);
 
         var path = Path.Combine(_root, RecipeRecorder.RecordFileName);
@@ -34,8 +35,34 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Equal("reactWailsExe", doc.RootElement.GetProperty("profile_id").GetString());
         Assert.Equal("wizard", doc.RootElement.GetProperty("mode").GetString());
         Assert.Equal("desktop", doc.RootElement.GetProperty("answers").GetProperty("form").GetString());
+        Assert.Equal("manual", doc.RootElement.GetProperty("answer_sources").GetProperty("form").GetString());
         // 仓库约定生成文件统一 LF，配方记录不得带 CRLF
         Assert.DoesNotContain("\r\n", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void Write_RecordDetectedAnswerSources()
+    {
+        // 补答完成的配方保留 mode=detected，回答来源区分检测确认与人工补答
+        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.39.0", LastUpdated = "2026-09-02" } };
+        var profile = new Profile { Id = "vueElectronDotNet", Label = "Vue + Electron + .NET 桌面应用", Family = "hybrid-app" };
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "desktop", ["backend"] = "dotnet", ["shell"] = "electron", ["frontend"] = "vue"
+        };
+        var sources = new Dictionary<string, string>
+        {
+            ["form"] = "detected", ["backend"] = "detected", ["shell"] = "detected", ["frontend"] = "manual"
+        };
+        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
+
+        var record = RecipeRecorder.Build(manifest, profile, "detected", answers, sources, files);
+        new RecipeRecorder().Write(_root, record);
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));
+        Assert.Equal("detected", doc.RootElement.GetProperty("mode").GetString());
+        Assert.Equal("detected", doc.RootElement.GetProperty("answer_sources").GetProperty("shell").GetString());
+        Assert.Equal("manual", doc.RootElement.GetProperty("answer_sources").GetProperty("frontend").GetString());
     }
 
     [Fact]

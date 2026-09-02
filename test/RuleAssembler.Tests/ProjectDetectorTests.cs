@@ -29,7 +29,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("reactWailsExe", result.ProfileId);
+        Assert.Equal("reactWailsExe", result!.LegacyProfileId);
         Assert.Contains(result.Reasons, reason => reason.Contains("wails.json"));
     }
 
@@ -43,7 +43,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("wpfExe", result.ProfileId);
+        Assert.Equal("wpfExe", result!.LegacyProfileId);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("python", result.ProfileId);
+        Assert.Equal("python", result!.LegacyProfileId);
     }
 
     [Fact]
@@ -74,9 +74,9 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("reactElectronDotNet", result.ProfileId);
+        Assert.Equal("reactElectronDotNet", result!.LegacyProfileId);
         // 配方回答必须带上渲染层框架，保证按配方可还原到同一变体
-        Assert.Equal("react", result.Answers["frontend"]);
+        Assert.Equal("react", result.BuildLegacyAnswers()["frontend"]);
     }
 
     [Fact]
@@ -96,16 +96,16 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("vueElectronDotNet", result.ProfileId);
-        Assert.Equal("vue", result.Answers["frontend"]);
+        Assert.Equal("vueElectronDotNet", result!.LegacyProfileId);
+        Assert.Equal("vue", result.BuildLegacyAnswers()["frontend"]);
     }
 
     [Fact]
-    public void Detect_ElectronWithoutRendererDeps_DefaultsToReactVariant()
+    public void Detect_ElectronNetWithoutRenderer_FrontendStaysUnconfirmed()
     {
         // Electron + .NET 但识别不出渲染层框架（无 react/vue 依赖）：
-        // 整体打分在两个 Electron 变体间同分，按 manifest 顺序稳定落到 React 变体，
-        // frontend 维度在 Notes 中提示未逐一对应
+        // 证据只确认 form/shell/backend，frontend 必须保持未确认，
+        // 输出两个 Electron 变体候选，不得默认 React
         File.WriteAllText(
             Path.Combine(_root, "package.json"),
             "{\"devDependencies\":{\"electron\":\"^33.0.0\"}}");
@@ -118,9 +118,34 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("reactElectronDotNet", result.ProfileId);
-        // 配方回答取自推荐 Profile 的具体 trait，React 变体应带 frontend=react 以便还原
-        Assert.Equal("react", result.Answers["frontend"]);
+        Assert.False(result!.Converged);
+        Assert.Null(result.LegacyProfileId);
+        Assert.Contains("frontend", result.Unconfirmed);
+        Assert.Equal("desktop", result.Confirmed["form"]);
+        Assert.Equal("electron", result.Confirmed["shell"]);
+        Assert.Equal("dotnet", result.Confirmed["backend"]);
+        Assert.Equal(2, result.Candidates.Count);
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactElectronDotNet");
+        Assert.Contains(result.Candidates, profile => profile.Id == "vueElectronDotNet");
+    }
+
+    [Fact]
+    public void Detect_BareReactSpa_BackendStaysUnconfirmed()
+    {
+        // 只有 package.json react 依赖：form/frontend 已确认，
+        // 后端证据不足时不得隐式补出 .NET / Node 后端，输出全部候选
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"react\":\"^18.0.0\"}}");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.False(result!.Converged);
+        Assert.Contains("backend", result.Unconfirmed);
+        Assert.Equal("web", result.Confirmed["form"]);
+        Assert.Equal("react", result.Confirmed["frontend"]);
+        Assert.Equal(3, result.Candidates.Count);
     }
 
     [Fact]
@@ -136,7 +161,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("reactElectronDotNet", result.ProfileId);
+        Assert.Equal("reactElectronDotNet", result!.LegacyProfileId);
     }
 
     [Fact]

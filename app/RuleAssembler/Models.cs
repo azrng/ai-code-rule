@@ -394,6 +394,10 @@ internal sealed class RecipeRecord
     [JsonPropertyName("answers")]
     public Dictionary<string, string> Answers { get; init; } = new();
 
+    // 回答来源：detected = 检测证据确认；manual = 人工补答。无检测参与时为空，字段为增量兼容
+    [JsonPropertyName("answer_sources")]
+    public Dictionary<string, string> AnswerSources { get; init; } = new();
+
     [JsonPropertyName("files")]
     public List<string> Files { get; init; } = new();
 }
