@@ -175,8 +175,77 @@ internal sealed class ManifestLoader
             ValidateProfileOutputConflicts(profile, moduleMap, errors);
         }
 
+        ValidateWizard(manifest, errors);
+
         if (errors.Count > 0)
             throw new InvalidOperationException("manifest 校验失败：\n- " + string.Join("\n- ", errors));
+    }
+
+    // 决策树与 traits 的结构校验：trait 键合法、每个 Profile 的 trait 值都有展示文案，
+    // 保证问答向导与检测器在任何候选集上都能渲染出可读选项
+    private void ValidateWizard(Manifest manifest, ICollection<string> errors)
+    {
+        var wizard = manifest.Wizard;
+        if (wizard.Steps.Count == 0)
+        {
+            errors.Add("wizard.steps 不能为空");
+            return;
+        }
+
+        var knownTraits = ProfileTraits.KnownTraits.ToHashSet(StringComparer.Ordinal);
+        var seenTraits = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var step in wizard.Steps)
+        {
+            if (string.IsNullOrWhiteSpace(step.Trait) || !knownTraits.Contains(step.Trait))
+            {
+                errors.Add($"wizard step trait 非法：{step.Trait}");
+            }
+            else if (!seenTraits.Add(step.Trait))
+            {
+                errors.Add($"wizard step trait 重复：{step.Trait}");
+            }
+
+            if (string.IsNullOrWhiteSpace(step.Question))
+                errors.Add($"wizard step {step.Trait} 缺少 question");
+
+            if (!string.IsNullOrWhiteSpace(step.AppliesWhenTrait)
+                && (!knownTraits.Contains(step.AppliesWhenTrait) || step.AppliesWhenValues.Count == 0))
+                errors.Add($"wizard step {step.Trait} 的先决条件配置不完整");
+
+            if (!string.IsNullOrWhiteSpace(step.DetectDefault)
+                && (!wizard.Options.TryGetValue(step.Trait, out var defaults)
+                    || !defaults.ContainsKey(step.DetectDefault)))
+                errors.Add($"wizard step {step.Trait} 的 detect-default 不在 options 中：{step.DetectDefault}");
+        }
+
+        foreach (var trait in wizard.Options.Keys)
+        {
+            if (!knownTraits.Contains(trait))
+                errors.Add($"wizard options 出现未知 trait：{trait}");
+        }
+
+        foreach (var profile in manifest.Profiles)
+        {
+            if (profile.Traits is null)
+            {
+                errors.Add($"Profile {profile.Id} 缺少 traits");
+                continue;
+            }
+
+            foreach (var trait in ProfileTraits.KnownTraits)
+            {
+                var value = profile.Traits.Get(trait);
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    errors.Add($"Profile {profile.Id} traits 缺少 {trait}");
+                }
+                else if (value != ProfileTraits.Wildcard
+                    && (!wizard.Options.TryGetValue(trait, out var options) || !options.ContainsKey(value)))
+                {
+                    errors.Add($"Profile {profile.Id} traits.{trait} 值 {value} 缺少 wizard.options 文案");
+                }
+            }
+        }
     }
 
     private void ValidateRequiredResource(string path, string field, ICollection<string> errors)

@@ -21,6 +21,51 @@ internal sealed class Manifest
 
     [JsonPropertyName("profiles")]
     public List<Profile> Profiles { get; set; } = new();
+
+    [JsonPropertyName("wizard")]
+    public WizardConfig Wizard { get; set; } = new();
+}
+
+internal sealed class WizardConfig
+{
+    [JsonPropertyName("steps")]
+    public List<WizardStep> Steps { get; set; } = new();
+
+    // trait -> 选项值 -> 展示文案；Profile traits 中出现的每个非 * 值都必须在这里有文案
+    [JsonPropertyName("options")]
+    public Dictionary<string, Dictionary<string, WizardOption>> Options { get; set; } = new();
+}
+
+internal sealed class WizardStep
+{
+    [JsonPropertyName("trait")]
+    public string Trait { get; set; } = "";
+
+    [JsonPropertyName("question")]
+    public string Question { get; set; } = "";
+
+    [JsonPropertyName("hint")]
+    public string Hint { get; set; } = "";
+
+    // 只在先决回答命中时才提问；留空表示始终适用（仍受“候选间存在差异才问”的约束）
+    [JsonPropertyName("applies-when-trait")]
+    public string? AppliesWhenTrait { get; set; }
+
+    [JsonPropertyName("applies-when-values")]
+    public List<string> AppliesWhenValues { get; set; } = new();
+
+    // 检测无证据时的默认倾向值（如分层 vs 单层默认单层）
+    [JsonPropertyName("detect-default")]
+    public string DetectDefault { get; set; } = "";
+}
+
+internal sealed class WizardOption
+{
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = "";
+
+    [JsonPropertyName("desc")]
+    public string Desc { get; set; } = "";
 }
 
 internal sealed class ManifestVars
@@ -101,6 +146,56 @@ internal sealed class Profile
 
     [JsonPropertyName("designSystemSource")]
     public string DesignSystemSource { get; set; } = "";
+
+    // 组合画像：问答向导与项目检测按 trait 过滤 Profile；* 表示该项不适用（匹配任意回答）
+    [JsonPropertyName("traits")]
+    public ProfileTraits? Traits { get; set; }
+}
+
+internal sealed class ProfileTraits
+{
+    public const string Wildcard = "*";
+
+    public static readonly string[] KnownTraits =
+    {
+        "form", "backend", "frontend", "shell", "arch-style", "blazor-flavor", "ai-capability"
+    };
+
+    [JsonPropertyName("form")]
+    public string Form { get; set; } = "";
+
+    [JsonPropertyName("backend")]
+    public string Backend { get; set; } = "";
+
+    [JsonPropertyName("frontend")]
+    public string Frontend { get; set; } = "";
+
+    [JsonPropertyName("shell")]
+    public string Shell { get; set; } = "";
+
+    [JsonPropertyName("arch-style")]
+    public string ArchStyle { get; set; } = "";
+
+    [JsonPropertyName("blazor-flavor")]
+    public string BlazorFlavor { get; set; } = "";
+
+    [JsonPropertyName("ai-capability")]
+    public string AiCapability { get; set; } = "";
+
+    public string? Get(string trait)
+    {
+        return trait switch
+        {
+            "form" => Form,
+            "backend" => Backend,
+            "frontend" => Frontend,
+            "shell" => Shell,
+            "arch-style" => ArchStyle,
+            "blazor-flavor" => BlazorFlavor,
+            "ai-capability" => AiCapability,
+            _ => null
+        };
+    }
 }
 
 internal sealed class RootVariables
@@ -194,4 +289,36 @@ internal sealed class PlannedFile
 {
     public string Output { get; init; } = "";
     public string Content { get; init; } = "";
+}
+
+// 写入目标项目的 .ai-rule-profile.json：记录本次生成的选择配方，供人工核对与后续升级
+internal sealed class RecipeRecord
+{
+    [JsonPropertyName("schema_version")]
+    public int SchemaVersion { get; init; } = 1;
+
+    [JsonPropertyName("manifest_version")]
+    public string ManifestVersion { get; init; } = "";
+
+    [JsonPropertyName("generated_at")]
+    public string GeneratedAt { get; init; } = "";
+
+    // classic = 经典大类选择；wizard = 问答决策树；detected = 检测推荐直接确认
+    [JsonPropertyName("mode")]
+    public string Mode { get; init; } = "";
+
+    [JsonPropertyName("profile_id")]
+    public string ProfileId { get; init; } = "";
+
+    [JsonPropertyName("profile_label")]
+    public string ProfileLabel { get; init; } = "";
+
+    [JsonPropertyName("family")]
+    public string Family { get; init; } = "";
+
+    [JsonPropertyName("answers")]
+    public Dictionary<string, string> Answers { get; init; } = new();
+
+    [JsonPropertyName("files")]
+    public List<string> Files { get; init; } = new();
 }

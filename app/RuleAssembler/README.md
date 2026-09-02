@@ -1,6 +1,14 @@
 # RuleAssembler — 交互式 AI Rule 拼接器
 
-把一套完整 AI rule 释放到当前目录：双击启动 → 选择技术大类 → 选择 Profile → 直接释放。默认不使用命令行参数完成业务选择。
+把一套完整 AI rule 释放到当前目录：双击启动 → 自动检测当前项目给出推荐组合（或走问答决策树 / 经典大类 → Profile）→ 确认后直接释放。默认不使用命令行参数完成业务选择。
+
+## 入口流程
+
+1. **检测优先**：`ProjectDetector` 浅层扫描目标目录（深度 ≤2，跳过 node_modules/bin/obj 等），把 sln/csproj、package.json 依赖、wails.json、go.mod、src-tauri、pubspec、fastapi 依赖等信号映射为 trait 证据，沿决策树贪心走到底给出推荐组合与判断依据。
+2. **问答决策树**：`WizardEngine` 按 manifest 的 `wizard.steps` 顺序提问（项目形态 → 后端 → 前端 → 桌面壳 → 架构风格 → Blazor 形态 → AI 能力模块）；每一步只列当前候选 Profile 真实支持的选项，候选在某 trait 上无差异则自动跳过该问题，输入 0 可返回上一步。因为选项从候选推导，交互路径上不存在"选出无法生成组合"的死胡同；未接入的技术栈组合表现为"选项不出现"。
+3. **经典选择**：技术大类 → Profile，作为兜底入口保留。
+4. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车的 `SelectionPrompt`，取消/返回为「0」项）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用，保证 `echo 输入 | use-rule.exe` 可用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。
+5. **收尾**：写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode/profile/回答组合/版本/文件清单），并确保目标项目 `.gitignore` 忽略该记录；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
 
 ## 设计
 
@@ -12,11 +20,13 @@ fragments/
 ├── pointers/              # 公共入口指针
 ├── shared/                # 跨架构共享小节，供 include 指令引用
 ├── arch/<id>/             # 当前 Profile 的专属规则片段
-├── manifest.json          # 模块、家族、Profile 和输出配方
+├── manifest.json          # 模块、家族、Profile、traits、wizard 和输出配方
 └── ...                    # design-system 等能力片段
 ```
 
 公共能力通过 `modules` 复用。例如 `core` 提供根入口和指针，`ai-capability` 提供 `ai-AGENTS.md`。现有技术栈专属文件暂按 Profile 保留，避免为一次模块化迁移改写大量规则正文；新增组合优先使用模块，不再复制整套 Profile。
+
+每个 Profile 声明 `traits` 组合画像（form/backend/frontend/shell/arch-style/blazor-flavor/ai-capability，`*` 表示不适用），`wizard` 节点维护问题步骤与选项文案；问答向导与项目检测都基于 traits 过滤，因此新增 Profile 时必须同时补 traits 与 options 文案，否则 `--check` 会失败。
 
 子规则内部的共性小节通过 include 指令复用：片段中独占一行的 `<!-- include: shared/xxx.md -->`（路径相对 `fragments/`）会在生成时被展开为对应共享小节的内容，支持嵌套引用并做循环检测。当前 `shared/` 维护「提交前最小回归」「无法执行测试时」「外部依赖与数据」「主动建议规则」等小节，按 backend / frontend / ui / application / infra 等子规则类型分目录归档；只有逐字节相同或纯措辞漂移的小节才收敛进共享，含技术栈实质差异的版本保留在各架构片段本地。
 
@@ -32,9 +42,9 @@ fragments/
 
 ```text
 1. 把 use-rule.exe 拷贝到目标项目根目录
-2. 双击启动
-3. 选择技术大类
-4. 选择 Profile 后自动释放（会先打印文件清单，不二次确认）
+2. 双击启动（自动检测并给出推荐组合与判断依据）
+3. 选「使用推荐并生成」，或改走问答决策树 / 经典大类 → Profile
+4. 确认后自动释放（会先打印文件清单，不二次确认），并写入 .ai-rule-profile.json 配方记录
 ```
 
 目标目录已有同名文件时会直接覆盖。文件会先写入临时目录，全部准备成功后再提交；提交中途失败会回滚本次已经写入的文件。不会释放 `TASK.md`、`rulelog` 或 `devlog`。
@@ -42,8 +52,11 @@ fragments/
 维护和 CI 可以使用只读校验与批量预览：
 
 ```powershell
-# 只校验 manifest、片段和全部 Profile，不写入文件
+# 只校验 manifest、片段、全部 Profile 与问答决策树（全路径仿真），不写入文件
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --check
+
+# 只做项目检测，打印推荐组合与依据，不写入文件
+dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --detect [目录]
 
 # 把全部 Profile 的生成结果输出到指定目录，用于批量对比验证
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit <目录>

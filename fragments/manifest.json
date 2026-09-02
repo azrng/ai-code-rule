@@ -1,7 +1,7 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.35.0",
+    "version": "1.36.0",
     "last_updated": "2026-09-02"
   },
   "schema_version": 2,
@@ -230,7 +230,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": false
+      "designSystem": false,
+      "traits": {
+        "form": "backend-only",
+        "backend": "dotnet",
+        "frontend": "none",
+        "shell": "none",
+        "arch-style": "layered",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "dotnet-core-single",
@@ -258,7 +267,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": false
+      "designSystem": false,
+      "traits": {
+        "form": "backend-only",
+        "backend": "dotnet",
+        "frontend": "none",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "python",
@@ -322,7 +340,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": false
+      "designSystem": false,
+      "traits": {
+        "form": "backend-only",
+        "backend": "python",
+        "frontend": "none",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "reactLinkdotNet",
@@ -395,7 +422,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "vueLinkdotNet",
@@ -469,7 +505,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "reactLinkdotNet-ai",
@@ -571,7 +616,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "yes"
+      }
     },
     {
       "id": "nextFullstack",
@@ -646,7 +700,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "node",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "avaloniaExe",
@@ -699,7 +762,16 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "none",
+        "frontend": "avalonia",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "wpfExe",
@@ -751,7 +823,16 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "none",
+        "frontend": "wpf",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "dotnetBlazor",
@@ -834,7 +915,16 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "blazor",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "traditional",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "dotnetBlazorWebApp",
@@ -897,7 +987,16 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
+      "designSystemSource": "arch/dotnetBlazor/design-system.yaml",
+      "traits": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "blazor",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "webapp",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "dotnetConsole",
@@ -965,7 +1064,16 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "designSystem": false
+      "designSystem": false,
+      "traits": {
+        "form": "desktop",
+        "backend": "none",
+        "frontend": "console",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "electronDotNetExe",
@@ -1039,7 +1147,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "dotnet",
+        "frontend": "electron",
+        "shell": "electron",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "reactTauriExe",
@@ -1115,7 +1232,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "go",
+        "frontend": "react",
+        "shell": "tauri",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "reactWailsExe",
@@ -1190,7 +1316,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "go",
+        "frontend": "react",
+        "shell": "wails",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "vueWailsExe",
@@ -1265,7 +1400,16 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "go",
+        "frontend": "vue",
+        "shell": "wails",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "mauiMobile",
@@ -1339,7 +1483,16 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "mobile",
+        "backend": "dotnet",
+        "frontend": "maui",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "flutterMobile",
@@ -1413,7 +1566,16 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "mobile",
+        "backend": "none",
+        "frontend": "flutter",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "staticHtml",
@@ -1486,7 +1648,16 @@
           "output": "doc-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "static",
+        "backend": "none",
+        "frontend": "html",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
     },
     {
       "id": "generalProject",
@@ -1574,7 +1745,211 @@
           "output": "infra-AGENTS.md"
         }
       ],
-      "designSystem": true
+      "designSystem": true,
+      "traits": {
+        "form": "general",
+        "backend": "*",
+        "frontend": "*",
+        "shell": "*",
+        "arch-style": "*",
+        "blazor-flavor": "*",
+        "ai-capability": "*"
+      }
     }
-  ]
+  ],
+  "wizard": {
+    "steps": [
+      {
+        "trait": "form",
+        "question": "项目形态是什么？"
+      },
+      {
+        "trait": "backend",
+        "question": "后端（服务端）用什么技术栈？",
+        "applies-when-trait": "form",
+        "applies-when-values": [
+          "backend-only",
+          "web",
+          "desktop"
+        ]
+      },
+      {
+        "trait": "frontend",
+        "question": "前端 / 界面用什么技术？",
+        "applies-when-trait": "form",
+        "applies-when-values": [
+          "web",
+          "desktop",
+          "mobile"
+        ]
+      },
+      {
+        "trait": "shell",
+        "question": "桌面壳方案用哪个？"
+      },
+      {
+        "trait": "arch-style",
+        "question": "后端架构风格？",
+        "detect-default": "single"
+      },
+      {
+        "trait": "blazor-flavor",
+        "question": "Blazor 用哪种形态？",
+        "detect-default": "traditional"
+      },
+      {
+        "trait": "ai-capability",
+        "question": "是否需要 AI Agent 能力模块？",
+        "detect-default": "no"
+      }
+    ],
+    "options": {
+      "form": {
+        "backend-only": {
+          "label": "纯后端服务",
+          "desc": "只提供 API 服务，没有界面"
+        },
+        "web": {
+          "label": "Web 应用",
+          "desc": "浏览器访问，前后端分离或全栈"
+        },
+        "desktop": {
+          "label": "桌面应用",
+          "desc": "Windows / 跨平台桌面客户端"
+        },
+        "mobile": {
+          "label": "移动应用",
+          "desc": "iOS / Android / 跨平台移动端"
+        },
+        "static": {
+          "label": "纯前端 / 静态站点",
+          "desc": "无后端的静态页面"
+        },
+        "general": {
+          "label": "通用项目",
+          "desc": "暂不确定技术栈"
+        }
+      },
+      "backend": {
+        "dotnet": {
+          "label": ".NET / ASP.NET Core",
+          "desc": "C# 服务端"
+        },
+        "python": {
+          "label": "Python FastAPI",
+          "desc": "Python 服务端"
+        },
+        "go": {
+          "label": "Go",
+          "desc": "Go 服务端（Wails 桌面）"
+        },
+        "node": {
+          "label": "Node.js",
+          "desc": "Node 服务端（Next.js 全栈）"
+        },
+        "none": {
+          "label": "无后端",
+          "desc": "纯前端 / 桌面本地应用"
+        }
+      },
+      "frontend": {
+        "react": {
+          "label": "React",
+          "desc": "React / Next.js 界面"
+        },
+        "vue": {
+          "label": "Vue",
+          "desc": "Vue 界面"
+        },
+        "blazor": {
+          "label": "Blazor",
+          "desc": "Blazor 界面"
+        },
+        "avalonia": {
+          "label": "Avalonia",
+          "desc": "Avalonia 跨平台桌面"
+        },
+        "wpf": {
+          "label": "WPF",
+          "desc": "WPF Windows 桌面"
+        },
+        "console": {
+          "label": "控制台界面",
+          "desc": "无 GUI 的控制台程序"
+        },
+        "electron": {
+          "label": "Electron（HTML 界面）",
+          "desc": "Electron 加载 Web 界面"
+        },
+        "maui": {
+          "label": ".NET MAUI",
+          "desc": "MAUI 跨平台移动/桌面"
+        },
+        "flutter": {
+          "label": "Flutter",
+          "desc": "Flutter 跨平台界面"
+        },
+        "html": {
+          "label": "静态 HTML",
+          "desc": "无框架的静态页面"
+        },
+        "none": {
+          "label": "无独立前端",
+          "desc": "该形态没有独立前端界面"
+        }
+      },
+      "shell": {
+        "tauri": {
+          "label": "Tauri",
+          "desc": "Rust 壳"
+        },
+        "wails": {
+          "label": "Wails",
+          "desc": "Go 壳"
+        },
+        "electron": {
+          "label": "Electron",
+          "desc": "Node 壳"
+        },
+        "none": {
+          "label": "无桌面壳",
+          "desc": "不适用桌面混合壳"
+        }
+      },
+      "arch-style": {
+        "layered": {
+          "label": "分层架构",
+          "desc": "Controller/Service/Repository 多项目拆分，适合中大型系统"
+        },
+        "single": {
+          "label": "单层简洁",
+          "desc": "单一 API 项目，适合中小型"
+        }
+      },
+      "blazor-flavor": {
+        "traditional": {
+          "label": "Blazor Server（传统）",
+          "desc": "Server 托管的传统模板"
+        },
+        "webapp": {
+          "label": "Blazor Web App",
+          "desc": "统一 Web App 新模板"
+        },
+        "none": {
+          "label": "不适用",
+          "desc": "非 Blazor 项目"
+        }
+      },
+      "ai-capability": {
+        "yes": {
+          "label": "需要",
+          "desc": "附加 AI 产品能力模块"
+        },
+        "no": {
+          "label": "不需要",
+          "desc": "常规项目规则"
+        }
+      }
+    }
+  }
 }
