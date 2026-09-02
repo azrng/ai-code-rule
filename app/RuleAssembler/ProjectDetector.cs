@@ -27,12 +27,10 @@ internal sealed class ProjectDetector
     };
 
     private readonly Manifest _manifest;
-    private readonly WizardEngine _engine;
 
     public ProjectDetector(Manifest manifest)
     {
         _manifest = manifest;
-        _engine = new WizardEngine(manifest);
     }
 
     public DetectionResult? Detect(string directory)
@@ -42,96 +40,64 @@ internal sealed class ProjectDetector
         if (evidence.Count == 0)
             return null;
 
-        var answers = new Dictionary<string, string>(StringComparer.Ordinal);
-        var reasons = new List<string>();
-        var notes = new List<string>();
-        var candidates = _manifest.Profiles;
-
-        foreach (var step in _manifest.Wizard.Steps)
+        // 全局打分而非逐问贪心：证据强弱不同，逐问过滤会让先问到的弱证据
+        // 提前淘汰强证据指向的候选（如 Electron+React+.NET 项目被推成 Tauri）
+        Profile? best = null;
+        double bestScore = double.NegativeInfinity;
+        foreach (var profile in _manifest.Profiles)
         {
-            if (candidates.Count <= 1)
-                break;
-            if (!WizardEngine.IsApplicable(candidates, step))
-                continue;
-
-            var question = _engine.NextQuestion(candidates);
-            if (question is null)
-                break;
-
-            var optionValues = question.Options.Select(option => option.Value).ToHashSet(StringComparer.Ordinal);
-            var chosen = evidence.FirstOrDefault(item => item.Trait == step.Trait && optionValues.Contains(item.Value));
-            string value;
-            if (chosen is not null)
-            {
-                value = chosen.Value;
-                reasons.Add(chosen.Reason);
-            }
-            else
-            {
-                // 本 trait 无直接证据时，看哪个选项能保住与整体证据匹配最多的候选，避免早期提问把正确组合挤出局
-                var supported = ChooseByEvidenceSupport(question, candidates, evidence);
-                if (supported is not null)
-                {
-                    value = supported;
-                    notes.Add($"依据整体特征组合推断为 {Describe(step.Trait, value)}");
-                }
-                else if (!string.IsNullOrWhiteSpace(step.DetectDefault) && optionValues.Contains(step.DetectDefault))
-                {
-                    value = step.DetectDefault;
-                    notes.Add($"未发现 {step.Trait} 相关特征，按默认倾向处理：{Describe(step.Trait, value)}");
-                }
-                else
-                {
-                    value = question.Options[0].Value;
-                    notes.Add($"未发现 {step.Trait} 相关特征，按最常见的 {Describe(step.Trait, value)} 处理");
-                }
-            }
-
-            answers[step.Trait] = value;
-            candidates = _engine.Filter(candidates, step.Trait, value);
-        }
-
-        if (candidates.Count != 1)
-            return null;
-
-        var profile = candidates[0];
-        return new DetectionResult(profile.Id, profile.Label, answers, reasons, notes);
-    }
-
-    private string? ChooseByEvidenceSupport(
-        WizardQuestion question,
-        List<Profile> candidates,
-        List<DetectionEvidence> evidence)
-    {
-        string? bestValue = null;
-        var bestScore = 0;
-        foreach (var option in question.Options)
-        {
-            var remaining = _engine.Filter(candidates, option.Trait, option.Value);
-            if (remaining.Count == 0)
-                continue;
-            var score = remaining.Max(profile => ScoreProfile(profile, evidence));
+            var score = ScoreProfile(profile, evidence);
             if (score > bestScore)
             {
                 bestScore = score;
-                bestValue = option.Value;
+                best = profile;
             }
         }
 
-        return bestValue;
+        if (best is null || bestScore <= 0)
+            return null;
+
+        var reasons = evidence
+            .Where(item => best.Traits?.Get(item.Trait) == item.Value)
+            .Select(item => item.Reason)
+            .ToList();
+        var notes = evidence
+            .Where(item => best.Traits?.Get(item.Trait) != item.Value)
+            .Select(item => $"特征 {Describe(item.Trait, item.Value)} 未被推荐组合逐一对应，按整体最接近处理")
+            .ToList();
+
+        // 回答组合取 Profile 的全部具体 trait，保证按配方能还原到同一 Profile
+        var answers = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var trait in ProfileTraits.KnownTraits)
+        {
+            var value = best.Traits?.Get(trait);
+            if (!string.IsNullOrEmpty(value) && value != ProfileTraits.Wildcard)
+                answers[trait] = value;
+        }
+
+        return new DetectionResult(best.Id, best.Label, answers, reasons, notes);
     }
 
-    // Profile 与证据的匹配数；只统计精确匹配，* 通配不参与打分
-    private static int ScoreProfile(Profile profile, List<DetectionEvidence> evidence)
+    // Profile 与证据的匹配分：匹配加权重、矛盾减权重；稀有证据权重更高（值越少见指向性越强）
+    private double ScoreProfile(Profile profile, List<DetectionEvidence> evidence)
     {
-        var score = 0;
+        double score = 0;
         foreach (var item in evidence)
         {
-            if (profile.Traits?.Get(item.Trait) == item.Value)
-                score++;
+            var value = profile.Traits?.Get(item.Trait);
+            if (value == null || value == ProfileTraits.Wildcard)
+                continue;
+            var weight = TraitWeight(item.Trait, item.Value);
+            score += value == item.Value ? weight : -weight;
         }
 
         return score;
+    }
+
+    private double TraitWeight(string trait, string value)
+    {
+        var holders = _manifest.Profiles.Count(p => p.Traits?.Get(trait) == value);
+        return holders > 0 ? (double)_manifest.Profiles.Count / holders : 1;
     }
 
     private string Describe(string trait, string value)
@@ -160,10 +126,15 @@ internal sealed class ProjectDetector
             evidence.Add(new("shell", "tauri", "发现 src-tauri/tauri.conf.json（Tauri 桌面壳）"));
         }
 
-        if (signals.ElectronInPackageJson)
+        var electronSignal = signals.ElectronInPackageJson || signals.HasElectronConfig;
+        if (electronSignal)
         {
-            evidence.Add(new("form", "desktop", "package.json 依赖 electron"));
-            evidence.Add(new("shell", "electron", "package.json 依赖 electron（Electron 壳）"));
+            evidence.Add(new("form", "desktop", "发现 Electron 工程（依赖或 electron.vite / electron-builder 配置）"));
+            evidence.Add(new("shell", "electron", "发现 Electron 工程（依赖或 electron.vite / electron-builder 配置）"));
+            // Electron 项目伴随 .NET 工程（sidecar / ElectronNET.API 宿主）时，.NET 是后端信号；
+            // 普通 Sdk 工程没有其他特征分支，必须在这里兜底，否则会误推断成其他后端
+            if (signals.CsprojCount > 0 || signals.HasSln)
+                evidence.Add(new("backend", "dotnet", "Electron 项目伴随 .NET 工程（csproj/sln）"));
         }
 
         if (signals.HasPubspec)
@@ -202,7 +173,8 @@ internal sealed class ProjectDetector
             {
                 evidence.Add(new("form", "desktop", "csproj 引用 ElectronNET.API"));
                 evidence.Add(new("backend", "dotnet", "csproj 引用 ElectronNET.API（.NET 宿主）"));
-                evidence.Add(new("frontend", "electron", "csproj 引用 ElectronNET.API（Electron 界面）"));
+                // ElectronNET.API 本身说明 Electron + .NET 宿主；渲染层框架（react/vue）
+                // 交给 package.json 依赖证据判定，这里不再给 frontend 定值
                 continue;
             }
 
@@ -230,9 +202,14 @@ internal sealed class ProjectDetector
             }
         }
 
-        if (signals.HasFastapiDependency)
-            evidence.Add(new("backend", "python", "Python 依赖中包含 fastapi"));
-        if (signals.HasFastapiDependency || (signals.HasPyproject && !signals.DotNetOrNodePresent()))
+        // fastapi 是强信号（理由更具体）；仅有 pyproject/requirements 时是弱信号，也要给 python 指向，
+        // 否则纯 Python 工程会因无后端证据被推到别的栈
+        if (signals.HasPyproject || signals.HasRequirementsTxt)
+            evidence.Add(new(
+                "backend",
+                "python",
+                signals.HasFastapiDependency ? "Python 依赖中包含 fastapi" : "发现 Python 工程文件（pyproject/requirements）"));
+        if ((signals.HasPyproject || signals.HasRequirementsTxt) && !signals.DotNetOrNodePresent())
             evidence.TryAddEvidence(new("form", "backend-only", "发现 Python 后端工程文件（pyproject/requirements）"));
 
         if (signals.NextInPackageJson)
@@ -287,6 +264,19 @@ internal sealed class ProjectDetector
 
         signals.HasTauriConf = File.Exists(Path.Combine(root, "src-tauri", "tauri.conf.json"))
             || File.Exists(Path.Combine(root, "tauri.conf.json"));
+
+        foreach (var name in new[]
+                 {
+                     "electron.vite.config.ts", "electron.vite.config.js", "electron.vite.config.mjs",
+                     "electron-builder.yml", "electron-builder.json"
+                 })
+        {
+            if (File.Exists(Path.Combine(root, name)))
+            {
+                signals.HasElectronConfig = true;
+                break;
+            }
+        }
 
         ParsePackageJson(root, signals);
         if (!signals.HasPackageJson)
@@ -437,6 +427,7 @@ internal sealed class ScanSignals
     public bool HasWailsJson;
     public bool HasGoMod;
     public bool HasTauriConf;
+    public bool HasElectronConfig;
     public bool HasPubspec;
     public bool HasPackageJson;
     public bool HasPyproject;

@@ -64,8 +64,18 @@ internal sealed class RuleRenderer
 
     private void AddRuleFile(List<PlannedFile> result, HashSet<string> outputs, Subrule file, Manifest manifest)
     {
-        var content = AlignVersion(ReadRequired(file.Source), manifest);
+        var content = CombineSources(file, manifest);
         AddFile(result, outputs, file.Output, NormalizeNewlines(content, manifest.LineEnding));
+    }
+
+    // 单源直接展开；多源先去各段尾部空白再以空行拼接，保证文件仍以单个换行结尾
+    internal string CombineSources(Subrule file, Manifest manifest)
+    {
+        var sources = file.GetSources();
+        var content = sources.Count == 1
+            ? ReadRequired(sources[0])
+            : string.Join("\n\n", sources.Select(source => ReadRequired(source).TrimEnd())) + "\n";
+        return AlignVersion(content, manifest);
     }
 
     private static void AddFile(List<PlannedFile> result, HashSet<string> outputs, string output, string content)

@@ -1,0 +1,633 @@
+# 设计与组件规则的唯一事实来源。
+# 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
+# 技术栈：Vue 3 + TypeScript + Element Plus + ECharts + Pinia + Electron + .NET (self-contained)
+# 注意：Electron 桌面应用，渲染进程通过 preload 暴露的 IPC SDK 与主进程 / .NET sidecar 通信
+
+meta:
+  name: "企业级应用设计系统"
+  version: "2.1.0"
+  status: "启用中"
+  owners:
+    - "design"
+    - "frontend"
+    - "desktop"
+  tech_stack:
+    styling: "Element Plus SCSS + CSS 变量（唯一样式引擎）"
+    icons: "Element Plus Icons（@element-plus/icons-vue，唯一图标库，尺寸 18-24px）"
+    charts: "ECharts + vue-echarts（唯一图表库，按需引入）"
+    state_global: "Pinia（跨组件全局状态）"
+    state_local: "Vue Composition API（ref、reactive、computed）"
+    forms: "Element Plus Form + Valibot / Zod（schema 收敛在 schemas/）"
+    local_bridge: "Electron IPC + .NET sidecar (stdio JSON-RPC)"
+  communication:
+    method: "Electron IPC（非 HTTP）"
+    frontend_call: "通过 preload contextBridge 暴露的 window.ipc 调用主进程 / .NET sidecar，统一封装在 src/lib/ipc/"
+    rule: "禁止使用 HTTP 请求与 .NET 后端通信，外部 API 通过统一请求层调用"
+  usage:
+    read_order:
+      - "在进行任何 UI 改动前阅读本文件"
+      - "然后查看 src/styles/ 下 Element Plus 主题与图表主题配置"
+      - "然后再查看现有页面与组件实现"
+    principles:
+      - "优先复用，而不是重新发明"
+      - "优先使用 Element Plus 组件和 CSS 变量，而不是硬编码视觉值"
+      - "优先使用已有项目组件，而不是先写自定义组件"
+      - "图表颜色统一来自图表主题配置，不在页面层硬编码"
+      - "Electron 桌面窗口为主要目标，不需要考虑移动端响应式；窗口尺寸策略以项目配置为准"
+
+product:
+  style_keywords:
+    - "专业"
+    - "清晰"
+    - "可信"
+    - "高效"
+    - "现代"
+  ui_goal:
+    - "桌面应用界面优先保证清晰度与信息密度平衡"
+    - "状态和反馈必须让用户一眼看懂"
+    - "数据可视化图表风格统一、专业"
+
+# ============================================================
+# 颜色 Token
+# 对应 Element Plus CSS 变量体系
+# 使用方式：var(--el-color-primary) 或 Element Plus 组件属性
+# ============================================================
+tokens:
+  colors:
+    # 主品牌色 - 企业蓝
+    primary:
+      50: "#EEF4FF"
+      100: "#E0EBFF"
+      200: "#B3D9FF"
+      300: "#80C1FF"
+      400: "#4DA8FF"
+      500: "#1A90FF" # 主色，用于主按钮、链接、激活态
+      600: "#0078E0" # hover 态
+      700: "#0052CC" # active 态
+      800: "#003DA5"
+      900: "#002880"
+
+    # 成功色 - 企业绿
+    success:
+      50: "#F0FDF4"
+      100: "#E6FBEE"
+      200: "#BFFCE0"
+      300: "#8FF7D0"
+      400: "#5AE9BA"
+      500: "#10B981" # 主成功色
+      600: "#059669"
+      700: "#047857"
+      800: "#065F46"
+      900: "#064E3B"
+
+    # 警告色 - 企业橙
+    warning:
+      50: "#FEF3C7"
+      100: "#FEE8B6"
+      200: "#FDD48F"
+      300: "#FBC15E"
+      400: "#F9A825"
+      500: "#F59E0B" # 主警告色
+      600: "#D97706"
+      700: "#B45309"
+      800: "#92400E"
+      900: "#78350F"
+
+    # 错误色 - 企业红
+    error:
+      50: "#FEF2F2"
+      100: "#FEE2E2"
+      200: "#FECACA"
+      300: "#FCA5A5"
+      400: "#F87171"
+      500: "#EF4444" # 主错误色
+      600: "#DC2626"
+      700: "#B91C1C"
+      800: "#991B1B"
+      900: "#7F1D1D"
+
+    # 信息色
+    info:
+      50: "#EFF6FF"
+      100: "#DBEAFE"
+      500: "#1A90FF"
+      600: "#0078E0"
+
+    # 中性色 - 灰度系
+    gray:
+      50: "#FAFBFC"
+      100: "#F3F4F6"
+      150: "#EBEEF2"
+      200: "#E5E7EB"
+      300: "#D1D5DB"
+      400: "#9CA3AF"
+      500: "#6B7280"
+      600: "#4B5563"
+      700: "#374151"
+      800: "#1F2937"
+      900: "#111827"
+
+  # ============================================================
+  # 语义化颜色映射（使用 Element Plus CSS 变量）
+  # 优先使用 Element Plus 的 CSS 变量，而非硬编码色值
+  # ============================================================
+  semantic:
+    text:
+      primary: "var(--el-text-color-primary)" # 主文本
+      secondary: "var(--el-text-color-secondary)" # 次要文本
+      disabled: "var(--el-text-color-disabled)" # 禁用文本
+      inverse: "var(--el-color-white)" # 反色文本（深色背景上）
+      link: "var(--el-color-primary)" # 链接
+      link_hover: "var(--el-color-primary-light-3)"
+    background:
+      page: "var(--el-bg-color-page)" # 页面背景
+      container: "var(--el-bg-color)" # 卡片/面板背景
+      subtle: "var(--el-fill-color-light)" # 次级区块背景
+      active: "var(--el-color-primary-light-9)" # 激活/选中背景
+    border:
+      default: "var(--el-border-color-lighter)" # 默认边框
+      strong: "var(--el-border-color)" # 强调边框
+      focus: "var(--el-color-primary)" # 焦点边框
+    status:
+      success_bg: "var(--el-color-success-light-9)"
+      success_text: "var(--el-color-success)"
+      warning_bg: "var(--el-color-warning-light-9)"
+      warning_text: "var(--el-color-warning)"
+      error_bg: "var(--el-color-danger-light-9)"
+      error_text: "var(--el-color-danger)"
+      info_bg: "var(--el-color-info-light-9)"
+      info_text: "var(--el-color-info)"
+
+  typography:
+    font_family:
+      sans: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+      mono: "'SF Mono', 'Monaco', 'Consolas', monospace"
+    font_size:
+      xs: "12px" # text-xs
+      sm: "14px" # text-sm（表格、辅助信息）
+      base: "16px" # text-base（正文）
+      md: "15px" # text-md
+      lg: "18px" # text-lg（小标题）
+      xl: "20px" # text-xl（标题）
+      2xl: "24px" # text-2xl（页面标题）
+      3xl: "30px" # text-3xl（大数字展示）
+    font_weight:
+      normal: 400 # font-normal
+      medium: 500 # font-medium
+      semibold: 600 # font-semibold
+      bold: 700 # font-bold
+    line_height:
+      tight: 1.2 # leading-tight
+      normal: 1.5 # leading-normal
+      relaxed: 1.75 # leading-relaxed
+
+  spacing:
+    base_unit: "4px"
+    # 使用 Element Plus 间距规范和 SCSS 变量，禁止硬编码数值
+    scale:
+      0.5: "2px"
+      1: "4px"
+      1.5: "6px"
+      2: "8px"
+      2.5: "10px"
+      3: "12px"
+      3.5: "14px"
+      4: "16px"
+      5: "20px"
+      6: "24px"
+      7: "28px"
+      8: "32px"
+      10: "40px"
+      12: "48px"
+      14: "56px"
+      16: "64px"
+
+  radius:
+    none: "0"
+    xs: "2px"
+    sm: "4px"
+    md: "6px"
+    lg: "8px"
+    xl: "12px"
+    2xl: "16px"
+    full: "9999px"
+
+  shadow:
+    none: "none"
+    xs: "0 1px 2px 0 rgba(0,0,0,0.04)"
+    sm: "0 1px 3px 0 rgba(0,0,0,0.08)"
+    md: "0 4px 8px -2px rgba(0,0,0,0.10), 0 2px 4px -2px rgba(0,0,0,0.06)"
+    lg: "0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05)"
+    xl: "0 20px 25px -5px rgba(0,0,0,0.10), 0 10px 10px -5px rgba(0,0,0,0.04)"
+
+  transitions:
+    fast: "100ms"
+    base: "200ms"
+    slow: "300ms"
+    slower: "500ms"
+
+# ============================================================
+# ECharts 图表主题配置（按需引入）
+# 具体实现文件：src/styles/echarts-theme.ts
+# ============================================================
+echarts:
+  theme_name: "enterprise"
+  color_palette:
+    - "#1A90FF" # 主蓝（primary-500）
+    - "#10B981" # 主绿（success-500）
+    - "#F59E0B" # 主橙（warning-500）
+    - "#EF4444" # 主红（error-500）
+    - "#8B5CF6" # 紫
+    - "#EC4899" # 粉
+    - "#06B6D4" # 青
+    - "#F97316" # 橙红
+  grid:
+    color: "#E5E7EB"
+    label_color: "#6B7280"
+    axis_color: "#D1D5DB"
+  tooltip:
+    bg: "#FFFFFF"
+    border: "#E5E7EB"
+    text: "#374151"
+  legend:
+    text_color: "#4B5563"
+  font_family: "ui-sans-serif, system-ui, -apple-system, sans-serif"
+  font_size:
+    axis_label: 12
+    tooltip: 13
+    legend: 13
+    title: 14
+  usage_rules:
+    - "引入图表时统一通过 src/components/charts/ 下封装的组件使用，禁止页面直接使用 vue-echarts"
+    - "图表颜色统一引用 echarts-theme，禁止在 option 中硬编码颜色"
+    - "图表容器必须设置明确的高度（style='height: 320px' 或使用 CSS 类）"
+    - "图表组件必须处理 loading 和 empty 状态"
+    - "tooltip、legend、axis 样式统一来自主题，不单独覆盖"
+
+# ============================================================
+# Element Plus 主题配置映射
+# 通过 SCSS 变量覆盖 + CSS 变量实现主题定制
+# ============================================================
+element_plus:
+  theme_overrides:
+    location: "src/styles/ 下 Element Plus SCSS 变量覆盖或主题配置文件"
+    description: "通过 element-plus 的 SCSS 变量和 CSS 变量自定义主题颜色"
+    scss_variables:
+      "--el-color-primary": "tokens.colors.primary.500 (#1A90FF)"
+      "--el-color-success": "tokens.colors.success.500 (#10B981)"
+      "--el-color-warning": "tokens.colors.warning.500 (#F59E0B)"
+      "--el-color-danger": "tokens.colors.danger.500 (#EF4444)"
+      "--el-color-info": "tokens.colors.gray.500 (#6B7280)"
+      "--el-border-radius-base": "tokens.radius.md (4px)"
+      "--el-font-size-base": "tokens.typography.font_size.sm (14px)"
+  usage_rules:
+    - "优先使用 Element Plus 组件内置属性和 CSS 变量"
+    - "禁止使用 style 属性硬编码样式"
+    - "间距统一使用 Element Plus 间距规范或 SCSS 变量"
+    - "主题定制通过 SCSS 变量覆盖，不使用 CSS-in-JS"
+
+# ============================================================
+# 状态管理规范
+# ============================================================
+state_management:
+  local_state:
+    tool: "Vue Composition API（ref、reactive、computed、watch、onMounted）"
+    use_for:
+      - "表单输入值"
+      - "弹窗开关"
+      - "单个组件的 loading/error 状态"
+      - "本地筛选、排序、分页"
+  global_state:
+    tool: "Pinia"
+    store_location: "src/stores/"
+    use_for:
+      - "当前登录用户信息"
+      - "权限与角色"
+      - "侧边菜单折叠状态"
+      - "全局通知/消息"
+      - "跨页面共享的筛选条件"
+      - "主题/语言配置"
+      - "窗口状态等纯客户端状态"
+    store_naming: "use[Domain]Store（如 useUserStore、usePermissionStore）"
+    forbidden:
+      - "Vuex Options API"
+      - "Vuex Event Bus"
+      - "provide/inject 用于业务状态（仅允许用于组件通信的低频场景）"
+      - "把可由 IPC 组合式函数管理的服务端数据长期放进全局 store"
+
+# ============================================================
+# 页面状态规范
+# ============================================================
+page_states:
+  required:
+    - "loading"
+    - "empty"
+    - "error"
+    - "no-permission"
+  guidance:
+    loading:
+      description: "数据加载中"
+      implementation: "列表/表格用 el-skeleton 骨架屏，按钮操作用 disabled + el-icon loading"
+    empty:
+      description: "无数据"
+      implementation: "展示空状态图示 + 简短说明 + 引导操作按钮"
+    error:
+      description: "请求失败"
+      implementation: "展示可读的错误原因，提供重试按钮"
+    no_permission:
+      description: "权限不足"
+      implementation: "明确说明权限不足，不暴露内部实现细节"
+
+# ============================================================
+# 组件使用规则
+# ============================================================
+component_rules:
+  reuse_first: true
+  naming:
+    components: "PascalCase（.vue 文件）"
+    composables: "camelCase，以 use 开头（useXxx.ts）"
+    stores: "camelCase，以 use 开头，以 Store 结尾（useXxxStore.ts）"
+    utils: "camelCase"
+  custom_component_policy:
+    - "只有在确实存在复用价值时才新增共享组件"
+    - "避免为了单次需求做过度抽象"
+    - "组件职责保持单一"
+  categories:
+    layout:
+      description: "布局组件"
+      location: "src/components/layout/"
+      examples:
+        - "PageContainer（页面容器，统一 padding）"
+        - "SectionCard（分区卡片）"
+        - "AppMain（主布局）"
+        - "AppSidebar（侧边栏）"
+        - "AppNavbar（导航栏）"
+    ui:
+      description: "优先使用 Element Plus 组件，不重复造轮子"
+      location: "src/components/common/"
+      examples:
+        - "ElButton（主/次/幽灵/危险/文字变体）"
+        - "ElBadge（状态标签）"
+        - "ElTag（标签/筛选条件）"
+        - "ElTable（数据表格）"
+        - "ElForm（表单）"
+        - "ElInput（文本输入框）"
+        - "ElSelect（下拉选择器）"
+        - "ElCheckbox（多选框）"
+        - "ElRadio（单选框）"
+        - "ElSwitch（开关）"
+        - "ElDatePicker（日期选择器）"
+        - "ElUpload（文件上传）"
+        - "ElPagination（分页）"
+        - "ElTooltip（文字提示）"
+        - "ElPopover（气泡卡片）"
+        - "ElProgress（进度条）"
+        - "ElAvatar（头像）"
+        - "ElDialog（弹窗）"
+        - "ElDrawer（抽屉）"
+        - "ElAlert（内联提示）"
+        - "ElMessage / ElNotification（轻提示/通知）"
+        - "ElSteps（步骤条）"
+        - "ElTabs（标签页）"
+        - "ElBreadcrumb（面包屑）"
+        - "ElCollapse（折叠面板）"
+        - "ElDivider（分割线）"
+        - "ElSkeleton（骨架屏）"
+        - "ElLoading / v-loading（加载中）"
+        - "ElEmpty（空状态）"
+    charts:
+      description: "ECharts 封装图表组件"
+      location: "src/components/charts/"
+      examples:
+        - "BarChartCard（柱状图卡片）"
+        - "LineChartCard（折线图卡片）"
+        - "PieChartCard（饼图卡片）"
+        - "TrendChart（趋势图）"
+      rules:
+        - "统一封装 loading、empty、error 状态"
+        - "统一传入 title、height、className"
+        - "颜色通过 echarts-theme 注入，不接受外部 color prop"
+
+# ============================================================
+# 表单规范
+# ============================================================
+form_rules:
+  layout:
+    label_position: "标签在输入框上方（top），企业表单标准布局"
+    label_style: "text-sm font-medium text-gray-700"
+    required_mark: "标签后紧跟红色星号 *"
+    helper_text: "输入框下方，text-xs text-gray-500"
+    error_text: "输入框下方，text-xs text-danger-600，替换 helper_text 位置"
+    field_gap: "垂直间距 mb-4（16px），分组间距 mb-6（24px）"
+    section_gap: "表单分区间距 mb-8（32px）"
+  sizes:
+    sm:
+      description: "紧凑型，用于筛选栏、内联表单"
+      el_size: "small"
+    md:
+      description: "默认尺寸，企业表单标准"
+      el_size: "default"
+    lg:
+      description: "宽松型，用于登录、注册等关键表单"
+      el_size: "large"
+  validation:
+    trigger: "使用 el-form 的 rules 配置，校验规则来自 schemas/ 中的 Valibot / Zod schema，blur 失焦校验为主，提交时全量校验"
+    error_border: "Element Plus 自动添加 is-error 类名"
+    success_border: "Element Plus 自动添加 is-success 类名"
+  submit_behavior:
+    loading_state: "提交按钮 :loading=\"true\" :disabled=\"true\"，防止重复提交"
+    reset_policy: "提交成功后根据业务场景决定是否重置，不强制"
+
+# ============================================================
+# 组件详细规范
+# ============================================================
+component_specs:
+  # 数据输入类使用 Element Plus 原生组件
+  # 以下为 Element Plus 组件的关键配置规范
+
+  input:
+    description: "ElInput 文本输入框"
+    library: "Element Plus el-input"
+    sizes:
+      sm: "size=\"small\""
+      md: "size=\"default\"" # 默认
+      lg: "size=\"large\""
+    states:
+      default: "Element Plus 默认样式"
+      error: "通过 el-form-item 的 error prop 自动处理"
+      disabled: ":disabled=\"true\""
+      readonly: "readonly 属性"
+    variants:
+      default: "单行文本输入"
+      textarea: "type=\"textarea\"，:autosize=\"{ minRows: 3 }\""
+      password: "type=\"password\"，show-password 属性"
+      search: "prefix-icon 使用 Search 图标，clearable"
+    rules:
+      - "使用 el-form-item 的 rules 进行校验"
+      - "placeholder 统一设置"
+      - "错误状态由 el-form 自动管理"
+
+  select:
+    description: "ElSelect 下拉选择器"
+    library: "Element Plus el-select"
+    variants:
+      single: "默认单选，clearable 可清除"
+      multiple: ":multiple=\"true\"，选中项以 Tag 展示"
+      searchable: ":filterable=\"true\"，启用搜索"
+      group: "el-option-group 分组"
+    rules:
+      - "超过 5 个选项时建议启用 filterable"
+      - "选项过多（>50）时使用虚拟滚动"
+
+  table:
+    description: "ElTable 数据表格"
+    library: "Element Plus el-table"
+    features:
+      sortable: ":sortable=\"true\"，使用 el-table-column 的 sortable 属性"
+      fixed_column: ":fixed=\"right\" / :fixed=\"left\""
+      expandable: "type=\"expand\" 列"
+      row_selection: "type=\"selection\" 列，@selection-change 事件"
+    empty_state: "使用 el-empty 组件作为空状态"
+    loading_state: "使用 v-loading 指令"
+    rules:
+      - "操作列固定在最右侧 :fixed=\"right\""
+      - "必须处理 loading、empty、error 三种状态"
+      - "超长文本使用 :show-overflow-tooltip=\"true\""
+
+  modal:
+    description: "ElDialog 弹窗"
+    library: "Element Plus el-dialog"
+    sizes:
+      sm: "width=\"400px\""
+      md: "width=\"520px\"" # 默认
+      lg: "width=\"720px\""
+      xl: "width=\"960px\""
+    rules:
+      - "弹窗层级不超过 2 层"
+      - "表单弹窗提交按钮须有 loading 态"
+      - "危险操作使用 error 色确认按钮"
+
+  drawer:
+    description: "ElDrawer 抽屉"
+    library: "Element Plus el-drawer"
+    directions:
+      right: "direction=\"rtl\"（默认）"
+      left: "direction=\"ltr\""
+      bottom: "direction=\"btt\""
+    sizes:
+      sm: "size=\"320px\""
+      md: "size=\"384px\"" # 默认
+      lg: "size=\"512px\""
+      xl: "size=\"640px\""
+    rules:
+      - "详情查看/编辑用 Drawer，需用户聚焦决策用 Dialog"
+
+  alert:
+    description: "ElAlert 内联提示"
+    library: "Element Plus el-alert"
+    variants:
+      info: "type=\"info\""
+      success: "type=\"success\""
+      warning: "type=\"warning\""
+      error: "type=\"error\""
+    rules:
+      - "ElAlert 用于页面级持久提示"
+      - "ElMessage 用于操作结果的短暂反馈"
+
+  toast:
+    description: "ElMessage / ElNotification 轻提示"
+    library: "Element Plus ElMessage（轻提示）/ ElNotification（通知）"
+    rules:
+      - "成功操作使用 ElMessage({ type: 'success' })"
+      - "失败操作使用 ElMessage({ type: 'error' })"
+      - "文案简洁，15 字以内"
+
+  tabs:
+    description: "ElTabs 标签页"
+    library: "Element Plus el-tabs"
+    variants:
+      line: "type=\"\"（默认下划线型）"
+      card: "type=\"card\""
+      border_card: "type=\"border-card\""
+    rules:
+      - "禁止超过 8 个 Tab，超出用 ElSelect 代替"
+
+  steps:
+    description: "ElSteps 步骤条"
+    library: "Element Plus el-steps"
+    variants:
+      horizontal: "direction=\"horizontal\"（默认）"
+      vertical: "direction=\"vertical\""
+
+  menu:
+    description: "ElMenu 侧边导航菜单"
+    library: "Element Plus el-menu"
+    rules:
+      - "多级菜单最多 2 层，禁止 3 层嵌套"
+      - "折叠模式下通过 Tooltip 展示菜单名称"
+
+  pagination:
+    description: "ElPagination 分页器"
+    library: "Element Plus el-pagination"
+    rules:
+      - "每页条数变更时重置到第 1 页"
+      - "总数为 0 时不展示分页器"
+
+  skeleton:
+    description: "ElSkeleton 骨架屏"
+    library: "Element Plus el-skeleton"
+    rules:
+      - "表格 loading 用骨架行替换，不用全页 v-loading 遮罩"
+      - "骨架行数与真实数据行数保持一致（通常 3-5 行）"
+
+  empty:
+    description: "ElEmpty 空状态"
+    library: "Element Plus el-empty"
+    rules:
+      - "空状态描述需根据具体场景定制"
+
+icons:
+  library: "Element Plus Icons（@element-plus/icons-vue）"
+  sizes:
+    default: 18
+    medium: 20
+    large: 24
+  usage_rules:
+    - "统一从 @element-plus/icons-vue 导入，禁止自定义 SVG 或其他图标库"
+    - "尺寸统一用 :size prop：<ElIcon :size=\"20\"><component :is=\"Search\" /></ElIcon>"
+    - "颜色通过 style 或 CSS 类控制"
+    - "禁止使用 <img src='icon.svg' /> 或 <i class='fa-...' />"
+
+# ============================================================
+# Do / Don't 规则
+# ============================================================
+do:
+  - "优先复用现有组件和页面模式"
+  - "优先使用 Element Plus 组件和 CSS 变量"
+  - "保持完整的页面状态反馈（loading/empty/error/no-permission）"
+  - "引入图表时颜色统一来自 echarts-theme 配置文件"
+  - "全局状态使用 Pinia store，组件本地状态使用 Vue Composition API（ref、reactive、computed）"
+  - "图标统一使用 @element-plus/icons-vue"
+  - "通过 window.ipc 调用主进程 / .NET sidecar，统一封装在 src/lib/ipc/，禁止 HTTP 请求"
+  - "IPC 调用封装在 composables 或 store 中，页面不直接拼 channel 名称"
+
+dont:
+  - "不要使用 style 属性硬编码样式"
+  - "不要硬编码颜色值（如 #1A90FF）"
+  - "不要使用内联 CSS 数值（如 padding: '20px'）"
+  - "不要使用 ECharts 以外的图表库（Recharts、Chart.js 等）"
+  - "不要在图表 option 中硬编码颜色，必须引用 echarts-theme"
+  - "不要使用 Vuex Options API"
+  - "不要在组件中直接调用后端，统一通过 src/lib/ipc/ 封装（本地 .NET）或统一请求层（外部服务）"
+  - "不要交付缺少 loading、empty、error 状态的页面"
+  - "不要再创建新的设计 token 文件或平行配置体系"
+  - "不要使用 @element-plus/icons-vue 以外的图标库"
+  - "不要在没有充分复用价值的情况下创建新共享组件"
+  - "不要在 Tooltip 内放置可交互元素（按钮/链接），应使用 Popover"
+  - "不要嵌套超过 2 层弹窗（ElDialog/ElDrawer）"
+  - "不要超过 8 个 ElTabs，超出用 ElSelect 代替"
+  - "不要在侧边导航菜单中嵌套超过 2 层菜单"
+  - "不要在表格/列表数据加载时使用全页 v-loading 遮罩，应使用 ElSkeleton"
+  - "不要使用 HTTP 请求与 .NET 后端通信，必须通过 Electron IPC"
+  - "不要在页面里手写 JSON-RPC method 字符串，统一走 lib/ipc/ 与生成的 method 常量"
+  - "不要使用 <script> Options API，必须使用 Composition API"

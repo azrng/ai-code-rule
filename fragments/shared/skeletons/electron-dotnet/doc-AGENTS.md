@@ -1,7 +1,7 @@
 ---
 rule_id: doc-agents
-version: 1.19.0
-last_updated: 2026-08-31
+version: 1.39.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -51,7 +51,7 @@ dependencies: [agents-root]
 
 ### 契约要求
 
-- **前端唯一事实来源**：`schemas/` 中的 Zod schema 与共享类型定义
+- **前端唯一事实来源**：`schemas/` 中的 schema 与共享类型定义（schema 库按前端栈选型，React 栈常用 Zod，Vue 栈可用 Valibot 等同类方案）
 - **.NET 边界事实来源**：`src-dotnet/` 中的 DTO / IPC 入参出参定义
 - **定义方式**：表单 schema、Query schema、IPC 入参 schema、IPC 出参结构必须成对维护
 - **变更规则**：字段或行为变化时，必须同步更新 schema、类型、页面、IPC 封装与测试

@@ -1,4 +1,5 @@
 using System.Text;
+using Spectre.Console;
 
 namespace RuleAssembler;
 
@@ -44,8 +45,9 @@ internal static class Program
         Console.WriteLine($"当前目录：{Environment.CurrentDirectory}");
         Console.WriteLine();
 
-        // 交互实现只在入口处决定一次：stdin 重定向（管道冒烟/CI）强制走纯文本编号输入
-        IConsoleUi ui = Console.IsInputRedirected ? new PlainConsoleUi() : new SpectreConsoleUi();
+        // 交互实现只在入口处决定一次：stdin 重定向（管道冒烟/CI）强制走纯文本编号输入；
+        // 终端不支持 ANSI 光标控制时 SelectionPrompt 无法擦除上一帧（旧版 conhost 会叠屏），同样回退编号输入
+        IConsoleUi ui = CreateUi();
         var renderer = new RuleRenderer(resources);
         var wizard = new ConsoleWizard(ui);
 
@@ -64,6 +66,20 @@ internal static class Program
             Console.WriteLine($"  - {file.Output}");
         Console.WriteLine("（不释放 TASK.md / rulelog / devlog）");
         Console.WriteLine();
+
+        // 汇总确认：detected 路径在入口已带文件预览确认过，wizard / classic 在生成前补一次
+        if (selection.Mode != "detected")
+        {
+            var confirm = ui.Choose(
+                $"确认在当前目录生成 {files.Count} 个文件？",
+                "取消",
+                new List<UiChoice> { new("开始生成", "") });
+            if (confirm is null)
+            {
+                Console.WriteLine("已取消。");
+                return 0;
+            }
+        }
 
         var written = new OutputWriter().WriteFiles(files);
 
@@ -137,6 +153,24 @@ internal static class Program
             if (choice == 2)
                 return wizard.SelectProfile(manifest);
         }
+    }
+
+    private static IConsoleUi CreateUi()
+    {
+        if (Console.IsInputRedirected)
+            return new PlainConsoleUi();
+        try
+        {
+            // Ansi != true 的终端（旧版 conhost 等）无法做光标回退重绘，SelectionPrompt 会叠屏
+            if (AnsiConsole.Profile.Capabilities.Ansi == true)
+                return new SpectreConsoleUi();
+        }
+        catch (Exception)
+        {
+            // 能力探测失败时保守回退到纯文本交互
+        }
+
+        return new PlainConsoleUi();
     }
 
     private static DetectionResult? TryDetect(Manifest manifest, string directory)

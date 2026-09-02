@@ -281,8 +281,18 @@ internal sealed class Subrule
     [JsonPropertyName("source")]
     public string Source { get; set; } = "";
 
+    // B 档骨架继承：多源按序拼接为一个输出文件，与 source 互斥；
+    // front matter 只允许出现在首个源，其余源是纯内容段
+    [JsonPropertyName("sources")]
+    public List<string> Sources { get; set; } = new();
+
     [JsonPropertyName("output")]
     public string Output { get; set; } = "";
+
+    public IReadOnlyList<string> GetSources()
+    {
+        return Sources.Count > 0 ? Sources : new List<string> { Source };
+    }
 }
 
 internal sealed class PlannedFile

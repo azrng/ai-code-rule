@@ -255,12 +255,30 @@ internal sealed class ManifestLoader
             errors.Add($"{field} 找不到资源：{path}");
     }
 
-    private void ValidateRuleFile(Subrule file, string owner, ICollection<string> errors)
+    internal void ValidateRuleFile(Subrule file, string owner, ICollection<string> errors)
     {
-        ValidateResourcePath(file.Source, $"{owner} source", errors);
+        if (file.Sources.Count > 0 && !string.IsNullOrWhiteSpace(file.Source))
+            errors.Add($"{owner} 的 source 与 sources 不能同时配置");
+        if (file.Sources.Count == 0 && string.IsNullOrWhiteSpace(file.Source))
+            errors.Add($"{owner} 的 source 不能为空");
+
+        var sources = file.GetSources();
+        for (var i = 0; i < sources.Count; i++)
+        {
+            ValidateResourcePath(sources[i], $"{owner} source[{i}]", errors);
+            var raw = _resources.Read(sources[i]);
+            if (raw is null)
+            {
+                errors.Add($"{owner} 找不到片段：{sources[i]}");
+                continue;
+            }
+
+            // 多源拼接时 front matter 只能出现在首个源，否则版本盖写与正文结构都会被破坏
+            if (i > 0 && raw.TrimStart().StartsWith("---", StringComparison.Ordinal))
+                errors.Add($"{owner} 多源拼接的第 {i + 1} 个源不允许携带 front matter：{sources[i]}");
+        }
+
         ValidateOutputPath(file.Output, $"{owner} output", errors);
-        if (!string.IsNullOrWhiteSpace(file.Source) && _resources.Read(file.Source) is null)
-            errors.Add($"{owner} 找不到片段：{file.Source}");
     }
 
     private void ValidateResourcePath(string path, string field, ICollection<string> errors, bool allowEmpty = false)

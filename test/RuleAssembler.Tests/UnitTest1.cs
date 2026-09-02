@@ -7,10 +7,21 @@ public sealed class ManifestLoaderTests
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
 
-        Assert.Equal(20, manifest.Profiles.Count);
+        Assert.Equal(21, manifest.Profiles.Count);
         Assert.Contains(
             manifest.Modules.SelectMany(module => module.Pointers),
             pointer => pointer.Equals("GROK.md", StringComparison.OrdinalIgnoreCase));
+
+        // Electron + .NET 拆为 React / Vue 双变体，backend/doc/infra 共享骨架
+        var reactElectron = Assert.Single(manifest.Profiles, profile => profile.Id == "reactElectronDotNet");
+        Assert.Equal("react", reactElectron.Traits!.Frontend);
+        Assert.Equal("electron", reactElectron.Traits!.Shell);
+        Assert.Contains(
+            reactElectron.Subrules,
+            rule => rule.GetSources().Contains("shared/skeletons/electron-dotnet/backend-AGENTS.md"));
+        var vueElectron = Assert.Single(manifest.Profiles, profile => profile.Id == "vueElectronDotNet");
+        Assert.Equal("vue", vueElectron.Traits!.Frontend);
+        Assert.Equal("electron", vueElectron.Traits!.Shell);
 
         var blazorServer = Assert.Single(manifest.Profiles, profile => profile.Id == "dotnetBlazor");
         Assert.Contains("Blazor Server", blazorServer.Label);

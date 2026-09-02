@@ -54,6 +54,42 @@ public sealed class WizardEngineTests
     }
 
     [Fact]
+    public void Resolve_DesktopDotnetReactElectron_ResolvesReactElectronDotNet()
+    {
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "desktop",
+            ["backend"] = "dotnet",
+            ["frontend"] = "react",
+            ["shell"] = "electron"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("reactElectronDotNet", profile.Id);
+    }
+
+    [Fact]
+    public void Resolve_DesktopDotnetVueElectron_ResolvesVueElectronDotNet()
+    {
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "desktop",
+            ["backend"] = "dotnet",
+            ["frontend"] = "vue",
+            ["shell"] = "electron"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("vueElectronDotNet", profile.Id);
+    }
+
+    [Fact]
     public void Matches_WildcardTraitMatchesAnyAnswer()
     {
         var manifest = LoadManifest();
@@ -85,5 +121,19 @@ public sealed class WizardEngineTests
         Assert.NotNull(question);
         Assert.Equal("arch-style", question.Trait);
         Assert.Equal(2, question.Options.Count);
+    }
+
+    [Fact]
+    public void NextQuestion_DesktopCandidates_AskBackendBeforeFrontend()
+    {
+        // 问答顺序对齐 Q1 形态 → Q2 后端 → Q3 前端 → Q4 壳
+        var manifest = LoadManifest();
+        var engine = new WizardEngine(manifest);
+        var candidates = engine.Filter(manifest.Profiles, "form", "desktop");
+
+        var question = engine.NextQuestion(candidates);
+
+        Assert.NotNull(question);
+        Assert.Equal("backend", question.Trait);
     }
 }
