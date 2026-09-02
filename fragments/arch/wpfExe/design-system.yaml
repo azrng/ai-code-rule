@@ -1,6 +1,6 @@
 # WPF 桌面端设计系统唯一事实来源
 # 面向人和 AI 共同使用：可读、可解析、非可执行、易于比对
-# 技术栈：.NET 10 + WPF + Wpf.Ui + CommunityToolkit.Mvvm
+# 技术栈：.NET（版本以仓库 TargetFramework 为准）+ WPF + Wpf.Ui + CommunityToolkit.Mvvm
 
 meta:
   name: "WPF 桌面端设计系统"
@@ -11,7 +11,7 @@ meta:
     - "design"
     - "desktop"
   tech_stack:
-    runtime: ".NET 10"
+    runtime: ".NET（版本以仓库 TargetFramework 为准）"
     ui_framework: "WPF (Windows Presentation Foundation)"
     component_library: "Wpf.Ui (WPF UI by lepo.co)"
     mvvm: "CommunityToolkit.Mvvm"

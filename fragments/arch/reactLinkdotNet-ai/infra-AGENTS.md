@@ -1,7 +1,7 @@
 ---
 rule_id: infra-agents
-version: 1.30.0
-last_updated: 2026-09-01
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root, ai-agents]
 ---
 
@@ -84,7 +84,7 @@ dependencies: [agents-root, ai-agents]
 
 ### 总体要求
 - 优先复用现有 Docker 与 Compose 文件
-- 首次创建 `Dockerfile`、`docker-compose.yml`、`.dockerignore` 或其他部署文件前，必须把"将新增部署文件"作为独立一项向用户确认并获得同意；不得因为方案骨架或阶段计划里提及过就默认生成，用户确认后再创建。
+- 首次创建 `Dockerfile`、`docker-compose.yml`、`.dockerignore` 或其他部署文件前，必须把“将新增部署文件”作为独立一项向用户确认并获得同意；不得因为方案骨架或阶段计划里提及过就默认生成，用户确认后再创建。
 - 生产镜像优先采用多阶段构建
 - 不要把密钥（含模型密钥、数据库密码）写入镜像
 - 部署链路要可追踪

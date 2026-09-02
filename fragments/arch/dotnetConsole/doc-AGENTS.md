@@ -1,13 +1,13 @@
 ---
 rule_id: doc-agents
-version: 1.19.0
-last_updated: 2026-08-31
+version: 1.32.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
 # 文档规则
 
-<!-- include: shared/doc/scope.md -->
+<!-- include: shared/doc/scope-api.md -->
 
 ### 常见任务入口
 - 新增功能方案：先看阶段 0 设计文档

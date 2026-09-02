@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.30.0
-last_updated: 2026-09-01
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -20,7 +20,7 @@ dependencies: [agents-root]
 ## 技术栈与适用范围
 
 ### Blazor Web App
-- 面向 .NET 10 Blazor Web App，允许按组件或页面选择 Static SSR、Interactive Server、Interactive WebAssembly 或 Interactive Auto。
+- 面向 .NET Blazor Web App（版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版），允许按组件或页面选择 Static SSR、Interactive Server、Interactive WebAssembly 或 Interactive Auto。
 - 不得把 Blazor Web App 与传统 Blazor Server 托管模型混为一谈；旧模板、既有 SignalR Circuit 与服务器端组件状态规则继续使用 `dotnetBlazor` Profile。
 - 使用 `AddRazorComponents()` 注册 Razor Components，并仅为实际使用的交互模式追加对应服务与端点配置。
 - 如果仓库已有真实实现，以现有代码和目标框架支持的官方能力为准，不为统一模板强制迁移渲染模式。

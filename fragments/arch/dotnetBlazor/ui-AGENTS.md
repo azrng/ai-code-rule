@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -16,7 +16,7 @@ dependencies: [agents-root]
 ## 技术栈
 
 ### Blazor Server（界面层）
-- .NET 10 + Blazor Server（SignalR 实时通信）
+- .NET + Blazor Server（SignalR 实时通信）；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
 - BootstrapBlazor 组件库（基于 Bootstrap 5）
 - BootstrapBlazor 图标库（Bootstrap Icons）
 - Blazor 内置路由管理

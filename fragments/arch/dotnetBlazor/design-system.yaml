@@ -1,6 +1,6 @@
 # 设计与组件规则的唯一事实来源。
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
-# 技术栈：.NET 10 + Blazor Server + BootstrapBlazor (Bootstrap 5)
+# 技术栈：.NET（版本以仓库 TargetFramework 为准）+ Blazor Server + BootstrapBlazor (Bootstrap 5)
 
 meta:
   name: "企业级应用设计系统（Blazor Server + BootstrapBlazor）"

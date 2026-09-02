@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -193,6 +193,7 @@ project-root/
 - PowerShell 命令不接受 `&&`，禁止使用；需要连续执行时改为分步执行或使用 PowerShell 兼容写法。
 - 如果编写注释（含代码注释、文档注释等），统一使用中文，不使用纯英文注释；必要的英文标识、协议字段名或框架关键字可保留原文。
 - 修改含中文内容后，必须重新读取一次并确认关键中文显示正常。
+
 ---
 
 ## HTML 规范

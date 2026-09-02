@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root, ai-agents]
 ---
 
@@ -26,7 +26,7 @@ dependencies: [agents-root, ai-agents]
 ## 技术栈
 
 ### 后端
-- .NET 10 + ASP.NET Core（Minimal API 与 Controller 按场景选用，详见"接口 / 路由规则"）
+- .NET + ASP.NET Core（Minimal API 与 Controller 按场景选用，详见「接口 / 路由规则」）；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
 - **单项目整洁架构**：一个 `.csproj`，项目内用文件夹遵循整洁架构依赖方向
 - ORM：Entity Framework Core
 - 测试框架：xUnit + Moq
@@ -102,7 +102,7 @@ backend/
 └── backend.sln
 ```
 
-> 物理单层、逻辑整洁：文件夹依赖方向严格遵守"Domain ← Application ← Infrastructure / AI，Endpoints 为入口"。将来需要拆工程时，把文件夹升级为独立项目，代码几乎不动。
+> 物理单层、逻辑整洁：文件夹依赖方向严格遵守「Domain ← Application ← Infrastructure / AI，Endpoints 为入口」。将来需要拆工程时，把文件夹升级为独立项目，代码几乎不动。
 
 ---
 
@@ -198,10 +198,10 @@ Endpoints → Application → Domain ← Infrastructure / AI
   - Domain 核心业务规则方法：说明规则意图。
   - 不来自接口的实现类自有方法（接口未约束的核心方法）：补 `<summary>` 说明该能力做什么。
 - 接口已注释时，实现方法不重复注释，也不加 `/// <inheritdoc />`；只有实现类自有的、接口未定义的方法才需要补注释。
-- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按"不写实现细节"原则省略。
+- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按“不写实现细节”原则省略。
   - 例外：端点需要向调用方暴露事件格式、鉴权要求、流式约定、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
-- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等、模型调用风险或降级的复杂业务分支，说明"为什么这样做"——包括 fail fast 的原因、为什么跳过某类脏数据、为什么保留某一层结构。
-- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等、模型调用风险或降级的复杂业务分支，说明“为什么这样做”——包括 fail fast 的原因、为什么跳过某类脏数据、为什么保留某一层结构。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、“返回结果”这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串、模型密钥或真实生产地址。
 
 <!-- include: shared/application/anti-patterns.md -->

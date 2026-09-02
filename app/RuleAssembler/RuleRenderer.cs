@@ -151,6 +151,9 @@ internal sealed class RuleRenderer
 
         foreach (var pair in values)
             result = result.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
+
+        // 空变量槽整行删除后可能残留连续空行，统一收敛为一个空行
+        result = Regex.Replace(result, @"\n{3,}", "\n\n");
         return result;
     }
 

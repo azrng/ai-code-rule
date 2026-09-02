@@ -1,8 +1,8 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.30.0",
-    "last_updated": "2026-09-01"
+    "version": "1.32.0",
+    "last_updated": "2026-09-02"
   },
   "schema_version": 2,
   "line_ending": "LF",
@@ -212,9 +212,9 @@
       "desc": "中大型业务系统、DDD、Controller/Service/Repository 多项目拆分",
       "root": {
         "understanding-checklist": [
-          "- 涉及后端时，已查看相关 Controller、Application、Domain、Repository / EntityFramework、DTO、调用方和现有测试"
+          "- 涉及后端时，已查看相关 Controller、Application、Domain、Adapter、Storage、Repository / EntityFramework、DTO、调用方和现有测试"
         ],
-        "search-nouns": "Controller、Application、Domain、DTO、EntityFramework、迁移脚本和测试实现"
+        "search-nouns": "Controller、Application、Domain、Adapter、Storage、DTO、EntityFramework、迁移脚本和测试实现"
       },
       "subrules": [
         {
@@ -543,7 +543,7 @@
         "root-scope-nouns": "前端、后端、AI、文档、基础设施",
         "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、模型对接变更、Prompt 核心逻辑变更、发布链路调整、环境变量变更",
         "extra-sections": [
-          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET 10 + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
+          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
           "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n2. **核心 vs 可选**：`IChatClient` + Agent Framework 是核心；向量库、记忆、多 Agent、MCP、Redis、PostgreSQL 都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：技术栈文档与示例要充分、项目结构边界要清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程、本地运行可上云。\n5. **先做闭环，再做扩张**：先把\"用户输入 → Agent 运行 → 结果展示 → 用户确认 → 下一步\"跑通，再补 Skills / Memory / Middleware。"
         ],
         "intro-quote": "> 本规则以 React + .NET 全栈为工程底座，融合 AI Agent 产品的 MVP 选型理念。\n> 定位：一套面向 **AI Agent 产品** 的 React + .NET 全栈开发规范，强调工程规范与\"少仪式、快闭环、AI Coding 友好、可演进\"并存。\n",

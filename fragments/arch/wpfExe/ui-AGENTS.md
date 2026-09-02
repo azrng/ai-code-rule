@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -15,7 +15,7 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-- .NET 10 (2025 年发布正式版) + WPF + Wpf.Ui (WPF UI) + CommunityToolkit.Mvvm
+- .NET + WPF + Wpf.Ui (WPF UI) + CommunityToolkit.Mvvm；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
 - 分层架构：View (视图层) → ViewModel (视图模型层) → Service (应用服务层) → Repository (仓储层) → Model (领域模型层)
 - 数据访问（可选）：Dapper + SQLite / PostgreSQL / 其他数据库
 - 消息传递：CommunityToolkit.Mvvm IMessenger

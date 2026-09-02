@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.24.0
-last_updated: 2026-08-31
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -16,7 +16,7 @@ dependencies: [agents-root]
 ## 技术栈
 
 ### UI
-- .NET 10 + Avalonia 11+ + Ursa.Avalonia + CommunityToolkit.Mvvm
+- .NET + Avalonia 11+ + Ursa.Avalonia + CommunityToolkit.Mvvm；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
 - 设计风格：Fluent Design
 - 消息传递：`IMessenger`
 

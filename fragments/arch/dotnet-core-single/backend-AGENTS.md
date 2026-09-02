@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.27.0
-last_updated: 2026-09-01
+version: 1.31.0
+last_updated: 2026-09-02
 dependencies: [agents-root]
 ---
 
@@ -23,7 +23,7 @@ dependencies: [agents-root]
 ## 技术栈
 
 ### 后端
-- .NET 10（2025 年已发布正式版）+ ASP.NET Core Web API
+- .NET + ASP.NET Core Web API；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
 - 单项目整洁架构：一个 Web API 项目内以文件夹划分层（Domain / Application / Infrastructure / 宿主入口），层职责与依赖方向和多项目模板 `dotnetLayered` 保持一致
 
 <!-- include: shared/backend/core-libs.md -->
@@ -35,6 +35,8 @@ dependencies: [agents-root]
 - 可根据项目需求切换为其他数据库（MySQL、SQL Server、SQLite 等）
 - ORM：Entity Framework Core，通过 `Common.EFCore` 系列包访问
 - 测试环境可使用 `Common.EFCore.InMemory` 内存数据库
+
+<!-- include: shared/backend/pg-time-convention.md -->
 
 <!-- include: shared/application/tech-choice.md -->
 
@@ -211,10 +213,10 @@ Controllers → Application → Domain ← Infrastructure
   - AppService / DomainService / Adapter 接口方法：说明该能力做什么，不写实现细节。
   - 不来自接口的实现类自有方法（接口未约束的核心方法）：同上，补 `<summary>` 说明该能力做什么。
 - 接口已注释时，实现方法不重复注释，也不加 `/// <inheritdoc />`。
-- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按"不写实现细节"原则省略。
+- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按“不写实现细节”原则省略。
   - 例外：Controller action 需要向调用方暴露事件格式、鉴权要求、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
 - 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明“为什么这样做”——包括 fail fast 的原因、为什么跳过某类脏数据、为什么保留某一层结构。
-- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、"返回结果"这类复述代码的低价值注释。
+- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、“返回结果”这类复述代码的低价值注释。
 - 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
 
 <!-- include: shared/application/anti-patterns.md -->
