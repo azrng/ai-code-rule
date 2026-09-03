@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.23.0
-last_updated: 2026-08-31
+version: 1.46.0
+last_updated: 2026-09-03
 dependencies: [agents-root]
 ---
 
@@ -9,7 +9,11 @@ dependencies: [agents-root]
 
 <!-- include: shared/application/scope.md -->
 
-<!-- include: shared/application/common-tasks.md -->
+### 常见任务入口
+- 改命令流程或状态切换：先看 `MVVM 模式规则`（见 `ui-AGENTS.md`）与统一结果包装
+- 改 Service 或业务规则：先看 Service 层规则、应用层协作边界与异常处理规范
+- 改 DTO、映射、结果包装：先看目录职责映射与统一结果包装
+- 补应用层回归：先看 `提交前最小回归` 与测试规则
 
 ---
 

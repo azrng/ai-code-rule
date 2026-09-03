@@ -134,7 +134,7 @@ P1 目标是低风险增强现有 Profile 管道，不提前伪装成完整组�
 | P1-3 | Q5 能力开关与根导航联动 | 已完成 | P1-1 |
 | P1-4 | 扩展约束、兼容回归和文档收口 | 已完成 | P1-1、P1-2、P1-3 |
 
-> P1 已全部完成（版本 1.40.0）。2026-09-02 追加两个批次：1.41.0 纯前端组合 `reactOnly` / `vueOnly` / `generalFrontend`（`form=web + backend=none`，frontend-static 家族），问答 Q2 出现「无后端」选项、裸前端项目检测候选包含纯前端组合；1.42.0 纯前端 AI 变体 `reactOnly-ai` / `vueOnly-ai`，新增 `ai-capability-frontend` 模块（`shared/skeletons/frontend-ai/`：浏览器侧口径的 ai-AGENTS.md + frontend/doc/infra 三个追加段），密钥不下发浏览器、模型调用走托管网关 / 代理。两批均已完成。后续接手时：日常维护按 §2 的扩展口执行；P2 按 §5 的触发条件评估启动。
+> P1 已全部完成（版本 1.40.0）。2026-09-02 追加两个批次：1.41.0 纯前端组合 `reactOnly` / `vueOnly` / `generalFrontend`（`form=web + backend=none`，frontend-static 家族），问答 Q2 出现「无后端」选项、裸前端项目检测候选包含纯前端组合；1.42.0 纯前端 AI 变体 `reactOnly-ai` / `vueOnly-ai`，新增 `ai-capability-frontend` 模块（`shared/skeletons/frontend-ai/`：浏览器侧口径的 ai-AGENTS.md + frontend/doc/infra 三个追加段），密钥不下发浏览器、模型调用走托管网关 / 代理。两批均已完成（与 1.43.0 文档拆分同批提交，manifest 版本直接从 1.40.0 进入 1.43.0，git 历史中无独立的 1.41.0 / 1.42.0 版本点，批次号仅见 rulelog）。后续接手时：日常维护按 §2 的扩展口执行；P2 按 §5 的触发条件评估启动。
 
 ### P1-1 结构化根声明与校验
 
@@ -295,7 +295,7 @@ P2 的完成标准是：新增常规前端、后端、壳或能力模块时，�
 - `ManifestLoader.MergeFamilyDefaults` 在 JSON 层做 family rootDefaults 继承，新的结构化输出字段不能破坏该过程。
 - `OutputWriter.WriteFiles` 自带 staging、backup 和回滚；配方记录必须在规则文件写入成功后再写。
 - 预设产物回归基线：`dotnet run --project app/RuleAssembler -- --emit D:/tmp/rules-before`；该命令当前只用于旧 Profile 预览，不写配方记录。
-- 当前共有 26 个 Profile（1.41.0 纯前端三组合、1.42.0 纯前端 AI 两变体），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；P1 保留它作为兼容路径。
+- 当前共有 26 个 Profile（1.41.0~1.42.0 批次新增的纯前端三组合与纯前端 AI 两变体，随 1.43.0 提交落地），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；P1 保留它作为兼容路径。
 - 当前有 `core`、`ai-capability`（.NET 后端口径）和 `ai-capability-frontend`（浏览器侧口径）三个顶层 module，不能把现状 module 数量误认为已经完成组件化。
 - 当前 `Subrule.sources` 已支持多源拼接，但只有显式声明时才能合并；重复输出不得静默覆盖。
 - 允许修改 `fragments/manifest.json` 和新增模块元数据；禁止为了完成 P1 无计划地重写已有规则正文。
