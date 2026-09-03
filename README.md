@@ -23,6 +23,11 @@
 | reactLinkdotNet-ai | React + .NET + AI Agent 全栈 | `frontend` / `backend` / `ai` / `doc` / `infra` | AI Agent 产品 MVP、模型调用、工具与流式交互 |
 | nextFullstack | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | SaaS 平台、电商网站、SEO 敏感的公众网站、创业项目快速迭代、全栈一人搞定（仓库参考标准模板） |
 | generalProject | 通用项目协作模板 | `frontend` / `backend` / `doc` / `infra` | 尚未最终确定技术栈的新项目、需要先统一 AI 协作口径再细化实现方案的项目、希望尽量少预设框架约束的通用业务项目 |
+| reactOnly | React 纯前端 SPA | `frontend` / `doc` / `infra` | 无独立后端的 React 单页应用：纯展示 / 工具型前端、调第三方 API 的轻应用、先做界面后补后端的原型 |
+| reactOnly-ai | React 纯前端 + AI 产品 | `frontend` / `ai` / `doc` / `infra` | 无独立后端的 AI 前端产品：模型调用走托管网关 / 代理、密钥不下发浏览器、流式交互体验 |
+| vueOnly | Vue 纯前端 SPA | `frontend` / `doc` / `infra` | 无独立后端的 Vue 3 单页应用：纯展示 / 工具型前端、调第三方 API 的轻应用、先做界面后补后端的原型 |
+| vueOnly-ai | Vue 纯前端 + AI 产品 | `frontend` / `ai` / `doc` / `infra` | 无独立后端的 AI 前端产品（Vue 版）：模型调用走托管网关 / 代理、密钥不下发浏览器、流式交互体验 |
+| generalFrontend | 通用纯前端（技术栈无关） | `frontend` / `doc` / `infra` | 无独立后端且不锁定框架的前端项目：Svelte / Lit / 其他栈，或仓库已有实现、只要协作规则不要技术栈预设 |
 | python | Python API 后端 | `backend` / `doc` / `infra` | AI/ML 模型推理服务、数据处理 API、与 .NET 配合的 Python 微服务、自动化运维接口、快速原型 API |
 | wpfExe | WPF Windows 桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 工业控制/医疗/金融等 Windows 桌面终端、WinForms 迁移现代化、离线优先本地工具、硬件设备交互 |
 | avaloniaExe | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 跨 Windows/macOS/Linux 的桌面工具、Linux 运维工具、WPF 跨平台迁移、嵌入式设备界面 |
@@ -49,6 +54,12 @@
 │   └── Python 技术栈 → python
 │
 ├── 是 → 前后端是否同框架？
+│   ├── 无独立后端（纯前端）
+│   │   ├── React → reactOnly（需要 AI 能力 → reactOnly-ai）
+│   │   ├── Vue → vueOnly（需要 AI 能力 → vueOnly-ai）
+│   │   ├── 其他框架 / 不锁定 → generalFrontend
+│   │   └── 无框架无构建（原生 HTML/CSS/JS）→ staticHtml
+│   │
 │   ├── 同框架（全栈）
 │   │   ├── Next.js → nextFullstack
 │   │   ├── Blazor → dotnetBlazor
@@ -72,7 +83,6 @@
 │       │   ├── Tauri + React → reactTauriExe
 │       │   ├── Electron + React + .NET → reactElectronDotNet
 │       │   └── Electron + Vue + .NET → vueElectronDotNet
-│       └── 无框架（纯静态）→ staticHtml
 ```
 
 ## 规则源与生成结构
@@ -97,6 +107,8 @@ fragments/
 4. 组合确定后进入 Q5 能力开关：按需勾选文档 / 基础设施 / 设计系统等能力（默认 = 当前组合，不可用能力自动隐藏），关闭的能力不会生成文件、根导航也不会再引用。
 5. 开始协作时先读根 `AGENTS.md`，再根据任务命中对应子规则，不默认预读全部文件。
 6. 开发过程中通过 `TASK.md` 维护活动任务与最近少量已完成任务（`TASK.md` 由目标项目自己维护，生成器只引用不释放）。
+
+文档维护按业务模块和功能拆分：`doc/requirements/<module>/<feature>.md` 记录业务需求，`doc/design/<module>/<feature>.md` 记录对应技术设计，`doc/index.md` 及各目录索引负责导航。设计文档通过 `REQ-` 编号引用需求，不重复维护需求正文；跨模块方案放在 `doc/design/architecture.md`。
 
 ### 一键导出（推荐）
 

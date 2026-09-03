@@ -145,7 +145,13 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Contains("backend", result.Unconfirmed);
         Assert.Equal("web", result.Confirmed["form"]);
         Assert.Equal("react", result.Confirmed["frontend"]);
-        Assert.Equal(3, result.Candidates.Count);
+        // 候选包含纯前端组合（含 AI 变体）后，「无后端」才能作为补答选项出现
+        Assert.Equal(5, result.Candidates.Count);
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly");
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly-ai");
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet");
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet-ai");
+        Assert.Contains(result.Candidates, profile => profile.Id == "nextFullstack");
     }
 
     [Fact]

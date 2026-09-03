@@ -117,6 +117,32 @@ public sealed class FeatureToggleTests
     }
 
     [Fact]
+    public void Availability_FrontendOnlyProfileExposesDocInfraDesignSystem()
+    {
+        // 纯前端组合：Q5 可勾选 doc / infra / design-system，无 AI 模块不可选
+        var profile = ProfileOf("reactOnly");
+        var available = FeatureSelection.Available(_manifest, profile);
+
+        Assert.Equal(new[] { "doc", "infra", "design-system" }, available.Select(feature => feature.Id));
+        Assert.False(FeatureSelection.IsAvailable(_manifest, profile, "ai-capability"));
+    }
+
+    [Fact]
+    public void Availability_FrontendOnlyAiProfileKeepsAiByDefault()
+    {
+        // 纯前端 AI 变体：AI 由问答决定且默认保留（前端 AI 模块），doc / infra / design-system 可勾选
+        var profile = ProfileOf("reactOnly-ai");
+        var defaults = FeatureSelection.Defaults(_manifest, profile);
+
+        Assert.Equal(
+            new[] { "doc", "infra", "ai-capability", "design-system" },
+            FeatureSelection.Available(_manifest, profile).Select(feature => feature.Id));
+        Assert.Contains("ai-capability", defaults);
+        var files = _renderer.Plan(_manifest, profile, defaults);
+        Assert.Contains(files, file => file.Output == "ai-AGENTS.md");
+    }
+
+    [Fact]
     public void Availability_AiProfileKeepsAiByDefault()
     {
         // AI 能力由向导问答（Profile 选择）这一唯一事实来源决定；含 AI 模块的 Profile 默认启用

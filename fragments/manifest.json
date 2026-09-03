@@ -1,8 +1,8 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.40.0",
-    "last_updated": "2026-09-02"
+    "version": "1.43.0",
+    "last_updated": "2026-09-03"
   },
   "schema_version": 2,
   "line_ending": "LF",
@@ -48,6 +48,17 @@
       "files": [
         {
           "source": "arch/reactLinkdotNet-ai/ai-AGENTS.md",
+          "output": "ai-AGENTS.md",
+          "feature": "ai-capability"
+        }
+      ]
+    },
+    {
+      "id": "ai-capability-frontend",
+      "label": "前端 AI 产品能力模块",
+      "files": [
+        {
+          "source": "shared/skeletons/frontend-ai/ai-AGENTS.md",
           "output": "ai-AGENTS.md",
           "feature": "ai-capability"
         }
@@ -219,7 +230,7 @@
     {
       "id": "frontend-static",
       "label": "纯前端 / 静态站点",
-      "desc": "无独立后端的页面与静态站点",
+      "desc": "无独立后端的前端应用与静态站点",
       "rootDefaults": {
         "checklist-infra": "- 涉及基础设施时，已查看资源引用、构建与部署说明"
       }
@@ -1799,6 +1810,540 @@
       }
     },
     {
+      "id": "reactOnly",
+      "label": "React 纯前端 SPA",
+      "family": "frontend-static",
+      "desc": "React 19（Vite）纯前端单页应用，无独立后端；数据走 mock / 本地存储 / 第三方 API",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
+          { "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证", "features": ["infra"] },
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
+          { "line": "| `doc-AGENTS.md` | 设计文档、数据口径与接口说明 | 涉及阶段 0、文档维护或数据口径时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |", "features": ["infra"] }
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   页面与交互实现     →   验证与交付",
+          "（用户确认）    （页面实现角色）       （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量或部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          { "line": "- 阶段 0：需求整理、设计文档、数据口径说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
+          "- 阶段 1：页面骨架、交互、数据层与前端验证，细则见 `frontend-AGENTS.md`",
+          { "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
+          "4. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现"
+        ],
+        "search-nouns": "页面、组件、路由、状态管理、请求封装、mock / 本地存储实现和测试实现",
+        "task-kind-nouns": "页面、数据还是构建部署",
+        "root-scope-nouns": "页面、数据、文档、基础设施",
+        "context-scope-nouns": "页面、交互与数据链路",
+        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
+        "reuse-noun": "组件",
+        "destructive-nouns": "本地存储数据清理、环境清理",
+        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
+        "contract-error-line": "阶段 0 输出的数据口径、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 类型定义后同步页面实现、本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
+        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、部署方式与运行文档",
+        "rollback-scope": "发布产物",
+        "boundary-nouns": "页面与数据层职责"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactOnly/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/generalProject/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "source": "arch/generalProject/infra-AGENTS.md",
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml",
+      "traits": {
+        "form": "web",
+        "backend": "none",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "reactOnly-ai",
+      "label": "React 纯前端 + AI 产品",
+      "family": "frontend-static",
+      "desc": "React 19（Vite）纯前端单页应用 + 前端 AI 能力：模型调用走托管网关 / 代理，密钥不下发浏览器",
+      "moduleIds": [
+        "core",
+        "ai-capability-frontend"
+      ],
+      "root": {
+        "intro-quote": "> 本规则面向无独立后端的 AI 前端产品：模型调用经托管网关或服务端代理完成，前端专注交互与流式体验。\n",
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层、AI 交互展示与前端测试",
+          "- `ai-AGENTS.md`：模型调用封装、密钥安全、流式处理、Prompt、会话管理",
+          { "line": "- `doc-AGENTS.md`：设计文档、数据口径、AI 产品交互补充", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、模型配置、构建、部署与交付验证", "features": ["infra"] },
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、AI 交互展示、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
+          "| `ai-AGENTS.md` | 模型调用封装、密钥安全、流式、Prompt、会话管理 | 涉及任何 AI / 模型 / 流式交互时 |",
+          { "line": "| `doc-AGENTS.md` | 设计文档、数据口径、AI 产品交互补充 | 涉及阶段 0、文档维护或 AI 交互设计时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、模型配置、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |", "features": ["infra"] }
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   页面与交互实现     →   验证与交付",
+          "（用户确认）    （页面实现角色）       （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量或部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "  - 调 Prompt、换模型、调网关参数等不影响数据口径的实验性改动",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "- **闭环优先**：新 AI 功能应先在阶段 1 用最小输入输出跑通\"输入 → 模型 → 流式展示 → 确认\"闭环，再补正式交互",
+          "",
+          "### 阶段职责",
+          { "line": "- 阶段 0：需求整理、设计文档、数据口径与 AI 交互补充，细则见 `doc-AGENTS.md`", "features": ["doc"] },
+          "- 阶段 1：页面骨架、交互、数据层与 AI 流式体验，细则见 `frontend-AGENTS.md` 与 `ai-AGENTS.md`",
+          { "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
+          "4. 涉及 AI 能力时，无论是否动界面展示，都应先读 `ai-AGENTS.md`，确认模型调用与流式处理规则。",
+          "5. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现",
+          "- 涉及 AI 时，已查看现有模型调用封装、流式处理、Prompt 与会话管理实现"
+        ],
+        "search-nouns": "页面、组件、路由、状态管理、模型调用封装、流式处理、Prompt、mock / 本地存储实现和测试实现",
+        "task-kind-nouns": "页面、数据、AI 还是构建部署",
+        "root-scope-nouns": "页面、数据、AI、文档、基础设施",
+        "context-scope-nouns": "页面、交互与数据链路",
+        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、模型对接变更、Prompt 核心逻辑变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
+        "reuse-noun": "组件",
+        "destructive-nouns": "本地存储数据清理、环境清理",
+        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
+        "contract-error-line": "阶段 0 输出的数据口径、流式契约、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 流式事件定义 / 类型定义后同步页面实现、封装层与本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
+        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、模型相关变量、部署方式与运行文档",
+        "rollback-scope": "发布产物",
+        "boundary-nouns": "页面、封装层与数据层职责",
+        "verify-nouns": "模型能力、",
+        "verify-quote": "> 前端 AI 的 SDK 与网关能力演进较快（如 Vercel AI SDK、openai-js、各类 AI Gateway），调用前以官方最新文档与项目锁定版本为准。",
+        "model-behavior-extra": "- **模型调用不得散落**：组件不得直接拼接模型接口请求，统一走 `ai-AGENTS.md` 定义的封装层；密钥不得进入前端产物",
+        "extra-sections": [
+          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 前端框架 | React 19 + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Ant Design 5 | 快速形成统一视觉与组件 |\n| 状态 | Zustand | 用户信息与 AI 会话等跨组件状态 |\n| 模型接入 | 托管网关 / 服务端代理 + 统一封装（`src/ai/`） | 密钥不下发浏览器，调用收敛单一入口 |\n| 流式 | SSE / ReadableStream + Hook 订阅 | 打字机与长文本生成 |\n| 数据 | 本地存储 / 第三方 API | 无独立后端的数据口径 |\n| 部署 | Vite 构建产物 + 静态托管 | 平台托管或容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
+          "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆多模型路由、本地向量、复杂编排等基础设施。\n2. **核心 vs 可选**：统一封装 + 网关接入 + 流式是核心；结构化输出、RAG、多模态、多模型路由都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：接入方式与流式契约文档化、组件边界清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。托管网关可平滑升级为 BFF，封装层接口保持框架无关，本地存储可替换为真实服务。\n5. **先做闭环，再做扩张**：先把\"用户输入 → 模型 → 流式展示 → 用户确认 → 下一步\"跑通，再补 Prompt 优化、会话持久化与可选能力。"
+        ]
+      },
+      "subrules": [
+        {
+          "output": "frontend-AGENTS.md",
+          "sources": [
+            "arch/reactOnly/frontend-AGENTS.md",
+            "shared/skeletons/frontend-ai/frontend-ai-appendix.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "arch/generalProject/doc-AGENTS.md",
+            "shared/skeletons/frontend-ai/doc-ai-appendix.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "arch/generalProject/infra-AGENTS.md",
+            "shared/skeletons/frontend-ai/infra-ai-appendix.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml",
+      "traits": {
+        "form": "web",
+        "backend": "none",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "yes"
+      }
+    },
+    {
+      "id": "vueOnly",
+      "label": "Vue 纯前端 SPA",
+      "family": "frontend-static",
+      "desc": "Vue 3（Vite）纯前端单页应用，无独立后端；数据走 mock / 本地存储 / 第三方 API",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
+          { "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证", "features": ["infra"] },
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
+          { "line": "| `doc-AGENTS.md` | 设计文档、数据口径与接口说明 | 涉及阶段 0、文档维护或数据口径时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |", "features": ["infra"] }
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   页面与交互实现     →   验证与交付",
+          "（用户确认）    （页面实现角色）       （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量或部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          { "line": "- 阶段 0：需求整理、设计文档、数据口径说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
+          "- 阶段 1：页面骨架、交互、数据层与前端验证，细则见 `frontend-AGENTS.md`",
+          { "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
+          "4. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现"
+        ],
+        "search-nouns": "页面、组件、路由、状态管理、请求封装、mock / 本地存储实现和测试实现",
+        "task-kind-nouns": "页面、数据还是构建部署",
+        "root-scope-nouns": "页面、数据、文档、基础设施",
+        "context-scope-nouns": "页面、交互与数据链路",
+        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
+        "reuse-noun": "组件",
+        "destructive-nouns": "本地存储数据清理、环境清理",
+        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
+        "contract-error-line": "阶段 0 输出的数据口径、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 类型定义后同步页面实现、本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
+        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、部署方式与运行文档",
+        "rollback-scope": "发布产物",
+        "boundary-nouns": "页面与数据层职责"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueOnly/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/generalProject/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "source": "arch/generalProject/infra-AGENTS.md",
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml",
+      "traits": {
+        "form": "web",
+        "backend": "none",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "vueOnly-ai",
+      "label": "Vue 纯前端 + AI 产品",
+      "family": "frontend-static",
+      "desc": "Vue 3（Vite）纯前端单页应用 + 前端 AI 能力：模型调用走托管网关 / 代理，密钥不下发浏览器",
+      "moduleIds": [
+        "core",
+        "ai-capability-frontend"
+      ],
+      "root": {
+        "intro-quote": "> 本规则面向无独立后端的 AI 前端产品：模型调用经托管网关或服务端代理完成，前端专注交互与流式体验。\n",
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层、AI 交互展示与前端测试",
+          "- `ai-AGENTS.md`：模型调用封装、密钥安全、流式处理、Prompt、会话管理",
+          { "line": "- `doc-AGENTS.md`：设计文档、数据口径、AI 产品交互补充", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、模型配置、构建、部署与交付验证", "features": ["infra"] },
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、AI 交互展示、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
+          "| `ai-AGENTS.md` | 模型调用封装、密钥安全、流式、Prompt、会话管理 | 涉及任何 AI / 模型 / 流式交互时 |",
+          { "line": "| `doc-AGENTS.md` | 设计文档、数据口径、AI 产品交互补充 | 涉及阶段 0、文档维护或 AI 交互设计时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、模型配置、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |", "features": ["infra"] }
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   页面与交互实现     →   验证与交付",
+          "（用户确认）    （页面实现角色）       （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量或部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "  - 调 Prompt、换模型、调网关参数等不影响数据口径的实验性改动",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "- **闭环优先**：新 AI 功能应先在阶段 1 用最小输入输出跑通\"输入 → 模型 → 流式展示 → 确认\"闭环，再补正式交互",
+          "",
+          "### 阶段职责",
+          { "line": "- 阶段 0：需求整理、设计文档、数据口径与 AI 交互补充，细则见 `doc-AGENTS.md`", "features": ["doc"] },
+          "- 阶段 1：页面骨架、交互、数据层与 AI 流式体验，细则见 `frontend-AGENTS.md` 与 `ai-AGENTS.md`",
+          { "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
+          "4. 涉及 AI 能力时，无论是否动界面展示，都应先读 `ai-AGENTS.md`，确认模型调用与流式处理规则。",
+          "5. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现",
+          "- 涉及 AI 时，已查看现有模型调用封装、流式处理、Prompt 与会话管理实现"
+        ],
+        "search-nouns": "页面、组件、路由、状态管理、模型调用封装、流式处理、Prompt、mock / 本地存储实现和测试实现",
+        "task-kind-nouns": "页面、数据、AI 还是构建部署",
+        "root-scope-nouns": "页面、数据、AI、文档、基础设施",
+        "context-scope-nouns": "页面、交互与数据链路",
+        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、模型对接变更、Prompt 核心逻辑变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
+        "reuse-noun": "组件",
+        "destructive-nouns": "本地存储数据清理、环境清理",
+        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
+        "contract-error-line": "阶段 0 输出的数据口径、流式契约、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 流式事件定义 / 类型定义后同步页面实现、封装层与本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
+        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、模型相关变量、部署方式与运行文档",
+        "rollback-scope": "发布产物",
+        "boundary-nouns": "页面、封装层与数据层职责",
+        "verify-nouns": "模型能力、",
+        "verify-quote": "> 前端 AI 的 SDK 与网关能力演进较快（如 Vercel AI SDK、openai-js、各类 AI Gateway），调用前以官方最新文档与项目锁定版本为准。",
+        "model-behavior-extra": "- **模型调用不得散落**：组件不得直接拼接模型接口请求，统一走 `ai-AGENTS.md` 定义的封装层；密钥不得进入前端产物",
+        "extra-sections": [
+          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 前端框架 | Vue 3 + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Element Plus | 快速形成统一视觉与组件 |\n| 状态 | Pinia | 用户信息与 AI 会话等跨组件状态 |\n| 模型接入 | 托管网关 / 服务端代理 + 统一封装（`src/ai/`） | 密钥不下发浏览器，调用收敛单一入口 |\n| 流式 | SSE / ReadableStream + 组合式函数订阅 | 打字机与长文本生成 |\n| 数据 | 本地存储 / 第三方 API | 无独立后端的数据口径 |\n| 部署 | Vite 构建产物 + 静态托管 | 平台托管或容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
+          "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆多模型路由、本地向量、复杂编排等基础设施。\n2. **核心 vs 可选**：统一封装 + 网关接入 + 流式是核心；结构化输出、RAG、多模态、多模型路由都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：接入方式与流式契约文档化、组件边界清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。托管网关可平滑升级为 BFF，封装层接口保持框架无关，本地存储可替换为真实服务。\n5. **先做闭环，再做扩张**：先把\"用户输入 → 模型 → 流式展示 → 用户确认 → 下一步\"跑通，再补 Prompt 优化、会话持久化与可选能力。"
+        ]
+      },
+      "subrules": [
+        {
+          "output": "frontend-AGENTS.md",
+          "sources": [
+            "arch/vueOnly/frontend-AGENTS.md",
+            "shared/skeletons/frontend-ai/frontend-ai-appendix.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "arch/generalProject/doc-AGENTS.md",
+            "shared/skeletons/frontend-ai/doc-ai-appendix.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "arch/generalProject/infra-AGENTS.md",
+            "shared/skeletons/frontend-ai/infra-ai-appendix.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml",
+      "traits": {
+        "form": "web",
+        "backend": "none",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "yes"
+      }
+    },
+    {
+      "id": "generalFrontend",
+      "label": "通用纯前端（技术栈无关）",
+      "family": "frontend-static",
+      "desc": "无独立后端、技术栈不限的前端项目；按现有实现执行，数据走 mock / 本地存储 / 第三方 API",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `frontend-AGENTS.md`：页面、视图、组件、交互、样式、数据层与前端测试",
+          { "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证", "features": ["infra"] },
+          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、视图、表单、交互、样式、数据层、前端 smoke test | 涉及任何用户界面、客户端交互或数据来源时 |",
+          { "line": "| `doc-AGENTS.md` | 设计文档、数据口径与接口说明 | 涉及阶段 0、文档维护或数据口径时 |", "features": ["doc"] },
+          { "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |", "features": ["infra"] }
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   页面与交互实现     →   验证与交付",
+          "（用户确认）    （页面实现角色）       （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量或部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          { "line": "- 阶段 0：需求整理、设计文档、数据口径说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
+          "- 阶段 1：页面骨架、交互、数据层与前端验证，细则见 `frontend-AGENTS.md`",
+          { "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          { "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。", "features": ["design-system"] },
+          "4. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "- 涉及页面或交互时，已查看相关页面、视图、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现"
+        ],
+        "search-nouns": "页面、视图、组件、路由、状态管理、请求封装和测试实现",
+        "task-kind-nouns": "页面、数据还是构建部署",
+        "root-scope-nouns": "页面、数据、文档、基础设施",
+        "context-scope-nouns": "页面、交互与数据链路",
+        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
+        "reuse-noun": "组件",
+        "destructive-nouns": "本地存储数据清理、环境清理",
+        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
+        "contract-error-line": "阶段 0 输出的数据口径、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 类型定义后同步页面实现、本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
+        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、部署方式与运行文档",
+        "rollback-scope": "发布产物",
+        "boundary-nouns": "页面与数据层职责"
+      },
+      "subrules": [
+        {
+          "source": "arch/generalFrontend/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/generalProject/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "source": "arch/generalProject/infra-AGENTS.md",
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/generalProject/design-system.yaml",
+      "traits": {
+        "form": "web",
+        "backend": "none",
+        "frontend": "general",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
       "id": "staticHtml",
       "label": "静态 HTML 站点",
       "family": "frontend-static",
@@ -2040,7 +2585,7 @@
         },
         "web": {
           "label": "Web 应用",
-          "desc": "浏览器访问，前后端分离或全栈"
+          "desc": "浏览器访问：前后端分离、全栈或纯前端"
         },
         "desktop": {
           "label": "桌面应用",
@@ -2051,8 +2596,8 @@
           "desc": "iOS / Android / 跨平台移动端"
         },
         "static": {
-          "label": "纯前端 / 静态站点",
-          "desc": "无后端的静态页面"
+          "label": "静态 HTML 站点",
+          "desc": "原生 HTML/CSS/JS，无框架无构建"
         },
         "general": {
           "label": "通用项目",
@@ -2078,7 +2623,7 @@
         },
         "none": {
           "label": "无后端",
-          "desc": "纯前端 / 桌面本地应用"
+          "desc": "纯前端 SPA 或静态页面，无独立服务端"
         }
       },
       "frontend": {
@@ -2117,6 +2662,10 @@
         "html": {
           "label": "静态 HTML",
           "desc": "无框架的静态页面"
+        },
+        "general": {
+          "label": "通用前端",
+          "desc": "技术栈无关，按现有实现执行"
         },
         "none": {
           "label": "无独立前端",

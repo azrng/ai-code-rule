@@ -7,10 +7,35 @@ public sealed class ManifestLoaderTests
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
 
-        Assert.Equal(21, manifest.Profiles.Count);
+        Assert.Equal(26, manifest.Profiles.Count);
         Assert.Contains(
             manifest.Modules.SelectMany(module => module.Pointers),
             pointer => pointer.Equals("GROK.md", StringComparison.OrdinalIgnoreCase));
+
+        // 纯前端组合：form=web + backend=none，问答 Q2 才能推出「无后端」选项
+        var reactOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "reactOnly");
+        Assert.Equal("frontend-static", reactOnly.Family);
+        Assert.Equal("web", reactOnly.Traits!.Form);
+        Assert.Equal("none", reactOnly.Traits.Backend);
+        Assert.Equal("react", reactOnly.Traits.Frontend);
+        var vueOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "vueOnly");
+        Assert.Equal("vue", vueOnly.Traits!.Frontend);
+        Assert.Equal("none", vueOnly.Traits.Backend);
+        var generalFrontend = Assert.Single(manifest.Profiles, profile => profile.Id == "generalFrontend");
+        Assert.Equal("general", generalFrontend.Traits!.Frontend);
+        Assert.Equal("none", generalFrontend.Traits.Backend);
+
+        // 纯前端 AI 变体：挂前端口径的 AI 模块，文档 / 基础设施骨架追加 AI 补充段
+        var reactOnlyAi = Assert.Single(manifest.Profiles, profile => profile.Id == "reactOnly-ai");
+        Assert.Equal("yes", reactOnlyAi.Traits!.AiCapability);
+        Assert.Equal("none", reactOnlyAi.Traits.Backend);
+        Assert.Contains(reactOnlyAi.ModuleIds, id => id == "ai-capability-frontend");
+        Assert.Contains(
+            reactOnlyAi.Subrules,
+            rule => rule.GetSources().Contains("shared/skeletons/frontend-ai/frontend-ai-appendix.md"));
+        var vueOnlyAi = Assert.Single(manifest.Profiles, profile => profile.Id == "vueOnly-ai");
+        Assert.Equal("yes", vueOnlyAi.Traits!.AiCapability);
+        Assert.Contains(vueOnlyAi.ModuleIds, id => id == "ai-capability-frontend");
 
         // Electron + .NET 拆为 React / Vue 双变体，backend/doc/infra 共享骨架
         var reactElectron = Assert.Single(manifest.Profiles, profile => profile.Id == "reactElectronDotNet");

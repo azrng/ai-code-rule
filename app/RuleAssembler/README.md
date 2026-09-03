@@ -25,13 +25,15 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
-公共能力通过 `modules` 复用。例如 `core` 提供根入口和指针，`ai-capability` 提供 `ai-AGENTS.md`。现有技术栈专属文件暂按 Profile 保留，避免为一次模块化迁移改写大量规则正文；新增组合优先使用模块，不再复制整套 Profile。
+公共能力通过 `modules` 复用。例如 `core` 提供根入口和指针，`ai-capability` 提供 .NET 后端口径的 `ai-AGENTS.md`，`ai-capability-frontend` 提供浏览器侧口径的 `ai-AGENTS.md`（托管网关 / 代理、密钥不下发前端、流式处理）。现有技术栈专属文件暂按 Profile 保留，避免为一次模块化迁移改写大量规则正文；新增组合优先使用模块，不再复制整套 Profile。
 
 每个 Profile 声明 `traits` 组合画像（form/backend/frontend/shell/arch-style/blazor-flavor/ai-capability，`*` 表示不适用），`wizard` 节点维护问题步骤与选项文案；问答向导与项目检测都基于 traits 过滤，因此新增 Profile 时必须同时补 traits 与 options 文案，否则 `--check` 会失败。
 
 子规则支持 `sources` 数组（B 档骨架继承）：多个源按序拼接为一个输出文件，与 `source` 互斥，front matter 只能出现在首个源。跨 Profile 共享的整文件骨架放 `shared/skeletons/<族>/`，Profile 专属差异保留在各自 `arch/<id>/`；新增同族 Profile 时优先引用现有骨架，只写真正的差异文件。已收敛骨架：wails 族（reactWailsExe / vueWailsExe 的 backend/doc/infra 引用 `shared/skeletons/wails/`）、electron-dotnet 族（reactElectronDotNet / vueElectronDotNet 引用 `shared/skeletons/electron-dotnet/`）、web-dotnet 与 desktop-xaml（见 manifest）。
 
 子规则内部的共性小节通过 include 指令复用：片段中独占一行的 `<!-- include: shared/xxx.md -->`（路径相对 `fragments/`）会在生成时被展开为对应共享小节的内容，支持嵌套引用并做循环检测。当前 `shared/` 维护「提交前最小回归」「无法执行测试时」「外部依赖与数据」「主动建议规则」等小节，按 backend / frontend / ui / application / infra 等子规则类型分目录归档；只有逐字节相同或纯措辞漂移的小节才收敛进共享，含技术栈实质差异的版本保留在各架构片段本地。
+
+目标项目的需求与设计文档不由生成器创建。生成的 `doc-AGENTS.md` 规定项目文档按业务模块/功能拆分：需求放在 `doc/requirements/`，设计放在 `doc/design/`，通过 `doc/index.md` 和目录索引按需定位；旧的 `doc/requirement.md` 与 `doc/design/设计文档.md` 仅作为迁移兼容入口。
 
 ### 输出契约与能力开关
 
@@ -81,7 +83,7 @@ dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit <目录>
 
 ## 当前 Profile
 
-manifest 当前包含 8 个技术大类、21 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。
+manifest 当前包含 8 个技术大类、26 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。
 
 ## 版本与格式
 

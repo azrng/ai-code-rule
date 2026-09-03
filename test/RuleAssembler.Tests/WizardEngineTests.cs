@@ -90,6 +90,127 @@ public sealed class WizardEngineTests
     }
 
     [Fact]
+    public void Resolve_WebNoneReact_ResolvesReactOnly()
+    {
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "react",
+            ["ai-capability"] = "no"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("reactOnly", profile.Id);
+    }
+
+    [Fact]
+    public void Resolve_WebNoneVue_ResolvesVueOnly()
+    {
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "vue",
+            ["ai-capability"] = "no"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("vueOnly", profile.Id);
+    }
+
+    [Fact]
+    public void Resolve_WebNoneGeneral_ResolvesGeneralFrontend()
+    {
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "general"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("generalFrontend", profile.Id);
+    }
+
+    [Fact]
+    public void Resolve_WebNoneReactAi_ResolvesReactOnlyAi()
+    {
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "react",
+            ["ai-capability"] = "yes"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("reactOnly-ai", profile.Id);
+    }
+
+    [Fact]
+    public void Resolve_WebNoneVueAi_ResolvesVueOnlyAi()
+    {
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "vue",
+            ["ai-capability"] = "yes"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("vueOnly-ai", profile.Id);
+    }
+
+    [Fact]
+    public void NextQuestion_WebCandidates_OfferNoBackendOption()
+    {
+        // Web 候选加入纯前端组合后，Q2 后端问题必须出现「无后端」选项
+        var manifest = LoadManifest();
+        var engine = new WizardEngine(manifest);
+        var candidates = engine.Filter(manifest.Profiles, "form", "web");
+
+        var question = engine.NextQuestion(candidates);
+
+        Assert.NotNull(question);
+        Assert.Equal("backend", question.Trait);
+        Assert.Contains(question.Options, option => option.Value == "none");
+    }
+
+    [Fact]
+    public void NextQuestion_WebNoneReact_AskAiCapability()
+    {
+        // 纯前端 React 候选只剩 AI 维度分歧时，AI 问题在 Q5 之前出现（与全栈变体同构）
+        var manifest = LoadManifest();
+        var engine = new WizardEngine(manifest);
+        var candidates = engine
+            .Filter(engine.Filter(manifest.Profiles, "form", "web"), "backend", "none");
+        candidates = engine.Filter(candidates, "frontend", "react");
+
+        var question = engine.NextQuestion(candidates);
+
+        Assert.NotNull(question);
+        Assert.Equal("ai-capability", question.Trait);
+        Assert.Equal(2, question.Options.Count);
+    }
+
+    [Fact]
     public void Matches_WildcardTraitMatchesAnyAnswer()
     {
         var manifest = LoadManifest();

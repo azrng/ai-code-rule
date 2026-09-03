@@ -157,7 +157,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 ### 数据库切换规范（SQLite ↔ PostgreSQL）
 - 默认 Provider：SQLite（`UseSqlite`），连接串指向本地文件（如 `Data Source=app.db`）
 - 升级 Provider：PostgreSQL（`UseNpgsql`），通过配置切换；切换只改 Provider 与连接串，不改业务层
-- 不同 Provider 的差异（如大小写敏感、JSON、数组类型、并发）需在迁移与查询中注意，必要时在 `doc/design/设计文档.md` 记录
+- 不同 Provider 的差异（如大小写敏感、JSON、数组类型、并发）需在迁移与查询中注意，必要时在对应模块的 `doc/design/<module>/<feature>.md` 或 `doc/design/architecture.md` 记录
 - 迁移脚本必须保证在两种 Provider 下都可执行或分别提供，避免只跑通一边
 
 <!-- include: shared/backend/response-format.md -->

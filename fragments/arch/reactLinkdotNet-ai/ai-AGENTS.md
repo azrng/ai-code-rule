@@ -197,7 +197,7 @@ await foreach (var update in agent.RunStreamingAsync("帮我列三个选题。")
 - **MCP**：需要对接外部工具生态时引入；外部工具的能力、权限、计费边界需先确认
 
 引入任何可选能力时：
-1. 先在 `doc/design/设计文档.md` 说明需求、方案与影响
+1. 先在对应模块的 `doc/requirements/<module>/<feature>.md` 记录需求，并在 `doc/design/<module>/<feature>.md` 说明方案与影响
 2. 评估对成本、延迟、复杂度的影响
 3. 与用户确认后再实现，不默认扩大范围
 

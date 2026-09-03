@@ -89,6 +89,10 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.Equal("layered", result.Confirmed["arch-style"]);
         var files = _renderer.Plan(_manifest, result.LegacyProfile);
         Assert.Equal(7, files.Count);
+        var doc = Assert.Single(files, file => file.Output == "doc-AGENTS.md");
+        Assert.Contains("doc/requirements/<module>/<feature>.md", doc.Content, StringComparison.Ordinal);
+        Assert.Contains("契约引用", doc.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("| 功能需求 |", doc.Content, StringComparison.Ordinal);
         AssertContractPasses(result.LegacyProfile);
     }
 
@@ -176,11 +180,118 @@ public sealed class ComboRegressionTests : IDisposable
     }
 
     [Fact]
+    public void Combo_BareReactSpa_FrontendOnlyRenders()
+    {
+        // 纯 React SPA：form/frontend 已确认、backend 未确认，候选含纯前端组合，
+        // 补答「无后端」后落到 reactOnly，生成物不含 backend-AGENTS.md
+        var result = Detect(root =>
+            File.WriteAllText(
+                Path.Combine(root, "package.json"),
+                "{\"dependencies\":{\"react\":\"^18.0.0\"}}"));
+
+        Assert.False(result.Converged);
+        Assert.Contains("backend", result.Unconfirmed);
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly");
+
+        var engine = new WizardEngine(_manifest);
+        var profile = Assert.Single(engine.Resolve(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "react"
+        }), item => item.Id == "reactOnly");
+        var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
+        Assert.Contains(files, file => file.Output == "frontend-AGENTS.md");
+        Assert.Contains(files, file => file.Output == "doc-AGENTS.md");
+        Assert.Contains(files, file => file.Output == "infra-AGENTS.md");
+        Assert.DoesNotContain(files, file => file.Output == "backend-AGENTS.md");
+        AssertContractPasses(profile);
+    }
+
+    [Fact]
+    public void Combo_VueOnlyAndGeneralFrontend_RenderWithContract()
+    {
+        // 纯前端家族的另外两个组合：默认能力集渲染与契约校验通过
+        var engine = new WizardEngine(_manifest);
+        var vueOnly = Assert.Single(
+            engine.Resolve(new Dictionary<string, string>
+            {
+                ["form"] = "web",
+                ["backend"] = "none",
+                ["frontend"] = "vue"
+            }), item => item.Id == "vueOnly");
+        var generalFrontend = Assert.Single(
+            engine.Resolve(new Dictionary<string, string>
+            {
+                ["form"] = "web",
+                ["backend"] = "none",
+                ["frontend"] = "general"
+            }), item => item.Id == "generalFrontend");
+
+        foreach (var profile in new[] { vueOnly, generalFrontend })
+        {
+            var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
+            Assert.Contains(files, file => file.Output == "frontend-AGENTS.md");
+            Assert.DoesNotContain(files, file => file.Output == "backend-AGENTS.md");
+            AssertContractPasses(profile);
+        }
+    }
+
+    [Fact]
+    public void Combo_ReactOnlyAi_RendersWithFrontendAiModule()
+    {
+        // 纯前端 + AI：ai-AGENTS.md 来自前端 AI 模块，frontend/doc/infra 为骨架追加 AI 补充段，
+        // 关闭文档能力后契约仍一致
+        var engine = new WizardEngine(_manifest);
+        var profile = Assert.Single(engine.Resolve(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "react",
+            ["ai-capability"] = "yes"
+        }), item => item.Id == "reactOnly-ai");
+
+        var defaults = FeatureSelection.Defaults(_manifest, profile);
+        Assert.Contains("ai-capability", defaults);
+        var files = _renderer.Plan(_manifest, profile, defaults);
+        Assert.Contains(files, file => file.Output == "ai-AGENTS.md");
+        var frontend = Assert.Single(files, file => file.Output == "frontend-AGENTS.md");
+        Assert.Contains("AI 交互展示补充", frontend.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain(files, file => file.Output == "backend-AGENTS.md");
+        AssertContractPasses(profile);
+
+        var features = new HashSet<string>(defaults, StringComparer.OrdinalIgnoreCase);
+        features.Remove("doc");
+        var trimmed = _renderer.Plan(_manifest, profile, features);
+        Assert.DoesNotContain(trimmed, file => file.Output == "doc-AGENTS.md");
+        Assert.Contains(trimmed, file => file.Output == "ai-AGENTS.md");
+        AssertContractPasses(profile, features);
+    }
+
+    [Fact]
+    public void Combo_VueOnlyAi_RendersWithContract()
+    {
+        var engine = new WizardEngine(_manifest);
+        var profile = Assert.Single(engine.Resolve(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "vue",
+            ["ai-capability"] = "yes"
+        }), item => item.Id == "vueOnly-ai");
+
+        var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
+        Assert.Contains(files, file => file.Output == "ai-AGENTS.md");
+        Assert.Contains(files, file => file.Output == "frontend-AGENTS.md");
+        AssertContractPasses(profile);
+    }
+
+    [Fact]
     public void Combo_AllProfiles_DefaultFeatureRenderIsStable()
     {
-        // 21 个旧 Profile 继续作为兼容样例：默认能力集渲染、契约校验全部通过，
-        // 产物级零漂移由 --emit 基线对比与 Defaults_MatchLegacyPlan 共同保证
-        Assert.Equal(21, _manifest.Profiles.Count);
+        // 26 个 Profile 全量样例：默认能力集渲染、契约校验全部通过，
+        // 旧 Profile 产物级零漂移由 --emit 基线对比与 Defaults_MatchLegacyPlan 共同保证
+        Assert.Equal(26, _manifest.Profiles.Count);
         foreach (var profile in _manifest.Profiles)
         {
             var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
