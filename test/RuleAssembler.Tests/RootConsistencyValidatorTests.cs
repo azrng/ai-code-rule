@@ -39,13 +39,12 @@ public sealed class RootConsistencyValidatorTests
     }
 
     [Fact]
-    public void Validate_CombinationDisplayText_DoesNotAffectContract()
+    public void Validate_PointersWithoutRootDisplayText_DoNotAffectContract()
     {
-        // 根文件中 `CLAUDE.md` / `GEMINI.md` / `GROK.md` 的组合展示行只是文案；
-        // 契约解析只依赖结构化声明，不能因此产生重复或缺失判断
+        // 指针文件不需要在根文件目标清单重复展示；契约解析只依赖结构化声明。
         var profile = Assert.Single(_manifest.Profiles, item => item.Id == "reactTauriExe");
         var root = Assert.Single(_renderer.Plan(_manifest, profile), file => file.Output == "AGENTS.md");
-        Assert.Contains("`CLAUDE.md` / `GEMINI.md` / `GROK.md`", root.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("`CLAUDE.md` / `GEMINI.md` / `GROK.md`", root.Content, StringComparison.Ordinal);
 
         Assert.Empty(_validator.Validate(_manifest, _renderer, profile));
     }

@@ -51,7 +51,7 @@ dependencies: [agents-root]
 **门控规则**：
 - 用户确认页面符合设计文档预期。
 - 页面交互逻辑经手工 smoke test 验证通过。
-- 显示层契约、字段说明和 schema / 类型定义已初步定稳；后续发现缺口时按根 `AGENTS.md` 的纠错与回退机制处理。
+- 显示层契约、字段说明和 schema / 类型定义已初步定稳；后续发现缺口时按 `collaboration-AGENTS.md`「纠错、回退与重构」处理。
 
 ---
 

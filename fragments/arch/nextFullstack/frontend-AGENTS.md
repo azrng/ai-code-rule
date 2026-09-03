@@ -63,7 +63,7 @@ dependencies: [agents-root]
 **门控规则**：
 - 用户确认页面符合设计文档预期。
 - 页面交互逻辑经手工 smoke test 验证通过。
-- 前端契约、字段说明和 schema 已初步定稳；阶段 2 若发现契约缺口，按根 `AGENTS.md` 的纠错与回退机制先回到契约变更流程。
+- 前端契约、字段说明和 schema 已初步定稳；阶段 2 若发现契约缺口，按 `collaboration-AGENTS.md`「纠错、回退与重构」先回到契约变更流程。
 
 ---
 
@@ -94,7 +94,7 @@ dependencies: [agents-root]
 ### 状态管理规范
 - 服务端数据默认不存入 Zustand
 - Server Component 优先直接读取服务层结果
-- 客户端缓存若仓库已使用 TanStack Query，则沿用；否则根据根 `AGENTS.md` 的技术债务与重构判断决定是否引入新方案
+- 客户端缓存若仓库已使用 TanStack Query，则沿用；否则根据 `collaboration-AGENTS.md`「纠错、回退与重构」决定是否引入新方案
 - **缓存策略优先级**：TanStack Query 用于客户端数据缓存（浏览器端），Next.js 缓存用于服务端数据缓存（服务端），两者不得针对同一数据源重复缓存
 - Zustand 仅用于侧边栏折叠、全局筛选、通知、轻量会话上下文等纯客户端状态
 

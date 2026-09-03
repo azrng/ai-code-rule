@@ -53,7 +53,7 @@ dependencies: [agents-root]
 
 **门控规则**：
 - 核心服务与接口独立验证通过后，才允许进入阶段 3。
-- 后续实现发现契约缺口时，按根 `AGENTS.md` 的纠错与回退机制回到 schema / DTO / 类型定义变更流程，不在实现层绕过契约。
+- 后续实现发现契约缺口时，按 `collaboration-AGENTS.md`「纠错、回退与重构」回到 schema / DTO / 类型定义变更流程，不在实现层绕过契约。
 
 ---
 

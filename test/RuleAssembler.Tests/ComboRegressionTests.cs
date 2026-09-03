@@ -88,7 +88,7 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.Equal("dotnet-layered", result.LegacyProfileId);
         Assert.Equal("layered", result.Confirmed["arch-style"]);
         var files = _renderer.Plan(_manifest, result.LegacyProfile);
-        Assert.Equal(7, files.Count);
+        Assert.Equal(8, files.Count);
         var doc = Assert.Single(files, file => file.Output == "doc-AGENTS.md");
         Assert.Contains("doc/requirements/<module>/<feature>.md", doc.Content, StringComparison.Ordinal);
         Assert.Contains("契约引用", doc.Content, StringComparison.Ordinal);
@@ -113,7 +113,7 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.Equal("react", result.Confirmed["frontend"]);
         Assert.Equal("wails", result.Confirmed["shell"]);
         var files = _renderer.Plan(_manifest, result.LegacyProfile);
-        Assert.Equal(9, files.Count);
+        Assert.Equal(10, files.Count);
         AssertContractPasses(result.LegacyProfile);
     }
 
@@ -159,7 +159,7 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.True(result.Converged);
         Assert.Equal("staticHtml", result.LegacyProfileId);
         var files = _renderer.Plan(_manifest, result.LegacyProfile);
-        Assert.Equal(7, files.Count);
+        Assert.Equal(8, files.Count);
         AssertContractPasses(result.LegacyProfile);
     }
 
@@ -175,7 +175,7 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.Equal("python", result.LegacyProfileId);
         Assert.Equal("python", result.Confirmed["backend"]);
         var files = _renderer.Plan(_manifest, result.LegacyProfile);
-        Assert.Equal(7, files.Count);
+        Assert.Equal(8, files.Count);
         AssertContractPasses(result.LegacyProfile);
     }
 

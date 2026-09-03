@@ -1,7 +1,7 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.46.0",
+    "version": "1.48.0",
     "last_updated": "2026-09-03"
   },
   "schema_version": 2,
@@ -36,6 +36,12 @@
       "id": "core",
       "label": "公共核心模块",
       "rootSource": "root/AGENTS.md",
+      "files": [
+        {
+          "source": "shared/common/collaboration-AGENTS.md",
+          "output": "collaboration-AGENTS.md"
+        }
+      ],
       "pointers": [
         "CLAUDE.md",
         "GEMINI.md",
@@ -100,11 +106,10 @@
           { "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、启动与发布链路 | 涉及部署、容器化、环境变量或交付链路时 |", "features": ["infra"] }
         ],
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ]
       }
@@ -326,11 +331,10 @@
       "desc": "FastAPI + Pydantic + SQLAlchemy（可选）+ uv，中小型 API 服务",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `backend-AGENTS.md`：接口、服务、数据访问、缓存、异常处理与后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、启动与发布链路验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -401,12 +405,11 @@
       "desc": "React SPA（Vite）+ ASP.NET Core API，双工程分离部署",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -494,12 +497,11 @@
       "desc": "Vue 3 SPA（Vite）+ ASP.NET Core API，双工程分离部署",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -587,13 +589,12 @@
       ],
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试（单项目整洁架构）",
           "- `ai-AGENTS.md`：模型调用（Microsoft.Extensions.AI）、Agent 框架、工具 / Skills、Prompt、流式、向量与记忆等可选能力",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统、AI 产品交互补充", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -701,12 +702,11 @@
       "desc": "Next.js App Router + Prisma，同构全栈单工程",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：Route Handlers、Server Actions、Service、Repository、Prisma、服务端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -792,12 +792,11 @@
       "desc": "Avalonia + MVVM，跨平台桌面客户端",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `ui-AGENTS.md`：视图、布局、导航、样式、状态、界面测试",
           "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
           { "line": "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证", "features": ["infra"] },
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -863,12 +862,11 @@
       "desc": "WPF + MVVM，Windows 桌面客户端",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `ui-AGENTS.md`：视图、布局、导航、样式、状态、界面测试",
           "- `application-AGENTS.md`：ViewModel、Service、业务编排、结果包装、应用层测试",
           { "line": "- `infrastructure-AGENTS.md`：仓储、数据访问、依赖注入、配置、构建发布与交付验证", "features": ["infra"] },
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -928,12 +926,11 @@
       "desc": "传统 Blazor Server 应用，保留 SignalR 长连接、服务器端组件状态和旧项目兼容规则",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `ui-AGENTS.md`：页面、布局、组件、导航、状态、样式、界面测试",
           "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1027,12 +1024,11 @@
       "desc": "支持 Static SSR、Interactive Server、Interactive WebAssembly 与 Interactive Auto 的现代 Blazor Web App",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `ui-AGENTS.md`：渲染模式、页面、组件、状态、预渲染、断线恢复与 JS interop",
           "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1101,10 +1097,9 @@
       "desc": "命令行工具与后台服务，轻量无界面",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `application-AGENTS.md`：命令、Service、业务流程、配置、日志与测试",
           { "line": "- `doc-AGENTS.md`：需求文档", "features": ["doc"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           "- `TASK.md`：唯一活动任务记录文件"
         ],
         "subrule-index": [
@@ -1179,12 +1174,11 @@
       "desc": "Electron 渲染进程 + .NET 本地后端（IPC）",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：IPC handler、.NET 服务、数据访问、本地能力、后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1275,12 +1269,11 @@
       "desc": "Vue 3 渲染进程 + .NET 本地后端（IPC）",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：IPC handler、.NET 服务、数据访问、本地能力、后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1371,12 +1364,11 @@
       "desc": "React 前端 + Rust 后端（Tauri Command）",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1458,12 +1450,11 @@
       "desc": "React 前端 + Go 后端（Wails 绑定）",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：界面、视图、页面、组件、交互、样式与前端测试；没有前端或界面层时可跳过",
           "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1550,12 +1541,11 @@
       "desc": "Vue 3 前端 + Go 后端（Wails 绑定）",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
           "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1642,12 +1632,11 @@
       "desc": ".NET MAUI + MVVM，跨 iOS/Android/桌面",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `ui-AGENTS.md`：页面、布局、导航、样式、交互、移动端适配、界面测试",
           "- `application-AGENTS.md`：ViewModel、Service、命令、业务编排、结果包装、应用层测试",
           { "line": "- `infrastructure-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证", "features": ["infra"] },
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与移动端 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1727,12 +1716,11 @@
       "desc": "Flutter + Riverpod，跨平台移动客户端",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `ui-AGENTS.md`：页面、布局、导航、样式、交互、动效、移动端适配、界面测试",
           "- `application-AGENTS.md`：Riverpod Provider、Service、命令、业务编排、结果包装、应用层测试",
           "- `backend-AGENTS.md`：Repository、数据访问、依赖注入、平台服务、配置、构建发布与交付验证",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token、移动端 UI 规范与动效规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1816,11 +1804,10 @@
       "desc": "React 19（Vite）纯前端单页应用，无独立后端；数据走 mock / 本地存储 / 第三方 API",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -1917,12 +1904,11 @@
       "root": {
         "intro-quote": "> 本规则面向无独立后端的 AI 前端产品：模型调用经托管网关或服务端代理完成，前端专注交互与流式体验。\n",
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层、AI 交互展示与前端测试",
           "- `ai-AGENTS.md`：模型调用封装、密钥安全、流式处理、Prompt、会话管理",
           { "line": "- `doc-AGENTS.md`：设计文档、数据口径、AI 产品交互补充", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、模型配置、构建、部署与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -2035,11 +2021,10 @@
       "desc": "Vue 3（Vite）纯前端单页应用，无独立后端；数据走 mock / 本地存储 / 第三方 API",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -2136,12 +2121,11 @@
       "root": {
         "intro-quote": "> 本规则面向无独立后端的 AI 前端产品：模型调用经托管网关或服务端代理完成，前端专注交互与流式体验。\n",
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层、AI 交互展示与前端测试",
           "- `ai-AGENTS.md`：模型调用封装、密钥安全、流式处理、Prompt、会话管理",
           { "line": "- `doc-AGENTS.md`：设计文档、数据口径、AI 产品交互补充", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、模型配置、构建、部署与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -2254,11 +2238,10 @@
       "desc": "无独立后端、技术栈不限的前端项目；按现有实现执行，数据走 mock / 本地存储 / 第三方 API",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、视图、组件、交互、样式、数据层与前端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -2350,10 +2333,9 @@
       "desc": "原生 HTML/CSS/JS 静态页面，无构建链路或轻构建",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、样式、交互与前端测试",
           { "line": "- `doc-AGENTS.md`：设计文档、设计系统", "features": ["doc"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
@@ -2438,12 +2420,11 @@
       "desc": "任意技术栈；前后端子规则按命中场景阅读，无则跳过",
       "root": {
         "target-list": [
-          "- `AGENTS.md`：只保留全局协作规范、阶段门控、任务机制、交付要求与子规则导航",
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：界面、视图、页面、组件、交互、样式与前端测试；没有前端或界面层时可跳过",
           "- `backend-AGENTS.md`：接口、服务、业务逻辑、数据访问、鉴权、缓存、后端测试；没有独立服务端时按命中场景阅读",
           { "line": "- `doc-AGENTS.md`：设计文档、契约说明", "features": ["doc"] },
           { "line": "- `infra-AGENTS.md`：环境变量、启动方式、构建发布、部署与交付验证", "features": ["infra"] },
-          "- `CLAUDE.md` / `GEMINI.md` / `GROK.md`：入口提示文件，只提醒先读 `AGENTS.md`",
           { "line": "- `design-system.yaml`：设计 token 与 UI 规范", "features": ["design-system"] },
           "- `TASK.md`：唯一活动任务记录文件"
         ],

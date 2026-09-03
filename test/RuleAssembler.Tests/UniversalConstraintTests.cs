@@ -34,4 +34,19 @@ public sealed class UniversalConstraintTests
                 $"{profile.Id} 的生成产物缺少中文注释口径");
         }
     }
+
+    [Fact]
+    public void EveryProfile_CollaborationRule_ContainsPlanGate()
+    {
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
+        var renderer = new RuleRenderer(new ResourceStore());
+
+        foreach (var profile in manifest.Profiles)
+        {
+            var files = renderer.Plan(manifest, profile);
+            var collaboration = Assert.Single(files, file => file.Output == "collaboration-AGENTS.md");
+            Assert.Contains("需求澄清与计划关卡", collaboration.Content);
+            Assert.Contains("每轮优先提出 1 至 3 个最关键问题", collaboration.Content);
+        }
+    }
 }

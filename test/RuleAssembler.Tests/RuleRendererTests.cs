@@ -72,8 +72,10 @@ public sealed class RuleRendererPlanTests
 
         var files = new RuleRenderer(resources).Plan(manifest, profile);
 
-        Assert.Equal(9, files.Count);
+        Assert.Equal(10, files.Count);
         Assert.All(files, file => Assert.DoesNotContain("<!-- include:", file.Content));
+        Assert.Contains(files, file => file.Output == "collaboration-AGENTS.md"
+            && file.Content.Contains("需求澄清与计划关卡", StringComparison.Ordinal));
         Assert.Contains(files, file => file.Output == "frontend-AGENTS.md"
             && file.Content.Contains("所有 Tauri 调用统一收敛", StringComparison.Ordinal));
         Assert.Contains(files, file => file.Output == "backend-AGENTS.md"

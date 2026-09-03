@@ -94,9 +94,9 @@ public sealed class FeatureToggleTests
 
         var files = _renderer.Plan(_manifest, profile, features);
 
-        // 核心（AGENTS.md、frontend、backend、CLAUDE/GEMINI/GROK）保留，能力文件全部移除
+        // 核心（AGENTS.md、collaboration、frontend、backend、CLAUDE/GEMINI/GROK）保留，能力文件全部移除
         Assert.Equal(
-            new[] { "AGENTS.md", "frontend-AGENTS.md", "backend-AGENTS.md", "CLAUDE.md", "GEMINI.md", "GROK.md" },
+            new[] { "AGENTS.md", "collaboration-AGENTS.md", "frontend-AGENTS.md", "backend-AGENTS.md", "CLAUDE.md", "GEMINI.md", "GROK.md" },
             files.Select(file => file.Output));
         var root = Assert.Single(files, file => file.Output == "AGENTS.md");
         Assert.DoesNotContain("doc-AGENTS.md", root.Content, StringComparison.Ordinal);
