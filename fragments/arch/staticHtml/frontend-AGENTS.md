@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.31.0
-last_updated: 2026-09-02
+version: 1.44.0
+last_updated: 2026-09-03
 dependencies: [agents-root]
 ---
 
@@ -191,7 +191,6 @@ project-root/
 - 读取或修改含中文文件时，若出现乱码，先判断是终端显示问题还是文件编码损坏；未确认前禁止覆盖原文件。
 - 禁止使用可能隐式改变编码的方式直接改写源码文件，如 shell 重定向、`Out-File`、`Set-Content`。
 - Windows / PowerShell 下读取中文文件时，必须显式使用 `UTF-8`。
-- PowerShell 命令不接受 `&&`，禁止使用；需要连续执行时改为分步执行或使用 PowerShell 兼容写法。
 - 如果编写注释（含代码注释、文档注释等），统一使用中文，不使用纯英文注释；必要的英文标识、协议字段名或框架关键字可保留原文。
 - 修改含中文内容后，必须重新读取一次并确认关键中文显示正常。
 

@@ -110,6 +110,7 @@ dependencies: []
 - 禁止通过标准输入管道直接传递中文提交信息，如 `git commit -F -`、here-string 管道等，避免编码链路把中文写成 `?`
 - 禁止使用可能隐式改变编码的方式直接改写源码文件，如 shell 重定向、`Out-File`、`Set-Content`
 - 修改含中文内容后，必须重新读取确认关键中文显示正常
+- PowerShell 命令不接受 `&&`，禁止使用；需要连续执行时改为分步执行或使用 PowerShell 兼容写法。
 
 ---
 
