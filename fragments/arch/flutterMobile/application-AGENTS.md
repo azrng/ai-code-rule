@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.30.0
-last_updated: 2026-09-01
+version: 1.45.0
+last_updated: 2026-09-03
 dependencies: [agents-root]
 ---
 
@@ -160,6 +160,7 @@ class Failure<T> extends Result<T> {
 - 触发拆分的信号：职责混杂、同文件出现多个主类、字段持续堆叠、跨多个不相关业务。
 - 允许例外：仅服务当前文件的私有辅助类型、freezed 生成的联合类型成员、测试 fixture。
 - 反模式：一个 `models.dart` 堆放所有实体 / DTO；把多个不相关 Provider 或 Service 塞进同一文件。
+- 如果编写注释（含 dartdoc、行内注释等），统一使用中文，不使用纯英文注释；必要的英文标识、协议字段名或框架关键字可保留原文；不在注释里泄露密钥、token、连接串或真实生产地址。
 
 ---
 

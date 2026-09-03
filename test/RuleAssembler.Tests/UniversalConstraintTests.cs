@@ -19,4 +19,19 @@ public sealed class UniversalConstraintTests
                 root.Content);
         }
     }
+
+    [Fact]
+    public void EveryProfile_Output_ContainsChineseCommentRule()
+    {
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
+        var renderer = new RuleRenderer(new ResourceStore());
+
+        foreach (var profile in manifest.Profiles)
+        {
+            var files = renderer.Plan(manifest, profile);
+            Assert.True(
+                files.Any(file => file.Content.Contains("统一使用中文，不使用纯英文注释")),
+                $"{profile.Id} 的生成产物缺少中文注释口径");
+        }
+    }
 }

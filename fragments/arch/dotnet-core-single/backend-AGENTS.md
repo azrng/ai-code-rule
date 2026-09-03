@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.31.0
-last_updated: 2026-09-02
+version: 1.45.0
+last_updated: 2026-09-03
 dependencies: [agents-root]
 ---
 
@@ -217,7 +217,7 @@ Controllers → Application → Domain ← Infrastructure
   - 例外：Controller action 需要向调用方暴露事件格式、鉴权要求、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
 - 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明“为什么这样做”——包括 fail fast 的原因、为什么跳过某类脏数据、为什么保留某一层结构。
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、“返回结果”这类复述代码的低价值注释。
-- 注释统一使用中文，不在注释里泄露密钥、token、连接串或真实生产地址。
+- 注释统一使用中文，不使用纯英文注释；不在注释里泄露密钥、token、连接串或真实生产地址。
 
 <!-- include: shared/application/anti-patterns.md -->
 
