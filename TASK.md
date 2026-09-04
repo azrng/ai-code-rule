@@ -6,8 +6,6 @@
 >
 > 北极星方案：[doc/组合式AI-Rule生成器改造方案.md](doc/组合式AI-Rule生成器改造方案.md)
 >
-> 旧批次（问答向导、项目检测、配方记录、Spectre.Console 交互层，1.36.0~1.39.0）已完成，历史记录见 `doc/rulelog/2026-09-02-生成器问答向导与项目检测.md`。
-
 ## 0. 当前维护任务
 
 | 任务 ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 AI | 任务状态 | 优先级 | 最近更新时间 |
@@ -121,7 +119,7 @@ P1 不要求一次性实现“新增任意维度完全不改 C#”，但新增�
 - Manifest 增加选项、组件、适用条件、依赖/冲突关系和输出声明。
 - 项目检测增加证据映射；无法检测时保留未确认状态，不补默认组合。
 - 增加至少一个 Selection/recipe 测试和一个生成结果回归样例。
-- 更新规则版本、README 和现有主题 rulelog；若只改代码且生成正文不变，按版本口径处理。
+- 更新规则版本、README；若只改代码且生成正文不变，按版本口径处理。
 - 检查根导航、文件清单、模块引用和输出合并是否一致。
 
 禁止以下做法：
@@ -142,7 +140,7 @@ P1 目标是低风险增强现有 Profile 管道，不提前伪装成完整组�
 | P1-3 | Q5 能力开关与根导航联动 | 已完成 | P1-1 |
 | P1-4 | 扩展约束、兼容回归和文档收口 | 已完成 | P1-1、P1-2、P1-3 |
 
-> P1 已全部完成（版本 1.40.0）。2026-09-02 追加两个批次：1.41.0 纯前端组合 `reactOnly` / `vueOnly` / `generalFrontend`（`form=web + backend=none`，frontend-static 家族），问答 Q2 出现「无后端」选项、裸前端项目检测候选包含纯前端组合；1.42.0 纯前端 AI 变体 `reactOnly-ai` / `vueOnly-ai`，新增 `ai-capability-frontend` 模块（`shared/skeletons/frontend-ai/`：浏览器侧口径的 ai-AGENTS.md + frontend/doc/infra 三个追加段），密钥不下发浏览器、模型调用走托管网关 / 代理。两批均已完成（与 1.43.0 文档拆分同批提交，manifest 版本直接从 1.40.0 进入 1.43.0，git 历史中无独立的 1.41.0 / 1.42.0 版本点，批次号仅见 rulelog）。后续接手时：日常维护按 §2 的扩展口执行；P2 按 §5 的触发条件评估启动。
+> P1 已全部完成（版本 1.40.0）。2026-09-02 追加两个批次：1.41.0 纯前端组合 `reactOnly` / `vueOnly` / `generalFrontend`（`form=web + backend=none`，frontend-static 家族），问答 Q2 出现「无后端」选项、裸前端项目检测候选包含纯前端组合；1.42.0 纯前端 AI 变体 `reactOnly-ai` / `vueOnly-ai`，新增 `ai-capability-frontend` 模块（`shared/skeletons/frontend-ai/`：浏览器侧口径的 ai-AGENTS.md + frontend/doc/infra 三个追加段），密钥不下发浏览器、模型调用走托管网关 / 代理。两批均已完成（与 1.43.0 文档拆分同批提交，manifest 版本直接从 1.40.0 进入 1.43.0，git 历史中无独立的 1.41.0 / 1.42.0 版本点）。后续接手时：日常维护按 §2 的扩展口执行；P2 按 §5 的触发条件评估启动。
 
 ### P1-1 结构化根声明与校验
 
@@ -234,7 +232,7 @@ design-system
 - 至少覆盖 `.NET + React`、`.NET 分层 + Web`、`React + Wails`、`React + Electron + .NET`、纯静态 HTML、纯后端 Python。
 - 21 个旧 Profile 继续作为兼容样例，默认路径与改造前比较，差异只允许出现在已批准的版本元数据或明确的能力开关结果。
 - 任何新增模块必须同时补资源文件、manifest 条目、适用约束、输出声明、检测映射、单元测试和示例配方。
-- 更新 `README.md`、`app/RuleAssembler/README.md` 和本文件；同一主题只更新现有 rulelog，不新增平行审计记录。
+- 更新 `README.md`、`app/RuleAssembler/README.md` 和本文件；
 
 ### 文档规则维护：需求与设计按业务模块拆分
 
@@ -243,7 +241,7 @@ design-system
 | 需求、设计、契约职责拆分 | 已完成 | 需求文档只描述业务事实，设计文档通过 `REQ-` 编号追溯需求，契约字段不在需求/设计文档中重复维护 |
 | 按模块/功能建立文档目录约定 | 已完成 | 新文档使用 `doc/index.md`、`doc/requirements/<module>/<feature>.md`、`doc/design/<module>/<feature>.md`，跨模块设计使用 `architecture.md` |
 | 兼容旧文档路径并补充迁移规则 | 已完成 | 旧 `doc/requirement.md` 与 `doc/design/设计文档.md` 只作为迁移入口，不再继续追加新章节 |
-| 模板、版本、回归验证与记录同步 | 已完成 | 更新共享片段、内联模板、manifest、README、测试和本主题 rulelog |
+| 模板、版本、回归验证与记录同步 | 已完成 | 更新共享片段、内联模板、manifest、README、测试 |
 
 ## 4. P1 实施顺序和提交规则
 
@@ -256,13 +254,10 @@ P1-1 结构化输出契约
     -> P1-4 回归与文档
 ```
 
-每个 P1 子任务单独提交，并同步更新本文件和 `doc/rulelog/2026-09-02-生成器问答向导与项目检测.md` 的主题记录状态。后续提交可以基于前一个提交，不要求每个提交脱离依赖后单独从主分支编译通过。
-
 ### 4.1 版本口径
 
 - 仅代码校验、检测逻辑和测试变更，且生成内容不变时，不修改规则版本。
 - Q5 能力开关导致生成路径增加或根导航生成逻辑变化时，更新 `fragments/manifest.json` 的 `vars.version` 和 `last_updated`；版本建议从当前 `1.39.0` 进入下一 minor 版本。
-- 任何会改变已生成规则正文的调整，必须在 rulelog 中写明影响的 Profile、文件和差异原因。
 
 ### 4.2 回归命令
 
