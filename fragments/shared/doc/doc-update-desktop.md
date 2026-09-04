@@ -8,4 +8,6 @@
 - 本地数据库结构、迁移或初始化方式
 - 对外使用方式或接口约定
 
+<!-- include: shared/doc/contract-lifecycle.md -->
+
 优先更新已有文档，不新增重复说明。

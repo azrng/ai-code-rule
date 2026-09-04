@@ -4,3 +4,5 @@
 - 构建、发布或部署流程
 - 数据库结构、迁移或初始化方式
 - 对外使用方式或接口约定
+
+<!-- include: shared/doc/contract-lifecycle.md -->

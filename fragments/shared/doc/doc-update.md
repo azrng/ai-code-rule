@@ -3,7 +3,7 @@
 <!-- include: shared/doc/doc-update-core.md -->
 
 - 优先更新对应业务模块/功能的已有需求、设计和契约文档，不新增重复说明。
-- 新增功能时，先定位或创建 `doc/requirements/<module>/<feature>.md`，再创建对应的 `doc/design/<module>/<feature>.md`；两者使用稳定 ID 互相引用，并同步更新 `doc/index.md`、`requirements/index.md` 和 `design/index.md`。
+- 新增功能时，先定位或创建 `doc/requirements/<module>/<feature>.md`，再创建对应的 `doc/design/<module>/<feature>.md`；两者使用稳定 ID 互相引用，并同步更新 `doc/index.md`、`doc/requirements/index.md` 和 `doc/design/index.md`。
 - 需求文档发生业务规则、范围、权限或验收标准变化时，必须检查对应设计文档和实现是否需要同步调整；设计变更不得反向覆盖未经确认的需求事实。
 - 设计文档发生技术方案、状态、接口调用或错误处理变化时，只更新设计文档和必要的契约/实现说明，不把技术细节复制回需求文档。
 - 跨模块变化更新 `doc/design/architecture.md` 或明确的跨模块需求文档；模块文档通过链接引用，不复制公共段落。

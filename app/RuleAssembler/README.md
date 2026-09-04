@@ -33,7 +33,7 @@ fragments/
 
 子规则内部的共性小节通过 include 指令复用：片段中独占一行的 `<!-- include: shared/xxx.md -->`（路径相对 `fragments/`）会在生成时被展开为对应共享小节的内容，支持嵌套引用并做循环检测。当前 `shared/` 维护「提交前最小回归」「无法执行测试时」「外部依赖与数据」「主动建议规则」等小节，按 backend / frontend / ui / application / infra 等子规则类型分目录归档；只有逐字节相同或纯措辞漂移的小节才收敛进共享，含技术栈实质差异的版本保留在各架构片段本地。
 
-目标项目的需求与设计文档不由生成器创建。生成的 `doc-AGENTS.md` 规定项目文档按业务模块/功能拆分：需求放在 `doc/requirements/`，设计放在 `doc/design/`，通过 `doc/index.md` 和目录索引按需定位；旧的 `doc/requirement.md` 与 `doc/design/设计文档.md` 仅作为迁移兼容入口。
+目标项目的需求、设计和契约草案不由生成器创建。生成的 `doc-AGENTS.md` 规定项目文档按业务模块/功能拆分：需求放在 `doc/requirements/`，设计放在 `doc/design/`，新契约草案放在 `doc/contracts/`，通过 `doc/index.md` 和目录索引按需定位；旧的 `doc/requirement.md` 与 `doc/design/设计文档.md` 仅作为迁移兼容入口。
 
 ### 输出契约与能力开关
 

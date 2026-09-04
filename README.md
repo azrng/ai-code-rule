@@ -108,7 +108,7 @@ fragments/
 5. 开始协作时先读根 `AGENTS.md`，再根据任务命中对应子规则，不默认预读全部文件。
 6. 开发过程中通过 `TASK.md` 维护活动任务与最近少量已完成任务（`TASK.md` 由目标项目自己维护，生成器只引用不释放）。
 
-文档维护按业务模块和功能拆分：`doc/requirements/<module>/<feature>.md` 记录业务需求，`doc/design/<module>/<feature>.md` 记录对应技术设计，`doc/index.md` 及各目录索引负责导航。设计文档通过 `REQ-` 编号引用需求，不重复维护需求正文；跨模块方案放在 `doc/design/architecture.md`。
+文档维护按业务模块和功能拆分：`doc/requirements/<module>/<feature>.md` 记录业务需求，`doc/design/<module>/<feature>.md` 记录对应技术设计，`doc/index.md` 及各目录索引负责导航。设计文档通过 `REQ-` / `DES-` 编号建立追溯，不重复维护需求正文；新增接口先用 `CON-` 契约草案承载完整字段，落地后以 DTO / Schema / 接口代码为最终事实；跨模块方案放在 `doc/design/architecture.md`。
 
 ### 一键导出（推荐）
 

@@ -21,8 +21,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/stage0-design.md -->
 
-<!-- include: shared/doc/requirement-autogen.md -->
-
 <!-- include: shared/doc/design-checklist.md -->
 
 ---

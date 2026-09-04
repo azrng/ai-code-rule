@@ -83,6 +83,8 @@ public sealed class RuleRendererPlanTests
         var doc = Assert.Single(files, file => file.Output == "doc-AGENTS.md");
         Assert.Contains("doc/requirements/<module>/<feature>.md", doc.Content, StringComparison.Ordinal);
         Assert.Contains("需求追溯", doc.Content, StringComparison.Ordinal);
+        Assert.Contains("契约生命周期", doc.Content, StringComparison.Ordinal);
+        Assert.Contains("CON-", doc.Content, StringComparison.Ordinal);
         Assert.DoesNotContain("全项目一份", doc.Content, StringComparison.Ordinal);
         Assert.Contains(files, file => file.Output == "GROK.md"
             && file.Content.Contains("version: 1.3.1", StringComparison.Ordinal));
