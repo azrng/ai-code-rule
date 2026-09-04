@@ -44,6 +44,7 @@ dependencies: [agents-root]
 - 数据库（可选）：SQLite (本地) / PostgreSQL / SQL Server / 其他
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 使用 Fluent Design 风格，遵循 `design-system.yaml` 中定义的设计 token
 - 样式必须使用 WPF 资源字典 (ResourceDictionary)，禁止硬编码在控件属性中
 - 颜色、间距、圆角必须来自样式资源，使用 `{StaticResource}` 或 `{DynamicResource}` 引用

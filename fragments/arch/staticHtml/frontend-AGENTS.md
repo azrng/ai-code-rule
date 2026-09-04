@@ -34,6 +34,7 @@ dependencies: [agents-root]
 | 静态页面 | 通过本地 HTTP 服务器访问（如 VS Code Live Server、`python -m http.server 3000`），默认端口 3000 |
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 使用 Bootstrap 5 主题系统，所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 Bootstrap 组件和工具类，禁止 inline style，禁止硬编码颜色/间距/圆角
 
@@ -261,6 +262,14 @@ project-root/
 - 禁止直接操作 DOM 时拼凑 HTML 字符串（使用 `createElement` 或模板片段）
 - 异步操作使用 `async`/`await` + `Promise`，禁止回调地狱
 - 事件绑定使用 `addEventListener`，禁止 `onclick` 等 HTML 内联事件属性（Bootstrap 组件自带事件除外）
+
+### 类型纪律（无构建的类型安全）
+- 保持 `.js` 文件形态，不引入 TypeScript 编译或任何构建步骤，与本项目「无框架无构建」的定位一致
+- 新建 JS 文件首行添加 `// @ts-check`，让编辑器与 CI 能基于 JSDoc 做类型检查
+- `js/` 下共享模块（`store.js`、`router.js`、`components.js` 等）的函数必须写 JSDoc 注解：`@param`（含类型与含义）、`@returns`；复杂数据结构用 `@typedef` 定义一次、处处引用
+- 页面脚本调用共享模块时以 JSDoc 类型为准，不得凭猜测传参；类型不匹配时先修正注解或调用方
+- 可在项目根添加 `jsconfig.json`（`checkJs: true`、`noEmit: true`）统一检查口径，仅用于编辑器 / CI 检查，不产出任何构建物
+- 脚本规模超出单文件或简单模块（出现复杂状态流转、多实体关联、需要测试框架）时，应主动提示用户评估迁移到带构建的前端组合（如 React / Vue Profile），而不是在本项目内引入构建或 TypeScript 工具链
 
 ### 数据管理规范（localStorage）
 - 所有 localStorage 操作统一通过 `js/store.js` 封装

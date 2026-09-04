@@ -27,6 +27,7 @@ dependencies: [agents-root]
 <!-- include: shared/frontend/no-backend-data.md -->
 
 <!-- include: shared/frontend/design-system-usage-element-plus.md -->
+<!-- include: shared/ui/design-system-liveness.md -->
 
 <!-- include: shared/application/tech-choice.md -->
 

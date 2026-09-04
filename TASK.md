@@ -11,6 +11,9 @@
 | 任务 ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 AI | 任务状态 | 优先级 | 最近更新时间 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | RULE-20260903-COLLAB | 协作规则下沉与需求澄清 | 新需求和 `/plan` 进入结构化澄清；将根文件中的按需流程下沉，降低常驻上下文 | 已完成验证 | Codex | DONE | 高 | 2026-09-03 |
+| RULE-20260904-DSBASELINE | 设计系统基线与定制口径 | `design-system.yaml` 从固定规范改为「内置基线 + 按产品品牌定制」：定制口径收敛到 `shared/ui/design-system-liveness.md` 并接入全部界面子规则；16 份 yaml 头部声明基线语义、`meta.status` 改「基线待定制」；生成器对已定制（或状态无法识别）的本地 `design-system.yaml` 保留不覆盖（`DesignSystemGuard`）。版本 1.48.0 → 1.49.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-04 |
+| RULE-20260904-EOL | 渲染管线行尾归一 | `ResourceStore.Read` 读取口统一 LF：此前根模板按 `\n` 写死的连续空行收敛对 CRLF 检出不生效，同一片段在 CRLF / LF 工作区产出内容有差异；归一后 CRLF worktree 与 LF 主目录 `--emit` 逐字节一致。仅代码与测试变更，生成内容不变，版本保持 1.49.0 | 已完成验证 | ZCode | DONE | 中 | 2026-09-04 |
+| RULE-20260904-JSTYPE | 静态 HTML Profile JS 类型纪律 | `staticHtml` frontend 规范新增「类型纪律（无构建的类型安全）」小节：保持 `.js` 不引入 TS 编译，共享模块强制 JSDoc 注解 + `// @ts-check`，可选 `jsconfig.json`（checkJs/noEmit）仅作检查；脚本规模超出时引导迁移到带构建的前端组合而非在本项目引入构建。版本 1.49.0 → 1.50.0 | 已完成验证 | ZCode | DONE | 中 | 2026-09-04 |
 
 ## 1. 当前目标
 

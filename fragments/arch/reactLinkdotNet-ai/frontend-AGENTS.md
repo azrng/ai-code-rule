@@ -36,6 +36,7 @@ dependencies: [agents-root]
 - class-variance-authority + clsx + tailwind-merge（shadcn 标配的变体与类名合并工具）
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 视觉 token 定义在 `design-system.yaml`，落地为 Tailwind 主题（`tailwind.config.ts`）与 shadcn 的 CSS 变量（`src/styles/globals.css`）
 - 优先复用 `src/components/ui/` 下 shadcn 组件与 Radix 能力，再考虑自定义组件
 - 禁止 inline style 硬编码颜色 / 间距 / 圆角；颜色统一走语义化 Tailwind 类或 shadcn CSS 变量

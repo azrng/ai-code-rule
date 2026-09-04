@@ -26,6 +26,7 @@ dependencies: [agents-root]
 - 如果仓库已有真实实现，以现有代码和目标框架支持的官方能力为准，不为统一模板强制迁移渲染模式。
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 使用 BootstrapBlazor 主题系统，所有视觉规范在 `design-system.yaml` 中定义。
 - 优先复用现有组件、样式和设计 token，禁止 inline style，禁止硬编码颜色、间距或圆角。
 

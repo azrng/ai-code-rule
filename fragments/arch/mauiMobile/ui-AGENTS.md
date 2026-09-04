@@ -32,6 +32,7 @@ dependencies: [agents-root]
 - 设计风格：Material Design（Android）/ Human Interface Guidelines（iOS），通过 MAUI 跨平台统一
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 使用 `design-system.yaml` 中定义的设计 token
 - 样式必须使用 MAUI ResourceDictionary（`.xaml`），禁止把颜色、间距、圆角直接硬编码在控件属性中
 - 颜色、间距、圆角必须来自样式资源，使用 `StaticResource` 或 `DynamicResource` 引用

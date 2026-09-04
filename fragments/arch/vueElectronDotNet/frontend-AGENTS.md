@@ -34,6 +34,7 @@ dependencies: [agents-root]
 - Electron preload + `contextBridge` 暴露的 IPC SDK（与主进程 / .NET sidecar 通信）
 
 <!-- include: shared/frontend/design-system-usage-element-plus.md -->
+<!-- include: shared/ui/design-system-liveness.md -->
 
 <!-- include: shared/frontend/advisory.md -->
 

@@ -27,6 +27,7 @@ dependencies: [agents-root]
 <!-- include: shared/frontend/no-backend-data.md -->
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 所有视觉规范以 `design-system.yaml` 为唯一事实来源
 - 优先复用项目已有组件、布局、样式变量与交互模式
 - 禁止在无约束情况下随意硬编码颜色、间距、圆角、阴影、断点；若现有技术栈无法完全避免，必须优先抽成可复用 token 或常量

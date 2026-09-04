@@ -36,6 +36,7 @@ dependencies: [agents-root]
 <!-- include: shared/frontend/testing.md -->
 
 <!-- include: shared/frontend/design-system-usage.md -->
+<!-- include: shared/ui/design-system-liveness.md -->
 
 <!-- include: shared/frontend/advisory.md -->
 

@@ -31,6 +31,13 @@ internal sealed class ResourceStore
             return null;
 
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return reader.ReadToEnd();
+        return NormalizeLineEndings(reader.ReadToEnd());
+    }
+
+    // 片段读取口统一 LF：工作区检出可能是 CRLF（autocrlf）或 LF，必须在入口抹平，
+    // 否则下游按 \n 写死的模板处理（如根模板连续空行收敛）会因行尾不同产生内容差异
+    internal static string NormalizeLineEndings(string content)
+    {
+        return content.Replace("\r\n", "\n").Replace('\r', '\n');
     }
 }

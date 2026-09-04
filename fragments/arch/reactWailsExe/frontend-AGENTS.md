@@ -28,6 +28,7 @@ dependencies: [agents-root]
 - Axios（HTTP 客户端，仅用于外部 API 调用）
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 使用 Ant Design 主题系统（ConfigProvider + Design Token），所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 Ant Design 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
 

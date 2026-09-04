@@ -31,6 +31,7 @@ dependencies: [agents-root]
 - GoRouter（路由管理）
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 使用 `design-system.yaml` 中定义的设计 token
 - 样式必须使用 Flutter ThemeData + Material 3 Token，禁止硬编码颜色、间距、圆角
 - 颜色通过 `Theme.of(context).colorScheme` 获取

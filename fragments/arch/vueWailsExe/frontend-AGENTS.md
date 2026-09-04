@@ -24,6 +24,7 @@ dependencies: [agents-root]
 - Axios（HTTP 客户端，仅用于外部 API 调用）
 
 <!-- include: shared/frontend/design-system-usage-element-plus.md -->
+<!-- include: shared/ui/design-system-liveness.md -->
 
 ---
 

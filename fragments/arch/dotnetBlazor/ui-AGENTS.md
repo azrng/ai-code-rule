@@ -23,6 +23,7 @@ dependencies: [agents-root]
 - Blazor 状态管理（`CascadingValue` / `CascadingParameter` / Scoped 服务）
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 使用 BootstrapBlazor 主题系统，所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 BootstrapBlazor 组件和样式，禁止 inline style，禁止硬编码颜色 / 间距 / 圆角
 - BootstrapBlazor 组件的具体参数与用法不在本规则展开：环境提供 bootstrap-blazor skill 时优先遵循，否则以项目锁定版本的官方文档为准

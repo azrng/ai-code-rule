@@ -7,6 +7,7 @@
 - `fragments/` 是唯一维护源：`arch/<id>/` 维护各架构专属片段，`shared/` 维护跨架构共享小节（子规则通过 `<!-- include: shared/... -->` 引用，改一处同步全部 Profile），`manifest.json` 维护模块、家族与 Profile 配方
 - 生成器 `app/RuleAssembler/` 按 Profile 把片段拼装为 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 与 `backend-AGENTS.md`、`frontend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`、`ui-AGENTS.md`、`application-AGENTS.md`、`infrastructure-AGENTS.md` 等子规则文件，部分 Profile 另含 `design-system.yaml`
 - 仓库根原有的 19 套架构快照目录已于 2026-08-28 删除，不再作为维护入口；新项目用 `use-rule.exe`（或 `--emit`）生成规则文件到目标项目。启动时先检测目标项目特征给出推荐组合，也可走问答决策树（基于 manifest 的 `traits` + `wizard` 配置）或经典的「大类 → Profile」；生成成功后写入 `.ai-rule-profile.json` 配方记录并自动加入目标项目 `.gitignore`。新增 Profile 必须同时补 `traits` 与 `wizard.options` 文案，否则 `--check` 失败
+- `design-system.yaml` 的颜色、主题、字体、风格关键词是内置基线而非固定规范：规则层要求按产品品牌定制（`meta.status` 从「基线待定制」改为「已定制」），生成器对已定制的本地文件保留不覆盖；定制口径统一维护在 `shared/ui/design-system-liveness.md`，改一处同步全部界面子规则
 - 通用执行约束需在各架构模板间保持一致；Windows / PowerShell 场景下统一禁止使用 `&&` 链式命令
 - 通用注释口径需在各架构模板间保持一致：如果编写注释（含代码注释、文档注释、XML 注释、Go doc 注释等），统一使用中文，不使用纯英文注释
 - 通用拆分口径需在各架构模板间保持一致：单个类、页面、组件、页面基类应保持职责单一，避免巨型文件和巨型类。发现文件持续膨胀、单类职责过多、阅读成本明显升高时，必须优先拆分为更小的组件、服务、辅助类或局部模块。禁止编写超大页面基类、超大工具类、超大 Service 类，禁止把多个无关职责长期堆在同一个类中。

@@ -32,6 +32,7 @@ dependencies: [agents-root]
 - Zustand（仅用于：侧边栏折叠、全局筛选、通知、轻量会话上下文）
 
 ### 设计系统
+<!-- include: shared/ui/design-system-liveness.md -->
 - 所有视觉规范以 `design-system.yaml` 为唯一事实来源
 - 优先复用项目已有组件、布局、样式变量与交互模式
 - 禁止 inline style，禁止硬编码颜色、间距、圆角、阴影、断点

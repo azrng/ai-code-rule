@@ -61,6 +61,17 @@ internal static class Program
         // Q5 能力开关：所有入口统一在选择之后、汇总确认之前执行
         var features = ChooseFeatures(manifest, ui, selection.Profile);
         var files = renderer.Plan(manifest, selection.Profile, features);
+
+        // 已定制的设计系统文件属于产品资产：本次计划包含 design-system.yaml 且本地已是定制版时，保留本地不覆盖
+        if (files.Any(file => file.Output.Equals("design-system.yaml", StringComparison.OrdinalIgnoreCase))
+            && DesignSystemGuard.ShouldPreserve(Environment.CurrentDirectory))
+        {
+            files = files
+                .Where(file => !file.Output.Equals("design-system.yaml", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            Console.WriteLine("检测到已定制的 design-system.yaml：保留本地版本，本次不覆盖（如需重置基线，删除该文件后再生成）");
+        }
+
         Console.WriteLine();
         Console.WriteLine($"已选择：{selection.Profile.Label}");
         Console.WriteLine("将释放以下文件：");
