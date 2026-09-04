@@ -20,7 +20,7 @@ internal sealed class SpectreConsoleUi : IConsoleUi
 
         var prompt = new SelectionPrompt<string>()
             .Title(Markup.Escape(title))
-            .PageSize(Math.Min(display.Count, 12))
+            .PageSize(PageBudget(display.Count))
             .AddChoices(display);
 
         var selected = AnsiConsole.Prompt(prompt);
@@ -41,7 +41,7 @@ internal sealed class SpectreConsoleUi : IConsoleUi
         var prompt = new MultiSelectionPrompt<string>()
             .Title(Markup.Escape(title))
             .InstructionsText("[grey](空格切换勾选，回车确认)[/]")
-            .PageSize(Math.Min(display.Count, 12))
+            .PageSize(PageBudget(display.Count))
             .AddChoices(display);
         foreach (var index in selected)
             prompt.Select(display[index]);
@@ -49,6 +49,9 @@ internal sealed class SpectreConsoleUi : IConsoleUi
         var chosen = AnsiConsole.Prompt(prompt);
         return chosen.Select(item => display.IndexOf(item)).ToList();
     }
+
+    // Spectre.Console 要求 PageSize >= 3：选项行数不足 3（如汇总确认只有 1 项 + 取消）时取下限，超长列表封顶 12
+    internal static int PageBudget(int rowCount) => Math.Clamp(rowCount, 3, 12);
 
     public void Head(string text)
     {

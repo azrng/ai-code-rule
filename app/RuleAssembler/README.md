@@ -5,7 +5,7 @@
 ## 入口流程
 
 1. **检测优先**：`ProjectDetector` 浅层扫描目标目录（深度 ≤2，跳过 node_modules/bin/obj 等），把 sln/csproj、package.json 依赖、wails.json、go.mod、src-tauri、pubspec、fastapi 依赖等信号映射为 trait 证据。证据按维度归并：同维度唯一才确认，冲突维度留待人工；候选 = 匹配全部已确认维度的 Profile。候选唯一时给出推荐组合与判断依据；证据不足时输出部分结果（已确认维度、待确认维度、候选组合），不伪造推荐。
-2. **问答决策树与补答**：`WizardEngine` 按 manifest 的 `wizard.steps` 顺序提问（项目形态 → 后端 → 前端/界面 → 桌面壳 → 架构风格 → Blazor 形态 → AI 能力模块）；每一步只列当前候选 Profile 真实支持的选项，候选在某 trait 上无差异则自动跳过该问题，输入 0 可返回上一步。检测部分结果进入补答流程：已确认维度保留且不再提问，只回答候选间仍有分歧的维度，回答来源（detected / manual）记入配方。因为选项从候选推导，交互路径上不存在"选出无法生成组合"的死胡同；未接入的技术栈组合表现为"选项不出现"。
+2. **问答决策树与补答**：`WizardEngine` 按 manifest 的 `wizard.steps` 顺序提问（项目形态 → 前端/界面 → 后端 → 桌面壳 → 架构风格 → Blazor 形态 → AI 能力模块；原生桌面组合 Avalonia / WPF / 控制台在界面一问后即收敛，不再追问后端）；每一步只列当前候选 Profile 真实支持的选项，候选在某 trait 上无差异则自动跳过该问题，输入 0 可返回上一步。检测部分结果进入补答流程：已确认维度保留且不再提问，只回答候选间仍有分歧的维度，回答来源（detected / manual）记入配方。因为选项从候选推导，交互路径上不存在"选出无法生成组合"的死胡同；未接入的技术栈组合表现为"选项不出现"。
 3. **经典选择**：技术大类 → Profile，作为兜底入口保留。
 4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 问答（Profile 选择）这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
 5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。

@@ -32,8 +32,8 @@
 
 ```text
 Q1 形态：Web 前后端分离 / 桌面 / 移动 / 纯后端 / 通用
-Q2 后端：无 / .NET 分层 / .NET 单层 / Python FastAPI / Go(Wails)
-Q3 前端：无 / React / Vue / Blazor / 静态 HTML（按形态追加已有技术栈）
+Q2 前端：无 / React / Vue / Blazor / 静态 HTML（按形态追加已有技术栈，桌面追加 Avalonia / WPF / 控制台）
+Q3 后端：无 / .NET 分层 / .NET 单层 / Python FastAPI / Go(Wails)
 Q4 壳：桌面或混合应用时显示 Tauri / Wails / Electron
 Q5 能力：doc、infra 默认勾选；AI、design-system 按能力和场景选择
     -> 汇总确认
@@ -42,6 +42,8 @@ Q5 能力：doc、infra 默认勾选；AI、design-system 按能力和场景选�
 ```
 
 “默认勾选”只适用于 Q5 能力，不代表存在默认技术栈组合。证据不足时不得隐式补出一个 Profile。
+
+2026-09-04 问答顺序调整为「前端先于后端」：原生桌面（Avalonia / WPF / 控制台）与混合壳（Electron / Wails / Tauri）的分歧在界面维度，先问后端会让 C# 桌面用户的「.NET」回答进入 Electron 分支、Avalonia / WPF 选项永不出现；先问界面后，原生桌面组合直接收敛，后端问题只对混合壳与 Web 形态出现。
 
 ## 2. 不可破坏的扩展口
 
