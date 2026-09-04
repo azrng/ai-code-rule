@@ -179,18 +179,24 @@ public sealed class WizardEngineTests
     }
 
     [Fact]
-    public void NextQuestion_WebCandidates_OfferNoBackendOption()
+    public void NextQuestion_WebCandidates_AskFrontendThenBackendWithNoneOption()
     {
-        // Web 候选加入纯前端组合后，Q2 后端问题必须出现「无后端」选项
+        // Web 候选先问前端，回答 React 后后端问题必须出现「无后端」选项（纯前端组合可达）
         var manifest = LoadManifest();
         var engine = new WizardEngine(manifest);
         var candidates = engine.Filter(manifest.Profiles, "form", "web");
 
-        var question = engine.NextQuestion(candidates);
+        var frontendQuestion = engine.NextQuestion(candidates);
 
-        Assert.NotNull(question);
-        Assert.Equal("backend", question.Trait);
-        Assert.Contains(question.Options, option => option.Value == "none");
+        Assert.NotNull(frontendQuestion);
+        Assert.Equal("frontend", frontendQuestion.Trait);
+
+        var reactCandidates = engine.Filter(candidates, "frontend", "react");
+        var backendQuestion = engine.NextQuestion(reactCandidates);
+
+        Assert.NotNull(backendQuestion);
+        Assert.Equal("backend", backendQuestion.Trait);
+        Assert.Contains(backendQuestion.Options, option => option.Value == "none");
     }
 
     [Fact]
@@ -245,9 +251,11 @@ public sealed class WizardEngineTests
     }
 
     [Fact]
-    public void NextQuestion_DesktopCandidates_AskBackendBeforeFrontend()
+    public void NextQuestion_DesktopCandidates_AskFrontendBeforeBackend()
     {
-        // 问答顺序对齐 Q1 形态 → Q2 后端 → Q3 前端 → Q4 壳
+        // 问答顺序对齐 Q1 形态 → Q2 前端/界面 → Q3 后端 → Q4 壳；
+        // 桌面先问界面：原生桌面（Avalonia/WPF/控制台）与混合壳的分歧在 frontend 维度，
+        // 若先问后端，「.NET」回答会进入 Electron 分支导致 Avalonia/WPF 选项永不出现
         var manifest = LoadManifest();
         var engine = new WizardEngine(manifest);
         var candidates = engine.Filter(manifest.Profiles, "form", "desktop");
@@ -255,6 +263,59 @@ public sealed class WizardEngineTests
         var question = engine.NextQuestion(candidates);
 
         Assert.NotNull(question);
+        Assert.Equal("frontend", question.Trait);
+        Assert.Contains(question.Options, option => option.Value == "avalonia");
+        Assert.Contains(question.Options, option => option.Value == "wpf");
+        Assert.Contains(question.Options, option => option.Value == "console");
+    }
+
+    [Theory]
+    [InlineData("avalonia", "avaloniaExe")]
+    [InlineData("wpf", "wpfExe")]
+    public void NextQuestion_DesktopNativeFrontend_ConvergesWithoutBackend(string frontend, string expectedProfileId)
+    {
+        // 桌面 + Avalonia/WPF 回答后候选唯一收敛，后端问题不再出现（backend=none 由唯一候选补全）
+        var manifest = LoadManifest();
+        var engine = new WizardEngine(manifest);
+        var candidates = engine.Filter(engine.Filter(manifest.Profiles, "form", "desktop"), "frontend", frontend);
+
+        var question = engine.NextQuestion(candidates);
+        var profile = Assert.Single(candidates);
+
+        Assert.Null(question);
+        Assert.Equal(expectedProfileId, profile.Id);
+    }
+
+    [Fact]
+    public void Resolve_DesktopWpfWithoutBackend_ResolvesWpfExe()
+    {
+        // 用户视角的回答组合：只回答形态 + 界面即可落到 WPF，无需声明「无后端」
+        var engine = new WizardEngine(LoadManifest());
+        var answers = new Dictionary<string, string>
+        {
+            ["form"] = "desktop",
+            ["frontend"] = "wpf"
+        };
+
+        var result = engine.Resolve(answers);
+
+        var profile = Assert.Single(result);
+        Assert.Equal("wpfExe", profile.Id);
+    }
+
+    [Fact]
+    public void NextQuestion_DesktopReactFrontend_StillAsksBackend()
+    {
+        // 混合壳桌面（React 界面）仍需后端问题区分 Electron+.NET 与 Wails/Tauri+Go
+        var manifest = LoadManifest();
+        var engine = new WizardEngine(manifest);
+        var candidates = engine.Filter(engine.Filter(manifest.Profiles, "form", "desktop"), "frontend", "react");
+
+        var question = engine.NextQuestion(candidates);
+
+        Assert.NotNull(question);
         Assert.Equal("backend", question.Trait);
+        Assert.Contains(question.Options, option => option.Value == "dotnet");
+        Assert.Contains(question.Options, option => option.Value == "go");
     }
 }

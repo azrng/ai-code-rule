@@ -2519,16 +2519,6 @@
         "question": "项目形态是什么？"
       },
       {
-        "trait": "backend",
-        "question": "后端（服务端）用什么技术栈？",
-        "applies-when-trait": "form",
-        "applies-when-values": [
-          "backend-only",
-          "web",
-          "desktop"
-        ]
-      },
-      {
         "trait": "frontend",
         "question": "前端 / 界面用什么技术？",
         "applies-when-trait": "form",
@@ -2536,6 +2526,16 @@
           "web",
           "desktop",
           "mobile"
+        ]
+      },
+      {
+        "trait": "backend",
+        "question": "后端（服务端）用什么技术栈？",
+        "applies-when-trait": "form",
+        "applies-when-values": [
+          "backend-only",
+          "web",
+          "desktop"
         ]
       },
       {
