@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace RuleAssembler;
 
-// 生成成功后的收尾：写配方记录 .ai-rule-profile.json，并确保目标项目 .gitignore 忽略该记录。
+// 生成成功后的收尾：写配方记录 .ai-rule-profile.json，并确保目标项目 .gitignore 忽略该记录与生成器本体。
 // 配方记录用于人工核对该次生成选择了什么，也为后续按原配方升级规则留档。
 internal sealed class RecipeRecorder
 {
@@ -51,16 +51,25 @@ internal sealed class RecipeRecorder
         var path = Path.Combine(Path.GetFullPath(rootDirectory), ".gitignore");
         if (File.Exists(path))
         {
-            var lines = File.ReadAllLines(path);
-            if (lines.Any(line => line.Trim() == GitignoreTemplates.RecipeEntry))
-                return ".gitignore 已包含配方记录忽略规则";
+            var existing = File.ReadAllLines(path)
+                .Select(line => line.Trim())
+                .ToHashSet(StringComparer.Ordinal);
+            var missing = GitignoreTemplates.GeneratorEntries
+                .Where(entry => !existing.Contains(entry))
+                .ToList();
+            if (missing.Count == 0)
+                return ".gitignore 已包含配方记录与生成器忽略规则";
 
-            File.AppendAllText(path, "\n" + GitignoreTemplates.RecipeBlock, new UTF8Encoding(false));
-            return "已在 .gitignore 追加配方记录忽略规则";
+            // 只追加缺失条目，已存在的忽略规则保持原样，保证重复执行幂等
+            File.AppendAllText(
+                path,
+                "\n" + GitignoreTemplates.GeneratorComment + string.Join("\n", missing) + "\n",
+                new UTF8Encoding(false));
+            return "已在 .gitignore 追加忽略规则：" + string.Join("、", missing);
         }
 
         File.WriteAllText(path, GitignoreTemplates.Get(stackKey), new UTF8Encoding(false));
-        return "已创建 .gitignore（含技术栈默认忽略规则与配方记录）";
+        return "已创建 .gitignore（含技术栈默认忽略规则、配方记录与生成器本体）";
     }
 
     // 家族 / Profile → gitignore 模板键

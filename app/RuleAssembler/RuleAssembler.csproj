@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>use-rule</AssemblyName>
+    <AssemblyName>use-ai-rule</AssemblyName>
     <RootNamespace>RuleAssembler</RootNamespace>
   </PropertyGroup>
 

@@ -17,6 +17,9 @@ internal static class Program
             var resources = new ResourceStore();
             var manifest = new ManifestLoader(resources).Load();
 
+            // 版本以 manifest.vars 为唯一事实来源，随规则内容一起演进，避免 exe 与规则版本漂移
+            Console.WriteLine($"use-ai-rule {manifest.Vars.Version}（{manifest.Vars.LastUpdated}）");
+
             if (args.Length > 0)
                 return RunCommand(args, manifest, resources);
 
