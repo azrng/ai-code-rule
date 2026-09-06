@@ -37,6 +37,7 @@
 | vueWailsExe | Wails 桌面应用（Vue + Go） | `frontend` / `backend` / `doc` / `infra` | 轻量桌面工具（替代 Electron）、Go 服务加桌面界面、需原生系统能力的 Vue 应用、本地数据管理 |
 | reactWailsExe | Wails 桌面应用（React + Go） | `frontend` / `backend` / `doc` / `infra` | 同 vueWailsExe 但偏好 React 生态、已有 React 组件复用到桌面、Go CLI 工具加图形界面 |
 | reactTauriExe | Tauri 桌面应用（React + Rust） | `frontend` / `backend` / `doc` / `infra` | 极致轻量桌面应用（几 MB 安装包）、安全敏感工具、Rust 高性能需求、嵌入式/IoT 配套工具 |
+| vueTauri | Tauri 桌面应用（Vue + Rust） | `frontend` / `backend` / `doc` / `infra` | 同 reactTauriExe 但偏好 Vue 生态（Vue 3 + Tailwind + Radix Vue + Pinia）、已有 Vue 组件复用到桌面 |
 | reactElectronDotNet | Electron + .NET 桌面应用（React） | `frontend` / `backend` / `doc` / `infra` | Electron 桌面应用配 .NET 重度业务后端、复用已有 .NET 代码与生态、需要 Node 生态 + .NET 运行时、sidecar 子进程 IPC 架构，偏好 React 生态 |
 | vueElectronDotNet | Electron + .NET 桌面应用（Vue） | `frontend` / `backend` / `doc` / `infra` | 同 reactElectronDotNet 但偏好 Vue 生态（Vue 3 + Element Plus + Pinia）、已有 Vue 组件复用到桌面 |
 | reactElectron | Electron 桌面应用（React，无独立后端） | `frontend` / `backend` / `doc` / `infra` | 纯 Electron + React 桌面应用：本地业务由主进程（Node）承担、无需 .NET / Go / Rust 后端、依赖 Node 生态与 electron-builder / electron-updater 交付链路 |
@@ -85,6 +86,7 @@
 │       │   ├── Wails + Vue → vueWailsExe
 │       │   ├── Wails + React → reactWailsExe
 │       │   ├── Tauri + React → reactTauriExe
+│       │   ├── Tauri + Vue → vueTauri
 │       │   │   ├── Electron + React + .NET → reactElectronDotNet
 │       │   │   ├── Electron + Vue + .NET → vueElectronDotNet
 │       │   │   ├── Electron + React（无独立后端）→ reactElectron
@@ -105,7 +107,7 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
-组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 28 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；新增技术类型原则上扩展组件而非复制 Profile。
+组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 29 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；新增技术类型原则上扩展组件而非复制 Profile。
 
 ## 使用方式
 

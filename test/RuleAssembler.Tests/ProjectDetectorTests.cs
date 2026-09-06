@@ -34,6 +34,38 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_TauriReactProject_RecommendsReactTauriExe()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "src-tauri"));
+        File.WriteAllText(Path.Combine(_root, "src-tauri", "tauri.conf.json"), "{\"productName\":\"demo\"}");
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"react\":\"^18.0.0\"}}");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("reactTauriExe", result!.LegacyProfileId);
+        // Tauri 壳即 Rust 后端证据，回答组合必须带 backend=rust 才能重放回同一组合
+        Assert.Equal("rust", result.BuildLegacyAnswers()["backend"]);
+    }
+
+    [Fact]
+    public void Detect_TauriVueProject_RecommendsVueTauri()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "src-tauri"));
+        File.WriteAllText(Path.Combine(_root, "src-tauri", "tauri.conf.json"), "{\"productName\":\"demo\"}");
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"vue\":\"^3.4.0\"}}");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("vueTauri", result!.LegacyProfileId);
+    }
+
+    [Fact]
     public void Detect_WpfProject_RecommendsWpfExe()
     {
         File.WriteAllText(

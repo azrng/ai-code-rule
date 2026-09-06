@@ -1,7 +1,7 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.53.0",
+    "version": "1.54.0",
     "last_updated": "2026-09-06"
   },
   "schema_version": 2,
@@ -2271,25 +2271,158 @@
           "output": "frontend-AGENTS.md"
         },
         {
-          "source": "arch/reactTauriExe/backend-AGENTS.md",
-          "output": "backend-AGENTS.md"
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/tauri/backend-AGENTS.md"
+          ]
         },
         {
-          "source": "arch/reactTauriExe/doc-AGENTS.md",
           "output": "doc-AGENTS.md",
-          "feature": "doc"
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/tauri/doc-AGENTS.md"
+          ]
         },
         {
-          "source": "arch/reactTauriExe/infra-AGENTS.md",
           "output": "infra-AGENTS.md",
-          "feature": "infra"
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/tauri/infra-AGENTS.md"
+          ]
         }
       ],
       "designSystem": true,
       "traits": {
         "form": "desktop",
-        "backend": "go",
+        "backend": "rust",
         "frontend": "react",
+        "shell": "tauri",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "vueTauri",
+      "label": "Vue + Tauri 桌面应用",
+      "family": "hybrid-app",
+      "desc": "Vue 3 前端 + Rust 后端（Tauri Command）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Vue 界面实现与交互时 |",
+          "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Rust / Tauri 实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （Rust 实现角色）        （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、签名或打包脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
+        "task-kind-nouns": "前端、Rust 后端还是基础设施",
+        "destructive-nouns": "数据破坏性变更、环境清理"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueTauri/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/tauri/backend-AGENTS.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/tauri/doc-AGENTS.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/tauri/infra-AGENTS.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "rust",
+        "frontend": "vue",
         "shell": "tauri",
         "arch-style": "single",
         "blazor-flavor": "none",
@@ -3853,6 +3986,10 @@
           "label": "Go",
           "desc": "Go 服务端（Wails 桌面）"
         },
+        "rust": {
+          "label": "Rust",
+          "desc": "Rust 服务端（Tauri 桌面）"
+        },
         "node": {
           "label": "Node.js",
           "desc": "Node 服务端（Next.js 全栈）"
@@ -4990,6 +5127,180 @@
       ]
     },
     {
+      "id": "tauri-desktop-shell",
+      "kind": "shell",
+      "label": "Tauri 桌面骨架",
+      "desc": "Tauri 桌面组合的根骨架：react / vue 差异经槽位注入",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust"
+      },
+      "family": "hybrid-app",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "{{slot:tr-subr-2}}",
+          "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Rust / Tauri 实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （Rust 实现角色）        （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、签名或打包脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
+        "task-kind-nouns": "前端、Rust 后端还是基础设施",
+        "destructive-nouns": "数据破坏性变更、环境清理"
+      }
+    },
+    {
+      "id": "tauri-frontend-react",
+      "kind": "frontend",
+      "label": "Tauri + React 界面",
+      "desc": "Tauri + React 的界面组件（reactTauriExe）",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust",
+        "frontend": "react"
+      },
+      "slots": {
+        "tr-subr-2": "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 React 界面实现与交互时 |"
+      },
+      "files": [
+        {
+          "source": "arch/reactTauriExe/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        }
+      ],
+      "designSystemSource": "arch/reactTauriExe/design-system.yaml"
+    },
+    {
+      "id": "tauri-frontend-vue",
+      "kind": "frontend",
+      "label": "Tauri + Vue 3 界面",
+      "desc": "Tauri + Vue 3 的界面组件（vueTauri）",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust",
+        "frontend": "vue"
+      },
+      "slots": {
+        "tr-subr-2": "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Vue 界面实现与交互时 |"
+      },
+      "files": [
+        {
+          "source": "arch/vueTauri/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        }
+      ],
+      "designSystemSource": "arch/vueTauri/design-system.yaml"
+    },
+    {
+      "id": "tauri-backend-rust",
+      "kind": "backend",
+      "label": "Rust 宿主后端（Tauri Command）",
+      "desc": "Tauri 桌面组合的后端组件",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust"
+      },
+      "files": [
+        {
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/tauri/backend-AGENTS.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/tauri/doc-AGENTS.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/tauri/infra-AGENTS.md"
+          ]
+        }
+      ]
+    },
+    {
       "id": "web-dotnet-shell",
       "kind": "shell",
       "label": ".NET 前后端分离骨架",
@@ -5240,128 +5551,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "reactTauriExe",
-      "kind": "form",
-      "label": "React + Tauri 桌面应用",
-      "desc": "单一组合组件（由 Profile reactTauriExe 等价迁移）",
-      "when": {
-        "form": "desktop",
-        "backend": "go",
-        "frontend": "react",
-        "shell": "tauri",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
-      "family": "hybrid-app",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
-          "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 React 界面实现与交互时 |",
-          "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
-          {
-            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "dev-stage": [
-          "### 四个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1            阶段 2                   阶段 3",
-          "设计文档   →   前端实现        →   Rust / Tauri 实现   →   联调与交付",
-          "（用户确认）    （前端实现角色）      （Rust 实现角色）        （协作联调角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量、签名或打包脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
-          "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
-          {
-            "line": "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "understanding-checklist": [
-          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
-          "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
-        ],
-        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
-        "task-kind-nouns": "前端、Rust 后端还是基础设施",
-        "destructive-nouns": "数据破坏性变更、环境清理"
-      },
-      "files": [
-        {
-          "source": "arch/reactTauriExe/frontend-AGENTS.md",
-          "output": "frontend-AGENTS.md"
-        },
-        {
-          "source": "arch/reactTauriExe/backend-AGENTS.md",
-          "output": "backend-AGENTS.md"
-        },
-        {
-          "source": "arch/reactTauriExe/doc-AGENTS.md",
-          "output": "doc-AGENTS.md",
-          "feature": "doc"
-        },
-        {
-          "source": "arch/reactTauriExe/infra-AGENTS.md",
-          "output": "infra-AGENTS.md",
-          "feature": "infra"
-        }
-      ],
-      "designSystemSource": "arch/reactTauriExe/design-system.yaml"
     },
     {
       "id": "avaloniaExe",
@@ -7211,8 +7400,20 @@
       "profile": "reactTauriExe",
       "selection": {
         "form": "desktop",
-        "backend": "go",
+        "backend": "rust",
         "frontend": "react",
+        "shell": "tauri",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "vueTauri",
+      "selection": {
+        "form": "desktop",
+        "backend": "rust",
+        "frontend": "vue",
         "shell": "tauri",
         "arch-style": "single",
         "blazor-flavor": "none",

@@ -331,9 +331,9 @@ public sealed class ComboRegressionTests : IDisposable
     [Fact]
     public void Combo_AllProfiles_DefaultFeatureRenderIsStable()
     {
-        // 26 个 Profile 全量样例：默认能力集渲染、契约校验全部通过，
+        // 29 个 Profile 全量样例：默认能力集渲染、契约校验全部通过，
         // 旧 Profile 产物级零漂移由 --emit 基线对比与 Defaults_MatchLegacyPlan 共同保证
-        Assert.Equal(28, _manifest.Profiles.Count);
+        Assert.Equal(29, _manifest.Profiles.Count);
         foreach (var profile in _manifest.Profiles)
         {
             var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));

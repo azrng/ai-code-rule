@@ -545,7 +545,7 @@ internal static class Program
                 return 1;
             }
 
-            Console.WriteLine("组件问答校验通过：全部交互路径可解析，28 个兼容样例可达且无歧义。");
+            Console.WriteLine($"组件问答校验通过：全部交互路径可解析，{manifest.CompatibilityCases.Count} 个兼容样例可达且无歧义。");
 
             // 组合内核兼容样例：组合路径与旧 Profile 产物逐字节等价，等价被破坏时 --check 失败
             if (manifest.CompatibilityCases.Count > 0)

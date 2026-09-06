@@ -187,6 +187,7 @@ internal sealed class ProjectDetector
         {
             evidence.Add(new("form", "desktop", "发现 src-tauri/tauri.conf.json（Tauri 桌面项目）"));
             evidence.Add(new("shell", "tauri", "发现 src-tauri/tauri.conf.json（Tauri 桌面壳）"));
+            evidence.Add(new("backend", "rust", "发现 src-tauri/tauri.conf.json（Rust 后端）"));
         }
 
         var electronSignal = signals.ElectronInPackageJson || signals.HasElectronConfig;

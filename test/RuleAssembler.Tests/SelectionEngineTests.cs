@@ -33,10 +33,11 @@ public class SelectionEngineTests
         Assert.Equal("frontend", frontend!.Trait);
         selection.Dimensions["frontend"] = "react";
 
-        // backend 仍有分歧（electron dotnet/none 与 wails/tauri go），提问
+        // backend 仍有分歧（electron dotnet/none、wails go、tauri rust），提问
         var backend = engine.NextQuestion(selection);
         Assert.Equal("backend", backend!.Trait);
         Assert.Contains(backend.Options, option => option.Value == "go");
+        Assert.Contains(backend.Options, option => option.Value == "rust");
         selection.Dimensions["backend"] = "dotnet";
 
         // 此后 shell=electron、arch-style、blazor-flavor、ai-capability 全部唯一，自动推导到完备
@@ -48,6 +49,35 @@ public class SelectionEngineTests
         // 兼容样例映射按共有维度比较，不要求选择包含样例的全部维度
         Assert.DoesNotContain(selection.Dimensions, pair => pair.Key == "arch-style");
         Assert.DoesNotContain(selection.Dimensions, pair => pair.Key == "ai-capability");
+    }
+
+    [Fact]
+    public void 桌面VueRust路径_自动推导tauri壳_唯一映射vueTauri()
+    {
+        var manifest = LoadManifest();
+        var engine = CreateEngine(manifest);
+        var selection = new Selection();
+        selection.Dimensions["form"] = "desktop";
+
+        var frontend = engine.NextQuestion(selection);
+        Assert.Equal("frontend", frontend!.Trait);
+        selection.Dimensions["frontend"] = "vue";
+
+        // backend 在 electron dotnet/none、wails go、tauri rust 之间仍有分歧
+        var backend = engine.NextQuestion(selection);
+        Assert.Equal("backend", backend!.Trait);
+        Assert.Contains(backend.Options, option => option.Value == "rust");
+        selection.Dimensions["backend"] = "rust";
+
+        // rust 后端下 shell=tauri 唯一，自动推导；arch-style 等维度 tauri 组件不引用，不问不猜
+        var derived = new List<(string Trait, string Value)>();
+        Assert.Null(engine.NextQuestion(selection, derived));
+        Assert.Equal("tauri", selection.Dimensions["shell"]);
+
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        Assert.Equal(new[] { "vueTauri" }, matches);
+        var plan = new CompositionPlanner(manifest).Plan(selection);
+        Assert.Contains(plan.ComponentIds, id => id == "tauri-frontend-vue");
     }
 
     [Fact]
@@ -108,7 +138,7 @@ public class SelectionEngineTests
     }
 
     [Fact]
-    public void 全路径仿真_每条交互路径可解析且唯一映射_28样例可达()
+    public void 全路径仿真_每条交互路径可解析且唯一映射_29样例可达()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);
