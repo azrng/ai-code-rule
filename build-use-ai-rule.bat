@@ -3,13 +3,13 @@ setlocal
 
 cd /d "%~dp0"
 echo ========================================
-echo   AI Rule æ‹¼æ¥å™¨æ‰“åŒ…å·¥å…·
+echo   AI Rule Æ´½ÓÆ÷´ò°ü¹¤¾ß
 echo ========================================
 echo.
 
 where dotnet >nul 2>nul
 if errorlevel 1 (
-    echo é”™è¯¯ï¼šæœªæ‰¾åˆ° dotnetï¼Œè¯·å…ˆå®‰è£… .NET SDK 10ã€‚
+    echo ´íÎó£ºÎ´ÕÒµ½ dotnet£¬ÇëÏÈ°²×° .NET SDK 10¡£
     echo.
     pause
     exit /b 1
@@ -17,25 +17,31 @@ if errorlevel 1 (
 
 where powershell >nul 2>nul
 if errorlevel 1 (
-    echo é”™è¯¯ï¼šæœªæ‰¾åˆ° Windows PowerShellã€‚
+    echo ´íÎó£ºÎ´ÕÒµ½ Windows PowerShell¡£
     echo.
     pause
     exit /b 1
 )
 
-echo å¼€å§‹æ‰“åŒ…...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0app\RuleAssembler\publish.ps1"
+rem Ä¬ÈÏÖ»´ò°ü win-x64£¨self-contained µ¥ÎÄ¼ş£¬Ä¿±ê»úÎŞĞè .NET ÔËĞĞÊ±£©£»
+rem ´«²Î all Ê±°´ÈıÆ½Ì¨¾ØÕó·¢²¼£¨win-x64 / linux-x64 / osx-x64£©£¬
+rem mac/linux ²úÎïÓÉ publish.ps1 ¸´ÖÆÎª dist\use-ai-rule-<rid>
+set "RID_ARGS=-Rids win-x64"
+if /i "%~1"=="all" set "RID_ARGS="
+
+echo ¿ªÊ¼´ò°ü...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0app\RuleAssembler\publish.ps1" %RID_ARGS%
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.
 if not "%EXIT_CODE%"=="0" (
-    echo æ‰“åŒ…å¤±è´¥ï¼Œé€€å‡ºç ï¼š%EXIT_CODE%
+    echo ´ò°üÊ§°Ü£¬ÍË³öÂë£º%EXIT_CODE%
     pause
     exit /b %EXIT_CODE%
 )
 
-echo æ‰“åŒ…æˆåŠŸã€‚
-echo äº§ç‰©ï¼š%~dp0dist\use-ai-rule.exe
+echo ´ò°ü³É¹¦¡£
+echo ²úÎïÄ¿Â¼£º%~dp0dist
 echo.
 pause
 exit /b 0

@@ -8,6 +8,7 @@ triggers:
       include:
         - master
         - simplify
+        - guided-wizard-detect
   pr:
     branches:
       include:
@@ -30,3 +31,11 @@ stages:
         name: rule_assembler_check
         displayName: RuleAssembler --check
         script: dotnet run --project app/RuleAssembler/RuleAssembler.csproj --no-build -- --check
+      - step: shell@agent
+        name: publish_self_contained
+        displayName: self-contained 发布矩阵（win/linux/osx）
+        script: bash app/RuleAssembler/publish.sh
+      - step: shell@agent
+        name: published_smoke
+        displayName: 发布产物冒烟（linux 二进制跑 --check）
+        script: ./dist/use-ai-rule-linux-x64 --check
