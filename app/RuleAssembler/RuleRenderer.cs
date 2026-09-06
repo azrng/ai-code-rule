@@ -12,6 +12,9 @@ internal sealed class RuleRenderer
         "{{verify-quote}}"
     };
 
+    // 子规则骨架槽位占位（与根变量槽位同一命名空间）
+    private static readonly Regex SlotPattern = new(@"\{\{slot:([\w-]+)\}\}", RegexOptions.Compiled);
+
     private readonly FragmentExpander _expander;
 
     public RuleRenderer(ResourceStore resources)
@@ -29,50 +32,91 @@ internal sealed class RuleRenderer
     public List<PlannedFile> Plan(Manifest manifest, Profile profile, IReadOnlySet<string> features)
     {
         var modules = ResolveModules(manifest, profile);
-        var rootModule = modules.FirstOrDefault(module => !string.IsNullOrWhiteSpace(module.RootSource));
-        if (rootModule is null)
-            throw new InvalidOperationException($"Profile {profile.Id} 没有可用的公共根模块。");
-
+        var rootModule = RequireRootModule(manifest, profile.Id, modules);
         var rootTemplate = ReadRequired(rootModule.RootSource);
-        var root = FillRootTemplate(rootTemplate, manifest, profile, features);
-        var leftover = FindSlots(root);
-        if (leftover.Count > 0)
-            throw new InvalidOperationException($"Profile {profile.Id} 的根模板存在未填充变量：{string.Join("、", leftover)}");
 
-        var result = new List<PlannedFile>();
-        var outputs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        AddFile(result, outputs, "AGENTS.md", NormalizeNewlines(root, manifest.LineEnding));
-
-        foreach (var module in modules)
-        {
-            foreach (var file in module.Files)
-            {
-                if (IsFeatureEnabled(features, file.Feature))
-                    AddRuleFile(result, outputs, file, manifest);
-            }
-        }
-
-        foreach (var file in profile.Subrules)
-        {
-            if (IsFeatureEnabled(features, file.Feature))
-                AddRuleFile(result, outputs, file, manifest);
-        }
-
+        // 兼容路径与组合路径共用同一渲染核心，保证两条路径的产物结构与顺序完全一致
+        var files = modules
+            .SelectMany(module => module.Files)
+            .Concat(profile.Subrules)
+            .ToList();
         var pointers = modules
             .SelectMany(module => module.Pointers)
             .Concat(profile.Pointers)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var designSystemSource = profile.DesignSystem ? ManifestLoader.GetDesignSystemSource(profile) : "";
+        return RenderCore(manifest, profile.Id, rootTemplate, profile.Root, features, files, pointers, designSystemSource, profile.Slots);
+    }
+
+    // 组合内核路径：根变量与文件列表已在 CompositionPlan 中解析完成，这里只做能力过滤与渲染
+    public List<PlannedFile> Plan(Manifest manifest, CompositionPlan plan, IReadOnlySet<string> features)
+    {
+        var ownerId = "组合(" + string.Join("+", plan.ComponentIds) + ")";
+        var modules = ResolveModulesByIds(manifest, ownerId, plan.ModuleIds);
+        var rootModule = RequireRootModule(manifest, ownerId, modules);
+        var rootTemplate = ReadRequired(rootModule.RootSource);
+
+        var files = modules
+            .SelectMany(module => module.Files)
+            .Concat(plan.Files)
+            .ToList();
+        var pointers = modules
+            .SelectMany(module => module.Pointers)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return RenderCore(manifest, ownerId, rootTemplate, plan.Root, features, files, pointers, plan.DesignSystemSource, plan.Slots);
+    }
+
+    // 统一渲染核心：根模板填充 -> 根文件 -> 模块与子规则文件（按能力过滤）-> 指针 -> design-system。
+    // 兼容路径与组合路径都必须经过这里，禁止旁路产出
+    private List<PlannedFile> RenderCore(
+        Manifest manifest,
+        string ownerId,
+        string rootTemplate,
+        RootVariables root,
+        IReadOnlySet<string> features,
+        List<Subrule> files,
+        List<string> pointers,
+        string designSystemSource,
+        IReadOnlyDictionary<string, string>? planSlots = null)
+    {
+        var filled = FillRootTemplate(rootTemplate, manifest, root, features);
+        var leftover = FindSlots(filled);
+        if (leftover.Count > 0)
+            throw new InvalidOperationException($"{ownerId} 的根模板存在未填充变量：{string.Join("、", leftover)}");
+
+        var result = new List<PlannedFile>();
+        var outputs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        AddFile(result, outputs, "AGENTS.md", NormalizeNewlines(filled, manifest.LineEnding));
+
+        foreach (var file in files)
+        {
+            if (IsFeatureEnabled(features, file.Feature))
+                AddRuleFile(result, outputs, file, manifest, planSlots);
+        }
+
         foreach (var pointer in pointers)
             AddFile(result, outputs, pointer, NormalizeNewlines(ReadRequired($"pointers/{pointer}"), manifest.LineEnding));
 
-        if (profile.DesignSystem && features.Contains(RootConsistencyValidator.DesignSystemFeature))
+        if (designSystemSource.Length > 0 && features.Contains(RootConsistencyValidator.DesignSystemFeature))
         {
-            var source = ManifestLoader.GetDesignSystemSource(profile);
-            AddFile(result, outputs, "design-system.yaml", NormalizeNewlines(ReadRequired(source), manifest.LineEnding));
+            var content = planSlots is { Count: > 0 }
+                ? ApplySlots(ReadRequired(designSystemSource), "design-system.yaml", planSlots)
+                : ReadRequired(designSystemSource);
+            AddFile(result, outputs, "design-system.yaml", NormalizeNewlines(content, manifest.LineEnding));
         }
 
         return result;
+    }
+
+    private static ModuleDefinition RequireRootModule(
+        Manifest manifest, string ownerId, List<ModuleDefinition> modules)
+    {
+        var rootModule = modules.FirstOrDefault(module => !string.IsNullOrWhiteSpace(module.RootSource));
+        if (rootModule is null)
+            throw new InvalidOperationException($"{ownerId} 没有可用的公共根模块。");
+        return rootModule;
     }
 
     // 能力归属为空表示核心输出，始终生成；非空时按启用能力过滤
@@ -81,10 +125,60 @@ internal sealed class RuleRenderer
         return string.IsNullOrWhiteSpace(feature) || features.Contains(feature);
     }
 
-    private void AddRuleFile(List<PlannedFile> result, HashSet<string> outputs, Subrule file, Manifest manifest)
+    private void AddRuleFile(
+        List<PlannedFile> result,
+        HashSet<string> outputs,
+        Subrule file,
+        Manifest manifest,
+        IReadOnlyDictionary<string, string>? planSlots = null)
     {
         var content = CombineSources(file, manifest);
+        content = ApplyFileSlots(content, file, planSlots);
         AddFile(result, outputs, file.Output, NormalizeNewlines(content, manifest.LineEnding));
+    }
+
+    // 子规则骨架槽位替换：plan 级槽位（组合内核组件并集）为基础，文件级声明覆盖；
+    // 替换后残留 {{slot:}} 即骨架与槽位提供方不一致，直接报错
+    internal static string ApplyFileSlots(
+        string content, Subrule file, IReadOnlyDictionary<string, string>? planSlots)
+    {
+        if (!content.Contains("{{slot:", StringComparison.Ordinal) && (planSlots is null || planSlots.Count == 0))
+            return content;
+
+        var slots = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (planSlots is not null)
+        {
+            foreach (var pair in planSlots)
+                slots[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in file.Slots)
+            slots[pair.Key] = pair.Value;
+
+        return ApplySlots(content, file.Output, slots);
+    }
+
+    // 槽位替换核心：替换后残留 {{slot:}} 即骨架与槽位提供方不一致，直接报错
+    private static string ApplySlots(
+        string content, string output, IReadOnlyDictionary<string, string> slots)
+    {
+        var leftover = new List<string>();
+        var replaced = SlotPattern.Replace(content, match =>
+        {
+            var name = match.Groups[1].Value;
+            if (!slots.TryGetValue(name, out var value))
+            {
+                leftover.Add(name);
+                return match.Value;
+            }
+
+            return value;
+        });
+
+        if (leftover.Count > 0)
+            throw new InvalidOperationException(
+                $"输出 {output} 的骨架槽位没有可用取值：{string.Join("、", leftover.Distinct(StringComparer.Ordinal))}");
+        return replaced;
     }
 
     // 单源直接展开；多源先去各段尾部空白再以空行拼接，保证文件仍以单个换行结尾
@@ -108,13 +202,20 @@ internal sealed class RuleRenderer
 
     private List<ModuleDefinition> ResolveModules(Manifest manifest, Profile profile)
     {
+        var moduleIds = profile.ModuleIds.Count > 0 ? profile.ModuleIds : new List<string> { "core" };
+        return ResolveModulesByIds(manifest, $"Profile {profile.Id}", moduleIds);
+    }
+
+    private static List<ModuleDefinition> ResolveModulesByIds(
+        Manifest manifest, string ownerId, IReadOnlyList<string> moduleIds)
+    {
         var modules = new List<ModuleDefinition>();
-        foreach (var id in profile.ModuleIds.Count > 0 ? profile.ModuleIds : new List<string> { "core" })
+        foreach (var id in moduleIds.Count > 0 ? moduleIds : new List<string> { "core" })
         {
             var module = manifest.Modules.FirstOrDefault(item =>
                 item.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
             if (module is null)
-                throw new InvalidOperationException($"Profile {profile.Id} 引用了不存在的模块：{id}");
+                throw new InvalidOperationException($"{ownerId} 引用了不存在的模块：{id}");
             modules.Add(module);
         }
 
@@ -127,9 +228,9 @@ internal sealed class RuleRenderer
         return _expander.Expand(path);
     }
 
-    private static string FillRootTemplate(string template, Manifest manifest, Profile profile, IReadOnlySet<string> features)
+    private static string FillRootTemplate(
+        string template, Manifest manifest, RootVariables root, IReadOnlySet<string> features)
     {
-        var root = profile.Root;
         var values = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["{{version}}"] = manifest.Vars.Version,

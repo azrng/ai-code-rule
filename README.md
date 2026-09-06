@@ -18,6 +18,7 @@
 | dotnetCoreSingle | .NET 单层 API 后端 | `backend` / `doc` / `infra` | 中小型 REST API、微服务中的单一职责服务、内部工具 API、MVP 快速验证、Serverless 本地开发模拟 |
 | dotnetLayered | .NET 分层 API 后端 | `backend` / `doc` / `infra` | 中大型业务系统（ERP/CRM/OA）、DDD 项目、高单元测试覆盖率系统、多人协作长期维护的核心业务 |
 | dotnetBlazor | .NET Blazor 全栈 Web | `ui` / `backend` / `doc` / `infra` | 企业内部管理系统、.NET 团队不想引入 JS 框架、实时交互仪表盘、已有 .NET 后端扩展 Web 界面 |
+| dotnetBlazorWebApp | .NET Blazor Web App | `ui` / `backend` / `doc` / `infra` | 支持 Static SSR、Interactive Server、Interactive WebAssembly 与 Interactive Auto 的现代 Blazor Web App |
 | vueLinkdotNet | Vue + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` | Vue 3 企业级 SPA、前后端团队独立开发、数据可视化运营后台、已有 .NET 后端重建 Vue 前端 |
 | reactLinkdotNet | React + .NET 前后端分离 | `frontend` / `backend` / `doc` / `infra` | React 18 企业应用、复杂表单/审批流系统、前后端团队独立开发、已有 .NET 后端选用 React 前端 |
 | reactLinkdotNet-ai | React + .NET + AI Agent 全栈 | `frontend` / `backend` / `ai` / `doc` / `infra` | AI Agent 产品 MVP、模型调用、工具与流式交互 |
@@ -65,6 +66,7 @@
 │   ├── 同框架（全栈）
 │   │   ├── Next.js → nextFullstack
 │   │   ├── Blazor → dotnetBlazor
+│   │   ├── Blazor Web App（SSR / Server / WebAssembly / Auto）→ dotnetBlazorWebApp
 │   │   └── 尚未锁定具体技术栈，先要通用协作规则 → generalProject
 │   │
 │   ├── 分离部署（前后端独立）
@@ -103,11 +105,13 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
+组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 28 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；新增技术类型原则上扩展组件而非复制 Profile。
+
 ## 使用方式
 
 1. 根据项目技术栈准备目标项目目录。
 2. 将 `use-ai-rule.exe` 复制到目标项目根目录并双击启动（启动时先打印当前规则版本）。
-3. 生成器先自动检测目录特征（sln/csproj、package.json、wails.json、tauri、pubspec 等）给出推荐组合：证据充分时直接推荐；证据不足时列出已确认维度、待确认维度与候选组合，走补答流程（已确认项保留，只回答缺失项），不伪造推荐。也可以改走问答选择（回答项目形态、前端/界面、后端、桌面壳等问题）或经典的大类 → Profile 选择。交互终端中菜单为方向键 + 回车选择，选中「0」项即取消或返回上一步；脚本/管道调用时自动退化为编号输入模式。
+3. 生成器先自动检测目录特征（sln/csproj、package.json、wails.json、tauri、pubspec 等）给出推荐组合：证据充分时直接推荐；证据不足时列出已确认维度、待确认维度与候选组合，走补答流程（已确认项保留，只回答缺失项），不伪造推荐。问答走组件决策树（项目形态 → 前端/界面 → 后端 → 桌面壳 → 细分项）：每个问题只列「存续组件间仍有分歧」的选项并经可行性剪枝（不会选出无法生成的组合），唯一取值自动推导不提问；也可选「经典选择（兼容）」走大类 → Profile。交互终端中菜单为方向键 + 回车选择，选中「0」项即取消或返回上一步；脚本/管道调用时自动退化为编号输入模式。
 4. 组合确定后进入 Q5 能力开关：按需勾选文档 / 基础设施 / 设计系统等能力（默认 = 当前组合，不可用能力自动隐藏），关闭的能力不会生成文件、根导航也不会再引用。
 5. 开始协作时先读根 `AGENTS.md`，再根据任务命中对应子规则，不默认预读全部文件。
 6. 开发过程中通过 `TASK.md` 维护活动任务与最近少量已完成任务（`TASK.md` 由目标项目自己维护，生成器只引用不释放）。
@@ -128,13 +132,15 @@ fragments/
 # 产物位于 dist/use-ai-rule.exe。把它拷到目标项目根目录后双击：
 # 启动时自动检测当前项目并推荐组合（含判断依据）；证据不足时展示待确认维度与候选，
 # 补答只问缺失项、已确认项保留。也可以选择问答决策树（项目形态 → 前端/界面 → 后端 → 桌面壳 → 细分项，
-# 只出现已接入的选项）或经典的「技术大类 → Profile」。
+# 只出现已接入的选项）或经典的「技术大类 → Profile」（兼容入口）。
 # 组合确定后进入 Q5 能力开关（文档 / 基础设施 / 设计系统等，默认 = 当前组合），
 # 随后列出实际生成文件并统一确认后释放（AGENTS + 子规则 + CLAUDE/GEMINI/GROK），同名文件会直接覆盖；
 # 例外：已定制（meta.status=已定制）的 design-system.yaml 保留本地版本不覆盖，仍是基线时才刷新。
 # 不释放 TASK.md（运行时任务清单，不随规则分发，配方中按 referenced-existing 声明）。
-# 生成成功后会在目标项目写入 .ai-rule-profile.json 配方记录（记录本次选择、回答来源与能力开关），
+# 生成成功后会在目标项目写入 .ai-rule-profile.json 配方记录（记录维度选择、命中组件、回答来源与能力开关），
 # 并自动把该记录与生成器本体 use-ai-rule.exe 加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
+# 已有配方时可用 --recipe 按记录重放生成（升级规则或在新项目还原同一组合）：
+#   use-ai-rule.exe --recipe .ai-rule-profile.json [目标目录]
 ```
 
 当前 EXE 是 Windows x64 框架相关单文件，目标机器需要对应的 .NET 10 运行时。拼接器把公共入口、指针和可复用能力抽成模块，按所选 Profile 填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部 Profile。后续只维护 `fragments/`，重新构建即可让所有 Profile 生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。

@@ -1,9 +1,13 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace RuleAssembler;
 
 internal sealed class ManifestLoader
 {
+    // 组件槽位名的合法形态：小写字母、数字与连字符
+    private static readonly Regex SlotNamePattern = new(@"^[\w-]+$", RegexOptions.Compiled);
+
     private readonly ResourceStore _resources;
 
     public ManifestLoader(ResourceStore resources)
@@ -36,8 +40,46 @@ internal sealed class ManifestLoader
         if (manifest is null)
             throw new InvalidOperationException("manifest.json 内容为空。");
 
+        AnnotateComponentRootPresence(manifest, json);
         Validate(manifest);
         return manifest;
+    }
+
+    // 标注每个组件根标量字段在 JSON 中的真实存在性，供组合器区分伪默认与刻意声明
+    private static void AnnotateComponentRootPresence(Manifest manifest, string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("components", out var componentsEl)
+            || componentsEl.ValueKind != JsonValueKind.Array)
+            return;
+
+        var byId = manifest.Components
+            .Where(component => !string.IsNullOrWhiteSpace(component.Id))
+            .GroupBy(component => component.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var componentEl in componentsEl.EnumerateArray())
+        {
+            if (componentEl.ValueKind != JsonValueKind.Object
+                || !componentEl.TryGetProperty("id", out var idEl)
+                || idEl.ValueKind != JsonValueKind.String
+                || !byId.TryGetValue(idEl.GetString() ?? "", out var component))
+                continue;
+            if (!componentEl.TryGetProperty("root", out var rootEl)
+                || rootEl.ValueKind != JsonValueKind.Object)
+                continue;
+
+            var scalars = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var property in rootEl.EnumerateObject())
+            {
+                if (property.Value.ValueKind == JsonValueKind.String)
+                    scalars.Add(property.Name);
+            }
+
+            component.DeclaredScalarFields = scalars;
+        }
     }
 
     private static string MergeFamilyDefaults(string json)
@@ -191,6 +233,11 @@ internal sealed class ManifestLoader
                 ValidateRuleFile(file, $"Profile {profile.Id}", errors);
                 ValidateOutputMetadata(file.Feature, file.Merge, $"Profile {profile.Id} file {file.Output}", featureIds, errors);
             }
+            foreach (var slot in profile.Slots.Keys)
+            {
+                if (string.IsNullOrWhiteSpace(slot) || !SlotNamePattern.IsMatch(slot))
+                    errors.Add($"Profile {profile.Id} 的槽位名非法：{slot}");
+            }
             ValidateUniqueOutputs(profile.Pointers, $"Profile {profile.Id} pointer", errors);
             foreach (var pointer in profile.Pointers)
                 ValidateRequiredResource($"pointers/{pointer}", $"Profile {profile.Id} pointer", errors);
@@ -207,9 +254,123 @@ internal sealed class ManifestLoader
         }
 
         ValidateWizard(manifest, errors);
+        ValidateComponents(manifest, errors);
+        ValidateConstraints(manifest, errors);
+        ValidateCompatibilityCases(manifest, errors);
 
         if (errors.Count > 0)
             throw new InvalidOperationException("manifest 校验失败：\n- " + string.Join("\n- ", errors));
+    }
+
+    // 组件结构校验：kind 合法、when 维度与取值可被问答/检测表达、文件与根变量声明完整。
+    // 组件间的组合冲突（同名输出、槽位重复、证据不足）由 CompositionPlanner 在解析时拦截
+    private void ValidateComponents(Manifest manifest, ICollection<string> errors)
+    {
+        ValidateUniqueIds(manifest.Components.Select(component => component.Id), "component", errors);
+
+        foreach (var component in manifest.Components)
+        {
+            if (string.IsNullOrWhiteSpace(component.Id))
+                continue;
+
+            if (!ComponentDefinition.KnownKinds.Contains(component.Kind, StringComparer.Ordinal))
+                errors.Add($"component {component.Id} 的 kind 非法：{component.Kind}");
+            if (string.IsNullOrWhiteSpace(component.Label))
+                errors.Add($"component {component.Id} 缺少 label");
+
+            foreach (var pair in component.When)
+                ValidateDimensionValue(manifest, $"component {component.Id} when.{pair.Key}", pair.Key, pair.Value, errors);
+
+            if (!string.IsNullOrWhiteSpace(component.Family)
+                && !manifest.Families.Any(family => family.Id.Equals(component.Family, StringComparison.OrdinalIgnoreCase)))
+            {
+                errors.Add($"component {component.Id} 引用了不存在的 family：{component.Family}");
+            }
+
+            foreach (var slot in component.Slots.Keys)
+            {
+                if (string.IsNullOrWhiteSpace(slot) || !SlotNamePattern.IsMatch(slot))
+                    errors.Add($"component {component.Id} 的槽位名非法：{slot}");
+            }
+
+            foreach (var file in component.Files)
+            {
+                ValidateRuleFile(file, $"component {component.Id}", errors);
+                ValidateOutputMetadata(file.Feature, file.Merge, $"component {component.Id} file {file.Output}", FeatureIds(manifest), errors);
+            }
+
+            if (component.Root is not null)
+                ValidateRootVariables(component.Root, $"component {component.Id} root", FeatureIds(manifest), errors);
+
+            if (!string.IsNullOrWhiteSpace(component.DesignSystemSource))
+                ValidateRequiredResource(component.DesignSystemSource, $"component {component.Id} designSystemSource", errors);
+        }
+    }
+
+    // 维度约束校验：条件与要求都必须是可表达的 trait 取值
+    private static void ValidateConstraints(Manifest manifest, ICollection<string> errors)
+    {
+        foreach (var constraint in manifest.Constraints)
+        {
+            ValidateDimensionPairs(manifest, "constraint when", constraint.When, errors);
+            ValidateDimensionPairs(manifest, "constraint require", constraint.Require, errors);
+            ValidateDimensionPairs(manifest, "constraint forbid", constraint.Forbid, errors);
+        }
+    }
+
+    // 兼容样例校验：引用的 Profile 必须存在，等价性比对由 --check 与回归测试执行
+    private static void ValidateCompatibilityCases(Manifest manifest, ICollection<string> errors)
+    {
+        var profileIds = manifest.Profiles
+            .Select(profile => profile.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in manifest.CompatibilityCases)
+        {
+            if (string.IsNullOrWhiteSpace(item.Profile) || !profileIds.Contains(item.Profile))
+            {
+                errors.Add($"compatibilityCases 引用了不存在的 Profile：{item.Profile}");
+                continue;
+            }
+
+            ValidateDimensionPairs(manifest, $"compatibilityCases {item.Profile} selection", item.Selection, errors);
+        }
+    }
+
+    private static void ValidateDimensionPairs(
+        Manifest manifest, string field, Dictionary<string, string> pairs, ICollection<string> errors)
+    {
+        foreach (var pair in pairs)
+            ValidateDimensionValue(manifest, $"{field}.{pair.Key}", pair.Key, pair.Value, errors);
+    }
+
+    private static void ValidateDimensionValue(
+        Manifest manifest, string field, string trait, string value, ICollection<string> errors)
+    {
+        if (!ProfileTraits.KnownTraits.Contains(trait, StringComparer.Ordinal))
+        {
+            errors.Add($"{field} 引用了未知维度：{trait}");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            errors.Add($"{field} 的取值不能为空");
+            return;
+        }
+
+        if (manifest.Wizard.Options.TryGetValue(trait, out var options)
+            && !options.ContainsKey(value))
+        {
+            errors.Add($"{field} 的取值 {value} 缺少 wizard.options 文案");
+        }
+    }
+
+    private static IReadOnlySet<string> FeatureIds(Manifest manifest)
+    {
+        return manifest.Features
+            .Select(feature => feature.Id)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     // 决策树与 traits 的结构校验：trait 键合法、每个 Profile 的 trait 值都有展示文案，
@@ -375,6 +536,12 @@ internal sealed class ManifestLoader
             errors.Add($"{owner} 的 source 与 sources 不能同时配置");
         if (file.Sources.Count == 0 && string.IsNullOrWhiteSpace(file.Source))
             errors.Add($"{owner} 的 source 不能为空");
+
+        foreach (var slot in file.Slots.Keys)
+        {
+            if (string.IsNullOrWhiteSpace(slot) || !SlotNamePattern.IsMatch(slot))
+                errors.Add($"{owner} 的子规则槽位名非法：{slot}");
+        }
 
         var sources = file.GetSources();
         for (var i = 0; i < sources.Count; i++)

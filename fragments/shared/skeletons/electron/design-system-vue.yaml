@@ -1,9 +1,9 @@
 # 设计与组件规则的唯一事实来源。
 # 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
-# status 为「已定制」后 use-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
+# status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
-# 技术栈：Vue 3 + TypeScript + Element Plus + ECharts + Pinia + Electron
-# 注意：Electron 桌面应用，渲染进程通过 preload 暴露的 IPC SDK 与主进程通信
+{{slot:bk-dv-1}}
+{{slot:bk-dv-2}}
 
 meta:
   name: "企业级应用设计系统"
@@ -20,11 +20,11 @@ meta:
     state_global: "Pinia（跨组件全局状态）"
     state_local: "Vue Composition API（ref、reactive、computed）"
     forms: "Element Plus Form + Valibot / Zod（schema 收敛在 schemas/）"
-    local_bridge: "Electron IPC (ipcMain.handle + contextBridge)"
+{{slot:bk-dv-3}}
   communication:
     method: "Electron IPC（非 HTTP）"
-    frontend_call: "通过 preload contextBridge 暴露的 window.ipc 调用主进程，统一封装在 src/lib/ipc/"
-    rule: "禁止使用 HTTP 请求与主进程通信，外部 API 通过统一请求层调用"
+{{slot:bk-dv-4}}
+{{slot:bk-dv-5}}
   usage:
     read_order:
       - "在进行任何 UI 改动前阅读本文件"
@@ -610,7 +610,7 @@ do:
   - "引入图表时颜色统一来自 echarts-theme 配置文件"
   - "全局状态使用 Pinia store，组件本地状态使用 Vue Composition API（ref、reactive、computed）"
   - "图标统一使用 @element-plus/icons-vue"
-  - "通过 window.ipc 调用主进程，统一封装在 src/lib/ipc/，禁止 HTTP 请求"
+{{slot:bk-dv-6}}
   - "IPC 调用封装在 composables 或 store 中，页面不直接拼 channel 名称"
 
 dont:
@@ -620,7 +620,7 @@ dont:
   - "不要使用 ECharts 以外的图表库（Recharts、Chart.js 等）"
   - "不要在图表 option 中硬编码颜色，必须引用 echarts-theme"
   - "不要使用 Vuex Options API"
-  - "不要在组件中直接调用后端，统一通过 src/lib/ipc/ 封装（本地 IPC）或统一请求层（外部服务）"
+{{slot:bk-dv-7}}
   - "不要交付缺少 loading、empty、error 状态的页面"
   - "不要再创建新的设计 token 文件或平行配置体系"
   - "不要使用 @element-plus/icons-vue 以外的图标库"
@@ -630,6 +630,6 @@ dont:
   - "不要超过 8 个 ElTabs，超出用 ElSelect 代替"
   - "不要在侧边导航菜单中嵌套超过 2 层菜单"
   - "不要在表格/列表数据加载时使用全页 v-loading 遮罩，应使用 ElSkeleton"
-  - "不要使用 HTTP 请求与主进程通信，必须通过 Electron IPC"
+{{slot:bk-dv-8}}
   - "不要在页面里手写 JSON-RPC method 字符串，统一走 lib/ipc/ 与生成的 method 常量"
   - "不要使用 <script> Options API，必须使用 Composition API"

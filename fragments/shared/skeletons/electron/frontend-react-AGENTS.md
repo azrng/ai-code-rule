@@ -31,7 +31,7 @@ dependencies: [agents-root]
 - TanStack Query（异步数据状态）
 - React Hook Form + Zod（表单与校验）
 - Zustand（仅用于客户端跨组件共享状态）
-- Electron preload + `contextBridge` 暴露的 IPC SDK（与主进程 / .NET sidecar 通信）
+{{slot:bk-fr-1}}
 
 <!-- include: shared/frontend/testing.md -->
 
@@ -57,7 +57,7 @@ src/
 ├── hooks/                    # 自定义 Hook
 ├── routes/                   # 路由定义
 ├── lib/
-│   ├── ipc/                  # IPC 封装（调用 window.ipc 与主进程 / .NET 通信）
+{{slot:bk-fr-2}}
 │   ├── query/                # TanStack Query 封装
 │   └── utils/                # 工具函数
 ├── stores/                   # Zustand store
@@ -71,7 +71,7 @@ src/
 # Electron 主进程与预加载脚本（与前端源码同级或放 main/ 目录）
 main/
 ├── index.ts                  # 主进程入口
-└── ipc/                      # 子进程拉起与 IPC 转发（→ .NET sidecar）
+{{slot:bk-fr-3}}
 preload/
 └── index.ts                  # contextBridge 暴露 window.ipc
 ```
@@ -110,9 +110,9 @@ preload/
 ### IPC 前端调用规范
 - 所有跨进程调用统一收敛在 `lib/ipc/` 或按业务域封装，不直接散落在页面组件中
 - 渲染进程只通过 `window.ipc.<method>` 调用（由 preload `contextBridge` 暴露的封装），不在页面里直接拼 channel 名称
-- sidecar 调用优先复用单一通用 IPC 通道和生成的 method 常量 / 类型化 SDK；页面和业务封装不得手写 JSON-RPC method 字符串。
+{{slot:bk-fr-4}}
 - IPC method 的参数与返回值应先经过 TypeScript 类型与 Zod schema 约束
-- 渲染进程禁止直接使用 Node 能力或直接 `child_process`；涉及原生能力的调用一律经主进程转发到 .NET sidecar
+{{slot:bk-fr-5}}
 - 除非明确需要，否则不要在 Electron 应用里再额外引入本地 HTTP 服务作为前后端桥接层
 - 若确实需要流式处理、WebSocket、嵌入式代理等能力，再单独论证是否引入额外服务层
 

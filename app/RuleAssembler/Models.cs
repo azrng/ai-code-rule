@@ -33,6 +33,145 @@ internal sealed class Manifest
 
     [JsonPropertyName("wizard")]
     public WizardConfig Wizard { get; set; } = new();
+
+    // P2 组合内核：组件、约束与兼容样例。components 是 Selection -> CompositionPlan 的事实来源，
+    // constraints 声明维度间的合法关系，compatibilityCases 把旧 Profile 固定为等价回归样例
+    [JsonPropertyName("components")]
+    public List<ComponentDefinition> Components { get; set; } = new();
+
+    [JsonPropertyName("constraints")]
+    public List<CompositionConstraint> Constraints { get; set; } = new();
+
+    [JsonPropertyName("compatibilityCases")]
+    public List<CompatibilityCase> CompatibilityCases { get; set; } = new();
+}
+
+// ---------- P2 组合内核：Selection -> Component -> CompositionPlan ----------
+
+// 用户选择：维度用字典表达（不扩展固定字段清单），Q5 能力用 ID 集合表达；
+// 字段缺省表示尚未确认，组合校验通过且必要维度齐全后才能生成
+internal sealed class Selection
+{
+    // 可整体替换：问答返回上一步时恢复历史快照
+    public Dictionary<string, string> Dimensions { get; set; } = new(StringComparer.Ordinal);
+
+    public HashSet<string> Features { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+// 组件定义：单一技术职责（形态 / 壳 / 前端 / 后端 / 能力），可声明根变量贡献、输出文件与适用条件。
+// 根变量文本可携带 {{slot:x}} 槽位占位，由其他选中组件的 slots 提供取值（如 backend 决定的服务名词），
+// 保证骨架顺序单一、差异内容归属对应组件
+internal sealed class ComponentDefinition
+{
+    // 组件分类；组合器按 kind 决定解析顺序（form -> shell -> frontend -> backend -> capability）
+    public const string KindForm = "form";
+    public const string KindShell = "shell";
+    public const string KindFrontend = "frontend";
+    public const string KindBackend = "backend";
+    public const string KindCapability = "capability";
+
+    public static readonly string[] KnownKinds =
+    {
+        KindForm, KindShell, KindFrontend, KindBackend, KindCapability
+    };
+
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    [JsonPropertyName("kind")]
+    public string Kind { get; set; } = "";
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = "";
+
+    [JsonPropertyName("desc")]
+    public string Desc { get; set; } = "";
+
+    // 适用条件：全部维度命中才选中；引用了选择中不存在的维度时视为证据不足（部分匹配）
+    [JsonPropertyName("when")]
+    public Dictionary<string, string> When { get; set; } = new(StringComparer.Ordinal);
+
+    // 骨架组件声明：根变量未覆盖字段继承该 family 的 rootDefaults（与旧 Profile 行为一致）
+    [JsonPropertyName("family")]
+    public string Family { get; set; } = "";
+
+    // 根变量贡献：列表字段按解析顺序拼接，标量字段禁止无提示覆盖；文本可携带 {{slot:x}}
+    [JsonPropertyName("root")]
+    public RootVariables? Root { get; set; }
+
+    // 槽位取值：替换骨架根变量中的 {{slot:x}}；同一槽位被多个选中组件提供时校验失败
+    [JsonPropertyName("slots")]
+    public Dictionary<string, string> Slots { get; set; } = new(StringComparer.Ordinal);
+
+    // 输出文件贡献：与 Profile 子规则同构（source / sources / output / feature / merge）
+    [JsonPropertyName("files")]
+    public List<Subrule> Files { get; set; } = new();
+
+    // design-system.yaml 来源；同一组合内最多允许一个选中组件声明
+    [JsonPropertyName("designSystemSource")]
+    public string DesignSystemSource { get; set; } = "";
+
+    // 根标量字段在组件 JSON 中的真实存在性（ManifestLoader 加载时标注）：
+    // 类默认值比对无法区分「未声明的伪默认」与「刻意声明且恰好等于类默认值」，
+    // 后者（如覆盖 family 基线的通用措辞）必须保留
+    [JsonIgnore]
+    public HashSet<string>? DeclaredScalarFields { get; set; }
+}
+
+// 维度约束：when 全部命中时，require 列出的维度取值必须成立，forbid 列出的取值必须不成立
+internal sealed class CompositionConstraint
+{
+    [JsonPropertyName("when")]
+    public Dictionary<string, string> When { get; set; } = new(StringComparer.Ordinal);
+
+    [JsonPropertyName("require")]
+    public Dictionary<string, string> Require { get; set; } = new(StringComparer.Ordinal);
+
+    [JsonPropertyName("forbid")]
+    public Dictionary<string, string> Forbid { get; set; } = new(StringComparer.Ordinal);
+}
+
+// 兼容样例：声明旧 Profile 与组合维度的等价关系，供 --check 与回归测试逐字节比对
+internal sealed class CompatibilityCase
+{
+    [JsonPropertyName("profile")]
+    public string Profile { get; set; } = "";
+
+    [JsonPropertyName("selection")]
+    public Dictionary<string, string> Selection { get; set; } = new(StringComparer.Ordinal);
+}
+
+// 组合解析结果：确定性 —— 同一 Selection 与同一版本 manifest 必须得到相同的组件顺序与文件列表
+internal sealed class CompositionPlan
+{
+    [JsonPropertyName("selection")]
+    public Selection Selection { get; init; } = new();
+
+    // 组合始终基于公共核心模块渲染（根模板、协作流程、指针）；后续阶段允许组件扩展模块集
+    [JsonPropertyName("module_ids")]
+    public List<string> ModuleIds { get; init; } = new() { "core" };
+
+    [JsonPropertyName("component_ids")]
+    public List<string> ComponentIds { get; init; } = new();
+
+    // 已合并 family 默认值、组件根变量并完成槽位替换的最终根变量
+    [JsonPropertyName("root")]
+    public RootVariables Root { get; init; } = new();
+
+    [JsonPropertyName("files")]
+    public List<Subrule> Files { get; init; } = new();
+
+    // 空 = 本组合不提供 design-system.yaml
+    [JsonPropertyName("design_system_source")]
+    public string DesignSystemSource { get; init; } = "";
+
+    // 组件提供的槽位取值（根骨架与子规则骨架共用同一命名空间），渲染子规则正文时消费
+    [JsonPropertyName("slots")]
+    public Dictionary<string, string> Slots { get; init; } = new(StringComparer.Ordinal);
+
+    // 非致命说明（如声明了未被消费的槽位）；致命问题在解析时直接抛错
+    [JsonPropertyName("warnings")]
+    public List<string> Warnings { get; init; } = new();
 }
 
 // 能力定义：仅注册 ID 与展示文案；能力是否可用、默认是否勾选由后续阶段按 Profile/模块声明判断
@@ -184,6 +323,10 @@ internal sealed class Profile
     // 与片段结构派生的声明合并后构成该 Profile 的完整输出契约
     [JsonPropertyName("outputs")]
     public List<OutputDeclaration> Outputs { get; set; } = new();
+
+    // Profile 级槽位：旧路径渲染骨架化子规则与 design-system 时提供取值（组合路径走组件并集）
+    [JsonPropertyName("slots")]
+    public Dictionary<string, string> Slots { get; set; } = new(StringComparer.Ordinal);
 }
 
 // 结构化输出声明：输出契约的事实来源是本结构与片段声明，不通过解析根文件 Markdown 反向推断。
@@ -342,6 +485,26 @@ internal sealed class RootLineJsonConverter : JsonConverter<RootLine>
     }
 }
 
+// 根变量条目拷贝：列表字段合并与槽位替换都在副本上进行，避免污染 family 默认值
+internal static class RootLineExtensions
+{
+    public static RootLine Clone(this RootLine line)
+    {
+        return new RootLine
+        {
+            Text = line.Text,
+            Features = new List<string>(line.Features),
+            When = line.When is null
+                ? null
+                : line.When.Select(variant => new RootLineVariant
+                {
+                    Text = variant.Text,
+                    Features = new List<string>(variant.Features)
+                }).ToList()
+        };
+    }
+}
+
 internal sealed class RootVariables
 {
     [JsonPropertyName("target-list")]
@@ -418,6 +581,39 @@ internal sealed class RootVariables
 
     [JsonPropertyName("persistence-line")]
     public string PersistenceLine { get; set; } = "";
+
+    // 深拷贝：组合器以 family rootDefaults 为起点叠加组件根变量时，不能改动原清单对象
+    public RootVariables Clone()
+    {
+        return new RootVariables
+        {
+            TargetList = TargetList.Select(line => line.Clone()).ToList(),
+            SubruleIndex = SubruleIndex.Select(line => line.Clone()).ToList(),
+            DevStage = DevStage.Select(line => line.Clone()).ToList(),
+            UnderstandingChecklist = UnderstandingChecklist.Select(line => line.Clone()).ToList(),
+            SearchNouns = SearchNouns,
+            ExtraSections = ExtraSections.Select(line => line.Clone()).ToList(),
+            RootScopeNouns = RootScopeNouns,
+            ContextScopeNouns = ContextScopeNouns,
+            HighRiskNouns = HighRiskNouns,
+            HighRiskPrefix = HighRiskPrefix,
+            TaskKindNouns = TaskKindNouns,
+            EvidenceNouns = EvidenceNouns,
+            ReuseNoun = ReuseNoun,
+            PersistenceSuffix = PersistenceSuffix,
+            DestructiveNouns = DestructiveNouns,
+            ContractErrorLine = ContractErrorLine,
+            ReadingOrder = ReadingOrder.Select(line => line.Clone()).ToList(),
+            IntroQuote = IntroQuote,
+            ChecklistInfra = ChecklistInfra,
+            ModelBehaviorExtra = ModelBehaviorExtra,
+            VerifyNouns = VerifyNouns,
+            VerifyQuote = VerifyQuote,
+            RollbackScope = RollbackScope,
+            BoundaryNouns = BoundaryNouns,
+            PersistenceLine = PersistenceLine
+        };
+    }
 }
 
 internal sealed class Subrule
@@ -440,6 +636,11 @@ internal sealed class Subrule
     // 合并方式：replace（默认）或显式 append；当前渲染器全部按 replace 落盘，append 供后续阶段消费
     [JsonPropertyName("merge")]
     public string Merge { get; set; } = OutputDeclaration.MergeReplace;
+
+    // 文件级槽位：骨架正文中的 {{slot:x}} 在渲染时以这里提供的值替换（P2 阶段 5 内容收敛）。
+    // 旧 Profile 路径用静态值；组合路径由 CompositionPlan.Slots（组件并集）提供，文件级可覆盖
+    [JsonPropertyName("slots")]
+    public Dictionary<string, string> Slots { get; set; } = new(StringComparer.Ordinal);
 
     public IReadOnlyList<string> GetSources()
     {
@@ -488,6 +689,15 @@ internal sealed class RecipeRecord
     // Q5 启用的能力 ID 集；旧 profile_id 保留为迁移兼容，能力状态以本字段为准
     [JsonPropertyName("features")]
     public List<string> Features { get; init; } = new();
+
+    // 组合内核路径（P2 阶段 3）专属：维度选择与命中组件；经典 Profile 路径为 null 且不序列化
+    [JsonPropertyName("selection")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Selection { get; init; }
+
+    [JsonPropertyName("component_ids")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? ComponentIds { get; init; }
 
     [JsonPropertyName("files")]
     public List<string> Files { get; init; } = new();

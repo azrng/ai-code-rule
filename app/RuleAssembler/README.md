@@ -5,7 +5,7 @@
 ## 入口流程
 
 1. **检测优先**：`ProjectDetector` 浅层扫描目标目录（深度 ≤2，跳过 node_modules/bin/obj 等），把 sln/csproj、package.json 依赖、wails.json、go.mod、src-tauri、pubspec、fastapi 依赖等信号映射为 trait 证据。证据按维度归并：同维度唯一才确认，冲突维度留待人工；候选 = 匹配全部已确认维度的 Profile。候选唯一时给出推荐组合与判断依据；证据不足时输出部分结果（已确认维度、待确认维度、候选组合），不伪造推荐。
-2. **问答决策树与补答**：`WizardEngine` 按 manifest 的 `wizard.steps` 顺序提问（项目形态 → 前端/界面 → 后端 → 桌面壳 → 架构风格 → Blazor 形态 → AI 能力模块；原生桌面组合 Avalonia / WPF / 控制台在界面一问后即收敛，不再追问后端）；每一步只列当前候选 Profile 真实支持的选项，候选在某 trait 上无差异则自动跳过该问题，输入 0 可返回上一步。检测部分结果进入补答流程：已确认维度保留且不再提问，只回答候选间仍有分歧的维度，回答来源（detected / manual）记入配方。因为选项从候选推导，交互路径上不存在"选出无法生成组合"的死胡同；未接入的技术栈组合表现为"选项不出现"。
+2. **问答决策树与补答（P2 阶段 3 起走组合内核）**：问答由 `SelectionEngine` 驱动——候选是 manifest 的 `components` 而非 Profile 列表，问题顺序沿用 `wizard.steps`（项目形态 → 前端/界面 → 后端 → 桌面壳 → 细分项）。只提问「存续组件之间仍有分歧」的维度：唯一取值自动推导（配方来源 `derived`），选项经可行性剪枝（取值后至少剩一个兼容样例，交互上不会选出无法生成的组合，未接入组合表现为「选项不出现」）。输入 0 可返回上一步。检测推荐与补答同样产出 `Selection` 走 `CompositionPlanner` 组合路径；「经典选择（兼容）」保留旧的大类 → Profile 入口与旧渲染路径。
 3. **经典选择**：技术大类 → Profile，作为兜底入口保留。
 4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 问答（Profile 选择）这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
 5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。
@@ -29,11 +29,24 @@ fragments/
 
 每个 Profile 声明 `traits` 组合画像（form/backend/frontend/shell/arch-style/blazor-flavor/ai-capability，`*` 表示不适用），`wizard` 节点维护问题步骤与选项文案；问答向导与项目检测都基于 traits 过滤，因此新增 Profile 时必须同时补 traits 与 options 文案，否则 `--check` 会失败。
 
-子规则支持 `sources` 数组（B 档骨架继承）：多个源按序拼接为一个输出文件，与 `source` 互斥，front matter 只能出现在首个源。跨 Profile 共享的整文件骨架放 `shared/skeletons/<族>/`，Profile 专属差异保留在各自 `arch/<id>/`；新增同族 Profile 时优先引用现有骨架，只写真正的差异文件。已收敛骨架：wails 族（reactWailsExe / vueWailsExe 的 backend/doc/infra 引用 `shared/skeletons/wails/`）、electron-dotnet 族（reactElectronDotNet / vueElectronDotNet 引用 `shared/skeletons/electron-dotnet/`）、electron 族（reactElectron / vueElectron 引用 `shared/skeletons/electron/`，主进程 Node 口径）、web-dotnet 与 desktop-xaml（见 manifest）。
+子规则支持 `sources` 数组（B 档骨架继承）：多个源按序拼接为一个输出文件，与 `source` 互斥，front matter 只能出现在首个源。跨 Profile 共享的整文件骨架放 `shared/skeletons/<族>/`，Profile 专属差异保留在各自 `arch/<id>/`；新增同族 Profile 时优先引用现有骨架，只写真正的差异文件。已收敛骨架：wails 族（reactWailsExe / vueWailsExe 的 backend/doc/infra 引用 `shared/skeletons/wails/`）、electron 族（backend/doc/infra 按 electron-dotnet / electron 两口径，frontend 与 design-system 经内容收敛为 `frontend-react-AGENTS.md` / `frontend-vue-AGENTS.md` / `design-system-react.yaml` / `design-system-vue.yaml` 四份骨架，backend 味道差异经 `{{slot:}}` 槽位注入）、web-dotnet 与 desktop-xaml（见 manifest）。
+
+子规则正文同样支持槽位：`Subrule.slots`（文件级）与组合路径的 `CompositionPlan.Slots`（组件并集）、旧路径的 `Profile.slots` 提供取值，渲染期替换、残留占位即报错。
 
 子规则内部的共性小节通过 include 指令复用：片段中独占一行的 `<!-- include: shared/xxx.md -->`（路径相对 `fragments/`）会在生成时被展开为对应共享小节的内容，支持嵌套引用并做循环检测。当前 `shared/` 维护「提交前最小回归」「无法执行测试时」「外部依赖与数据」「主动建议规则」等小节，按 backend / frontend / ui / application / infra 等子规则类型分目录归档；只有逐字节相同或纯措辞漂移的小节才收敛进共享，含技术栈实质差异的版本保留在各架构片段本地。
 
 目标项目的需求、设计和契约草案不由生成器创建。生成的 `doc-AGENTS.md` 规定项目文档按业务模块/功能拆分：需求放在 `doc/requirements/`，设计放在 `doc/design/`，新契约草案放在 `doc/contracts/`，通过 `doc/index.md` 和目录索引按需定位；旧的 `doc/requirement.md` 与 `doc/design/设计文档.md` 仅作为迁移兼容入口。
+
+### 组合内核（P2 阶段 1）
+
+manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组件化组合模型，`CompositionPlanner` 把维度选择（`Selection`，`Dictionary<string, string>`）解析为确定性的 `CompositionPlan`：
+
+- **组件**：单一技术职责（form / shell / frontend / backend / capability），声明 `when` 维度条件、根变量贡献（可携带 `{{slot:x}}` 槽位占位）、`files` 输出贡献与可选 `designSystemSource`。解析顺序按 kind 固定排序（form → shell → frontend → backend → capability），同 kind 按 manifest 声明顺序。
+- **槽位机制**：骨架组件（如 `electron-desktop-shell`）持有完整的根变量条目顺序，backend 等差异内容经 `slots` 注入槽位；槽位必须有唯一提供者，替换后残留占位即报错，已声明但未被消费的槽位降级为告警。
+- **根变量合并**：以组件声明的 `family` rootDefaults 为继承基线，组件值按「未写则继承、写了则覆盖」处理；组件之间覆盖同一字段才是冲突。组件未显式声明的标量字段携带类默认值，合并前会被剥离。
+- **证据不足不隐式补全**：组件 `when` 引用了选择中缺失的维度即视为部分匹配并报错，列出待确认维度，与检测器口径一致。`constraints` 声明维度间合法关系（when 命中时 require 必须成立、forbid 必须不成立）。
+- **等价回归**：`compatibilityCases` 把旧 Profile 固定为组合样例，`--check` 对每个样例同时运行旧渲染路径与组合路径并逐字节比对（含路径集合、顺序与内容）；`CompositionEquivalenceTests` 额外覆盖能力子集组合。全部 28 个 Profile 已组件化并注册为兼容样例：族组合走「骨架 + 槽位 + 前端/后端组件」（Electron 4、Wails 2、Web 分离 2、纯前端 AI 2），其余为「单一组合 = 全量 form 组件」（直接携带 Profile 完整 root / subrules / design-system；`reactLinkdotNet-ai` 的 `ai-AGENTS.md` 按旧渲染顺序前置）。新增技术类型原则上扩展组件与约束，不再复制整套 Profile；旧 Profile 渲染路径保持不变，向导与检测切换到 Selection 属阶段 3。
+- **组件根标量按 JSON 存在性判定**：组件根中未在 JSON 里真实声明的标量字段反序列化后携带类默认值，合并前按 `DeclaredScalarFields`（`ManifestLoader.AnnotateComponentRootPresence` 标注）剥离；刻意声明且恰好等于类默认值的覆盖（如回退通用措辞覆盖 family 基线）会被保留。
 
 ### 输出契约与能力开关
 
@@ -71,23 +84,35 @@ fragments/
 维护和 CI 可以使用只读校验与批量预览：
 
 ```powershell
-# 只校验 manifest、片段、全部 Profile、输出契约一致性与问答决策树（全路径仿真），不写入文件
+# 只校验 manifest、片段、全部 Profile、输出契约一致性、旧问答决策树（全路径仿真）、
+# 组件问答决策树（每条交互路径可解析且唯一映射兼容样例）
+# 与组合内核兼容样例（组合路径 vs 旧 Profile 逐字节等价），不写入文件
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --check
 
 # 只做项目检测，打印推荐组合与依据；证据不足时打印已确认 / 待确认维度与候选，不写入文件
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --detect [目录]
 
-# 把全部 Profile 的生成结果（默认能力集）输出到指定目录，用于批量对比验证
-dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit <目录>
+# 按显式维度选择解析组合内核：唯一取值自动推导，仍有分歧的维度报错并列出可选值；
+# 打印命中组件与文件清单，不写入文件
+dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --plan form=web frontend=react backend=dotnet
+
+# 按配方记录重放生成（升级规则或在新项目还原同一组合）：
+# 旧配方仅有 profile_id 时经兼容样例反查；组件集合与当前规则不一致时显式报错；
+# 能力开关按配方重放；design-system 已定制保留语义与交互一致；回写配方并补 .gitignore
+dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --recipe <配方.json> [目标目录]
+
+# 把全部 Profile 的旧路径生成结果输出到指定目录，用于批量对比与历史产物回归
+# （--emit 为兼容别名，规范名为 --emit-all-legacy）
+dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit-all-legacy <目录>
 ```
 
 ## 当前 Profile
 
-manifest 当前包含 8 个技术大类、26 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。
+manifest 当前包含 8 个技术大类、28 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。新增技术类型优先走组合内核的 `components` 扩展口（见「组合内核」一节），不再新增完整 Profile。
 
 ## 版本与格式
 
 - 规则版本和更新时间由 `manifest.json` 的 `vars` 统一控制。
 - 所有生成文件统一使用 UTF-8 无 BOM 和 manifest 指定的 LF 行尾。
 - 指针文件保留自身独立的 `rule_id` 和版本元数据。
-- 根目录现有的 19 套架构目录仅是历史/生成快照，不是维护入口。
+- 仓库根目录的架构快照目录已于 2026-08-28 删除，`fragments/` 是唯一维护入口。

@@ -1,8 +1,8 @@
 # 设计与组件规则的唯一事实来源。
 # 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
-# status 为「已定制」后 use-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
+# status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
-# 技术栈：React + Tailwind CSS + Radix Primitive + cva + Electron
+{{slot:bk-dr-1}}
 
 meta:
   name: "桌面效率工具设计系统"
@@ -18,7 +18,7 @@ meta:
     variants: "class-variance-authority + clsx + tailwind-merge"
     forms: "React Hook Form + Zod"
     query: "TanStack Query"
-    local_bridge: "Electron IPC (ipcMain.handle + contextBridge)"
+{{slot:bk-dr-2}}
   usage:
     read_order:
       - "在进行任何 UI 改动前阅读本文件"
@@ -177,7 +177,7 @@ do:
   - "把表单 schema 收敛到 Zod"
   - "把异步数据状态收敛到 TanStack Query"
   - "把纯客户端全局状态收敛到 Zustand"
-  - "通过 window.ipc（contextBridge）与主进程通信"
+{{slot:bk-dr-3}}
 
 dont:
   - "不要硬编码颜色、阴影、圆角、断点"

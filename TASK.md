@@ -14,6 +14,12 @@
 | RULE-20260904-DSBASELINE | 设计系统基线与定制口径 | `design-system.yaml` 从固定规范改为「内置基线 + 按产品品牌定制」：定制口径收敛到 `shared/ui/design-system-liveness.md` 并接入全部界面子规则；16 份 yaml 头部声明基线语义、`meta.status` 改「基线待定制」；生成器对已定制（或状态无法识别）的本地 `design-system.yaml` 保留不覆盖（`DesignSystemGuard`）。版本 1.48.0 → 1.49.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-04 |
 | RULE-20260904-EOL | 渲染管线行尾归一 | `ResourceStore.Read` 读取口统一 LF：此前根模板按 `\n` 写死的连续空行收敛对 CRLF 检出不生效，同一片段在 CRLF / LF 工作区产出内容有差异；归一后 CRLF worktree 与 LF 主目录 `--emit` 逐字节一致。仅代码与测试变更，生成内容不变，版本保持 1.49.0 | 已完成验证 | ZCode | DONE | 中 | 2026-09-04 |
 | RULE-20260904-JSTYPE | 静态 HTML Profile JS 类型纪律 | `staticHtml` frontend 规范新增「类型纪律（无构建的类型安全）」小节：保持 `.js` 不引入 TS 编译，共享模块强制 JSDoc 注解 + `// @ts-check`，可选 `jsconfig.json`（checkJs/noEmit）仅作检查；脚本规模超出时引导迁移到带构建的前端组合而非在本项目引入构建。版本 1.49.0 → 1.50.0 | 已完成验证 | ZCode | DONE | 中 | 2026-09-04 |
+| RULE-20260906-P2S1 | 组合内核阶段 1 与 Electron 家族组件化 | 启动 P2：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点；新增 `Selection` / `ComponentDefinition` / `CompositionPlan` 模型与 `CompositionPlanner`（kind 固定顺序解析、`{{slot:x}}` 槽位注入、family 基线继承、证据不足不隐式补全、约束校验）；`RuleRenderer` 抽出统一渲染核心，兼容路径与组合路径共用；Electron 家族 4 个组合组件化（骨架 `electron-desktop-shell` + 4 个前端组件 + 2 个后端组件）；`--check` 对 4 个兼容样例逐字节比对两条渲染路径，`CompositionEquivalenceTests` 额外覆盖能力子集。生成内容零漂移（`--emit` 与 1.51.0 基线 267 文件逐字节一致），版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-P2S2 | 组合内核阶段 2 第一批：纯前端 / Wails / Web 分离三族组件化 | 兼容样例 4 → 12、组件 7 → 22：frontend-static 四变体（reactOnly / vueOnly / reactOnly-ai / vueOnly-ai，普通与 AI 各一个骨架，AI 变体的 ai-AGENTS.md 由前端组件补声明并保持「模块先于子规则」的渲染顺序）、Wails 两组合（react / vue 差异 14 处槽位化）、Web 前后端分离两组合（subrule-index 存在结构性差异，由前端组件整表持有）。组件根标量改为按 JSON 存在性判定伪声明（`DeclaredScalarFields` + `AnnotateComponentRootPresence`），修复「刻意声明且恰好等于类默认值」被误剥的问题（vueWailsExe destructive-nouns 覆盖 family 基线场景）。生成内容零漂移（`--emit` 与基线逐字节一致），版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-P2S3 | 组合内核阶段 2 完成：剩余 16 Profile 组件化，28/28 兼容样例全覆盖 | 组件 22 → 37、兼容样例 12 → 28：剩余 Profile 以「单一组合 = 一个全量 form 组件」迁移（直接携带 Profile 完整 root / subrules / design-system，含 reactLinkdotNet-ai 的模块前置 ai-AGENTS.md）；fs-plain 三组件重组为两个单组件（原骨架缺 frontend 钳制会与 generalFrontend 冲突）；web-dotnet 五组件补 `ai-capability=no` 钳制（与 reactLinkdotNet-ai 解耦）。`D:\temp\ruletest` 真实生成验证：经典选择、检测推荐、Q5 能力开关（关 doc 后根导航 0 残留）、问答决策树四条链路全部通过，产物与基线逐字节一致。185 测试全绿，`--emit` 与基线逐字节一致，版本保持 1.51.0。阶段 2 完成，下一步进入阶段 3（向导/检测器切换 Selection 入口） | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-P2S4 | 组合内核阶段 3：问答/检测/汇总切换 Selection 入口 | 新增 `SelectionEngine`（组件驱动问答）：存续组件按已回答维度过滤，只问「存续组件间仍有分歧」的维度，唯一取值自动推导（配方来源 derived），选项经可行性剪枝（取值后至少剩一个兼容样例，与旧引擎「选项从 Profile 推导」的保证对齐），`SimulateAll` 全路径仿真接入 `--check`（每条交互路径可解析且唯一映射兼容样例，28 样例全部可达）。`Program` 交互切换：问答 / 检测推荐 / 检测补答均产出 `Selection` 走 `CompositionPlanner` + 组合渲染路径，经典大类 → Profile 保留为「经典选择（兼容）」；新增 `--plan` 命令（显式维度 → 自动推导 → 打印组件与文件清单，分歧维度报错不补全）。配方记录增补 `selection` + `component_ids`（唯一映射兼容样例时回填 profile 三件套，旧路径输出字节不变）。ruletest 实测：web+react+.NET（自动推导 3 维度）、desktop+react+go（Wails）、返回上一步改道 console 三条链路产物与基线一致。191 测试全绿，`--emit` 与基线逐字节一致，版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-P2S5 | 组合内核阶段 4：配方重放与兼容命令收尾 | 新增 `RecipeReplayer` + `--recipe <配方.json> [目标目录]`：按配方记录重放生成，selection 重建选择（旧配方仅有 profile_id 时经兼容样例反查）、组件集合与当前 manifest 不一致显式报错不静默生成、能力开关按配方重放（空 = 默认集）、版本差异以提示说明、design-system 已定制保留语义与交互一致，回写配方刷新版本并补 .gitignore。`--emit-all-legacy` 作为旧路径批量预览的规范名落地（`--emit` 保留为别名）。ruletest 实测：交互生成 → 清空目录 → 按配方重放，产物与基线逐字节一致；伪造 1.40.0 旧配方（仅 profile_id）反查重放 reactOnly 成功。6 个重放单元测试（逐字节还原/旧配方反查/篡改报错/能力子集/约束拒绝/空配方报错），197 测试全绿，`--check` 通过，版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-P2S6 | 组合内核阶段 5：子规则槽位机制与 electron 内容收敛 | 生成器支持子规则骨架槽位：`Subrule.slots`（文件级）/ `Profile.slots`（旧路径）/ `CompositionPlan.Slots`（组件并集）三级取值，`ApplyFileSlots` 渲染期替换并以残留占位硬报错兜底。electron 家族 8 份按 backend 味道分化的文件收敛为 4 份骨架（frontend-react/vue-AGENTS.md + design-system-react/vue.yaml，react 对 5+3 槽位、vue 对 5+8 槽位，共消除约 1100 行重复），dotnet/main 槽位值由前端组件与旧 Profile 提供。计划内内容变更：2 份 design-system 的 `use-rule` 旧名修正为 `use-ai-rule`（首次随 1.52.0 生成生效）。版本 1.51.0 → 1.52.0。验证：28 兼容样例等价全绿、emit 161 个差异文件逐一核验均为计划内差异（版本戳 + 旧名修正）、ruletest 真实生成（web 分离路径 + electron 骨架槽位路径）版本还原后与基线逐字节一致。197 测试全绿 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 
 ## 1. 当前目标
 
@@ -274,22 +280,15 @@ P1 新增能力选择不能直接用旧的“输出全部 Profile”命令表达
 
 ### 5. P2 完整组合内核
 
-P2 暂缓，但不是无限期挂起。满足以下任意两项，或出现一次无法通过现有骨架安全表达的跨族组合，即启动 P2：
+P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile 组件化 → Selection 入口切换 → 配方重放 → 内容收敛），见 RULE-20260906-P2S1 至 P2S6；当前规则版本 1.52.0。收尾评估与后续方向：
 
-- 新需求需要复制两个以上现有 Profile 的规则文件。
-- 同一规则修改必须同步三个以上 Profile。
-- 合法需求无法通过现有 Profile、`sources` 和 skeleton 表达。
-- 出现跨族组合，例如 React + .NET 分层后端 + Tauri。
-- 新增技术类型只能通过增加新的完整 Profile 才能接入。
-- Profile 数量继续增长且重复规则占主要部分。
-
-启动 P2 时按以下阶段执行：
-
-1. 增加 `Selection`、`Component`、`Constraint`、`CompositionPlan` 和 `CompositionPlanner`，保留旧 Profile 渲染路径。
-2. 将 `forms`、`choices`、`components`、`constraints` 和 `compatibilityCases` 接入 manifest。
-3. 将向导、检测器和汇总界面切换到 Selection；Profile 列表移出主入口，仅保留兼容命令。
-4. 配方记录使用 `selection + component_ids + features`，增加 `--recipe`；保留 `--emit-all-legacy` 做旧产物回归。
-5. 逐个迁移 24 个兼容样例，比较文件路径、文件数量、版本元数据和正文，最后再评估删除 `profiles` 节点。
+1. ~~增加 `Selection`、`Component`、`Constraint`、`CompositionPlan` 和 `CompositionPlanner`，保留旧 Profile 渲染路径。~~（已完成）
+2. ~~将全部 Profile 迁移为组件，`compatibilityCases` 覆盖 28/28。~~（已完成）
+3. ~~将向导、检测器和汇总界面切换到 Selection；Profile 列表移出主入口，仅保留兼容命令。~~（已完成）
+4. ~~配方记录 `selection + component_ids + features`；`--recipe` / `--emit-all-legacy`。~~（已完成）
+5. ~~内容收敛：electron 家族 8 份按味道分化文件 → 4 份骨架 + 槽位（约 1100 行重复消除）。~~（已完成；wails/web 分离的 frontend 差异是 react/vue 框架维度而非 backend 维度，属合理差异不强收敛）
+6. `profiles` 节点评估：**保留**。它仍是三件事的事实来源——检测器候选过滤（ProjectDetector 按 traits 收敛推荐）、经典兼容入口、`--emit-all-legacy` 回归基线；组件等价校验保证两条路径产物一致，删除无收益且破坏回归能力。待检测器与经典入口也切换到组件口径后（远期）再评估。
+7. 下一批方向（第二梯队）：目标项目 `--upgrade`（配方已就位，检测本地修改 + diff）、self-contained 交付（覆盖 mac/linux 与 CI）、规则效果闭环（命中/违反反馈回 fragments）。
 
 P2 的完成标准是：新增常规前端、后端、壳或能力模块时，不需要复制完整 Profile，也不需要修改渲染器核心分发流程。
 
@@ -301,8 +300,9 @@ P2 的完成标准是：新增常规前端、后端、壳或能力模块时，�
 - `ManifestLoader.MergeFamilyDefaults` 在 JSON 层做 family rootDefaults 继承，新的结构化输出字段不能破坏该过程。
 - `OutputWriter.WriteFiles` 自带 staging、backup 和回滚；配方记录必须在规则文件写入成功后再写。
 - 预设产物回归基线：`dotnet run --project app/RuleAssembler -- --emit D:/tmp/rules-before`；该命令当前只用于旧 Profile 预览，不写配方记录。
-- 当前共有 26 个 Profile（1.41.0~1.42.0 批次新增的纯前端三组合与纯前端 AI 两变体，随 1.43.0 提交落地），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；P1 保留它作为兼容路径。
+- 当前共有 28 个 Profile（1.43.0 批次与 reactElectron / vueElectron / dotnetBlazorWebApp 等后续新增），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；组合内核阶段 1 新增 `RuleRenderer.Plan(manifest, plan, features)` 组合入口，两条路径共用统一渲染核心，`--check` 保证兼容样例逐字节等价。
 - 当前有 `core`、`ai-capability`（.NET 后端口径）和 `ai-capability-frontend`（浏览器侧口径）三个顶层 module，不能把现状 module 数量误认为已经完成组件化。
+- 组合内核阶段 1 已落地：manifest 的 `components` / `constraints` / `compatibilityCases` 由 `CompositionPlanner` 消费；组件根骨架通过 `{{slot:x}}` 槽位注入 backend 差异，组件间覆盖同一根字段、同名输出、重复槽位都会报错。为既有组合补组件时，必须先在 `compatibilityCases` 加样例，让 `--check` 的逐字节等价校验兜底。
 - 当前 `Subrule.sources` 已支持多源拼接，但只有显式声明时才能合并；重复输出不得静默覆盖。
 - 允许修改 `fragments/manifest.json` 和新增模块元数据；禁止为了完成 P1 无计划地重写已有规则正文。
 - Windows / PowerShell 文档和命令中禁止使用 `&&` 链式命令；新增注释统一使用中文。
