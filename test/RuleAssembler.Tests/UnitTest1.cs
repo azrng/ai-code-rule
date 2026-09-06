@@ -7,7 +7,7 @@ public sealed class ManifestLoaderTests
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
 
-        Assert.Equal(26, manifest.Profiles.Count);
+        Assert.Equal(28, manifest.Profiles.Count);
         Assert.Contains(
             manifest.Modules.SelectMany(module => module.Pointers),
             pointer => pointer.Equals("GROK.md", StringComparison.OrdinalIgnoreCase));
@@ -47,6 +47,19 @@ public sealed class ManifestLoaderTests
         var vueElectron = Assert.Single(manifest.Profiles, profile => profile.Id == "vueElectronDotNet");
         Assert.Equal("vue", vueElectron.Traits!.Frontend);
         Assert.Equal("electron", vueElectron.Traits!.Shell);
+
+        // 纯 Electron 变体：无 .NET 后端，本地逻辑由主进程承担，backend/doc/infra 走 electron 族骨架
+        var reactElectronOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "reactElectron");
+        Assert.Equal("react", reactElectronOnly.Traits!.Frontend);
+        Assert.Equal("none", reactElectronOnly.Traits!.Backend);
+        Assert.Equal("electron", reactElectronOnly.Traits!.Shell);
+        Assert.Contains(
+            reactElectronOnly.Subrules,
+            rule => rule.GetSources().Contains("shared/skeletons/electron/backend-AGENTS.md"));
+        var vueElectronOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "vueElectron");
+        Assert.Equal("vue", vueElectronOnly.Traits!.Frontend);
+        Assert.Equal("none", vueElectronOnly.Traits!.Backend);
+        Assert.Equal("electron", vueElectronOnly.Traits!.Shell);
 
         var blazorServer = Assert.Single(manifest.Profiles, profile => profile.Id == "dotnetBlazor");
         Assert.Contains("Blazor Server", blazorServer.Label);

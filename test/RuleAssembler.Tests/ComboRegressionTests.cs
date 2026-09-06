@@ -1,7 +1,7 @@
 namespace RuleAssembler.Tests;
 
 // P1-4 兼容回归：必覆盖组合的「检测 → 能力开关 → 渲染 → 契约校验」全链路样例。
-// 覆盖：.NET + React、.NET 分层、React + Wails、React + Electron + .NET、纯静态 HTML、纯后端 Python
+// 覆盖：.NET + React、.NET 分层、React + Wails、React + Electron + .NET、React / Vue + 纯 Electron、纯静态 HTML、纯后端 Python
 public sealed class ComboRegressionTests : IDisposable
 {
     private readonly string _root;
@@ -148,6 +148,48 @@ public sealed class ComboRegressionTests : IDisposable
     }
 
     [Fact]
+    public void Combo_ReactElectronPure_DetectsAndRenders()
+    {
+        // 纯 Electron + React（无 .NET 工程）：收敛到 reactElectron，
+        // backend-AGENTS.md 来自 electron 族骨架（主进程口径），不再出现 src-dotnet
+        var result = Detect(root =>
+        {
+            File.WriteAllText(
+                Path.Combine(root, "package.json"),
+                "{\"dependencies\":{\"react\":\"^18.0.0\"},\"devDependencies\":{\"electron\":\"^33.0.0\"}}");
+            File.WriteAllText(Path.Combine(root, "electron.vite.config.ts"), "export default {}");
+        });
+
+        Assert.True(result.Converged);
+        Assert.Equal("reactElectron", result.LegacyProfileId);
+        Assert.Equal("none", result.Confirmed["backend"]);
+        var profile = result.LegacyProfile;
+
+        var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
+        var backend = Assert.Single(files, file => file.Output == "backend-AGENTS.md");
+        Assert.Contains("安全基线规则", backend.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("src-dotnet", backend.Content, StringComparison.Ordinal);
+        AssertContractPasses(profile);
+    }
+
+    [Fact]
+    public void Combo_VueElectronPure_DetectsAndRenders()
+    {
+        // 纯 Electron + Vue：检测收敛到 vueElectron，契约校验通过
+        var result = Detect(root =>
+        {
+            File.WriteAllText(
+                Path.Combine(root, "package.json"),
+                "{\"dependencies\":{\"vue\":\"^3.5.0\"},\"devDependencies\":{\"electron\":\"^33.0.0\"}}");
+            File.WriteAllText(Path.Combine(root, "electron-builder.yml"), "appId: demo");
+        });
+
+        Assert.True(result.Converged);
+        Assert.Equal("vueElectron", result.LegacyProfileId);
+        AssertContractPasses(result.LegacyProfile);
+    }
+
+    [Fact]
     public void Combo_StaticHtml_DetectsAndRenders()
     {
         var result = Detect(root =>
@@ -291,7 +333,7 @@ public sealed class ComboRegressionTests : IDisposable
     {
         // 26 个 Profile 全量样例：默认能力集渲染、契约校验全部通过，
         // 旧 Profile 产物级零漂移由 --emit 基线对比与 Defaults_MatchLegacyPlan 共同保证
-        Assert.Equal(26, _manifest.Profiles.Count);
+        Assert.Equal(28, _manifest.Profiles.Count);
         foreach (var profile in _manifest.Profiles)
         {
             var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));

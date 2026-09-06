@@ -195,9 +195,12 @@ internal sealed class ProjectDetector
             evidence.Add(new("form", "desktop", "发现 Electron 工程（依赖或 electron.vite / electron-builder 配置）"));
             evidence.Add(new("shell", "electron", "发现 Electron 工程（依赖或 electron.vite / electron-builder 配置）"));
             // Electron 项目伴随 .NET 工程（sidecar / ElectronNET.API 宿主）时，.NET 是后端信号；
-            // 普通 Sdk 工程没有其他特征分支，必须在这里兜底，否则会误推断成其他后端
+            // 普通 Sdk 工程没有其他特征分支，必须在这里兜底，否则会误推断成其他后端。
+            // 无任何 .NET 工程时，本地逻辑由主进程（Node）承担，属于确定证据而非默认补值
             if (signals.CsprojCount > 0 || signals.HasSln)
                 evidence.Add(new("backend", "dotnet", "Electron 项目伴随 .NET 工程（csproj/sln）"));
+            else
+                evidence.Add(new("backend", "none", "Electron 工程未伴随 .NET 工程，本地逻辑由主进程（Node）承担"));
         }
 
         if (signals.HasPubspec)

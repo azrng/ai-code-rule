@@ -1,7 +1,7 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.50.0",
+    "version": "1.51.0",
     "last_updated": "2026-09-04"
   },
   "schema_version": 2,
@@ -1350,6 +1350,196 @@
       "traits": {
         "form": "desktop",
         "backend": "dotnet",
+        "frontend": "vue",
+        "shell": "electron",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "reactElectron",
+      "label": "React + Electron 桌面应用",
+      "family": "hybrid-app",
+      "desc": "React 渲染进程 + Electron 主进程本地后端（IPC）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：IPC handler、主进程服务、数据访问、本地能力、后端测试",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）", "features": ["design-system"] },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Electron 渲染进程界面实现与交互时 |",
+          "| `backend-AGENTS.md` | IPC handler、主进程服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `main/`、preload、IPC 或本地能力实现时 |",
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |", "features": ["infra"] }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Electron 主进程实现 →   联调与交付",
+          "（用户确认）    （前端实现角色）      （主进程实现角色）      （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：IPC handler、主进程服务、数据访问、本地能力与测试，细则见 `backend-AGENTS.md`",
+          { "line": "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 IPC handler、Service、Repository、类型 / schema、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、IPC handler、Service、Repository、类型映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、IPC handler、Service、Repository、类型 / schema 与测试实现"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactElectron/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/electron/backend-AGENTS.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/electron/doc-AGENTS.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/electron/infra-AGENTS.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "none",
+        "frontend": "react",
+        "shell": "electron",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "vueElectron",
+      "label": "Vue + Electron 桌面应用",
+      "family": "hybrid-app",
+      "desc": "Vue 3 渲染进程 + Electron 主进程本地后端（IPC）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：IPC handler、主进程服务、数据访问、本地能力、后端测试",
+          { "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统", "features": ["doc"] },
+          { "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证", "features": ["infra"] },
+          { "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）", "features": ["design-system"] },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Electron 渲染进程界面实现与交互时 |",
+          "| `backend-AGENTS.md` | IPC handler、主进程服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `main/`、preload、IPC 或本地能力实现时 |",
+{
+          "when": [
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |", "features": ["doc", "design-system"] },
+            { "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |", "features": ["doc"] }
+          ]
+          },
+          { "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |", "features": ["infra"] }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Electron 主进程实现 →   联调与交付",
+          "（用户确认）    （前端实现角色）      （主进程实现角色）      （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          { "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`", "features": ["doc"] },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：IPC handler、主进程服务、数据访问、本地能力与测试，细则见 `backend-AGENTS.md`",
+          { "line": "- 阶段 3：联调、构建、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`", "features": ["infra"] }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 IPC handler、Service、Repository、类型 / schema、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、IPC handler、Service、Repository、类型映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、IPC handler、Service、Repository、类型 / schema 与测试实现"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueElectron/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/electron/backend-AGENTS.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/electron/doc-AGENTS.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/electron/infra-AGENTS.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "none",
         "frontend": "vue",
         "shell": "electron",
         "arch-style": "single",
