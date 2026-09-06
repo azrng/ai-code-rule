@@ -49,4 +49,22 @@ public sealed class UniversalConstraintTests
             Assert.Contains("每轮优先提出 1 至 3 个最关键问题", collaboration.Content);
         }
     }
+
+    [Fact]
+    public void EveryProfile_CollaborationRule_ContainsFeedbackLoop()
+    {
+        // 规则效果反馈闭环：所有 Profile 的协作子规则都带反馈登记口径，根文件触发提示覆盖该章节
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
+        var renderer = new RuleRenderer(new ResourceStore());
+
+        foreach (var profile in manifest.Profiles)
+        {
+            var files = renderer.Plan(manifest, profile);
+            var collaboration = Assert.Single(files, file => file.Output == "collaboration-AGENTS.md");
+            Assert.Contains("## 规则效果反馈", collaboration.Content);
+            Assert.Contains(".ai-rule-feedback.md", collaboration.Content);
+            var root = Assert.Single(files, file => file.Output == "AGENTS.md");
+            Assert.Contains("重复问题回顾或规则效果反馈", root.Content);
+        }
+    }
 }

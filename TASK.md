@@ -21,6 +21,8 @@
 | RULE-20260906-P2S5 | 组合内核阶段 4：配方重放与兼容命令收尾 | 新增 `RecipeReplayer` + `--recipe <配方.json> [目标目录]`：按配方记录重放生成，selection 重建选择（旧配方仅有 profile_id 时经兼容样例反查）、组件集合与当前 manifest 不一致显式报错不静默生成、能力开关按配方重放（空 = 默认集）、版本差异以提示说明、design-system 已定制保留语义与交互一致，回写配方刷新版本并补 .gitignore。`--emit-all-legacy` 作为旧路径批量预览的规范名落地（`--emit` 保留为别名）。ruletest 实测：交互生成 → 清空目录 → 按配方重放，产物与基线逐字节一致；伪造 1.40.0 旧配方（仅 profile_id）反查重放 reactOnly 成功。6 个重放单元测试（逐字节还原/旧配方反查/篡改报错/能力子集/约束拒绝/空配方报错），197 测试全绿，`--check` 通过，版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 | RULE-20260906-P2S6 | 组合内核阶段 5：子规则槽位机制与 electron 内容收敛 | 生成器支持子规则骨架槽位：`Subrule.slots`（文件级）/ `Profile.slots`（旧路径）/ `CompositionPlan.Slots`（组件并集）三级取值，`ApplyFileSlots` 渲染期替换并以残留占位硬报错兜底。electron 家族 8 份按 backend 味道分化的文件收敛为 4 份骨架（frontend-react/vue-AGENTS.md + design-system-react/vue.yaml，react 对 5+3 槽位、vue 对 5+8 槽位，共消除约 1100 行重复），dotnet/main 槽位值由前端组件与旧 Profile 提供。计划内内容变更：2 份 design-system 的 `use-rule` 旧名修正为 `use-ai-rule`（首次随 1.52.0 生成生效）。版本 1.51.0 → 1.52.0。验证：28 兼容样例等价全绿、emit 161 个差异文件逐一核验均为计划内差异（版本戳 + 旧名修正）、ruletest 真实生成（web 分离路径 + electron 骨架槽位路径）版本还原后与基线逐字节一致。197 测试全绿 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 | UPG-20260906-1 | 第二梯队：--upgrade 项目升级（本地修改检测） | 配方记录增补 `file_hashes`（生成内容 SHA256，向后兼容：交互/classic/wizard/重放四条路径统一写入）；`RecipeReplayer.PlanUpgrade` 比对磁盘哈希识别本地修改过的文件，默认保留只更新未修改文件（保留文件沿用旧哈希，下次升级仍可检测），`--force` 全部覆盖并重算哈希；早期配方无哈希时降级为「按配方直接重放」并明确提示。新增 `--upgrade [目录] [--force]` 命令。ruletest 实测完整闭环：生成 → 本地改 2 文件 → 升级保留修改写入其余 8 个 → force 覆盖并刷新哈希 → 再升级幂等。4 个新单元测试（未修改全更新/修改保留沿用旧哈希/旧配方不可检测/哈希一致性），201 测试全绿，生成内容零漂移，版本保持 1.52.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| UPG-20260906-2 | 第二梯队：self-contained 交付（mac/linux 与 CI） | 发布从 win-x64 框架相关改为三平台 self-contained 单文件矩阵（win-x64 / linux-x64 / osx-x64，目标机无需 .NET 运行时）：`publish.ps1` 支持 `-Rids` 矩阵参数与 `-FrameworkDependent` 回退，产物命名 `dist/use-ai-rule-<rid>`（win-x64 额外保留 `dist/use-ai-rule.exe` 兼容别名）；新增 `app/RuleAssembler/publish.sh`（Linux/mac/CI 入口，RID 语义与 ps1 一致，`.gitattributes` 强制 `*.sh` LF）；`build-use-ai-rule.bat` 默认快速打 win-x64、传参 `all` 打全矩阵；Gitee Go CI 新增「self-contained 发布矩阵 + linux 产物跑 `--check` 冒烟」两步，push 触发补 `guided-wizard-detect`；目标项目 gitignore 模板增补无扩展名 `use-ai-rule` 条目（mac/linux 本体），规则文件内容不变、版本保持 1.52.0。验证：本地三平台发布产物齐全（各约 75MB），win 产物独立运行 `--check` 通过，201 测试全绿 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| UPG-20260906-3 | 第二梯队：规则效果反馈闭环（命中/违反回传 fragments） | 生成规则内置反馈机制：`collaboration-AGENTS.md` 新增「规则效果反馈」小节（违反/冲突/缺失/有用四类条目，记入目标项目根目录 `.ai-rule-feedback.md`，长期登记不清理、随项目提交，与「重复问题回顾」的本地落实衔接），根文件触发式协作规则同步提示该章节；仓库侧新增 `doc/规则效果反馈承接.md`（收集 → 登记 → 按 §2.4 归属 → 改 fragments → 验证升版 → 回执到原反馈文件，`--upgrade` 闭环），仓库根 `AGENTS.md` 增承接段。新增 `EveryProfile_CollaborationRule_ContainsFeedbackLoop` 断言 28 Profile 全覆盖。规则内容变更 1.52.0 → 1.53.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 
 ## 1. 当前目标
 
@@ -281,7 +283,7 @@ P1 新增能力选择不能直接用旧的“输出全部 Profile”命令表达
 
 ### 5. P2 完整组合内核
 
-P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile 组件化 → Selection 入口切换 → 配方重放 → 内容收敛），见 RULE-20260906-P2S1 至 P2S6；当前规则版本 1.52.0。收尾评估与后续方向：
+P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile 组件化 → Selection 入口切换 → 配方重放 → 内容收敛），见 RULE-20260906-P2S1 至 P2S6；当前规则版本 1.53.0。收尾评估与后续方向：
 
 1. ~~增加 `Selection`、`Component`、`Constraint`、`CompositionPlan` 和 `CompositionPlanner`，保留旧 Profile 渲染路径。~~（已完成）
 2. ~~将全部 Profile 迁移为组件，`compatibilityCases` 覆盖 28/28。~~（已完成）
@@ -289,7 +291,7 @@ P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile �
 4. ~~配方记录 `selection + component_ids + features`；`--recipe` / `--emit-all-legacy`。~~（已完成）
 5. ~~内容收敛：electron 家族 8 份按味道分化文件 → 4 份骨架 + 槽位（约 1100 行重复消除）。~~（已完成；wails/web 分离的 frontend 差异是 react/vue 框架维度而非 backend 维度，属合理差异不强收敛）
 6. `profiles` 节点评估：**保留**。它仍是三件事的事实来源——检测器候选过滤（ProjectDetector 按 traits 收敛推荐）、经典兼容入口、`--emit-all-legacy` 回归基线；组件等价校验保证两条路径产物一致，删除无收益且破坏回归能力。待检测器与经典入口也切换到组件口径后（远期）再评估。
-7. 第二梯队（已启动，见 UPG-20260906-1）：~~目标项目 `--upgrade`（配方 + 内容哈希检测本地修改）~~（已完成）；待办：self-contained 交付（覆盖 mac/linux 与 CI）、规则效果闭环（命中/违反反馈回 fragments）。
+7. 第二梯队（已全部完成，见 UPG-20260906-1 / UPG-20260906-2 / UPG-20260906-3）：~~目标项目 `--upgrade`（配方 + 内容哈希检测本地修改）~~（已完成）；~~self-contained 交付（覆盖 mac/linux 与 CI）~~（已完成：三平台 self-contained 单文件矩阵 + CI 发布与冒烟）；~~规则效果闭环~~（已完成：目标项目 `.ai-rule-feedback.md` 登记 + `doc/规则效果反馈承接.md` 承接，1.53.0）。
 
 P2 的完成标准是：新增常规前端、后端、壳或能力模块时，不需要复制完整 Profile，也不需要修改渲染器核心分发流程。
 
