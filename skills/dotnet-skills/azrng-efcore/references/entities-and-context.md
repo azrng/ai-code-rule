@@ -13,15 +13,16 @@
 ## 1. 实体基类继承体系
 
 ```
-IEntity                                （空基类 class，所有实体可继承；非接口）
-IdentityBaseEntity<TKey>               （泛型主键；非泛型 IdentityBaseEntity : IdentityBaseEntity<long>）
-IdentityOperatorEntity<TKey>           （+ 审计：Creator/CreateTime/Updater/UpdateTime）
-IdentityOperatorStatusEntity<TKey>     （+ 状态：Deleted/Disabled）
+IEntity                       （空基类 class，所有实体可继承；非接口）
+└─ IdentityBaseEntity         （long 主键，构造时生成雪花 Id）
+   └─ IdentityBaseEntity<TKey>
+└─ IdentityOperatorEntity     （+ 审计：Creator/CreateTime/Updater/UpdateTime）
+   └─ IdentityOperatorEntity<TKey>
+└─ IdentityOperatorStatusEntity （+ 状态：Deleted/Disabled）
+   └─ IdentityOperatorStatusEntity<TKey>
 ```
 
-实际继承方向是：每级的**非泛型版本继承自该级 `<long>` 泛型版本**（如 `IdentityOperatorStatusEntity : IdentityOperatorStatusEntity<long>`），逐级向下叠加字段。
-
-> 命名空间 `Azrng.EFCore.Entities`。**主键默认 `long`**（非泛型基类，构造时自动 `Id = IdHelper.GetLongId()`）；确实需要其他主键类型（`TKey : IEquatable<TKey>`，如 `string`/`Guid`/`int`）才用泛型版本。选 `long` 可直接配合雪花 ID，默认首选。
+> 命名空间 `Azrng.EFCore.Entities`。`IdentityBaseEntity`/`IdentityOperatorEntity`/`IdentityOperatorStatusEntity`（无泛型）= 其 `<long>` 版本，构造时自动 `Id = IdHelper.GetLongId()`。
 > `IdHelper` 来自 `IdHelper` 包（命名空间 `Coldairarrow.Util`），经 `Common.EFCore` 传递引用可达——**实体项目引用 `Common.EFCore` 即可，无需单独装 `IdHelper`**；实体构造一般也不用显式调（基类已设）。同理 `ToUnspecifiedDateTime()`（`Azrng.Core.Extension`）也经 `Common.EFCore → Azrng.Core` 传递可达。
 
 ## 2. 各基类字段对照
@@ -37,7 +38,7 @@ IdentityOperatorStatusEntity<TKey>     （+ 状态：Deleted/Disabled）
 
 ## 3. 时间字段约定（无时区）
 
-**PostgreSQL 默认使用无时区时间**：赋值统一 `DateTime.Now.ToUnspecifiedDateTime()`（`Azrng.Core.Extension`），列类型 `timestamp without time zone`。继承包基类 + 配置基类时，审计时间列在 PG 下会自动声明 `IsUnTimeZoneDateTime`；业务自声明的时间字段需手动 `.IsUnTimeZoneDateTime()`。
+包的设计是**无时区时间**：`DateTime.Now.ToUnspecifiedDateTime()`（`Azrng.Core.Extension`），列类型 `timestamp without time zone`（PG）。
 
 赋值辅助方法（实体基类自带，业务直接调）：
 ```csharp

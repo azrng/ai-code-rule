@@ -1,15 +1,13 @@
 ---
 name: onion-architecture
-version: 1.1.0
-last_updated: 2026-08-20
-description: Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers global result-packing, paged queries, code placement, necessary Chinese comments, and DTO/Request/Response/BO/HO file organization. Use when adding a feature, deciding which project a class belongs in, wiring DI / middleware in Program.cs, creating an AppService/Controller/Entity/Configuration, splitting DTO/BO/HO classes into files, adding XML comments, or reviewing where business logic vs data-access vs DTOs should live. Triggers on questions like "这个类该放哪一层", "新建一个 XXX 功能", "控制器太胖怎么拆", "接口返回值怎么写 / 要不要包 IResultModel", "分页查询怎么写", "补充注释", "DTO 要不要拆文件", "审计日志/RequestId 怎么加", "401 和 403 抛什么异常", or confusion about IApplication vs Application / IDomain vs Domain project pairs.
+description: Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers the two cross-cutting conventions every AppService follows — global result-packing (success returns Task<T>, business failure throws ParameterException, packed by AddMvcResultPackFilter + app.UseGlobalException) and paged queries (GetPageRequest + WhereIfNotNullOrWhiteSpace + ToPageListAsync + GetQueryPageResult<T>). Use when adding a new feature, deciding which project a class belongs in, wiring DI / middleware in Program.cs, creating a new AppService/Controller/Entity/Configuration, or reviewing where business logic vs data-access vs DTOs should live. Triggers on questions like "这个类该放哪一层", "新建一个 XXX 功能", "控制器太胖怎么拆", "接口返回值怎么写 / 要不要包 IResultModel", "分页查询怎么写", or confusion about IApplication vs Application / IDomain vs Domain project pairs.
 ---
 
 # 洋葱架构（Onion / Clean Architecture）分层指南
 
 指导在 Azrng 系列解决方案里正确分层：哪一层放什么、层间依赖方向、项目结对（接口/实现）、典型 CRUD 功能落点，以及贯穿所有 AppService 的两条横切约定——**全局返回包装**与**分页查询**。
 
-> 本文件是**决策入口与规则总览**；各层完整代码示例、跨层数据流、`.csproj` 依赖详见 `references/layer-responsibilities.md`；中文注释与契约类拆分细则详见 `references/code-style-and-file-organization.md`。
+> 本文件是**决策入口与规则总览**；各层完整代码示例、跨层数据流、`.csproj` 依赖详见 `references/layer-responsibilities.md`。
 
 ## 分层全景
 
@@ -55,8 +53,6 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 5. **实体在 IDomain、配置在 EntityFramework**：实体（继承 `IdentityOperatorStatusEntity`）放 `IDomain/Entities/`；EFCore 配置类（`{Entity}Etc.cs`，继承 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）放 **EntityFramework 层**，`Configure` 里设表名/列名/查询过滤；DbContext 用 `ApplyConfigurationsFromAssembly(当前程序集)` 扫描它们（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
-8. **必要中文注释**：公开 Controller action、AppService 接口方法、Adapter 接口方法、外部系统边界、复杂业务分支、敏感字段处理和 SQL 表字段说明，应补简短中文注释；不要给自解释赋值、简单 return、普通属性堆无意义注释。
-9. **公开契约类默认按类拆分**：DTO、Request、Response、BO、HO、Options、Result 等公开契约类默认一个类一个文件；不要长期堆在 `Dtos.cs`、`Models.cs`、`Bo.cs` 这类大杂烩文件。强绑定的私有/internal 辅助类型、局部 mapping extension、极小测试夹具可例外。
 
 ## 全局返回包装（三件套 + Program.cs 装配）
 
@@ -72,8 +68,6 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 
 > **成功路径靠过滤器，失败路径靠异常中间件**——这是全局包装的核心。两者必须都装配，否则失败抛异常会变成裸 500。
 
-> **两种注册方式二选一**：①分开注册 `AddMvcResultPackFilter("/swagger")` + `AddMvcModelVerifyFilter()`（下面模板的写法，可分别控制）；②一站式 `services.AddDefaultControllers(o => ...)`——按 `CommonMvcConfig` 开关（`EnabledCustomerResultPack`/`EnabledModelVerify` 默认均 true）同时挂两个过滤器，并自动 `SuppressModelStateInvalidFilter = true`（关闭 MVC 内置 400 自动响应，避免双份错误结构）。新项目推荐 ②更省事；已按 ①装配的存量项目不必改。
-
 ### 业务异常 → 结果映射（`CustomExceptionMiddleware`）
 
 | 业务场景 | 抛什么（`Azrng.Core.Exceptions`） | HTTP 状态码 | ErrorCode |
@@ -81,15 +75,11 @@ description: Guide for the .NET onion/clean architecture used across Azrng solut
 | 参数错误 / 业务校验失败 | `throw new ParameterException(msg)` | 400 | `"400"` |
 | 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"400"` |
 | 资源不存在（按 id 查不到） | `NotFoundException.ThrowIfNull(entity, "记录不存在")` | 404 | `"404"` |
-| 未认证（未登录 / token 无效） | `throw new UnauthorizedException(msg)` | 401 | `"401"` |
-| 已认证但无权限 | `throw new ForbiddenException(msg)` | 403 | `"403"` |
+| 无权限 / 鉴权失败 | `throw new ForbiddenException(msg)` | 401 | `"401"` |
 | 服务器内部错误 | `throw new InternalServerException(msg)` | 500 | `"500"` |
-| 其他自定义业务异常（`BaseException` 子类） | （不在上表的 `BaseException` 派生） | 500 | 异常自带 `ErrorCode` |
-| 其他未处理异常 | （任何 `Exception`） | 500 | `"500"`，message 固定"系统异常,请联系管理员" |
+| 其他未处理异常 | （任何 `Exception`） | 500 | `"500"` |
 
-> **401 vs 403 易混**：`UnauthorizedException` = 未认证（没登录/token 失效），`ForbiddenException` = 已认证但无权限——不要写反。`RetryMarkException` 是 `RetryTask` 重试标记用，**不参与** HTTP 异常映射。
-
-> 默认按真实 HTTP 状态码返回（400/404/401/403/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。包装分支细节（`[NoWrapper]`、`ProblemDetails`、`FileResult` 跳过等）与 `ResultModel` 字段形状见 `references/result-packing-and-exceptions.md`。
+> 默认按真实 HTTP 状态码返回（400/404/401/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
 
 ### Program.cs 装配（标准模板，三件套都在这里）
 
@@ -199,9 +189,7 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 > `RefAsync<T>` 有到 `T` 的隐式转换，所以 `new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。
 > 返回的 `GetQueryPageResult<Dto>` 经全局包装过滤器自动包成 `ResultModel<GetQueryPageResult<EmployeeDto>>(success)`，前端拿到 `{ isSuccess, data: { rows:[...], pageInfo:{ pageIndex, pageSize, total, totalPage } } }`。
-> **前端对接注意**：若全局 JSON 配置挂了 `LongToStringConverter`（防 JS 精度丢失），分页的 `total`/`totalPage`（long）与 `rows[].id` 一样会序列化成**字符串**（`"total":"9"`），前端需按字符串解析。
 > 分页/条件扩展 API 的完整签名（`PagedBy`、`WhereIfNotNull<T,F>`、`WhereAny` 等）见 azrng-efcore skill「分页/条件查询扩展」。
-> **列表需要动态排序**时，请求改继承 `GetPageSortRequest`（多出 `SortContents` 数组），查询处接 `.OrderBy(request.SortContents)`（`SortContent` 在 `Azrng.Core.Requests`）；排序扩展签名详见 azrng-efcore skill。**注意**：`SortContent` 只有带参构造、无无参构造——`SortContents` 必须经 **POST body（`[FromBody]`）JSON** 传入（System.Text.Json 支持带参构造反序列化）；用 GET query 绑定 `sortContents[0].sortName=...` 会 500（MVC 模型绑定无法实例化）。
 
 ## 领域服务 DomainService（可复用公共操作）
 
@@ -301,8 +289,6 @@ builder.Services.AddEntityFramework<AppDbContext>(o =>
 
 // 扫描匹配程序集，把实现 IScope/Transient/SingletonDependency 的类自动注册
 builder.Services.RegisterBusinessServices("App.*.dll");
-// 重载二：显式传程序集；第二参数可逗号分隔忽略命名空间（Microsoft./System. 永远默认忽略）
-// builder.Services.RegisterBusinessServices(typeof(ProductAppService).Assembly);
 ```
 
 AppService 实现类标接口即可被扫到（无需手写 `AddScoped`）：
@@ -313,27 +299,8 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 { /* ... */ }
 ```
 
-> **注册规则**：扫描会把类实现的**所有业务接口**都注册到该类（剔除三个标记接口与被忽略命名空间的接口）；一个类不实现任何业务接口时按自身类型注册。因此避免让一个实现类挂多个不相关业务接口。方法带 `[RequiresUnreferencedCode]`，AOT/裁剪项目慎用。
-
-> 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` / `AddDefaultControllers()` 自动发现，无需注册。
+> 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
 > **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、provider 包（如 `Npgsql.EntityFrameworkCore.PostgreSQL`，提供 `AddEntityFramework<TDbContext>`）、按需 `Azrng.SqlMigration`（SQL 迁移）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Swashbuckle.AspNetCore`（Swagger）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）。
-
-### 周边能力包速查（一句话指路，不展开 API）
-
-引入下列基础设施时用现成包，**不手写 StackExchange.Redis / Quartz 等封装**；详细 API 不在本 skill，待各自成专项 skill：
-
-| 需求 | 包 | 注册入口 |
-|---|---|---|
-| JWT 认证 | `Azrng.AspNetCore.Authentication.JwtBearer` | `AddJwtBearerAuthentication` |
-| 基于权限的授权 | `Azrng.AspNetCore.Authorization.Default` | `AddMyAuthorization<TPermissionService>` |
-| 定时任务 | `Azrng.AspNetCore.Job.Quartz` | `AddQuartzService` |
-| 分布式锁（Redis） | `Azrng.DistributeLock.Redis`（抽象在 `Azrng.DistributeLock.Core`） | `AddRedisLockProvider` |
-| Redis 缓存 | `Common.Cache.Redis` | `AddRedisCacheService` |
-| 内存缓存 | `Common.Cache.MemoryCache` | `AddMemoryCacheExtension` |
-
-### 横切中间件（审计日志 / RequestId / CORS）
-
-需要请求审计（`UseAutoAuditLog`）、请求 id 传播（`UseRequestIdMiddleware`，响应头 `X-RequestId`）或 CORS 家族（`AddCorsByOrigins` / `AddCorsPolicy` / `UseCorsPolicy`）时，优先用 `Azrng.AspNetCore.Core` 内置能力；装配位置、`AuditLogOptions` 配置项与示例见 `references/program-setup-and-crosscutting.md`。当前用户取 `UserId`/`UserName` 注入 `ICurrentUser`（`Azrng.Core`，包内无默认实现，需按解决方案自己实现并标 `IScopedDependency`）。
 
 ## 常见反模式（最易踩）
 
@@ -343,15 +310,10 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 | 列表查询手写 `CountAsync()` + `Skip().Take()` + 自定义 `{List,Total}` 类 | 用分页四件套（`ToPageListAsync` + `GetQueryPageResult<T>`） |
 | 实体直接作为 API 返回值 | AppService 映射成 Core 的 DTO 再返回；实体只在 AppService↔DbContext 间流动 |
 | 新功能不建接口直接写实现类 | 先 `I*AppService` 接口，控制器依赖接口 |
-| 未登录抛 `ForbiddenException` / 无权限抛 `UnauthorizedException` | 未认证 401 抛 `UnauthorizedException`，已认证无权限 403 抛 `ForbiddenException` |
-| 需要缓存/定时任务/锁时手写 StackExchange.Redis / Quartz 封装 | 用「周边能力包速查」中的现成包 |
 
 > 遇到存量项目未遵循上述约定（如用 Newtonsoft、自研 ResultFilter、`QueryableWhereIf`），按现有代码风格走、不强行改写可工作代码；新增功能才按本指南。
 
 ## 深入参考
 
 - **各层职责详细对照 + 跨层数据流 + 完整代码示例（全局包装 / 分页写法）**：见 references/layer-responsibilities.md
-- **中文注释规范 + DTO/BO/HO 文件拆分 + 敏感字段/SQL 说明规则**：见 references/code-style-and-file-organization.md
-- **三件套包装分支细则 + 异常家族与状态码全表 + ResultModel 字段形状 + 模型校验错误结构**：见 references/result-packing-and-exceptions.md
-- **RegisterBusinessServices 注册规则 + 审计日志/RequestId/CORS/校验特性/LongToStringConverter 装配**：见 references/program-setup-and-crosscutting.md
 - **数据访问（仓储/工作单元/实体基类/配置类/DbContext + 分页条件扩展 API）细节**：用 azrng-efcore skill

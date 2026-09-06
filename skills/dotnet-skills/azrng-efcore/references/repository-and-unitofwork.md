@@ -56,33 +56,29 @@ await _repo.DeleteAsync(x => x.Id == id);              // 条件删除自带保�
 
 ## 3. 批量条件更新（.NET 10+）
 
-`UpdateAsync(predicate, Action<UpdateSettersBuilder<T>>)`（`UpdateSettersBuilder<T>` 在 `Microsoft.EntityFrameworkCore.Query` 命名空间下，扩展方法 `SetPropertyIf*` 在 `Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）。链式 `SetProperty*`：
+`UpdateAsync(predicate, Action<UpdateSettersBuilder<T>>)`，链式 `SetProperty*`：
 
 ```csharp
-// 引用类型属性用 SetPropertyIfNotNull（约束 TProperty : class）
+// 仅当值不为 null 才更新
 await _repo.UpdateAsync(
     x => x.Id == id,
-    x => x.SetPropertyIfNotNull(u => u.Avatar, avatar)   // TProperty : class，引用类型才匹配
-         .SetProperty(u => u.UpdateTime, DateTime.Now.ToUnspecifiedDateTime()));
+    x => x.SetPropertyIfNotNull(u => u.Email, email)
+         .SetPropertyIfNotNull(u => u.Phone, phone));
 
-// 字符串属性用 SetPropertyIfNotNullOrWhiteSpace（专用，非空白才更新）
+// 字符串非空白才更新 + 无条件更新
 await _repo.UpdateAsync(
     x => x.Id == id,
     x => x.SetPropertyIfNotNullOrWhiteSpace(u => u.UserName, name)
          .SetProperty(u => u.UpdateTime, DateTime.Now.ToUnspecifiedDateTime()));
 ```
 
-> **`string?` 不能用 `SetPropertyIfNotNull`**：该方法泛型约束 `TProperty : class`，而 `string?` 的 nullable 注解不改变 `TProperty`（仍是 `string`），但当 `email` 声明为 `string?` 时编译器会按 nullable 上下文推断失败。**字符串属性统一用 `SetPropertyIfNotNullOrWhiteSpace`**；需要自定义判定（如非 null 才更新任意引用/值类型）用 `SetPropertyIf<T, TProperty>(Func<TProperty,bool>, prop, value)`。
-
-| 方法 | 触发条件 | 约束 |
-|---|---|---|
-| `SetProperty(prop, value)` | 无条件 | — |
-| `SetPropertyIfTrue(cond, prop, value)` | cond 为 true | — |
-| `SetPropertyIfNotNull(prop, value)` | value 非 null | `TProperty : class`（仅引用类型，**不含 nullable string**） |
-| `SetPropertyIfNotNullOrWhiteSpace(prop, value)` | 字符串非空白 | 仅 string |
-| `SetPropertyIf(Func<TProperty,bool>, prop, value)` | 自定义条件返回 true | 任意 TProperty |
+| 方法 | 条件 |
+|---|---|
+| `SetProperty(prop, value)` | 无条件 |
+| `SetPropertyIfTrue(cond, prop, value)` | cond 为 true |
+| `SetPropertyIfNotNull(prop, value)` | value 非 null（引用类型） |
 | `SetPropertyIfNotNullOrWhiteSpace(prop, value)` | 字符串非空白 |
-| `SetPropertyIf(Func<TProperty,bool>, prop, value)` | 自定义条件 |
+| `SetPropertyIf(Func<object,bool>, prop, value)` | 自定义条件 |
 
 ## 4. UnitOfWork 事务（三种方式）
 
@@ -150,5 +146,5 @@ var req = new GetPageSortRequest
     SortContents = new[] { new SortContent("CreateTime", SortEnum.Desc) }
 };
 var page = await _repo.GetPageListAsync(_repo.Entities.Where(x => !x.Deleted), req);
-// page.Rows（List<T>）/ page.PageInfo.Total —— 返回类型是 GetQueryPageResult<T>
+// page.List / page.Total
 ```

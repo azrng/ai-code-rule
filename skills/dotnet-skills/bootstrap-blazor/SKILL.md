@@ -1,172 +1,948 @@
 ---
 name: bootstrap-blazor
-version: 10.9.4
-last_updated: 2026-08-20
-description: Build, review, or refactor Blazor UI using the BootstrapBlazor component library (v10.9.2). Use when the project references the `BootstrapBlazor` NuGet package and the task involves building pages, CRUD tables (server-side paging/search/edit), forms (ValidateForm/EditorForm), feedback (Dialog/Toast/Swal/Modal/Drawer), or admin layouts (Layout/Menu/Tab). Covers real component tag names, service injection by concrete class, the `BootstrapBlazorRoot` host requirement, and the `OnQueryAsync -> QueryData<T>` server query pattern. Also use to audit code for hallucinated APIs (wrong param names, params borrowed from MudBlazor/Radzen/AntDesign Blazor).
+description: "BootstrapBlazor 组件库开发指南。.NET Blazor 项目中使用 BootstrapBlazor 的最佳实践与代码模板。Keywords: BootstrapBlazor, Blazor, .NET, Table, Modal, TreeView, Form, Toast, CQRS, RBAC."
 ---
 
-# BootstrapBlazor (v10.9.2)
+## 概述
 
-用真实的 BootstrapBlazor 组件库 API 构建 Blazor 页面——优先使用其组件而非手写 HTML/JS，绝不臆造可能属于其它 Blazor UI 库的 API。
+BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中使用 BootstrapBlazor 组件库的最佳实践、代码模板和常见模式。涵盖数据表格、模态框、表单验证、树形控件、通知提示等核心组件的完整用法。
 
-本 skill 的全部 API 事实提取自 BootstrapBlazor **10.9.2** 源码树（`D:/SourceCode/blazor/bootstrap/BootstrapBlazor`），并与官方 `BootstrapBlazor.Server` 示例及真实 RBAC 项目（`rbac-blazor`，使用 10.6.0）交叉核对。参考文件中每个参数都标注 `源码文件:行号`。
+**适用场景**：
+- 使用 BootstrapBlazor 构建 Blazor Server 应用
+- 企业级 RBAC/后台管理系统开发
+- CQRS 架构模式下的 CRUD 页面开发
+- BootstrapBlazor 组件使用问题排查
 
-## 适用场景
+**不适用场景**：
+- Blazor WebAssembly 客户端独立应用（部分模式不适用）
+- 非 BootstrapBlazor 的 Blazor UI 框架
+- 纯前端 React/Vue 项目
 
-- 项目引用了 `<PackageReference Include="BootstrapBlazor" ... />`（查 `.csproj` / `Directory.Packages.props`）。
-- 正在添加应使用 BootstrapBlazor（而非原生 `<table>` / Bootstrap CSS / JS）的页面、表格、表单、弹窗、Toast 或后台布局。
-- 正在审查/审计 Blazor markup 中臆造或版本不符的 BootstrapBlazor API。
+## 前置条件
 
-## 核心原则
+```bash
+# 安装 BootstrapBlazor NuGet 包
+dotnet add package BootstrapBlazor
+dotnet add package BootstrapBlazor.FontAwesome
 
-1. **优先用 BootstrapBlazor 组件。** 已有 `<Table>`、`<Dialog>`、`<Modal>`、`<Toast>` 能力的，直接用——不要用原生 HTML、Bootstrap CSS 类或 JavaScript 重造。
-2. **绝不臆造 API。** BootstrapBlazor 不是 MudBlazor / Radzen / Ant Design Blazor / Blazorise。参数名、服务方法名、标签名都不同。拿不准 → 先读 [references/anti-hallucination.md](references/anti-hallucination.md) 或源码。
-3. **严格对齐 10.9.2 API。** 常见陷阱：`ShowAsync` 不存在（是 `Show`）；表格分页是 `IsPagination`（非 `Pageable`）；多选是 `IsMultipleSelect`（非 `ShowRowCheckbox`）；文本输入是 `<BootstrapInput>` / `<BootstrapInputNumber>`（带前缀）。
-4. **遵循项目既有约定。** 仓库已用 Modal 子组件 + `@ref` 模式做编辑弹窗（如 rbac-blazor）时，照着用，不要换成 `DialogService`。
+# 可选：PDF 导出支持
+dotnet add package BootstrapBlazor.TableExport
+dotnet add package BootstrapBlazor.Html2Pdf
+```
 
-## 图标资源
+## 项目配置
 
-不要假设 BootstrapBlazor bundle 自带 Font Awesome、Bootstrap Icons 或其它独立图标字体。使用原生 `<i>` 图标类前，先检查宿主页的 CSS 引用和发布后的字体资源。项目选定 Bootstrap Icons 时，必须在 `App.razor` 加载版本固定的本地 CSS/字体，并统一使用 `bi bi-*`；不得与 `fa-*` 混用。BootstrapBlazor 组件参数仅在已核实该参数支持时使用 `IconName`，否则传入项目中已加载图标库的 CSS 类名。
+### 1. 服务注册（Startup.cs）
 
-## UI 审查模式
+```csharp
+// 基础注册
+services.AddBootstrapBlazor();
 
-做 UI/交互审查时，先读 [references/anti-hallucination.md](references/anti-hallucination.md)，再读 [references/ui-audit.md](references/ui-audit.md)。只报告有 markup、代码、配置或渲染页面证据支撑的发现；区分 API 缺陷与产品/设计建议。
+// 可选：表格导出和 PDF 服务
+services.AddBootstrapBlazorTableExportService();
+services.AddBootstrapBlazorHtml2PdfService();
+```
 
-用此模式捕捉编译能过、但让后台系统不可靠的问题：未校验的持久化表单、可重复写入、缺失 loading/空/错误三态、无确认的破坏性操作、键盘不可达的自定义导航、破损的响应式布局。若项目刻意使用满足同样行为与可访问性标准的自定义实现，不强制要求换成 BootstrapBlazor 组件。
+### 2. 静态资源引用（App.razor 或 _Host.cshtml）
 
-## 前置条件（缺一项则所有页面失效）
+```html
+<!-- CSS -->
+<link href="_content/BootstrapBlazor.FontAwesome/css/font-awesome.min.css" rel="stylesheet"/>
+<link href="_content/BootstrapBlazor/css/bootstrap.blazor.bundle.min.css" rel="stylesheet"/>
+<!-- 主题：Motronic 风格 -->
+<link href="_content/BootstrapBlazor/css/motronic.min.css" rel="stylesheet"/>
 
-任何 BootstrapBlazor 页面能工作之前，宿主必须先配置好。见 [references/setup.md](references/setup.md)。
+<!-- JS -->
+<script src="_content/BootstrapBlazor/js/bootstrap.blazor.bundle.min.js"></script>
+```
 
-- `builder.Services.AddBootstrapBlazor();` —— 一行注册全部弹窗/工具服务（命名空间 `Microsoft.Extensions.DependencyInjection`）。
-- **交互 Layout 内放 `<BootstrapBlazorRoot>`** —— 放在 `MainLayout.razor` 内包裹 `@Body`，**不是**放 `App.razor` 包 `<Routes>`。弹窗组件（Modal/Toast/Dialog/Swal/Drawer）的 DOM 通过 `<BootstrapBlazorRootContent>` portal 到它，因此它必须与页面处于同一交互 circuit。放错位置 → 弹窗永不显示，且 `Show()` **不抛任何异常**（JS 静默失败；最难排查的 bug）。两个相关陷阱（不能给它加 `@rendermode`；`ChildContent` 不可序列化）见 [references/setup.md](references/setup.md) 与 [references/anti-hallucination.md](references/anti-hallucination.md)。
-- `App.razor` 内的静态资源：`_content/BootstrapBlazor/css/bootstrap.blazor.bundle.min.css` + `_content/BootstrapBlazor/js/bootstrap.blazor.bundle.min.js`。
-- `_Imports.razor` 有 `@using BootstrapBlazor.Components`。
-- `UseBootstrapBlazor()` 中间件来自**独立的** `BootstrapBlazor.Middleware` 包——核心库不依赖它。
-
-## 服务——注入具体类，方法是 `Show`
-
-没有 `IXxxService` 接口，注入具体类：
+### 3. 全局导入（_Imports.razor）
 
 ```razor
-@inject DialogService DialogService
-@inject ToastService ToastService
-@inject SwalService SwalService
-@inject MessageService MessageService
-@inject DrawerService DrawerService
+@using BootstrapBlazor.Components
 ```
 
-| 服务 | 核心方法 | 快捷扩展 |
-|---|---|---|
-| `DialogService` | `Show(DialogOption)` | `Show<T>()`、`ShowEditDialog<T>()`、`ShowModal()`→`Task<DialogResult>` |
-| `ToastService` | `Show(ToastOption)` | `Success/Error/Information/Warning(title,content)`（**无 `Question`**） |
-| `SwalService` | `Show(SwalOption)` | `ShowModal()`→`Task<bool>`（确认框） |
-| `MessageService` | `Show(MessageOption)` | （无） |
-| `DrawerService` | `Show(DrawerOption)` | （无） |
-| `NotificationService` | `Dispatch(NotificationItem)` | 浏览器原生通知，非页面内弹窗 |
-| `FullScreenService` | `Toggle(...)` | （无 Open/Close） |
+### 4. 根组件配置（Routes.razor）
 
-完整服务清单 + 选项类：[references/di-services.md](references/di-services.md)。
-
-## 代码生成优先级（从高到低）
-
-```text
-BootstrapBlazor 推荐模式（来自 Samples / rbac-blazor）
-        ↓
-BootstrapBlazor 组件 + 其参数
-        ↓
-Bootstrap 工具类 / CSS
-        ↓
-自定义 Razor 组件
-        ↓
-自定义 HTML/CSS
-        ↓
-JavaScript   ← 最后手段；几乎不需要
+```razor
+<BootstrapBlazorRoot>
+    <CascadingAuthenticationState>
+        <Router AppAssembly="@typeof(Program).Assembly">
+            <Found Context="routeData">
+                <AuthorizeView>
+                    <Authorized>
+                        <CascadingValue Value="routeData">
+                            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+                        </CascadingValue>
+                        <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+                    </Authorized>
+                    <NotAuthorized>
+                        <LayoutView Layout="@typeof(LoginLayout)">
+                            <Login />
+                        </LayoutView>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </Found>
+            <NotFound>
+                <LayoutView Layout="@typeof(LoginLayout)">
+                    <p>页面未找到</p>
+                </LayoutView>
+            </NotFound>
+        </Router>
+    </CascadingAuthenticationState>
+</BootstrapBlazorRoot>
 ```
 
-## 组件速选
+---
 
-| 需求 | 用法 |
-|---|---|
-| 数据表格 | `<Table TItem>` —— `Items`（客户端）或 `OnQueryAsync`（服务端） |
-| 带校验表单 | `<ValidateForm Model OnValidSubmit>` |
-| 自动生成表单 | `<ValidateForm>` 内嵌 `<EditorForm TModel>` |
-| 文本输入 | `<BootstrapInput @bind-Value>` / `<BootstrapInputNumber>` / `<Textarea>` |
-| 下拉 | `<Select @bind-Value Items>`；多选 → `<MultiSelect>`；强类型项 → `<SelectGeneric>` |
-| 复选组 | `<CheckboxList @bind-Value Items>` |
-| 开关 | `<Switch @bind-Value OnText OffText>` |
-| 日期 | `<DateTimePicker @bind-Value>` |
-| 成功/错误 Toast | `ToastService.Success(title, content)` |
-| 删除确认 | 行内 `<TableCellPopConfirmButton>`（首选）或 `SwalService.ShowModal()` |
-| 编辑弹窗 | `<Modal><ModalDialog>` 子组件 + `@ref`（首选）或 `DialogService.Show<T>()` |
-| 抽屉面板 | `<Drawer @bind-IsOpen>` 或 `DrawerService.Show()` |
-| 后台主壳 | `<Layout>` 的 `Header/Side/Main/Footer` + `Menus` + `UseTabSet` |
+## 核心组件模式
 
-标签名坑：`<BootstrapInput>`、`<BootstrapInputNumber>`、`<BootstrapInputGroup>` 带 `Bootstrap` 前缀；`<Select>`、`<Switch>`、`<Checkbox>`、`<CheckboxList>`、`<RadioList>`、`<DateTimePicker>`、`<Cascader>`、`<AutoComplete>`、`<AutoFill>`、`<ValidateForm>`、`<EditorForm>`、`<Textarea>` **不带**。
+### 一、Table 组件（数据表格）
 
-## CRUD 页面配方
+#### 1.1 分页表格 + 搜索（标准 CRUD 页面）
 
-被要求"建一个用户管理页"时，按此结构生成（源自 rbac-blazor）。完整代码：[references/crud-recipes.md](references/crud-recipes.md) 与 [examples/](examples/)。
+**.razor 文件**：
+```razor
+<Table @ref="UserTable" TItem="GetUserListResult"
+       IsPagination="true" PageItemsSource="new[] {10, 20, 50, 100}"
+       IsStriped="true" IsBordered="true"
+       ShowToolbar="false" ShowSearch="true" IsMultipleSelect="true"
+       ShowExtendButtons="true"
+       ShowExtendEditButton="false" ShowExtendDeleteButton="false"
+       CustomerSearchModel="@CustomerSearchModel" SearchMode="SearchMode.Top"
+       ShowEmpty="true"
+       OnQueryAsync="@OnSearchModelQueryAsync"
+       OnResetSearchAsync="@OnResetSearchAsync"
+       OnDeleteAsync="@OnDeleteAsync">
 
-```text
-页面（Index.razor + .razor.cs code-behind）
-  ├─ 工具栏：<Card><BodyTemplate> 按钮组 </BodyTemplate></Card>
-  ├─ <Table TItem OnQueryAsync IsPagination IsMultipleSelect ShowSearch>
-  │     ├─ <TableColumns>...<TableColumn @bind-Field>...</TableColumns>
-  │     ├─ <CustomerSearchTemplate> 搜索字段 </CustomerSearchTemplate>
-  │     └─ <RowButtonTemplate> 编辑 + <TableCellPopConfirmButton> 删除 </RowButtonTemplate>
-  ├─ <Add @ref OnSaveCallback/>   ← Modal 子组件
-  └─ <Edit @ref OnSaveCallback/>  ← Modal 子组件
+    <!-- 自定义搜索模板 -->
+    <CustomerSearchTemplate>
+        @if (context is GetUserPageListVm model)
+        {
+            <GroupBox Title="搜索条件">
+                <div class="row g-3 form-inline">
+                    <div class="col-12 col-sm-6">
+                        <BootstrapInput @bind-Value="@model.RealName" DisplayText="真实姓名"
+                                        PlaceHolder="请输入真实姓名" ShowLabel="true"/>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <Select @bind-Value="@model.Disabled" DisplayText="状态" ShowLabel="true">
+                            <Options>
+                                <SelectOption Text="全部" Value="" />
+                                <SelectOption Text="启用" Value="false" />
+                                <SelectOption Text="禁用" Value="true" />
+                            </Options>
+                        </Select>
+                    </div>
+                </div>
+            </GroupBox>
+        }
+    </CustomerSearchTemplate>
+
+    <!-- 表格列 -->
+    <TableColumn @bind-Field="@context.UserName" Text="用户名" Width="120"/>
+    <TableColumn @bind-Field="@context.RealName" Text="真实姓名" Width="120"/>
+    <TableColumn @bind-Field="@context.CreateTime" Text="创建时间" Width="180"
+                 FormatString="yyyy-MM-dd HH:mm:ss"/>
+
+    <!-- 状态列（Badge 模板） -->
+    <TableColumn @bind-Field="@context.Disabled" Text="状态" Width="80">
+        <Template Context="value">
+            <Badge Color="@(value.Value ? Color.Danger : Color.Success)">
+                @(value.Value ? "禁用" : "启用")
+            </Badge>
+        </Template>
+    </TableColumn>
+
+    <!-- 行操作按钮 -->
+    <RowButtonTemplate>
+        <TableCellButton Size="Size.ExtraSmall" Color="Color.Success" Icon="fas fa-edit"
+                         Text="编辑" OnClick="() => OnShowEditModal(context)" />
+        <TableCellPopConfirmButton Size="Size.ExtraSmall" Color="Color.Danger"
+                                   Icon="fa-solid fa-trash" Text="删除"
+                                   Content="确定要删除吗？"
+                                   OnConfirm="@(() => OnDeleteAsync(new[] { context }))"/>
+    </RowButtonTemplate>
+</Table>
 ```
 
-- 服务端查询：`OnQueryAsync(QueryPageOptions) → Task<QueryData<TItem>>`，返回 `{ Items, TotalCount, IsFiltered, IsSorted, IsSearch, IsAdvanceSearch }`。见 [references/table.md](references/table.md)。
-- 反馈：`ToastService.Success("消息通知", "操作成功")` / `.Error(...)`。
-- 刷新表格：`await TableRef.QueryAsync();`。
-- code-behind：遵循仓库既有约定。新建或持续成长的组件，`.razor` markup + `.razor.cs` partial 类是有用的默认；已存在的紧凑 `@code` 组件保持原样，除非拆分能改善可读性或可测试性。
+**.razor.cs 代码隐藏文件**：
+```csharp
+public partial class Index
+{
+    [Inject] private IUserQuery UserQuery { get; set; } = null!;
+    [Inject] private ToastService ToastService { get; set; } = null!;
 
-## 参考文档
+    private Table<GetUserListResult>? UserTable { get; set; }
+    private GetUserPageListVm CustomerSearchModel { get; set; } = new();
 
-只加载与任务匹配的参考文件——默认不要全部加载。
+    private async Task<QueryData<GetUserListResult>> OnSearchModelQueryAsync(QueryPageOptions options)
+    {
+        CustomerSearchModel.PageSize = options.PageItems;
+        CustomerSearchModel.PageIndex = options.PageIndex;
 
-- [references/setup.md](references/setup.md) —— 安装、`AddBootstrapBlazor`、`BootstrapBlazorRoot`、静态资源、`Program.cs` / `Startup.cs` 模板。
-- [references/anti-hallucination.md](references/anti-hallucination.md) —— **★ 错误 vs 正确 API 对照表**。写或审查任何 markup 前先读它。
-- [references/ui-audit.md](references/ui-audit.md) —— 仅审查用的清单：表单/状态/反馈、导航可访问性、响应式、BootstrapBlazor 运行时接线。
-- [references/table.md](references/table.md) —— `<Table TItem>` 深度 API：数据源、列、排序、搜索、分页、选择、编辑/增删改、工具栏、模板、服务端查询。
-- [references/forms.md](references/forms.md) —— `ValidateForm` / `EditorForm` 与每个表单控件的真实参数。
-- [references/feedback.md](references/feedback.md) —— Dialog / Toast / Swal / Message / Modal / Drawer / Tooltip / Popover。
-- [references/layout.md](references/layout.md) —— `Layout` / `Menu` / `Tab` / `Breadcrumb` / `Pagination` / `Step` / `Card` / `Row`。
-- [references/components.md](references/components.md) —— 其它高频组件（Upload / TreeView / Validate / Badge / Tag / Avatar / Spinner / Skeleton）。
-- [references/di-services.md](references/di-services.md) —— 完整服务注册表 + 选项类。
-- [references/crud-recipes.md](references/crud-recipes.md) —— 四个标准配方（列表 / 表单 / 布局 / 反馈）及骨架。
-- examples/：`BasicPage.razor`、`Login.razor`、`CrudTable.razor`、`FormModal.razor`、`AdminLayout.razor`。
+        var result = await UserQuery.GetPageListAsync(CustomerSearchModel);
+        if (result.IsSuccess && result.Data != null)
+        {
+            return new QueryData<GetUserListResult>()
+            {
+                Items = result.Data.Rows,
+                TotalCount = Convert.ToInt32(result.Data.PageInfo.Total),
+                IsFiltered = options.Filters.Any(),
+                IsSorted = options.SortOrder != SortOrder.Unset,
+                IsAdvanceSearch = options.AdvanceSearches.Any(),
+                IsSearch = options.Searches.Any()
+            };
+        }
+        return new QueryData<GetUserListResult>();
+    }
 
-## 禁止事项
+    private Task<GetUserPageListVm> OnResetSearchAsync()
+    {
+        CustomerSearchModel = new GetUserPageListVm();
+        return Task.FromResult(CustomerSearchModel);
+    }
 
-- 不得臆造组件、参数、`EventCallback`、服务或扩展方法。未在源码/参考文件确认的，先搜源码树（`D:/SourceCode/blazor/bootstrap/BootstrapBlazor/src/BootstrapBlazor/Components/`）。
-- 不得从 MudBlazor / Radzen / Ant Design Blazor / DevExpress / Telerik / Blazorise 移植 API。
-- 不得在 `<Table>` 上同时设 `Items` 与 `OnQueryAsync`——二者互斥，同设抛异常。
-- 不得从 markup 绑定 `SortName`/`SortOrder`（非 `[Parameter]`）；初始排序用列的 `DefaultSort`/`DefaultSortOrder`。
-- 不得漏放 `<BootstrapBlazorRoot>`——否则每个弹窗服务调用都会抛异常。
-- 不得写 `ShowAsync`/`ShowModalAsync`——方法名是 `Show`（存在 `ShowModal` 等扩展，不存在 `ShowAsync`）。
-
-## 版本与来源
-
-```text
-BootstrapBlazor 版本 : 10.9.2   （源码 HEAD，多目标 net6–net10）
-Skill 生成时间       : 2026-08-13
-API 来源             : D:/SourceCode/blazor/bootstrap/BootstrapBlazor (src/BootstrapBlazor/Components/*)
-交叉核对             : BootstrapBlazor.Server 官方 Samples + rbac-blazor (10.6.0)
-构建验证             : examples/ 针对 BootstrapBlazor 10.9.2 + .NET 10.0.400 Blazor Server
-                       编译通过（0 警告、0 错误）。覆盖高频 API 面——
-                       ValidateForm/BootstrapInput(+/Number)/Textarea/Select(+Options/SelectOption)/
-                       CheckboxList/Switch/DateTimePicker, Table(OnQueryAsync, IsPagination, IsMultipleSelect,
-                       TableColumn, RowButtonTemplate, TableCellButton/TableCellPopConfirmButton), Modal+
-                       ModalDialog, Card/Row/Divider/Badge/Spinner/Progress, Layout/Menu/Logout/ErrorLogger,
-                       ToastService.Success/Error, QueryData<T>/QueryPageOptions/SortOrder.
-                       参考文件中超出示例范围的参数逐行取自 10.9.2 源码树（均带 文件:行号），
-                       但并非全部经编译验证——依赖前先核实。
+    private async Task<bool> OnDeleteAsync(IEnumerable<GetUserListResult> items)
+    {
+        var ids = items.Select(x => x.Id).ToArray();
+        var result = await UserService.DeleteAsync(ids);
+        if (result.IsSuccess)
+        {
+            await ToastService.Success("消息通知", "删除成功");
+            return true;
+        }
+        await ToastService.Error("消息通知", result.Message);
+        return false;
+    }
+}
 ```
 
-复现构建验证：`dotnet new blazor --interactivity Server`、`dotnet add package BootstrapBlazor --version 10.9.2`，加 `AddBootstrapBlazor()` + `<BootstrapBlazorRoot>` + 两个 bundle 静态资源，放入 `examples/` 文件后 `dotnet build`。
+**要点**：
+- `ShowExtendButtons="true"` 启用扩展按钮区域
+- `ShowExtendEditButton="false"` `ShowExtendDeleteButton="false"` 隐藏内置编辑/删除按钮，改用自定义行按钮
+- `SearchMode="SearchMode.Top"` 搜索框在表格上方
+- `OnQueryAsync` 返回 `QueryData<T>` 包含分页信息
+- 批量删除通过 `IsMultipleSelect="true"` + `OnDeleteAsync` 处理
 
-若源码升级，重扫 `Components/` 树并更新参考文件；参数名（拼写、能否 `@bind`、类型）是稳定信号，行号会漂移。
+#### 1.2 树形表格（菜单/部门管理）
+
+```razor
+<Table @ref="TableRef" TItem="GetMenuListResult"
+       OnQueryAsync="@OnQueryAsync"
+       IsTree="true"
+       TreeNodeConverter="@TreeNodeConverter"
+       ShowToolbar="false" ShowSearch="false"
+       IsStriped="true" IsBordered="true"
+       ShowExtendButtons="true">
+```
+
+```csharp
+private static Task<IEnumerable<TableTreeNode<GetMenuListResult>>> TreeNodeConverter(
+    IEnumerable<GetMenuListResult> items)
+{
+    var itemList = items?.ToList() ?? [];
+    var lookup = itemList.ToLookup(x => x.ParentId);
+
+    IEnumerable<TableTreeNode<GetMenuListResult>> BuildTree(string parentId)
+    {
+        return lookup[parentId].Select(item => new TableTreeNode<GetMenuListResult>(item)
+        {
+            HasChildren = lookup[item.Id].Any(),
+            IsExpand = false,
+            Items = BuildTree(item.Id)
+        });
+    }
+    return Task.FromResult(BuildTree(string.Empty));
+}
+```
+
+#### 1.3 内联编辑表格（简单字典数据）
+
+```razor
+<Table TItem="GetDictDataResult"
+       AddModalTitle="增加字典数据" EditModalTitle="编辑字典数据"
+       OnAddAsync="@OnAddAsync" OnSaveAsync="@OnSaveAsync"
+       OnDeleteAsync="@OnDeleteAsync"
+       ShowExtendButtons="true"
+       IsStriped="true" IsBordered="true">
+```
+
+```csharp
+private static Task<GetDictDataResult> OnAddAsync() =>
+    Task.FromResult(new GetDictDataResult { IsEnabled = true });
+
+private async Task<bool> OnSaveAsync(GetDictDataResult item, ItemChangedType changedType)
+{
+    var result = changedType == ItemChangedType.Add
+        ? await Service.AddAsync(item)
+        : await Service.EditAsync(item);
+    return result.IsSuccess;
+}
+```
+
+**要点**：适合简单 CRUD，无需自定义 Add/Edit 组件的场景。列定义中通过 `IsVisibleWhenAdd="false"` `IsVisibleWhenEdit="false"` 控制字段可见性。
+
+#### 1.4 刷新表格数据
+
+```csharp
+// 查询/刷新表格
+if (UserTable != null)
+    await UserTable.QueryAsync();
+
+// 获取选中行
+var selectedRows = UserTable?.SelectedRows ?? new List<GetUserListResult>();
+```
+
+---
+
+### 二、Modal 组件（模态框）
+
+#### 2.1 自定义模态框（Add/Edit 分离模式）
+
+**页面结构**：
+```
+Components/Pages/[Entity]/
+├── Index.razor           # 主页面，包含表格和工具栏
+├── Index.razor.cs        # 主页面代码隐藏
+├── Add.razor             # 添加模态框组件
+├── Add.razor.cs          # 添加组件代码隐藏
+├── Edit.razor            # 编辑模态框组件
+└── Edit.razor.cs         # 编辑组件代码隐藏
+```
+
+**Add.razor（子组件）**：
+```razor
+<Modal @ref="AddModal" Size="Size.Large">
+    <ModalDialog Title="添加用户" IsCentered="true">
+        <BodyTemplate>
+            <ValidateForm Model="@Model" OnValidSubmit="@OnValidSubmit">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <BootstrapInput @bind-Value="@Model.UserName" DisplayText="用户名"
+                                        PlaceHolder="请输入用户名" ShowLabel="true"/>
+                    </div>
+                    <div class="col-md-6">
+                        <BootstrapInput @bind-Value="@Model.RealName" DisplayText="真实姓名"
+                                        PlaceHolder="请输入真实姓名" ShowLabel="true"/>
+                    </div>
+                </div>
+            </ValidateForm>
+        </BodyTemplate>
+        <FooterTemplate>
+            <Button Color="Color.Primary" OnClick="@OnSave">
+                <i class="fas fa-save me-2"></i>提交
+            </Button>
+        </FooterTemplate>
+    </ModalDialog>
+</Modal>
+```
+
+**Add.razor.cs（代码隐藏）**：
+```csharp
+public partial class Add
+{
+    [Inject] private IUserService UserService { get; set; } = null!;
+    [Inject] private ToastService ToastService { get; set; } = null!;
+
+    [Parameter] public EventCallback<AddUserVm> OnSaveCallback { get; set; }
+
+    private Modal? AddModal { get; set; }
+    private AddUserVm Model { get; set; } = new();
+
+    public async Task Show()
+    {
+        await InvokeAsync(async () =>
+        {
+            Model = new AddUserVm();
+            StateHasChanged();
+            if (AddModal != null)
+                await AddModal.Show();
+        });
+    }
+
+    public async Task Hide()
+    {
+        if (AddModal != null)
+            await AddModal.Close();
+    }
+
+    private async Task OnSave()
+    {
+        var result = await UserService.AddAsync(Model);
+        if (result.IsSuccess)
+        {
+            await ToastService.Success("消息通知", "添加成功");
+            if (OnSaveCallback.HasDelegate)
+                await OnSaveCallback.InvokeAsync(Model);
+            await Hide();
+        }
+        else
+        {
+            await ToastService.Error("消息通知", result.Message);
+        }
+    }
+}
+```
+
+**Index.razor（父组件）**：
+```razor
+<Add @ref="AddComponent" OnSaveCallback="@OnAddSave"/>
+
+@code {
+    private Add? AddComponent { get; set; }
+
+    private async Task OnShowAddModal()
+    {
+        if (AddComponent != null)
+            await AddComponent.Show();
+    }
+
+    private async Task OnAddSave(AddUserVm model)
+    {
+        if (AddComponent != null)
+            await AddComponent.Hide();
+        if (UserTable != null)
+            await UserTable.QueryAsync();
+    }
+}
+```
+
+**要点**：
+- `Modal` 尺寸：`Size.Small`（简单确认）、`Size.Medium`（修改密码）、`Size.Large`（标准 CRUD）、`Size.ExtraLarge`（复杂表单如权限分配）
+- `InvokeAsync` 确保在 UI 线程执行，`StateHasChanged()` 强制重新渲染
+- `EventCallback<T>` 实现父子组件通信
+- 子组件暴露 `Show()`/`Hide()` 方法供父组件调用
+
+#### 2.2 确认对话框（删除确认）
+
+**行内确认（推荐）**：
+```razor
+<TableCellPopConfirmButton Size="Size.ExtraSmall" Color="Color.Danger"
+                           Icon="fa-solid fa-trash" Text="删除"
+                           Content="确定要删除吗？此操作不可恢复"
+                           OnConfirm="@(() => OnDeleteAsync(new[] { context }))"/>
+```
+
+**自定义确认模态框**（复杂场景）：
+```razor
+<Modal @ref="ConfirmModal" IsCentered="true">
+    <ModalDialog Title="确认操作" IsCentered="true">
+        <BodyTemplate>
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-warning" style="font-size: 48px;"></i>
+                <p class="text-muted mt-3">确定要执行此操作吗？此操作不可恢复！</p>
+            </div>
+        </BodyTemplate>
+        <FooterTemplate>
+            <Button Color="Color.Danger" OnClick="@OnConfirm">确认</Button>
+            <Button Color="Color.Secondary" OnClick="@(() => ConfirmModal?.Close())">取消</Button>
+        </FooterTemplate>
+    </ModalDialog>
+</Modal>
+```
+
+---
+
+### 三、表单组件
+
+#### 3.1 ValidateForm（表单验证）
+
+```razor
+<!-- 自动提交验证 -->
+<ValidateForm Model="@Model" OnValidSubmit="@OnValidSubmit">
+    <BootstrapInput @bind-Value="@Model.Name" DisplayText="名称"
+                    PlaceHolder="请输入名称" ShowLabel="true"/>
+</ValidateForm>
+
+<!-- 手动提交验证 -->
+<ValidateForm Model="@Model">
+    <BootstrapInput @bind-Value="@Model.Name" DisplayText="名称"/>
+    <Button OnClick="@OnManualSubmit">提交</Button>
+</ValidateForm>
+```
+
+**手动验证模式**（需要自定义验证逻辑时）：
+```csharp
+private async Task OnManualSubmit()
+{
+    var validationContext = new ValidationContext(Model);
+    var validationResults = new List<ValidationResult>();
+    bool isValid = Validator.TryValidateObject(Model, validationContext, validationResults, true);
+    if (!isValid)
+    {
+        foreach (var result in validationResults)
+            await ToastService.Error("验证错误", result.ErrorMessage ?? "验证失败");
+        return;
+    }
+    // 继续业务逻辑...
+}
+```
+
+#### 3.2 输入组件一览
+
+**文本输入**：
+```razor
+<BootstrapInput @bind-Value="@Model.UserName" DisplayText="用户名"
+                PlaceHolder="请输入用户名" maxlength="50" ShowLabel="true"/>
+
+<!-- 只读 -->
+<BootstrapInput @bind-Value="@Model.UserName" DisplayText="用户账号"
+                ReadOnly="true" ShowLabel="true"/>
+
+<!-- 密码 -->
+<BootstrapInput @bind-Value="@Model.Password" PlaceHolder="请输入密码"
+                type="Password" DisplayText="密码" ShowLabel="true"/>
+```
+
+**数字输入**：
+```razor
+<BootstrapInputNumber @bind-Value="@Model.SortNumber" DisplayText="排序"
+                      ShowLabel="true" Min="0"/>
+```
+
+**多行文本**：
+```razor
+<Textarea @bind-Value="@Model.Remark" DisplayText="备注"
+          PlaceHolder="请输入备注" maxlength="500" ShowLabel="true" rows="3"/>
+```
+
+**开关**：
+```razor
+<Switch @bind-Value="@Model.Disabled" DisplayText="是否禁用"
+        ShowLabel="true" OnLabel="是" OffLabel="否"/>
+```
+
+#### 3.3 下拉选择组件
+
+**静态选项**：
+```razor
+<Select @bind-Value="@Model.Status" DisplayText="状态" ShowLabel="true">
+    <Options>
+        <SelectOption Text="全部" Value="" />
+        <SelectOption Text="启用" Value="false" />
+        <SelectOption Text="禁用" Value="true" />
+    </Options>
+</Select>
+```
+
+**动态数据源 + 可搜索 + 可清除**：
+```razor
+<Select ShowSearch="true" TValue="string" Items="@DepartmentOptions"
+        @bind-Value="@Model.DepartmentId" DisplayText="所属部门"
+        PlaceHolder="请选择部门" ShowLabel="true" IsClearable="true"/>
+```
+
+```csharp
+private List<SelectedItem> DepartmentOptions { get; set; } = new();
+// 在 OnInitializedAsync 或 OnAfterRenderAsync 中加载：
+DepartmentOptions = departments.Select(x => new SelectedItem(x.Id, x.Name)).ToList();
+```
+
+**枚举类型选择**：
+```razor
+<Select TValue="MenuTypeEnum" Items="@MenuTypeOptions"
+        @bind-Value="@Model.MenuType" DisplayText="菜单类型"
+        PlaceHolder="请选择" ShowLabel="true"/>
+```
+
+#### 3.4 复选框列表
+
+```razor
+<CheckboxList TValue="string" @bind-Value="@SelectedIdsString"
+              Items="@Options" ShowLabel="true" DisplayText="选项"
+              IsVertical="true" ShowBorder="true"/>
+```
+
+```csharp
+private List<SelectedItem> Options { get; set; } = new();
+private string SelectedIdsString { get; set; } = string.Empty;
+// 解析：SelectedIdsString.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+```
+
+---
+
+### 四、TreeView 组件（树形选择）
+
+**使用场景**：角色权限分配、菜单树选择、部门树选择。
+
+```razor
+<TreeView Items="@TreeItems"
+          OnTreeItemChecked="OnTreeItemChecked"
+          IsAccordion="false"
+          ShowCheckbox="true"
+          ClickToggleNode="true"
+          AutoCheckChildren="true"
+          AutoCheckParent="true"/>
+```
+
+**构建树节点**：
+```csharp
+private List<TreeViewItem<MenuNode>> BuildTreeItems(List<MenuNode> menus)
+{
+    return menus.Select(menu =>
+    {
+        var isChecked = CheckedIds.Contains(menu.Id);
+        var item = new TreeViewItem<MenuNode>(menu)
+        {
+            Text = menu.Name,
+            Icon = menu.Icon ?? "fa-solid fa-folder",
+            HasChildren = menu.Children?.Count > 0,
+            IsExpand = true,
+            CheckedState = isChecked ? CheckboxState.Checked : CheckboxState.UnChecked
+        };
+        if (menu.Children?.Count > 0)
+            item.Items = BuildTreeItems(menu.Children);
+        return item;
+    }).ToList();
+}
+```
+
+**勾选事件处理**：
+```csharp
+private Task OnTreeItemChecked(List<TreeViewItem<MenuNode>> items)
+{
+    SelectedItems = new List<TreeViewItem<MenuNode>>(items);
+    return Task.CompletedTask;
+}
+```
+
+**CRITICAL - 强制重建 TreeView 防止状态污染**：
+```csharp
+private string TreeViewKey = Guid.NewGuid().ToString();
+private List<TreeViewItem<MenuNode>> TreeItems = new();
+private HashSet<string> CheckedIds = new();
+
+public async Task ShowAsync(Entity entity)
+{
+    CurrentEntity = entity;
+
+    // 1. 清除状态
+    SelectedItems = new();
+    CheckedIds = new();
+    TreeItems = new();
+
+    // 2. 触发渲染清除旧 TreeView
+    StateHasChanged();
+
+    // 3. 加载数据
+    await LoadCheckedIds();
+    await LoadTreeData();
+
+    // 4. 加载后更改 Key（强制重建）
+    TreeViewKey = Guid.NewGuid().ToString();
+
+    // 5. 触发渲染重建 TreeView
+    StateHasChanged();
+
+    // 6. 模态框在渲染周期完成后显示
+    await InvokeAsync(async () =>
+    {
+        if (Modal != null) await Modal.Show();
+    });
+}
+```
+
+```razor
+<!-- Key 绑定确保强制重建 -->
+<TreeView Key="@TreeViewKey" Items="@TreeItems" .../>
+```
+
+**模型要求**：数据模型必须实现 `Equals` 和 `GetHashCode`：
+```csharp
+public override bool Equals(object? obj) =>
+    obj is MenuNode other && Id == other.Id;
+public override int GetHashCode() => Id?.GetHashCode() ?? 0;
+```
+
+---
+
+### 五、Toast 通知
+
+```csharp
+// 简写方法（推荐）
+await ToastService.Success("消息通知", "操作成功");
+await ToastService.Error("消息通知", "操作失败");
+await ToastService.Warning("消息通知", "请注意");
+await ToastService.Information("消息通知", "提示信息");
+
+// 完整配置
+await ToastService.Show(new ToastOption
+{
+    PreventDuplicates = true,
+    Category = ToastCategory.Success,
+    Title = "消息通知",
+    Content = "操作成功"
+});
+```
+
+**自定义位置**：
+```csharp
+[CascadingParameter] private BootstrapBlazorRoot? Root { get; set; }
+private ToastContainer? ToastContainer { get; set; }
+
+protected override void OnInitialized()
+{
+    ToastContainer = Root.ToastContainer;
+}
+
+// 设置位置
+ToastContainer?.SetPlacement(Placement.TopCenter);
+```
+
+---
+
+### 六、Layout 布局组件
+
+```razor
+<Layout ShowGotoTop="true" ShowCollapseBar="true" ShowFooter="true"
+        IsPage="true" IsFullSide="true" IsFixedHeader="true" IsFixedFooter="false"
+        ShowSplitBar="true" SidebarMinWidth="200" SidebarMaxWidth="350"
+        TabStyle="TabStyle.Chrome" ShowToolbar="true" ShowTabContextMenu="true"
+        ShowTabInHeader="false" ShowTabExtendButtons="false"
+        TabDefaultUrl="/" UseTabSet="true" IsFixedTabHeader="false"
+        AdditionalAssemblies="new[] { GetType().Assembly }"
+        Menus="@Menus">
+    <Header><!-- 头部内容 --></Header>
+    <Side><!-- 侧边栏菜单 --></Side>
+    <Main>
+        <ErrorLogger>
+            @Body
+        </ErrorLogger>
+    </Main>
+    <Footer><!-- 页脚 --></Footer>
+</Layout>
+```
+
+**菜单数据构建**：
+```csharp
+private List<MenuItem> Menus { get; set; } = new();
+
+// 方式一：从数据源转换
+Menus = menuData.Select(m => new MenuItem()
+{
+    Text = m.Name,
+    Icon = m.Icon,
+    Url = m.Component,  // 对应 @page 路由（不带前导 /）
+    Match = NavLinkMatch.All,
+    Items = m.Children?.Select(c => new MenuItem() { ... }).ToList()
+}).ToList();
+
+// 方式二：静态定义
+Menus = new List<MenuItem>()
+{
+    new() { Text = "首页", Icon = "fa-solid fa-fw fa-home", Url = "/", Match = NavLinkMatch.All },
+    new() { Text = "系统管理", Icon = "fa-solid fa-fw fa-cogs",
+        Items = new List<MenuItem>()
+        {
+            new() { Text = "用户管理", Icon = "fa-solid fa-users", Url = "/users" },
+            new() { Text = "角色管理", Icon = "fa-solid fa-user-shield", Url = "/role-management" }
+        }
+    }
+};
+```
+
+**Tab 标签页属性**：
+```razor
+@page "/your-page"
+@attribute [TabItemOption(Text = "页面标题", Closable = false)]
+@attribute [Authorize]
+```
+
+---
+
+### 七、其他常用组件
+
+#### 7.1 Card 卡片
+```razor
+<Card class="mb-4 shadow-sm border-0">
+    <HeaderTemplate>
+        <div class="d-flex align-items-center">
+            <i class="fas fa-bolt me-2"></i><span>标题</span>
+        </div>
+    </HeaderTemplate>
+    <BodyTemplate>
+        <!-- 内容 -->
+    </BodyTemplate>
+</Card>
+```
+
+#### 7.2 Badge 徽章
+```razor
+<Badge Color="@(enabled ? Color.Success : Color.Danger)">
+    @(enabled ? "启用" : "禁用")
+</Badge>
+```
+
+#### 7.3 Drawer 抽屉
+```razor
+<Drawer Placement="Placement.Right" @bind-IsOpen="@IsOpen" IsBackdrop="true">
+    <!-- 内容 -->
+</Drawer>
+```
+
+#### 7.4 Alert 警告
+```razor
+<Alert Color="Color.Info">信息提示</Alert>
+<Alert Color="Color.Danger" ShowBorder="true" ShowIcon="true">错误警告</Alert>
+```
+
+#### 7.5 Avatar 头像
+```razor
+<Avatar Url="@userAvatar" IsCircle="true" Size="Size.ExtraLarge"/>
+```
+
+#### 7.6 Logout 登出组件
+```razor
+<Logout ImageUrl="@avatar" DisplayName="@displayName" UserName="@userName">
+    <LinkTemplate>
+        <a href="/profile"><i class="fa-solid fa-suitcase"></i>个人中心</a>
+        <LogoutLink></LogoutLink>
+    </LinkTemplate>
+</Logout>
+```
+
+#### 7.7 GroupBox 分组框
+```razor
+<GroupBox Title="搜索条件">
+    <div class="row g-3 form-inline">
+        <!-- 搜索字段 -->
+    </div>
+</GroupBox>
+```
+
+#### 7.8 DropdownWidget 下拉挂件
+```razor
+<DropdownWidget class="px-3">
+    <DropdownWidgetItem Icon="fa-regular fa-envelope" BadgeNumber="5" BadgeColor="Color.Danger">
+        <HeaderTemplate><span>您有 5 条未读消息</span></HeaderTemplate>
+        <BodyTemplate><!-- 消息列表 --></BodyTemplate>
+        <FooterTemplate><a href="#">查看全部</a></FooterTemplate>
+    </DropdownWidgetItem>
+</DropdownWidget>
+```
+
+#### 7.9 Progress 进度条
+```razor
+<Progress IsAnimated="true" IsStriped="true" Value="75" Color="Color.Primary"/>
+```
+
+---
+
+## CSS 隔离
+
+使用 `::deep` 穿透到子组件样式：
+
+```css
+/* ComponentName.razor.css */
+::deep .form-control {
+    border-radius: 8px;
+}
+
+::deep .layout .layout-side {
+    background-color: var(--bs-dark);
+}
+```
+
+**CSS 隔离文件命名**：必须为 `{ProjectName}.styles.css`（如 `RbacAuth.Front.styles.css`）。
+
+---
+
+## 完整页面模板
+
+创建新 CRUD 页面时的标准步骤：
+
+### Step 1：创建页面目录和文件
+
+```
+Components/Pages/EntityName/
+├── Index.razor
+├── Index.razor.cs
+├── Add.razor
+├── Add.razor.cs
+├── Edit.razor
+└── Edit.razor.cs
+```
+
+### Step 2：注册服务（Startup.cs）
+
+```csharp
+services.AddScoped<IEntityQuery, EntityQuery>();
+services.AddScoped<IEntityService, EntityService>();
+```
+
+### Step 3：配置菜单路由
+
+确保页面的 `@page` 路由与菜单的 `Component` 字段一致（不带前导 `/`）。
+
+| 页面路由 | 菜单 Component |
+|----------|---------------|
+| `@page "/users"` | `users` |
+| `@page "/role-management"` | `role-management` |
+
+### Step 4：Index.razor 模板
+
+```razor
+@page "/entity-name"
+@attribute [TabItemOption(Text = "实体管理")]
+@attribute [Authorize]
+
+<PageHeader Title="实体管理" SubTitle="管理系统中的实体数据"/>
+
+<div class="mb-3">
+    <Button Color="Color.Primary" OnClick="@OnShowAddModal">
+        <i class="fas fa-plus me-2"></i>添加
+    </Button>
+    <Button Color="Color.Danger" OnClick="@OnBatchDelete" IsAsync="true">
+        <i class="fas fa-trash me-2"></i>批量删除
+    </Button>
+</div>
+
+<Table @ref="EntityTable" TItem="GetEntityListResult"
+       IsPagination="true" PageItemsSource="new[] {10, 20, 50}"
+       IsStriped="true" IsBordered="true"
+       ShowSearch="true" SearchMode="SearchMode.Top"
+       ShowExtendButtons="true"
+       ShowExtendEditButton="false" ShowExtendDeleteButton="false"
+       OnQueryAsync="@OnQueryAsync"
+       CustomerSearchModel="@SearchModel">
+    <!-- 列定义 -->
+    <TableColumn @bind-Field="@context.Name" Text="名称"/>
+    <TableColumn @bind-Field="@context.CreateTime" Text="创建时间" FormatString="yyyy-MM-dd HH:mm:ss"/>
+    <RowButtonTemplate>
+        <TableCellButton Size="Size.ExtraSmall" Color="Color.Success" Icon="fas fa-edit"
+                         Text="编辑" OnClick="() => OnShowEditModal(context)"/>
+        <TableCellPopConfirmButton Size="Size.ExtraSmall" Color="Color.Danger"
+                                   Icon="fa-solid fa-trash" Text="删除"
+                                   Content="确定删除？" OnConfirm="@(() => OnDelete(context))"/>
+    </RowButtonTemplate>
+</Table>
+
+<Add @ref="AddComponent" OnSaveCallback="@OnAddSave"/>
+<Edit @ref="EditComponent" OnSaveCallback="@OnEditSave"/>
+```
+
+---
+
+## 常见问题
+
+### TreeView 不显示选中状态
+确保数据模型实现了 `Equals` 和 `GetHashCode`，并使用 `Key` 属性强制重建。
+
+### 模态框数据不更新
+在 `Show()` 方法中使用 `InvokeAsync` + `StateHasChanged()` 确保在 UI 线程执行并强制渲染。
+
+### 表格自定义行按钮不显示
+必须设置 `ShowExtendButtons="true"` 且 `ShowExtendEditButton="false"` `ShowExtendDeleteButton="false"`，然后使用 `<RowButtonTemplate>`。
+
+### 菜单点击 404
+确保页面 `@page` 路由与菜单 `Component` 字段完全匹配（不带前导 `/`）。
+
+### 表格搜索不生效
+`CustomerSearchModel` 必须是组件属性（非局部变量），`OnQueryAsync` 中从 `QueryPageOptions` 获取分页参数。
+
+## 参考资源
+
+- [BootstrapBlazor 官方文档](https://www.blazor.zone/)
+- [BootstrapBlazor GitHub](https://github.com/dotnetcore/BootstrapBlazor)
+- [BootstrapBlazor 在线演示](https://www.blazor.zone/table)

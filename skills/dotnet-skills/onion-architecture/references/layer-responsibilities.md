@@ -193,7 +193,7 @@ AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service`
 await _unitOfWork.CommitTransactionAsync(async () =>
 {
     await _orderRep.AddAsync(order);          // submit 默认 false
-    await _itemRep.AddAsync(items);           // 集合重载批量新增(无 AddRangeAsync)
+    await _itemRep.AddRangeAsync(items);
 });
 // 第二个参数可传 IsolationLevel（默认 ReadCommitted）；委托抛异常自动回滚
 ```
@@ -427,8 +427,8 @@ Storage           → Core                                   ← 可选
   <ProjectReference Include="..\App.Domain\App.Domain.csproj" />
 </ItemGroup>
 <ItemGroup>
-  <PackageReference Include="Azrng.Core" Version="1.20.0" />
-  <!-- 仅当 AppService 需要时才引：JWT 认证、分布式锁等（选型见 SKILL.md → 周边能力包速查） -->
+  <PackageReference Include="Azrng.Core" Version="1.19.0" />
+  <!-- 仅当 AppService 需要时才引：JWT 认证、分布式锁等 -->
 </ItemGroup>
 ```
 
