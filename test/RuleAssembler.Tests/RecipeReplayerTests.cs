@@ -160,4 +160,113 @@ public sealed class RecipeReplayerTests : IDisposable
         var ex = Assert.Throws<InvalidOperationException>(() => _replayer.Replay(json, _tempDir));
         Assert.Contains("无法重建组合选择", ex.Message);
     }
+
+    // ---------- --upgrade：本地修改检测 ----------
+
+    private List<PlannedFile> WriteGeneratedFiles(string profileId)
+    {
+        var caseItem = _manifest.CompatibilityCases.First(item => item.Profile == profileId);
+        var selection = new Selection
+        {
+            Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
+        };
+        var plan = new CompositionPlanner(_manifest).Plan(selection);
+        var files = _renderer.Plan(_manifest, plan, FeatureSelection.Defaults(_manifest, plan));
+        foreach (var file in files)
+            File.WriteAllText(Path.Combine(_tempDir, file.Output), file.Content);
+        return files;
+    }
+
+    private string BuildRecipeJson(string profileId, IReadOnlyList<PlannedFile> files, bool withHashes)
+    {
+        var caseItem = _manifest.CompatibilityCases.First(item => item.Profile == profileId);
+        var selection = new Selection
+        {
+            Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
+        };
+        var plan = new CompositionPlanner(_manifest).Plan(selection);
+        var record = RecipeRecorder.BuildComposition(
+            _manifest, selection, plan.ComponentIds, "wizard",
+            new Dictionary<string, string>(), new Dictionary<string, string>(),
+            FeatureSelection.Defaults(_manifest, plan), files);
+        if (!withHashes)
+            record = new RecipeRecord
+            {
+                SchemaVersion = record.SchemaVersion,
+                ManifestVersion = record.ManifestVersion,
+                GeneratedAt = record.GeneratedAt,
+                Mode = record.Mode,
+                ProfileId = record.ProfileId,
+                ProfileLabel = record.ProfileLabel,
+                Family = record.Family,
+                Selection = record.Selection,
+                ComponentIds = record.ComponentIds,
+                Answers = record.Answers,
+                AnswerSources = record.AnswerSources,
+                Features = record.Features,
+                FileHashes = null,
+                Files = record.Files
+            };
+        return JsonSerializer.Serialize(record, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        });
+    }
+
+    [Fact]
+    public void 升级_未修改时全部文件纳入写入()
+    {
+        var files = WriteGeneratedFiles("reactOnly");
+        var json = BuildRecipeJson("reactOnly", files, withHashes: true);
+
+        var upgrade = _replayer.PlanUpgrade(json, _tempDir);
+
+        Assert.True(upgrade.HashDetectable);
+        Assert.Empty(upgrade.ModifiedFiles);
+        Assert.Empty(upgrade.SkippedFiles);
+        Assert.Equal(files.Count, upgrade.FilesToWrite.Count);
+    }
+
+    [Fact]
+    public void 升级_本地修改的文件默认保留且配方沿用旧哈希()
+    {
+        var files = WriteGeneratedFiles("reactOnly");
+        var json = BuildRecipeJson("reactOnly", files, withHashes: true);
+        var target = Path.Combine(_tempDir, "AGENTS.md");
+        File.WriteAllText(target, File.ReadAllText(target) + "\n<!-- 本地定制追加 -->\n");
+
+        var upgrade = _replayer.PlanUpgrade(json, _tempDir);
+
+        Assert.Contains("AGENTS.md", upgrade.ModifiedFiles);
+        Assert.Contains("AGENTS.md", upgrade.SkippedFiles);
+        Assert.DoesNotContain(upgrade.FilesToWrite, file => file.Output == "AGENTS.md");
+        Assert.Equal(files.Count - 1, upgrade.FilesToWrite.Count);
+        // 配方中被保留的文件沿用生成时的旧哈希，下次升级仍可检测
+        Assert.Equal(
+            RecipeRecorder.HashContent(files.First(file => file.Output == "AGENTS.md").Content),
+            upgrade.Record.FileHashes!["AGENTS.md"]);
+    }
+
+    [Fact]
+    public void 升级_旧配方无哈希_不可检测并按配方重放()
+    {
+        var files = WriteGeneratedFiles("reactOnly");
+        var json = BuildRecipeJson("reactOnly", files, withHashes: false);
+
+        var upgrade = _replayer.PlanUpgrade(json, _tempDir);
+
+        Assert.False(upgrade.HashDetectable);
+        Assert.Empty(upgrade.ModifiedFiles);
+        Assert.Equal(files.Count, upgrade.FilesToWrite.Count);
+    }
+
+    [Fact]
+    public void 配方记录的哈希与生成内容一致()
+    {
+        var content = "# 测试内容\n中文与 emoji 🔒";
+        Assert.Equal(RecipeRecorder.HashContent(content), RecipeRecorder.HashContent(content));
+        Assert.NotEqual(RecipeRecorder.HashContent(content), RecipeRecorder.HashContent(content + "x"));
+        Assert.Equal(64, RecipeRecorder.HashContent(content).Length);
+    }
 }

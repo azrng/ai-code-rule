@@ -141,6 +141,8 @@ fragments/
 # 并自动把该记录与生成器本体 use-ai-rule.exe 加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
 # 已有配方时可用 --recipe 按记录重放生成（升级规则或在新项目还原同一组合）：
 #   use-ai-rule.exe --recipe .ai-rule-profile.json [目标目录]
+# 规则版本升级后用 --upgrade 原地升级：配方内容哈希识别本地修改，默认保留、--force 全部覆盖：
+#   use-ai-rule.exe --upgrade [目录] [--force]
 ```
 
 当前 EXE 是 Windows x64 框架相关单文件，目标机器需要对应的 .NET 10 运行时。拼接器把公共入口、指针和可复用能力抽成模块，按所选 Profile 填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部 Profile。后续只维护 `fragments/`，重新构建即可让所有 Profile 生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。

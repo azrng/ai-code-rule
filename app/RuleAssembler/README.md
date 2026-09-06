@@ -101,6 +101,11 @@ dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --plan form=web f
 # 能力开关按配方重放；design-system 已定制保留语义与交互一致；回写配方并补 .gitignore
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --recipe <配方.json> [目标目录]
 
+# 升级已有规则：读取目标目录的 .ai-rule-profile.json 重放生成。
+# 配方记录了生成时的内容哈希，本地修改过的文件默认保留（只更新未修改文件），--force 全部覆盖；
+# 回写配方刷新版本与哈希，可重复执行（幂等）
+dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --upgrade [目录] [--force]
+
 # 把全部 Profile 的旧路径生成结果输出到指定目录，用于批量对比与历史产物回归
 # （--emit 为兼容别名，规范名为 --emit-all-legacy）
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit-all-legacy <目录>

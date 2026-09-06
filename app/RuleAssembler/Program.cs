@@ -629,8 +629,68 @@ internal static class Program
             return 0;
         }
 
-        // 按配方重放生成：--recipe <配方.json> [目标目录]（缺省为当前目录）。
-        // 与交互生成同一套组合解析与 design-system 保留语义；配方与当前规则不一致时显式报错
+        // 按配方升级已有规则：--upgrade [目录] [--force]。
+        // 读取目标目录的 .ai-rule-profile.json 重放生成；配方带内容哈希时识别本地修改过的文件，
+        // 默认保留本地版本只更新未修改文件（--force 全部覆盖），回写配方刷新版本与哈希
+        if (args.Length >= 1 && args[0].Equals("--upgrade", StringComparison.OrdinalIgnoreCase))
+        {
+            var force = args.Contains("--force", StringComparer.Ordinal);
+            var dirArg = args.Skip(1).FirstOrDefault(arg => !arg.Equals("--force", StringComparison.Ordinal));
+            var targetDirectory = dirArg is null ? Environment.CurrentDirectory : Path.GetFullPath(dirArg);
+            var recipePath = Path.Combine(targetDirectory, RecipeRecorder.RecordFileName);
+            if (!File.Exists(recipePath))
+                throw new IOException($"未找到配方记录 {recipePath}：升级需要此前由生成器写入的配方文件，首次生成请直接运行生成器或使用 --recipe。");
+
+            Console.WriteLine($"use-ai-rule {manifest.Vars.Version}（{manifest.Vars.LastUpdated}）");
+            var replayer = new RecipeReplayer(manifest, new RuleRenderer(resources));
+            var plan = replayer.PlanUpgrade(File.ReadAllText(recipePath), targetDirectory);
+            var replay = plan.Replay;
+
+            foreach (var note in replay.Notes)
+                Console.WriteLine(note);
+            Console.WriteLine($"命中组件：{string.Join("、", replay.Plan.ComponentIds)}");
+
+            if (plan.ModifiedFiles.Count > 0 && plan.HashDetectable)
+            {
+                Console.WriteLine($"检测到 {plan.ModifiedFiles.Count} 个本地修改过的文件：");
+                foreach (var file in plan.ModifiedFiles)
+                    Console.WriteLine($"  - {file}" + (plan.SkippedFiles.Contains(file, StringComparer.OrdinalIgnoreCase) ? "（保留本地版本）" : ""));
+                if (!force)
+                    Console.WriteLine("默认保留本地修改；确认全部覆盖请追加 --force 重新运行。");
+            }
+            else if (plan.HashDetectable)
+            {
+                Console.WriteLine("未检测到本地修改过的文件。");
+            }
+            else
+            {
+                Console.WriteLine("配方未记录内容哈希（早期版本生成），无法识别本地修改，将按配方直接重放覆盖。");
+            }
+
+            if (force && plan.ModifiedFiles.Count > 0)
+            {
+                // --force：被保留的修改文件重新纳入写入集合，配方按全新写入重算哈希
+                plan = new RecipeReplayer.UpgradePlan(
+                    replay, plan.ModifiedFiles, new List<string>(), replay.Files, plan.HashDetectable, replay.Record);
+            }
+
+            Console.WriteLine($"将写入 {plan.FilesToWrite.Count} 个文件到 {targetDirectory}" +
+                              (plan.SkippedFiles.Count > 0 ? $"（跳过本地修改的 {plan.SkippedFiles.Count} 个）" : "") + "：");
+            foreach (var file in plan.FilesToWrite)
+                Console.WriteLine($"  - {file.Output}");
+
+            var written = new OutputWriter().WriteFiles(targetDirectory, plan.FilesToWrite);
+            var recorder = new RecipeRecorder();
+            recorder.Write(targetDirectory, plan.Record);
+            var gitignoreMessage = recorder.EnsureGitignored(
+                targetDirectory,
+                RecipeRecorder.StackKeyForComposition(manifest, replay.Plan));
+
+            Console.WriteLine($"完成：已升级 {written} 个文件（规则版本 {manifest.Vars.Version}）");
+            Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
+            return 0;
+        }
+
         if (args.Length is 2 or 3 && args[0].Equals("--recipe", StringComparison.OrdinalIgnoreCase))
         {
             var recipePath = Path.GetFullPath(args[1]);
@@ -732,6 +792,7 @@ internal static class Program
             Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合；证据不足时打印待确认维度与候选组合，不写入文件。");
             Console.WriteLine("--plan 维度=取值 ...：按显式维度选择解析组合内核，打印命中组件与文件清单，不写入文件。");
             Console.WriteLine("--recipe <配方.json> [目标目录]：按配方记录重放生成（缺省写入当前目录），写入配方与 .gitignore。");
+            Console.WriteLine("--upgrade [目录] [--force]：按目标目录的配方记录升级规则；识别本地修改默认保留，--force 全部覆盖。");
             Console.WriteLine("--emit <目录> / --emit-all-legacy <目录>：把全部 Profile 的旧路径生成结果输出到指定目录，仅用于批量预览与历史产物回归。");
             Console.WriteLine("--help：显示帮助。");
             return 0;

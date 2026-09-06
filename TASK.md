@@ -20,6 +20,7 @@
 | RULE-20260906-P2S4 | 组合内核阶段 3：问答/检测/汇总切换 Selection 入口 | 新增 `SelectionEngine`（组件驱动问答）：存续组件按已回答维度过滤，只问「存续组件间仍有分歧」的维度，唯一取值自动推导（配方来源 derived），选项经可行性剪枝（取值后至少剩一个兼容样例，与旧引擎「选项从 Profile 推导」的保证对齐），`SimulateAll` 全路径仿真接入 `--check`（每条交互路径可解析且唯一映射兼容样例，28 样例全部可达）。`Program` 交互切换：问答 / 检测推荐 / 检测补答均产出 `Selection` 走 `CompositionPlanner` + 组合渲染路径，经典大类 → Profile 保留为「经典选择（兼容）」；新增 `--plan` 命令（显式维度 → 自动推导 → 打印组件与文件清单，分歧维度报错不补全）。配方记录增补 `selection` + `component_ids`（唯一映射兼容样例时回填 profile 三件套，旧路径输出字节不变）。ruletest 实测：web+react+.NET（自动推导 3 维度）、desktop+react+go（Wails）、返回上一步改道 console 三条链路产物与基线一致。191 测试全绿，`--emit` 与基线逐字节一致，版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 | RULE-20260906-P2S5 | 组合内核阶段 4：配方重放与兼容命令收尾 | 新增 `RecipeReplayer` + `--recipe <配方.json> [目标目录]`：按配方记录重放生成，selection 重建选择（旧配方仅有 profile_id 时经兼容样例反查）、组件集合与当前 manifest 不一致显式报错不静默生成、能力开关按配方重放（空 = 默认集）、版本差异以提示说明、design-system 已定制保留语义与交互一致，回写配方刷新版本并补 .gitignore。`--emit-all-legacy` 作为旧路径批量预览的规范名落地（`--emit` 保留为别名）。ruletest 实测：交互生成 → 清空目录 → 按配方重放，产物与基线逐字节一致；伪造 1.40.0 旧配方（仅 profile_id）反查重放 reactOnly 成功。6 个重放单元测试（逐字节还原/旧配方反查/篡改报错/能力子集/约束拒绝/空配方报错），197 测试全绿，`--check` 通过，版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 | RULE-20260906-P2S6 | 组合内核阶段 5：子规则槽位机制与 electron 内容收敛 | 生成器支持子规则骨架槽位：`Subrule.slots`（文件级）/ `Profile.slots`（旧路径）/ `CompositionPlan.Slots`（组件并集）三级取值，`ApplyFileSlots` 渲染期替换并以残留占位硬报错兜底。electron 家族 8 份按 backend 味道分化的文件收敛为 4 份骨架（frontend-react/vue-AGENTS.md + design-system-react/vue.yaml，react 对 5+3 槽位、vue 对 5+8 槽位，共消除约 1100 行重复），dotnet/main 槽位值由前端组件与旧 Profile 提供。计划内内容变更：2 份 design-system 的 `use-rule` 旧名修正为 `use-ai-rule`（首次随 1.52.0 生成生效）。版本 1.51.0 → 1.52.0。验证：28 兼容样例等价全绿、emit 161 个差异文件逐一核验均为计划内差异（版本戳 + 旧名修正）、ruletest 真实生成（web 分离路径 + electron 骨架槽位路径）版本还原后与基线逐字节一致。197 测试全绿 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| UPG-20260906-1 | 第二梯队：--upgrade 项目升级（本地修改检测） | 配方记录增补 `file_hashes`（生成内容 SHA256，向后兼容：交互/classic/wizard/重放四条路径统一写入）；`RecipeReplayer.PlanUpgrade` 比对磁盘哈希识别本地修改过的文件，默认保留只更新未修改文件（保留文件沿用旧哈希，下次升级仍可检测），`--force` 全部覆盖并重算哈希；早期配方无哈希时降级为「按配方直接重放」并明确提示。新增 `--upgrade [目录] [--force]` 命令。ruletest 实测完整闭环：生成 → 本地改 2 文件 → 升级保留修改写入其余 8 个 → force 覆盖并刷新哈希 → 再升级幂等。4 个新单元测试（未修改全更新/修改保留沿用旧哈希/旧配方不可检测/哈希一致性），201 测试全绿，生成内容零漂移，版本保持 1.52.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 
 ## 1. 当前目标
 
@@ -288,7 +289,7 @@ P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile �
 4. ~~配方记录 `selection + component_ids + features`；`--recipe` / `--emit-all-legacy`。~~（已完成）
 5. ~~内容收敛：electron 家族 8 份按味道分化文件 → 4 份骨架 + 槽位（约 1100 行重复消除）。~~（已完成；wails/web 分离的 frontend 差异是 react/vue 框架维度而非 backend 维度，属合理差异不强收敛）
 6. `profiles` 节点评估：**保留**。它仍是三件事的事实来源——检测器候选过滤（ProjectDetector 按 traits 收敛推荐）、经典兼容入口、`--emit-all-legacy` 回归基线；组件等价校验保证两条路径产物一致，删除无收益且破坏回归能力。待检测器与经典入口也切换到组件口径后（远期）再评估。
-7. 下一批方向（第二梯队）：目标项目 `--upgrade`（配方已就位，检测本地修改 + diff）、self-contained 交付（覆盖 mac/linux 与 CI）、规则效果闭环（命中/违反反馈回 fragments）。
+7. 第二梯队（已启动，见 UPG-20260906-1）：~~目标项目 `--upgrade`（配方 + 内容哈希检测本地修改）~~（已完成）；待办：self-contained 交付（覆盖 mac/linux 与 CI）、规则效果闭环（命中/违反反馈回 fragments）。
 
 P2 的完成标准是：新增常规前端、后端、壳或能力模块时，不需要复制完整 Profile，也不需要修改渲染器核心分发流程。
 

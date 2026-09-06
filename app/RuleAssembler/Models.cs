@@ -699,6 +699,12 @@ internal sealed class RecipeRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? ComponentIds { get; init; }
 
+    // 生成时的文件内容 SHA256（路径 → 十六进制摘要）：--upgrade 用它识别目标项目本地修改过的文件。
+    // 早期配方无此字段，升级时退化为不可检测语义（按 --recipe 直接重放）
+    [JsonPropertyName("file_hashes")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? FileHashes { get; init; }
+
     [JsonPropertyName("files")]
     public List<string> Files { get; init; } = new();
 }

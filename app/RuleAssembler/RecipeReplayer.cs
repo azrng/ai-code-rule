@@ -24,7 +24,87 @@ internal sealed class RecipeReplayer
         RecipeRecord Record,
         List<string> Notes);
 
+    // 升级计划：在重放之上叠加本地修改检测——配方记录了生成时的内容哈希，
+    // 磁盘内容与哈希不符的文件视为本地修改，默认保留（--force 覆盖）；
+    // 早期配方无哈希时退化为不可检测（等同 --recipe 直接重放，明确提示）
+    public sealed record UpgradePlan(
+        ReplayResult Replay,
+        List<string> ModifiedFiles,
+        List<string> SkippedFiles,
+        List<PlannedFile> FilesToWrite,
+        bool HashDetectable,
+        RecipeRecord Record);
+
     public ReplayResult Replay(string recipeJson, string targetDirectory)
+    {
+        return Replay(ParseRecipe(recipeJson), targetDirectory);
+    }
+
+    public UpgradePlan PlanUpgrade(string recipeJson, string targetDirectory)
+    {
+        var recipe = ParseRecipe(recipeJson);
+        var modified = new List<string>();
+        var hashDetectable = recipe.FileHashes is { Count: > 0 };
+        if (hashDetectable)
+        {
+            foreach (var pair in recipe.FileHashes!)
+            {
+                var path = Path.Combine(Path.GetFullPath(targetDirectory), pair.Key);
+                if (!File.Exists(path))
+                    continue;
+                var current = RecipeRecorder.HashContent(File.ReadAllText(path));
+                if (!current.Equals(pair.Value, StringComparison.OrdinalIgnoreCase))
+                    modified.Add(pair.Key);
+            }
+        }
+
+        var replay = Replay(recipe, targetDirectory);
+        var skipped = replay.Files
+            .Where(file => modified.Contains(file.Output, StringComparer.OrdinalIgnoreCase))
+            .Select(file => file.Output)
+            .ToList();
+        var filesToWrite = replay.Files
+            .Where(file => !skipped.Contains(file.Output, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+        // 回写配方以实际写入的文件为准：被保留的本地文件继续沿用旧哈希，下次升级仍可检测
+        var record = recipe.FileHashes is { Count: > 0 }
+            ? MergePreservedHashes(replay.Record, recipe.FileHashes, skipped)
+            : replay.Record;
+
+        return new UpgradePlan(replay, modified, skipped, filesToWrite, hashDetectable, record);
+    }
+
+    private static RecipeRecord MergePreservedHashes(
+        RecipeRecord fresh, IReadOnlyDictionary<string, string> oldHashes, IReadOnlyList<string> skipped)
+    {
+        var hashes = new Dictionary<string, string>(fresh.FileHashes ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
+        foreach (var path in skipped)
+        {
+            if (oldHashes.TryGetValue(path, out var hash))
+                hashes[path] = hash;
+        }
+
+        return new RecipeRecord
+        {
+            SchemaVersion = fresh.SchemaVersion,
+            ManifestVersion = fresh.ManifestVersion,
+            GeneratedAt = fresh.GeneratedAt,
+            Mode = fresh.Mode,
+            ProfileId = fresh.ProfileId,
+            ProfileLabel = fresh.ProfileLabel,
+            Family = fresh.Family,
+            Selection = fresh.Selection,
+            ComponentIds = fresh.ComponentIds,
+            Answers = fresh.Answers,
+            AnswerSources = fresh.AnswerSources,
+            Features = fresh.Features,
+            FileHashes = hashes,
+            Files = fresh.Files
+        };
+    }
+
+    private RecipeRecord ParseRecipe(string recipeJson)
     {
         RecipeRecord? recipe;
         try
@@ -41,7 +121,11 @@ internal sealed class RecipeReplayer
 
         if (recipe is null)
             throw new InvalidOperationException("配方文件内容为空。");
+        return recipe;
+    }
 
+    private ReplayResult Replay(RecipeRecord recipe, string targetDirectory)
+    {
         var dimensions = recipe.Selection is { Count: > 0 }
             ? recipe.Selection
             : FromLegacyProfile(recipe);

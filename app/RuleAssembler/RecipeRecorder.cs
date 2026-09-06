@@ -29,6 +29,7 @@ internal sealed class RecipeRecorder
             Answers = new Dictionary<string, string>(answers, StringComparer.Ordinal),
             AnswerSources = new Dictionary<string, string>(answerSources, StringComparer.Ordinal),
             Features = features.OrderBy(id => id, StringComparer.Ordinal).ToList(),
+            FileHashes = HashFiles(files),
             Files = files.Select(file => file.Output).ToList()
         };
     }
@@ -62,8 +63,24 @@ internal sealed class RecipeRecorder
             Answers = new Dictionary<string, string>(answers, StringComparer.Ordinal),
             AnswerSources = new Dictionary<string, string>(answerSources, StringComparer.Ordinal),
             Features = features.OrderBy(id => id, StringComparer.Ordinal).ToList(),
+            FileHashes = HashFiles(files),
             Files = files.Select(file => file.Output).ToList()
         };
+    }
+
+    // 生成内容的内容寻址指纹：路径 → SHA256（UTF-8 字节，十六进制小写），供 --upgrade 识别本地修改
+    public static Dictionary<string, string> HashFiles(IReadOnlyList<PlannedFile> files)
+    {
+        var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in files)
+            hashes[file.Output] = HashContent(file.Content);
+        return hashes;
+    }
+
+    public static string HashContent(string content)
+    {
+        var bytes = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(content));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     // 组合路径的 gitignore 模板键：唯一映射到兼容样例时沿用其 Profile 口径，否则退到 minimal
