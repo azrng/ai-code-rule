@@ -5837,18 +5837,14 @@
       ]
     },
     {
-      "id": "dotnet-layered",
-      "kind": "form",
+      "id": "dotnet-backend-layered",
+      "kind": "backend",
       "label": ".NET 分层 API 后端",
-      "desc": "单一组合组件（由 Profile dotnet-layered 等价迁移）",
+      "desc": "纯后端 + .NET + 分层架构组合的后端组件（dotnet-layered）",
       "when": {
         "form": "backend-only",
         "backend": "dotnet",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "layered",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
+        "arch-style": "layered"
       },
       "family": "dotnet-backend",
       "root": {
@@ -5875,18 +5871,14 @@
       ]
     },
     {
-      "id": "dotnet-core-single",
-      "kind": "form",
+      "id": "dotnet-backend-single",
+      "kind": "backend",
       "label": ".NET 单层 API 后端",
-      "desc": "单一组合组件（由 Profile dotnet-core-single 等价迁移）",
+      "desc": "纯后端 + .NET + 单层架构组合的后端组件（dotnet-core-single）",
       "when": {
         "form": "backend-only",
         "backend": "dotnet",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
+        "arch-style": "single"
       },
       "family": "dotnet-backend",
       "root": {
@@ -6314,254 +6306,254 @@
       ],
       "designSystemSource": "arch/reactLinkdotNet-ai/design-system.yaml"
     },
-    {
-      "id": "dotnetBlazor",
-      "kind": "form",
-      "label": ".NET Blazor Server（传统）",
-      "desc": "单一组合组件（由 Profile dotnetBlazor 等价迁移）",
-      "when": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "blazor",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "traditional",
-        "ai-capability": "no"
-      },
-      "family": "web-fullstack",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `ui-AGENTS.md`：页面、布局、组件、导航、状态、样式、界面测试",
-          "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `ui-AGENTS.md` | Razor 页面、布局、组件、交互、样式、界面 smoke test | 涉及界面实现与交互时 |",
-          "| `backend-AGENTS.md` | 服务、数据访问、鉴权、状态流转、服务端测试 | 涉及服务实现、数据链路或后端逻辑时 |",
-          {
-            "when": [
-              {
-                "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
-                "features": [
-                  "doc",
-                  "design-system"
-                ]
-              },
-              {
-                "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
-                "features": [
-                  "doc"
-                ]
-              }
-            ]
-          },
-          {
-            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建发布链路 | 涉及部署、容器化、环境变量或交付链路时 |",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "dev-stage": [
-          "### 四个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1            阶段 2                阶段 3",
-          "设计文档   →   界面与交互实现   →   服务端与数据实现   →   联调与交付",
-          "（用户确认）    （界面实现角色）      （后端实现角色）       （协作联调角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量、部署脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、布局、交互与界面验证，细则见 `ui-AGENTS.md`",
-          "- 阶段 2：服务端逻辑、数据访问、权限与测试，细则见 `backend-AGENTS.md`",
-          {
-            "line": "- 阶段 3：联调、构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          {
-            "line": "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-            "features": [
-              "design-system"
-            ]
-          },
-          "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
-        "understanding-checklist": [
-          "- 涉及界面时，已查看相关 Razor 页面、组件、布局、样式资源、设计 token 和现有交互模式",
-          "- 涉及业务逻辑时，已查看相关服务、数据访问、DTO、调用方和现有测试"
-        ],
-        "contract-error-line": "阶段 1 输出的界面契约、组件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改契约 / DTO 后同步界面、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "Razor 页面、组件、服务、数据访问、DTO 和测试实现",
-        "task-kind-nouns": "界面、业务逻辑还是基础设施",
-        "root-scope-nouns": "界面、服务、文档、基础设施",
-        "context-scope-nouns": "界面、服务与发布链路"
-      },
-      "files": [
+  {
+    "id": "web-frontend-blazor-traditional",
+    "kind": "frontend",
+    "label": "Blazor Server（传统）界面",
+    "desc": "Web + .NET + Blazor 传统形态的界面组件（dotnetBlazor）",
+    "when": {
+      "form": "web",
+      "backend": "dotnet",
+      "frontend": "blazor",
+      "shell": "none",
+      "ai-capability": "no",
+      "blazor-flavor": "traditional"
+    },
+    "family": "web-fullstack",
+    "root": {
+      "target-list": [
+        "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+        "- `ui-AGENTS.md`：页面、布局、组件、导航、状态、样式、界面测试",
+        "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
         {
-          "source": "arch/dotnetBlazor/ui-AGENTS.md",
-          "output": "ui-AGENTS.md"
+          "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "features": [
+            "doc"
+          ]
         },
         {
-          "source": "arch/dotnetBlazor/backend-AGENTS.md",
-          "output": "backend-AGENTS.md"
+          "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
+          "features": [
+            "infra"
+          ]
         },
         {
-          "source": "arch/dotnetBlazor/infra-AGENTS.md",
-          "output": "infra-AGENTS.md",
-          "feature": "infra"
+          "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+          "features": [
+            "design-system"
+          ]
+        },
+        "- `TASK.md`：唯一活动任务记录文件"
+      ],
+      "subrule-index": [
+        "| 文件 | 适用范围 | 何时阅读 |",
+        "| --- | --- | --- |",
+        "| `ui-AGENTS.md` | Razor 页面、布局、组件、交互、样式、界面 smoke test | 涉及界面实现与交互时 |",
+        "| `backend-AGENTS.md` | 服务、数据访问、鉴权、状态流转、服务端测试 | 涉及服务实现、数据链路或后端逻辑时 |",
+        {
+          "when": [
+            {
+              "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+              "features": [
+                "doc",
+                "design-system"
+              ]
+            },
+            {
+              "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
+              "features": [
+                "doc"
+              ]
+            }
+          ]
         },
         {
-          "source": "arch/dotnetBlazor/doc-AGENTS.md",
-          "output": "doc-AGENTS.md",
-          "feature": "doc"
+          "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建发布链路 | 涉及部署、容器化、环境变量或交付链路时 |",
+          "features": [
+            "infra"
+          ]
         }
       ],
-      "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
-    },
-    {
-      "id": "dotnetBlazorWebApp",
-      "kind": "form",
-      "label": ".NET Blazor Web App",
-      "desc": "单一组合组件（由 Profile dotnetBlazorWebApp 等价迁移）",
-      "when": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "blazor",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "webapp",
-        "ai-capability": "no"
-      },
-      "family": "web-fullstack",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `ui-AGENTS.md`：渲染模式、页面、组件、状态、预渲染、断线恢复与 JS interop",
-          "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `ui-AGENTS.md` | Razor Components、渲染模式、预渲染、状态、断线恢复、JS interop 与界面测试 | 涉及页面、组件或交互执行位置时 |",
-          "| `backend-AGENTS.md` | 服务、数据访问、业务逻辑、鉴权与后端测试 | 涉及服务端实现、API 或安全边界时 |",
-          {
-            "line": "| `infra-AGENTS.md` | 端口、环境变量、Docker、构建发布链路 | 涉及配置、部署、容量或交付时 |",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "| `doc-AGENTS.md` | 设计文档、契约说明与设计系统 | 涉及阶段 0、架构契约或文档维护时 |",
-            "features": [
-              "doc"
-            ]
-          }
-        ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          "3. 涉及 Razor Components 或交互时，先读 `ui-AGENTS.md` 并明确 Static SSR、Interactive Server、Interactive WebAssembly 或 Interactive Auto。",
-          {
-            "line": "4. 涉及界面时再读 `design-system.yaml`；设计系统不得覆盖根规则优先级。",
-            "features": [
-              "design-system"
-            ]
-          },
-          "5. 再阅读相关模块与现有实现，确认复用点后再动手。"
-        ],
-        "understanding-checklist": [
-          "- 已确认目标组件使用的渲染模式、实际执行位置、预渲染行为和 DI 可用范围",
-          "- 涉及界面时，已查看相关 Razor 组件、布局、样式资源、设计 token 和现有交互模式",
-          "- 涉及业务逻辑时，已查看相关服务、API、DTO、授权边界、调用方和现有测试"
-        ],
-        "contract-error-line": "界面契约、组件参数、DTO 或字段说明发现缺口时，应先回到契约变更流程，同步修改组件、双端服务实现、API、数据访问映射、测试和相关文档；不得绕过渲染模式与安全边界直接补临时字段",
-        "search-nouns": "Razor Components、渲染模式、页面、服务、API、DTO 和测试实现",
-        "task-kind-nouns": "界面、渲染模式、业务逻辑还是基础设施",
-        "root-scope-nouns": "界面、渲染模式、服务、文档、基础设施",
-        "context-scope-nouns": "界面、执行位置、服务与发布链路"
-      },
-      "files": [
+      "dev-stage": [
+        "### 四个阶段",
+        "",
+        "```text",
+        "阶段 0          阶段 1            阶段 2                阶段 3",
+        "设计文档   →   界面与交互实现   →   服务端与数据实现   →   联调与交付",
+        "（用户确认）    （界面实现角色）      （后端实现角色）       （协作联调角色）",
+        "```",
+        "",
+        "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+        "  - Bug 修复",
+        "  - 已有页面的样式或文案微调",
+        "  - 配置、环境变量、部署脚本调整",
+        "  - 单个字段增删改，且不引入新页面或新业务流程",
+        "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+        "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+        "",
+        "### 阶段职责",
         {
-          "source": "arch/dotnetBlazorWebApp/ui-AGENTS.md",
-          "output": "ui-AGENTS.md"
+          "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+          "features": [
+            "doc"
+          ]
         },
+        "- 阶段 1：页面骨架、布局、交互与界面验证，细则见 `ui-AGENTS.md`",
+        "- 阶段 2：服务端逻辑、数据访问、权限与测试，细则见 `backend-AGENTS.md`",
         {
-          "source": "arch/dotnetBlazor/backend-AGENTS.md",
-          "output": "backend-AGENTS.md"
-        },
-        {
-          "source": "arch/dotnetBlazor/infra-AGENTS.md",
-          "output": "infra-AGENTS.md",
-          "feature": "infra"
-        },
-        {
-          "source": "arch/dotnetBlazor/doc-AGENTS.md",
-          "output": "doc-AGENTS.md",
-          "feature": "doc"
+          "line": "- 阶段 3：联调、构建、启动、发布与交付验证，结合当前文件与 `infra-AGENTS.md`",
+          "features": [
+            "infra"
+          ]
         }
       ],
-      "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
+      "reading-order": [
+        "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+        "2. 根据任务类型命中对应子规则，不预读全部文件。",
+        {
+          "line": "3. 涉及界面时，在命中 `ui-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+          "features": [
+            "design-system"
+          ]
+        },
+        "4. 再阅读相关模块与现有实现，确认复用点后再动手。"
+      ],
+      "understanding-checklist": [
+        "- 涉及界面时，已查看相关 Razor 页面、组件、布局、样式资源、设计 token 和现有交互模式",
+        "- 涉及业务逻辑时，已查看相关服务、数据访问、DTO、调用方和现有测试"
+      ],
+      "contract-error-line": "阶段 1 输出的界面契约、组件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改契约 / DTO 后同步界面、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+      "search-nouns": "Razor 页面、组件、服务、数据访问、DTO 和测试实现",
+      "task-kind-nouns": "界面、业务逻辑还是基础设施",
+      "root-scope-nouns": "界面、服务、文档、基础设施",
+      "context-scope-nouns": "界面、服务与发布链路"
     },
+    "files": [
+      {
+        "source": "arch/dotnetBlazor/ui-AGENTS.md",
+        "output": "ui-AGENTS.md"
+      }
+    ],
+    "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
+  },
+  {
+    "id": "web-frontend-blazor-webapp",
+    "kind": "frontend",
+    "label": "Blazor Web App 界面",
+    "desc": "Web + .NET + Blazor Web App 的界面组件（dotnetBlazorWebApp）",
+    "when": {
+      "form": "web",
+      "backend": "dotnet",
+      "frontend": "blazor",
+      "shell": "none",
+      "ai-capability": "no",
+      "blazor-flavor": "webapp"
+    },
+    "family": "web-fullstack",
+    "root": {
+      "target-list": [
+        "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+        "- `ui-AGENTS.md`：渲染模式、页面、组件、状态、预渲染、断线恢复与 JS interop",
+        "- `backend-AGENTS.md`：服务、数据访问、业务逻辑、鉴权与后端测试",
+        {
+          "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+          "features": [
+            "doc"
+          ]
+        },
+        {
+          "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、构建发布与交付验证",
+          "features": [
+            "infra"
+          ]
+        },
+        {
+          "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+          "features": [
+            "design-system"
+          ]
+        },
+        "- `TASK.md`：唯一活动任务记录文件"
+      ],
+      "subrule-index": [
+        "| 文件 | 适用范围 | 何时阅读 |",
+        "| --- | --- | --- |",
+        "| `ui-AGENTS.md` | Razor Components、渲染模式、预渲染、状态、断线恢复、JS interop 与界面测试 | 涉及页面、组件或交互执行位置时 |",
+        "| `backend-AGENTS.md` | 服务、数据访问、业务逻辑、鉴权与后端测试 | 涉及服务端实现、API 或安全边界时 |",
+        {
+          "line": "| `infra-AGENTS.md` | 端口、环境变量、Docker、构建发布链路 | 涉及配置、部署、容量或交付时 |",
+          "features": [
+            "infra"
+          ]
+        },
+        {
+          "line": "| `doc-AGENTS.md` | 设计文档、契约说明与设计系统 | 涉及阶段 0、架构契约或文档维护时 |",
+          "features": [
+            "doc"
+          ]
+        }
+      ],
+      "reading-order": [
+        "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+        "2. 根据任务类型命中对应子规则，不预读全部文件。",
+        "3. 涉及 Razor Components 或交互时，先读 `ui-AGENTS.md` 并明确 Static SSR、Interactive Server、Interactive WebAssembly 或 Interactive Auto。",
+        {
+          "line": "4. 涉及界面时再读 `design-system.yaml`；设计系统不得覆盖根规则优先级。",
+          "features": [
+            "design-system"
+          ]
+        },
+        "5. 再阅读相关模块与现有实现，确认复用点后再动手。"
+      ],
+      "understanding-checklist": [
+        "- 已确认目标组件使用的渲染模式、实际执行位置、预渲染行为和 DI 可用范围",
+        "- 涉及界面时，已查看相关 Razor 组件、布局、样式资源、设计 token 和现有交互模式",
+        "- 涉及业务逻辑时，已查看相关服务、API、DTO、授权边界、调用方和现有测试"
+      ],
+      "contract-error-line": "界面契约、组件参数、DTO 或字段说明发现缺口时，应先回到契约变更流程，同步修改组件、双端服务实现、API、数据访问映射、测试和相关文档；不得绕过渲染模式与安全边界直接补临时字段",
+      "search-nouns": "Razor Components、渲染模式、页面、服务、API、DTO 和测试实现",
+      "task-kind-nouns": "界面、渲染模式、业务逻辑还是基础设施",
+      "root-scope-nouns": "界面、渲染模式、服务、文档、基础设施",
+      "context-scope-nouns": "界面、执行位置、服务与发布链路"
+    },
+    "files": [
+      {
+        "source": "arch/dotnetBlazorWebApp/ui-AGENTS.md",
+        "output": "ui-AGENTS.md"
+      }
+    ],
+    "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
+  },
+  {
+    "id": "web-backend-blazor",
+    "kind": "backend",
+    "label": ".NET 后端（Blazor 全栈变体）",
+    "desc": "Web + .NET + Blazor 全栈组合的后端组件（两形态共用）",
+    "when": {
+      "form": "web",
+      "backend": "dotnet",
+      "frontend": "blazor",
+      "shell": "none",
+      "ai-capability": "no"
+    },
+    "family": "web-fullstack",
+    "files": [
+      {
+        "source": "arch/dotnetBlazor/backend-AGENTS.md",
+        "output": "backend-AGENTS.md"
+      },
+      {
+        "source": "arch/dotnetBlazor/infra-AGENTS.md",
+        "output": "infra-AGENTS.md",
+        "feature": "infra"
+      },
+      {
+        "source": "arch/dotnetBlazor/doc-AGENTS.md",
+        "output": "doc-AGENTS.md",
+        "feature": "doc"
+      }
+    ]
+  },
     {
       "id": "mauiMobile",
       "kind": "form",

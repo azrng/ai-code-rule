@@ -79,6 +79,68 @@ public class SelectionEngineTests
         var plan = new CompositionPlanner(manifest).Plan(selection);
         Assert.Contains(plan.ComponentIds, id => id == "tauri-frontend-vue");
     }
+    [Fact]
+    public void 纯后端Dotnet路径_提问arch_style维度_唯一映射dotnetLayered()
+    {
+        var manifest = LoadManifest();
+        var engine = CreateEngine(manifest);
+        var selection = new Selection();
+        selection.Dimensions["form"] = "backend-only";
+
+        // python 组件引用 frontend=none，唯一取值自动推导；backend 在 dotnet / python 之间提问
+        var derived0 = new List<(string Trait, string Value)>();
+        var backend = engine.NextQuestion(selection, derived0);
+        Assert.Equal("backend", backend!.Trait);
+        selection.Dimensions["backend"] = "dotnet";
+
+        // 分层 / 单层仍有分歧，arch-style 提问；其余维度唯一取值自动推导
+        var arch = engine.NextQuestion(selection);
+        Assert.Equal("arch-style", arch!.Trait);
+        selection.Dimensions["arch-style"] = "layered";
+
+        var derived = new List<(string Trait, string Value)>();
+        Assert.Null(engine.NextQuestion(selection, derived));
+        // shell 维度两种状态都合法：未被存续组件引用时不问不猜（不进入选择），
+        // 被 python 等组件引用且取值唯一时自动推导为 none——断言与问答步骤顺序解耦
+        Assert.True(!selection.Dimensions.ContainsKey("shell") || selection.Dimensions["shell"] == "none",
+            "shell 应缺席或为 none，实际：" + string.Join("、", selection.Dimensions.Select(pair => $"{pair.Key}={pair.Value}")));
+
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        Assert.Equal(new[] { "dotnet-layered" }, matches);
+        var plan = new CompositionPlanner(manifest).Plan(selection);
+        Assert.Equal(new[] { "dotnet-backend-layered" }, plan.ComponentIds);
+    }
+
+    [Fact]
+    public void WebBlazor路径_提问blazor_flavor_映射dotnetBlazorWebApp()
+    {
+        var manifest = LoadManifest();
+        var engine = CreateEngine(manifest);
+        var selection = new Selection();
+        selection.Dimensions["form"] = "web";
+
+        var frontend = engine.NextQuestion(selection);
+        Assert.Equal("frontend", frontend!.Trait);
+        Assert.Contains(frontend.Options, option => option.Value == "blazor");
+        selection.Dimensions["frontend"] = "blazor";
+
+        // blazor 下 backend=dotnet、shell=none、ai-capability=no 唯一，自动推导；形态仍有分歧
+        var flavor = engine.NextQuestion(selection);
+        Assert.Equal("blazor-flavor", flavor!.Trait);
+        Assert.Contains(flavor.Options, option => option.Value == "traditional");
+        Assert.Contains(flavor.Options, option => option.Value == "webapp");
+        selection.Dimensions["blazor-flavor"] = "webapp";
+
+        var derived = new List<(string Trait, string Value)>();
+        Assert.Null(engine.NextQuestion(selection, derived));
+        Assert.Equal("dotnet", selection.Dimensions["backend"]);
+
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        Assert.Equal(new[] { "dotnetBlazorWebApp" }, matches);
+        var plan = new CompositionPlanner(manifest).Plan(selection);
+        Assert.Contains(plan.ComponentIds, id => id == "web-frontend-blazor-webapp");
+        Assert.Contains(plan.ComponentIds, id => id == "web-backend-blazor");
+    }
 
     [Fact]
     public void 纯控制台路径只问形态与界面_其余全部自动推导()
