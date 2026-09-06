@@ -26,6 +26,7 @@ public sealed class WizardEngineTests
             ["form"] = "web",
             ["backend"] = "dotnet",
             ["frontend"] = "react",
+            ["arch-style"] = "layered",
             ["ai-capability"] = "no"
         };
 

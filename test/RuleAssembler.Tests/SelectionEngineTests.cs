@@ -184,7 +184,7 @@ public class SelectionEngineTests
     }
 
     [Fact]
-    public void WebReactDotNet路径_aidim分岔_回答yes落到AI变体()
+    public void WebReactDotNet路径_先问arch_style_单项目下aidim分岔落到AI变体()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);
@@ -192,6 +192,13 @@ public class SelectionEngineTests
         selection.Dimensions["form"] = "web";
         selection.Dimensions["frontend"] = "react";
         selection.Dimensions["backend"] = "dotnet";
+
+        // 多项目（layered）与单项目（single，含 reactLinkdotNet-ai）仍有分歧，先问架构
+        var arch = engine.NextQuestion(selection);
+        Assert.Equal("arch-style", arch!.Trait);
+        Assert.Contains(arch.Options, option => option.Value == "layered");
+        Assert.Contains(arch.Options, option => option.Value == "single");
+        selection.Dimensions["arch-style"] = "single";
 
         // shell=none 与 blazor-flavor=none 唯一，自动推导；ai-capability 有分岔，提问
         var ai = engine.NextQuestion(selection);
@@ -207,7 +214,36 @@ public class SelectionEngineTests
     }
 
     [Fact]
-    public void 全路径仿真_每条交互路径可解析且唯一映射_29样例可达()
+    public void WebReactDotNetSingle路径_单项目落reactLinkdotNetSingle_复用前端组件()
+    {
+        var manifest = LoadManifest();
+        var engine = CreateEngine(manifest);
+        var selection = new Selection();
+        selection.Dimensions["form"] = "web";
+        selection.Dimensions["frontend"] = "react";
+        selection.Dimensions["backend"] = "dotnet";
+
+        var arch = engine.NextQuestion(selection);
+        Assert.Equal("arch-style", arch!.Trait);
+        selection.Dimensions["arch-style"] = "single";
+
+        var ai = engine.NextQuestion(selection);
+        Assert.Equal("ai-capability", ai!.Trait);
+        selection.Dimensions["ai-capability"] = "no";
+
+        Assert.Null(engine.NextQuestion(selection));
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        Assert.Equal(new[] { "reactLinkdotNetSingle" }, matches);
+        var plan = new CompositionPlanner(manifest).Plan(selection);
+        // 前端组件跨 arch-style 复用，只有后端组件按架构分叉
+        Assert.Contains(plan.ComponentIds, id => id == "web-dotnet-shell");
+        Assert.Contains(plan.ComponentIds, id => id == "web-frontend-react");
+        Assert.Contains(plan.ComponentIds, id => id == "web-backend-react-single");
+        Assert.DoesNotContain(plan.ComponentIds, id => id == "web-backend-react");
+    }
+
+    [Fact]
+    public void 全路径仿真_每条交互路径可解析且唯一映射_31样例可达()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);

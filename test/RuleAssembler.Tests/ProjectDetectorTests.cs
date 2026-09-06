@@ -34,6 +34,48 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_WebReactLayeredBackend_RecommendsReactLinkdotNet()
+    {
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"react\":\"^18.0.0\"}}");
+        // csproj 须落在检测扫描深度（≤2）以内
+        Directory.CreateDirectory(Path.Combine(_root, "backend", "src"));
+        foreach (var name in new[] { "Api", "Application", "Infrastructure" })
+        {
+            File.WriteAllText(
+                Path.Combine(_root, "backend", "src", name + ".csproj"),
+                "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+        }
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        // 3 个 csproj 的 Web 工程按分层收敛；arch-style 证据在检测阶段即确认
+        Assert.Equal("reactLinkdotNet", result!.LegacyProfileId);
+        Assert.Equal("layered", result.BuildLegacyAnswers()["arch-style"]);
+    }
+
+    [Fact]
+    public void Detect_WebReactSingleBackend_ConfirmsArchStyleSingle()
+    {
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"react\":\"^18.0.0\"}}");
+        Directory.CreateDirectory(Path.Combine(_root, "backend", "src"));
+        File.WriteAllText(
+            Path.Combine(_root, "backend", "src", "Demo.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        // 单项目后端：arch-style=single 证据确认，候选含单项目变体（AI 与否留待补答）
+        Assert.Equal("single", result!.Confirmed["arch-style"]);
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNetSingle");
+    }
+
+    [Fact]
     public void Detect_TauriReactProject_RecommendsReactTauriExe()
     {
         Directory.CreateDirectory(Path.Combine(_root, "src-tauri"));
@@ -178,10 +220,11 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Equal("web", result.Confirmed["form"]);
         Assert.Equal("react", result.Confirmed["frontend"]);
         // 候选包含纯前端组合（含 AI 变体）后，「无后端」才能作为补答选项出现
-        Assert.Equal(5, result.Candidates.Count);
+        Assert.Equal(6, result.Candidates.Count);
         Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly-ai");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet");
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNetSingle");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet-ai");
         Assert.Contains(result.Candidates, profile => profile.Id == "nextFullstack");
     }
