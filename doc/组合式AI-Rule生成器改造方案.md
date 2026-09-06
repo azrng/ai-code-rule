@@ -47,8 +47,8 @@
     v
 Q1 项目形态
 Q2 前端或界面
-Q3 后端
-Q4 桌面壳（条件显示）
+Q3 桌面壳（条件显示）
+Q4 后端
 Q5 可选能力
     |
     v
@@ -90,20 +90,9 @@ Q5 可选能力
 
 界面先于后端提问（2026-09-04 调整）：原生桌面（Avalonia / WPF / 控制台）与混合壳（Electron / Wails / Tauri）的分歧在界面维度，先问后端会让 C# 桌面用户的「.NET」回答进入 Electron 分支、Avalonia / WPF 选项永不出现；先问界面后，原生桌面组合直接收敛，后端问题只对混合壳与 Web 形态出现。
 
-#### Q3 后端
+壳先于后端提问（2026-09-06 调整）：混合壳桌面下后端一答完候选即唯一，壳问题从未真正显示，Electron 移除 frontend 取值后在问答里没有任何显式选项；壳问题提前后，桌面 + React/Vue 先显示 Electron / Tauri / Wails，选壳后后端只问该壳下的分歧（如 Electron 的主进程 vs .NET sidecar）。
 
-选项使用业务含义明确的值：
-
-- 无后端
-- .NET 分层
-- .NET 单层
-- Python FastAPI
-- Go（Wails）
-- Node.js/Next.js（现有全栈能力需要保留时启用）
-
-选项由 Q1 / Q2 回答过滤。例如“纯后端服务”不显示“无后端”，“Web + React”保留“无后端”（纯前端 SPA 组合）。
-
-#### Q4 桌面壳
+#### Q3 桌面壳
 
 只在桌面或混合应用显示：
 
@@ -117,6 +106,19 @@ Q5 可选能力
 - Wails 要求 Go 宿主模块。
 - Tauri 引入 Rust 壳模块，但不把 Rust 误认为业务后端。
 - Electron 可以与 .NET、Node.js 或无业务后端组合。
+
+#### Q4 后端
+
+选项使用业务含义明确的值：
+
+- 无后端
+- .NET 分层
+- .NET 单层
+- Python FastAPI
+- Go（Wails）
+- Node.js/Next.js（现有全栈能力需要保留时启用）
+
+选项由 Q1 / Q2 / Q3 回答过滤。例如“纯后端服务”不显示“无后端”，“Web + React”保留“无后端”（纯前端 SPA 组合），“桌面 + Electron”只剩“无后端”（主进程）与“.NET”（sidecar）之分。
 
 #### Q5 可选能力
 

@@ -17,7 +17,7 @@ public class SelectionEngineTests
     }
 
     [Fact]
-    public void 桌面React路径_唯一取值自动推导_不追问arch与blazor与ai()
+    public void 桌面React路径_壳显式可选_后端区分主进程与sidecar()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);
@@ -33,18 +33,26 @@ public class SelectionEngineTests
         Assert.Equal("frontend", frontend!.Trait);
         selection.Dimensions["frontend"] = "react";
 
-        // backend 仍有分歧（electron dotnet/none、wails go、tauri rust），提问
+        // Q3 壳：混合壳桌面必须显式出现 Electron / Tauri / Wails 选项
+        var shell = engine.NextQuestion(selection);
+        Assert.Equal("shell", shell!.Trait);
+        Assert.Contains(shell.Options, option => option.Value == "electron");
+        Assert.Contains(shell.Options, option => option.Value == "tauri");
+        Assert.Contains(shell.Options, option => option.Value == "wails");
+        selection.Dimensions["shell"] = "electron";
+
+        // Q4 后端：Electron 壳下只剩 主进程(none) 与 .NET sidecar(dotnet) 之分
         var backend = engine.NextQuestion(selection);
         Assert.Equal("backend", backend!.Trait);
-        Assert.Contains(backend.Options, option => option.Value == "go");
-        Assert.Contains(backend.Options, option => option.Value == "rust");
+        Assert.Contains(backend.Options, option => option.Value == "none");
+        Assert.Contains(backend.Options, option => option.Value == "dotnet");
+        Assert.DoesNotContain(backend.Options, option => option.Value is "go" or "rust");
         selection.Dimensions["backend"] = "dotnet";
 
-        // 此后 shell=electron、arch-style、blazor-flavor、ai-capability 全部唯一，自动推导到完备
+        // 此后 arch-style、blazor-flavor、ai-capability 全部不引用，不问不猜，选择已完备
         var derived = new List<(string Trait, string Value)>();
         Assert.Null(engine.NextQuestion(selection, derived));
 
-        Assert.Equal("electron", selection.Dimensions["shell"]);
         // electron 组件的 when 不引用 arch-style / ai-capability：既不提问也不推导（不问不猜），
         // 兼容样例映射按共有维度比较，不要求选择包含样例的全部维度
         Assert.DoesNotContain(selection.Dimensions, pair => pair.Key == "arch-style");
@@ -52,7 +60,7 @@ public class SelectionEngineTests
     }
 
     [Fact]
-    public void 桌面VueRust路径_自动推导tauri壳_唯一映射vueTauri()
+    public void 桌面VueTauri壳路径_自动推导rust后端_唯一映射vueTauri()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);
@@ -63,16 +71,16 @@ public class SelectionEngineTests
         Assert.Equal("frontend", frontend!.Trait);
         selection.Dimensions["frontend"] = "vue";
 
-        // backend 在 electron dotnet/none、wails go、tauri rust 之间仍有分歧
-        var backend = engine.NextQuestion(selection);
-        Assert.Equal("backend", backend!.Trait);
-        Assert.Contains(backend.Options, option => option.Value == "rust");
-        selection.Dimensions["backend"] = "rust";
+        // 壳在 electron / tauri / wails 之间仍有分歧，显式提问
+        var shell = engine.NextQuestion(selection);
+        Assert.Equal("shell", shell!.Trait);
+        Assert.Contains(shell.Options, option => option.Value == "tauri");
+        selection.Dimensions["shell"] = "tauri";
 
-        // rust 后端下 shell=tauri 唯一，自动推导；arch-style 等维度 tauri 组件不引用，不问不猜
+        // tauri 壳下 backend=rust 唯一，自动推导；arch-style 等 tauri 组件不引用，不问不猜
         var derived = new List<(string Trait, string Value)>();
         Assert.Null(engine.NextQuestion(selection, derived));
-        Assert.Equal("tauri", selection.Dimensions["shell"]);
+        Assert.Equal("rust", selection.Dimensions["backend"]);
 
         var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
         Assert.Equal(new[] { "vueTauri" }, matches);
@@ -110,7 +118,6 @@ public class SelectionEngineTests
         var plan = new CompositionPlanner(manifest).Plan(selection);
         Assert.Equal(new[] { "dotnet-backend-layered" }, plan.ComponentIds);
     }
-
     [Fact]
     public void WebBlazor路径_提问blazor_flavor_映射dotnetBlazorWebApp()
     {

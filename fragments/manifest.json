@@ -3917,6 +3917,14 @@
         ]
       },
       {
+        "trait": "shell",
+        "question": "桌面壳方案用哪个？",
+        "applies-when-trait": "form",
+        "applies-when-values": [
+          "desktop"
+        ]
+      },
+      {
         "trait": "backend",
         "question": "后端（服务端）用什么技术栈？",
         "applies-when-trait": "form",
@@ -3925,10 +3933,6 @@
           "web",
           "desktop"
         ]
-      },
-      {
-        "trait": "shell",
-        "question": "桌面壳方案用哪个？"
       },
       {
         "trait": "arch-style",
@@ -3996,7 +4000,7 @@
         },
         "none": {
           "label": "无后端",
-          "desc": "纯前端 SPA 或静态页面，无独立服务端"
+          "desc": "无独立服务端：纯前端 SPA、静态页面或桌面壳主进程本地逻辑"
         }
       },
       "frontend": {
