@@ -1,6 +1,6 @@
 # RuleAssembler — 交互式 AI Rule 拼接器
 
-把一套完整 AI rule 释放到当前目录：双击启动 → 自动检测当前项目给出推荐组合（或走问答决策树 / 经典大类 → Profile）→ Q5 能力开关 → 确认后直接释放。默认不使用命令行参数完成业务选择。
+把一套完整 AI rule 释放到当前目录：双击启动（先打印当前规则版本）→ 自动检测当前项目给出推荐组合（或走问答决策树 / 经典大类 → Profile）→ Q5 能力开关 → 确认后直接释放。默认不使用命令行参数完成业务选择。
 
 ## 入口流程
 
@@ -9,7 +9,7 @@
 3. **经典选择**：技术大类 → Profile，作为兜底入口保留。
 4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 问答（Profile 选择）这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
 5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。
-6. **收尾**：所有路径共用「列出实际生成文件 → 汇总确认 → 生成」；写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode / profile / 回答组合 / `answer_sources` 回答来源 / `features` 能力开关 / 版本 / 文件清单），并确保目标项目 `.gitignore` 忽略该记录；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
+6. **收尾**：所有路径共用「列出实际生成文件 → 汇总确认 → 生成」；写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode / profile / 回答组合 / `answer_sources` 回答来源 / `features` 能力开关 / 版本 / 文件清单），并确保目标项目 `.gitignore` 忽略该记录与生成器本体 `use-ai-rule.exe`；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
 
 ## 设计
 
@@ -54,12 +54,12 @@ fragments/
 ./publish.ps1
 ```
 
-产物位于仓库根目录 `dist/use-rule.exe`（底层发布目录仍保留在 `bin/Release/net10.0/win-x64/publish/`）。当前发布为 Windows x64、框架相关单文件，目标机需要安装对应的 .NET 10 运行时；这是体积和部署依赖之间的明确取舍。
+产物位于仓库根目录 `dist/use-ai-rule.exe`（底层发布目录仍保留在 `bin/Release/net10.0/win-x64/publish/`）。当前发布为 Windows x64、框架相关单文件，目标机需要安装对应的 .NET 10 运行时；这是体积和部署依赖之间的明确取舍。
 
 ## 使用
 
 ```text
-1. 把 use-rule.exe 拷贝到目标项目根目录
+1. 把 use-ai-rule.exe 拷贝到目标项目根目录
 2. 双击启动（自动检测并给出推荐组合与判断依据；证据不足时展示待确认维度与候选，补答后继续）
 3. 选「使用推荐组合」，或改走问答决策树 / 经典大类 → Profile
 4. Q5 能力开关：按需勾选文档 / 基础设施 / 设计系统等能力（默认 = 当前组合）

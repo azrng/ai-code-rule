@@ -72,6 +72,7 @@ public sealed class RecipeRecorderTests : IDisposable
 
         var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
         Assert.Contains(".ai-rule-profile.json", content);
+        Assert.Contains("use-ai-rule.exe", content);
         Assert.Contains("node_modules/", content);
         Assert.Contains("已创建", message);
     }
@@ -86,7 +87,23 @@ public sealed class RecipeRecorderTests : IDisposable
         var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
         Assert.StartsWith("bin/\nobj/\n", content);
         Assert.Contains(".ai-rule-profile.json", content);
+        Assert.Contains("use-ai-rule.exe", content);
         Assert.DoesNotContain("node_modules/", content);
+    }
+
+    [Fact]
+    public void EnsureGitignored_AppendsOnlyMissingEntries()
+    {
+        // 旧版生成器只忽略配方记录：再跑一次必须只补生成器本体，不重复已有条目
+        File.WriteAllText(Path.Combine(_root, ".gitignore"), "bin/\n.ai-rule-profile.json\n");
+
+        var message = new RecipeRecorder().EnsureGitignored(_root, "dotnet");
+
+        var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
+        Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.Trim() == ".ai-rule-profile.json"));
+        Assert.Contains("use-ai-rule.exe", content);
+        Assert.Contains("追加忽略规则：use-ai-rule.exe", message);
     }
 
     [Fact]

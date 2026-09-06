@@ -35,7 +35,7 @@ if not "%EXIT_CODE%"=="0" (
 )
 
 echo 打包成功。
-echo 产物：%~dp0dist\use-rule.exe
+echo 产物：%~dp0dist\use-ai-rule.exe
 echo.
 pause
 exit /b 0
