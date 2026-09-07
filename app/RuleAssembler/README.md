@@ -45,7 +45,7 @@ manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组
 - **槽位机制**：骨架组件（如 `electron-desktop-shell`）持有完整的根变量条目顺序，backend 等差异内容经 `slots` 注入槽位；槽位必须有唯一提供者，替换后残留占位即报错，已声明但未被消费的槽位降级为告警。
 - **根变量合并**：以组件声明的 `family` rootDefaults 为继承基线，组件值按「未写则继承、写了则覆盖」处理；组件之间覆盖同一字段才是冲突。组件未显式声明的标量字段携带类默认值，合并前会被剥离。
 - **证据不足不隐式补全**：组件 `when` 引用了选择中缺失的维度即视为部分匹配并报错，列出待确认维度，与检测器口径一致。`constraints` 声明维度间合法关系（when 命中时 require 必须成立、forbid 必须不成立）。
-- **等价回归**：`compatibilityCases` 把旧 Profile 固定为组合样例，`--check` 对每个样例同时运行旧渲染路径与组合路径并逐字节比对（含路径集合、顺序与内容）；`CompositionEquivalenceTests` 额外覆盖能力子集组合。全部 31 个 Profile 已组件化并注册为兼容样例：族组合走「骨架 + 槽位 + 前端/后端组件」（Electron 4、Wails 2、Tauri 2、Web 分离 4、Blazor 全栈 2），纯前端 AI 2 与 .NET 纯后端 2（分层 / 单层）走「组件 + family 基线」，其余为「单一组合 = 全量 form 组件」（直接携带 Profile 完整 root / subrules / design-system；`reactLinkdotNet-ai` 的 `ai-AGENTS.md` 按旧渲染顺序前置）。新增技术类型原则上扩展组件与约束，不再复制整套 Profile；旧 Profile 渲染路径保持不变，向导与检测切换到 Selection 属阶段 3。
+- **等价回归**：`compatibilityCases` 把旧 Profile 固定为组合样例，`--check` 对每个样例同时运行旧渲染路径与组合路径并逐字节比对（含路径集合、顺序与内容）；`CompositionEquivalenceTests` 额外覆盖能力子集组合。全部 33 个 Profile 已组件化并注册为兼容样例：族组合走「骨架 + 槽位 + 前端/后端组件」（Electron 4、Wails 2、Tauri 2、Web 分离 .NET 4 / Python 2、Blazor 全栈 2），纯前端 AI 2 与 .NET 纯后端 2（分层 / 单层）走「组件 + family 基线」，其余为「单一组合 = 全量 form 组件」（直接携带 Profile 完整 root / subrules / design-system；`reactLinkdotNet-ai` 的 `ai-AGENTS.md` 按旧渲染顺序前置）。新增技术类型原则上扩展组件与约束，不再复制整套 Profile；旧 Profile 渲染路径保持不变，向导与检测切换到 Selection 属阶段 3。
 - **组件根标量按 JSON 存在性判定**：组件根中未在 JSON 里真实声明的标量字段反序列化后携带类默认值，合并前按 `DeclaredScalarFields`（`ManifestLoader.AnnotateComponentRootPresence` 标注）剥离；刻意声明且恰好等于类默认值的覆盖（如回退通用措辞覆盖 family 基线）会被保留。
 
 ### 输出契约与能力开关
@@ -113,7 +113,7 @@ dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit-all-legacy
 
 ## 当前 Profile
 
-manifest 当前包含 8 个技术大类、31 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。新增技术类型优先走组合内核的 `components` 扩展口（见「组合内核」一节），不再新增完整 Profile。
+manifest 当前包含 8 个技术大类、33 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。新增技术类型优先走组合内核的 `components` 扩展口（见「组合内核」一节），不再新增完整 Profile。
 
 ## 版本与格式
 

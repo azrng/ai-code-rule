@@ -243,7 +243,39 @@ public class SelectionEngineTests
     }
 
     [Fact]
-    public void 全路径仿真_每条交互路径可解析且唯一映射_31样例可达()
+    public void WebReactPython路径_后端可选python_自动推导剩余维度_唯一映射reactLinkPython()
+    {
+        var manifest = LoadManifest();
+        var engine = CreateEngine(manifest);
+        var selection = new Selection();
+        selection.Dimensions["form"] = "web";
+
+        var frontend = engine.NextQuestion(selection);
+        Assert.Equal("frontend", frontend!.Trait);
+        selection.Dimensions["frontend"] = "react";
+
+        // python 在 web 形态下成为可行后端选项（此前被样例剪枝掉）
+        var backend = engine.NextQuestion(selection);
+        Assert.Equal("backend", backend!.Trait);
+        Assert.Contains(backend.Options, option => option.Value == "python");
+        selection.Dimensions["backend"] = "python";
+
+        // shell / blazor-flavor / ai-capability 唯一，自动推导；arch-style 无组件引用，不问不猜
+        var derived = new List<(string Trait, string Value)>();
+        Assert.Null(engine.NextQuestion(selection, derived));
+        Assert.Equal("none", selection.Dimensions["shell"]);
+        Assert.DoesNotContain(selection.Dimensions, pair => pair.Key == "arch-style");
+
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        Assert.Equal(new[] { "reactLinkPython" }, matches);
+        var plan = new CompositionPlanner(manifest).Plan(selection);
+        Assert.Contains(plan.ComponentIds, id => id == "web-python-shell");
+        Assert.Contains(plan.ComponentIds, id => id == "web-frontend-python-react");
+        Assert.Contains(plan.ComponentIds, id => id == "web-backend-python-react");
+    }
+
+    [Fact]
+    public void 全路径仿真_每条交互路径可解析且唯一映射_33样例可达()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);

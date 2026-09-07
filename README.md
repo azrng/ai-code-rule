@@ -23,6 +23,8 @@
 | vueLinkdotNetSingle | Vue + .NET 前后端分离（单项目后端） | `frontend` / `backend` / `doc` / `infra` | 同 vueLinkdotNet 但后端为单项目整洁架构（文件夹分层）：中小型项目快速起步、后续可平滑拆分为多项目 |
 | reactLinkdotNet | React + .NET 前后端分离（多项目分层后端） | `frontend` / `backend` / `doc` / `infra` | React 18 企业应用、复杂表单/审批流系统、前后端团队独立开发、已有 .NET 后端选用 React 前端 |
 | reactLinkdotNetSingle | React + .NET 前后端分离（单项目后端） | `frontend` / `backend` / `doc` / `infra` | 同 reactLinkdotNet 但后端为单项目整洁架构（文件夹分层）：中小型项目快速起步、原型验证、后续可平滑拆分为多项目 |
+| reactLinkPython | React + Python 前后端分离 | `frontend` / `backend` / `doc` / `infra` | React SPA + FastAPI（Pydantic + SQLAlchemy）：AI/ML 推理服务配前端、数据处理平台、Python 团队主导的分离项目 |
+| vueLinkPython | Vue + Python 前后端分离 | `frontend` / `backend` / `doc` / `infra` | 同 reactLinkPython 但偏好 Vue 生态 |
 | reactLinkdotNet-ai | React + .NET + AI Agent 全栈 | `frontend` / `backend` / `ai` / `doc` / `infra` | AI Agent 产品 MVP、模型调用、工具与流式交互 |
 | nextFullstack | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | SaaS 平台、电商网站、SEO 敏感的公众网站、创业项目快速迭代、全栈一人搞定（仓库参考标准模板） |
 | generalProject | 通用项目协作模板 | `frontend` / `backend` / `doc` / `infra` | 尚未最终确定技术栈的新项目、需要先统一 AI 协作口径再细化实现方案的项目、希望尽量少预设框架约束的通用业务项目 |
@@ -72,9 +74,11 @@
 │   │   ├── Blazor Web App（SSR / Server / WebAssembly / Auto）→ dotnetBlazorWebApp
 │   │   └── 尚未锁定具体技术栈，先要通用协作规则 → generalProject
 │   │
-│   ├── 分离部署（前后端独立；后端多项目分层 → 默认，单项目 → *Single）
+│   ├── 分离部署（前后端独立；.NET 后端多项目分层 → 默认，单项目 → *Single）
 │   │   ├── Vue + .NET → vueLinkdotNet / vueLinkdotNetSingle
-│   │   └── React + .NET → reactLinkdotNet / reactLinkdotNetSingle
+│   │   ├── React + .NET → reactLinkdotNet / reactLinkdotNetSingle
+│   │   ├── Vue + Python（FastAPI）→ vueLinkPython
+│   │   └── React + Python（FastAPI）→ reactLinkPython
 │   │
 │   ├── 移动端应用
 │       └── .NET MAUI → mauiMobile
@@ -109,7 +113,7 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
-组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 31 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；新增技术类型原则上扩展组件而非复制 Profile。
+组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 33 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；新增技术类型原则上扩展组件而非复制 Profile。
 
 ## 使用方式
 

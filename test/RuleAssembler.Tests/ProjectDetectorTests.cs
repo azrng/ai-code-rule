@@ -76,6 +76,24 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_ReactSpaWithFastapi_RecommendsReactLinkPython()
+    {
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"react\":\"^18.0.0\"}}");
+        File.WriteAllText(
+            Path.Combine(_root, "pyproject.toml"),
+            "[project]\ndependencies = [\"fastapi\", \"uvicorn\"]\n");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        // 前端工程 + Python 后端工程：web+python 组合此前无法收敛，现直接命中分离组合
+        Assert.Equal("reactLinkPython", result!.LegacyProfileId);
+        Assert.Equal("python", result.BuildLegacyAnswers()["backend"]);
+    }
+
+    [Fact]
     public void Detect_TauriReactProject_RecommendsReactTauriExe()
     {
         Directory.CreateDirectory(Path.Combine(_root, "src-tauri"));
@@ -220,11 +238,12 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Equal("web", result.Confirmed["form"]);
         Assert.Equal("react", result.Confirmed["frontend"]);
         // 候选包含纯前端组合（含 AI 变体）后，「无后端」才能作为补答选项出现
-        Assert.Equal(6, result.Candidates.Count);
+        Assert.Equal(7, result.Candidates.Count);
         Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly-ai");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNetSingle");
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkPython");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet-ai");
         Assert.Contains(result.Candidates, profile => profile.Id == "nextFullstack");
     }
