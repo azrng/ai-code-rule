@@ -8066,23 +8066,227 @@
     }
   ],
   "constraints": [
-    {
-      "when": {
-        "shell": "electron"
-      },
-      "require": {
-        "form": "desktop"
-      }
+  {
+    "when": {
+      "shell": "tauri"
     },
-    {
-      "when": {
-        "shell": "wails"
-      },
-      "require": {
-        "form": "desktop"
-      }
+    "require": {
+      "form": "desktop",
+      "backend": "rust"
     }
-  ],
+  },
+  {
+    "when": {
+      "shell": "wails"
+    },
+    "require": {
+      "form": "desktop",
+      "backend": "go"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "require": {
+      "form": "desktop"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "go"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "rust"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "python"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "node"
+    }
+  },
+  {
+    "when": {
+      "backend": "rust"
+    },
+    "require": {
+      "shell": "tauri"
+    }
+  },
+  {
+    "when": {
+      "backend": "go"
+    },
+    "require": {
+      "shell": "wails"
+    }
+  },
+  {
+    "when": {
+      "form": "backend-only"
+    },
+    "require": {
+      "frontend": "none",
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "web"
+    },
+    "require": {
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "static"
+    },
+    "require": {
+      "frontend": "html",
+      "backend": "none",
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "mobile"
+    },
+    "require": {
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "blazor"
+    },
+    "require": {
+      "form": "web",
+      "backend": "dotnet"
+    }
+  },
+  {
+    "when": {
+      "frontend": "avalonia"
+    },
+    "require": {
+      "form": "desktop",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "wpf"
+    },
+    "require": {
+      "form": "desktop",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "console"
+    },
+    "require": {
+      "form": "desktop",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "maui"
+    },
+    "require": {
+      "form": "mobile",
+      "shell": "none",
+      "backend": "dotnet"
+    }
+  },
+  {
+    "when": {
+      "frontend": "flutter"
+    },
+    "require": {
+      "form": "mobile",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "html"
+    },
+    "require": {
+      "form": "static",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "blazor-flavor": "traditional"
+    },
+    "require": {
+      "frontend": "blazor"
+    }
+  },
+  {
+    "when": {
+      "blazor-flavor": "webapp"
+    },
+    "require": {
+      "frontend": "blazor"
+    }
+  },
+  {
+    "when": {
+      "arch-style": "layered"
+    },
+    "require": {
+      "backend": "dotnet"
+    }
+  },
+  {
+    "when": {
+      "form": "desktop",
+      "frontend": "react"
+    },
+    "forbid": {
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "desktop",
+      "frontend": "vue"
+    },
+    "forbid": {
+      "shell": "none"
+    }
+  }
+],
+
   "compatibilityCases": [
     {
       "profile": "dotnet-layered",

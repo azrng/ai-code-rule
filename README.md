@@ -113,7 +113,7 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
-组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 33 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；新增技术类型原则上扩展组件而非复制 Profile。
+组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 33 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；`constraints` 承载壳 / 形态 / 前端 / 后端的钳制关系（如 tauri→rust、wails→go、electron 仅 dotnet/主进程、纯后端无前端），问答剪枝先过约束再过样例，违反钳制的组合在问答与 `--plan` 中直接拒绝。新增技术类型原则上扩展组件而非复制 Profile。
 
 ## 使用方式
 

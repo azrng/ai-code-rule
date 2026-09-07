@@ -119,6 +119,28 @@ internal sealed class CompositionPlanner
         }
     }
 
+    // 问答期可行性判定：forbid 立即生效；require 只对已回答维度生效（未回答维度由后续问答收敛），
+    // 供 SelectionEngine 在样例剪枝之前先按钳制关系拒绝死组合
+    internal static bool SatisfiesConstraints(Manifest manifest, Selection selection)
+    {
+        foreach (var constraint in manifest.Constraints)
+        {
+            var hit = constraint.When.All(pair =>
+                selection.Dimensions.TryGetValue(pair.Key, out var value) && value == pair.Value);
+            if (!hit)
+                continue;
+
+            var violated = constraint.Require.Any(pair =>
+                    selection.Dimensions.TryGetValue(pair.Key, out var value) && value != pair.Value)
+                || constraint.Forbid.Any(pair =>
+                    selection.Dimensions.TryGetValue(pair.Key, out var value) && value == pair.Value);
+            if (violated)
+                return false;
+        }
+
+        return true;
+    }
+
     // 组件解析：全命中 -> 选中；部分命中（有命中且引用了缺失维度）-> 记录待确认维度；
     // 全不命中或条件明确不符 -> 排除
     private (List<ComponentDefinition> Selected, Dictionary<string, string> Missing) ResolveComponents(

@@ -6,7 +6,7 @@
 
 - `fragments/` 是唯一维护源：`arch/<id>/` 维护各架构专属片段，`shared/` 维护跨架构共享小节（子规则通过 `<!-- include: shared/... -->` 引用，改一处同步全部 Profile），`manifest.json` 维护模块、家族与 Profile 配方
 - 生成器 `app/RuleAssembler/` 按 Profile 把片段拼装为 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 与 `backend-AGENTS.md`、`frontend-AGENTS.md`、`doc-AGENTS.md`、`infra-AGENTS.md`、`ui-AGENTS.md`、`application-AGENTS.md`、`infrastructure-AGENTS.md` 等子规则文件，部分 Profile 另含 `design-system.yaml`
-- 组合内核（P2 阶段 2 已完成）：manifest 的 `components` / `constraints` / `compatibilityCases` 是维度组合（形态 + 壳 + 前端 + 后端）的事实来源，全部 33 个 Profile 已组件化并注册为兼容样例，`CompositionPlanner` 生成的产物必须与旧 Profile 逐字节一致，`--check` 对每个兼容样例做新旧两条渲染路径的等价比对；新增技术类型优先扩展组件而非复制 Profile，为既有组合补组件时必须先加兼容样例兜底
+- 组合内核（P2 阶段 2 已完成）：manifest 的 `components` / `constraints` / `compatibilityCases` 是维度组合（形态 + 壳 + 前端 + 后端）的事实来源，全部 33 个 Profile 已组件化并注册为兼容样例，`CompositionPlanner` 生成的产物必须与旧 Profile 逐字节一致，`--check` 对每个兼容样例做新旧两条渲染路径的等价比对；`constraints` 已写全壳 / 形态 / 前端 / 后端的钳制关系（25 条，从全部样例推导并逐一校验），问答剪枝先过约束再过样例，`--plan` 与组合解析对违反钳制的组合显式报错；新增技术类型优先扩展组件而非复制 Profile，为既有组合补组件时必须先加兼容样例兜底，同时补对应钳制约束
 - 仓库根原有的 19 套架构快照目录已于 2026-08-28 删除，不再作为维护入口；新项目用 `use-ai-rule.exe`（或 `--emit`）生成规则文件到目标项目。启动时先打印当前规则版本（版本唯一事实来源为 `fragments/manifest.json` 的 `vars.version`），再检测目标项目特征给出推荐组合，也可走问答决策树（基于 manifest 的 `traits` + `wizard` 配置）或经典的「大类 → Profile」；生成成功后写入 `.ai-rule-profile.json` 配方记录，并自动把该记录与生成器本体 `use-ai-rule.exe` 加入目标项目 `.gitignore`。新增 Profile 必须同时补 `traits` 与 `wizard.options` 文案，否则 `--check` 失败
 - `design-system.yaml` 的颜色、主题、字体、风格关键词是内置基线而非固定规范：规则层要求按产品品牌定制（`meta.status` 从「基线待定制」改为「已定制」），生成器对已定制的本地文件保留不覆盖；定制口径统一维护在 `shared/ui/design-system-liveness.md`，改一处同步全部界面子规则
 - 通用执行约束需在各架构模板间保持一致；Windows / PowerShell 场景下统一禁止使用 `&&` 链式命令

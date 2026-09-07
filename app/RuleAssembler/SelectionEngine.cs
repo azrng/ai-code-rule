@@ -98,15 +98,19 @@ internal sealed class SelectionEngine
         }
     }
 
-    // 可行性判断：把候选取值并入选择后，仍至少有一个兼容样例在共有维度上不冲突。
-    // 兼容样例是当前全部可生成组合的清单，剪枝等价于旧引擎按 Profile 候选过滤选项
+    // 可行性判断：先按钳制约束拒绝（壳/形态/前端的硬关系不依赖样例清单），
+    // 再把候选取值并入选择，要求仍至少有一个兼容样例在共有维度上不冲突。
+    // 兼容样例是当前全部可生成组合的清单，样例剪枝等价于旧引擎按 Profile 候选过滤选项
     private bool IsViable(Selection selection, string trait, string value)
     {
         var candidate = new Dictionary<string, string>(selection.Dimensions, StringComparer.Ordinal)
         {
             [trait] = value
         };
-        return MatchCompatibilityCases(_manifest, new Selection { Dimensions = candidate }).Count > 0;
+        var candidateSelection = new Selection { Dimensions = candidate };
+        if (!CompositionPlanner.SatisfiesConstraints(_manifest, candidateSelection))
+            return false;
+        return MatchCompatibilityCases(_manifest, candidateSelection).Count > 0;
     }
 
     private SelectionQuestion BuildQuestion(Selection selection, string trait, List<string> values)
