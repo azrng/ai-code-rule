@@ -17,7 +17,7 @@ public sealed class RootConsistencyValidatorTests
     [Fact]
     public void Validate_AllProfiles_ContractMatchesPlan()
     {
-        Assert.Equal(33, _manifest.Profiles.Count);
+        Assert.Equal(34, _manifest.Profiles.Count);
         foreach (var profile in _manifest.Profiles)
         {
             var errors = _validator.Validate(_manifest, _renderer, profile);

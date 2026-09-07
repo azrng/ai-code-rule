@@ -292,6 +292,12 @@ internal sealed class ProjectDetector
             evidence.Add(new("backend", "node", "package.json 依赖 next（Node 服务端）"));
             evidence.Add(new("frontend", "react", "package.json 依赖 next / react"));
         }
+        else if (signals.HasNuxtConfig || signals.NuxtInPackageJson)
+        {
+            evidence.Add(new("form", "web", "发现 Nuxt 工程（nuxt.config 或 package.json 依赖 nuxt）"));
+            evidence.Add(new("frontend", "vue", "Nuxt 基于 Vue 3"));
+            evidence.Add(new("backend", "node", "Nuxt 使用 Nitro（Node 服务端）"));
+        }
         else if (signals.ReactInPackageJson)
         {
             evidence.Add(new("frontend", "react", "package.json 依赖 react"));
@@ -338,6 +344,9 @@ internal sealed class ProjectDetector
 
         signals.HasTauriConf = File.Exists(Path.Combine(root, "src-tauri", "tauri.conf.json"))
             || File.Exists(Path.Combine(root, "tauri.conf.json"));
+
+        signals.HasNuxtConfig = File.Exists(Path.Combine(root, "nuxt.config.ts"))
+            || File.Exists(Path.Combine(root, "nuxt.config.js"));
 
         foreach (var name in new[]
                  {
@@ -413,6 +422,7 @@ internal sealed class ProjectDetector
             signals.ReactInPackageJson |= deps.Contains("react");
             signals.VueInPackageJson |= deps.Contains("vue");
             signals.NextInPackageJson |= deps.Contains("next");
+            signals.NuxtInPackageJson |= deps.Contains("nuxt");
             signals.ElectronInPackageJson |= deps.Contains("electron");
         }
         catch (JsonException)
@@ -501,6 +511,7 @@ internal sealed class ScanSignals
     public bool HasWailsJson;
     public bool HasGoMod;
     public bool HasTauriConf;
+    public bool HasNuxtConfig;
     public bool HasElectronConfig;
     public bool HasPubspec;
     public bool HasPackageJson;
@@ -513,6 +524,7 @@ internal sealed class ScanSignals
     public bool ReactInPackageJson;
     public bool VueInPackageJson;
     public bool NextInPackageJson;
+    public bool NuxtInPackageJson;
     public bool ElectronInPackageJson;
     public bool HasFastapiDependency;
     public int CsprojCount;
@@ -532,6 +544,8 @@ internal sealed class ScanSignals
             return HasPackageJson
                 && !HasWailsJson
                 && !HasTauriConf
+                && !HasNuxtConfig
+                && !NuxtInPackageJson
                 && !HasElectronConfig
                 && !ElectronInPackageJson
                 && CsprojCount == 0

@@ -275,7 +275,35 @@ public class SelectionEngineTests
     }
 
     [Fact]
-    public void 全路径仿真_每条交互路径可解析且唯一映射_33样例可达()
+    public void WebVueNode路径_后端可选node_唯一映射nuxtFullstack()
+    {
+        var manifest = LoadManifest();
+        var engine = CreateEngine(manifest);
+        var selection = new Selection();
+        selection.Dimensions["form"] = "web";
+
+        var frontend = engine.NextQuestion(selection);
+        Assert.Equal("frontend", frontend!.Trait);
+        selection.Dimensions["frontend"] = "vue";
+
+        // node 在 vue 分支下由 Nuxt 全栈承接（Next.js 只服务 react 分支）
+        var backend = engine.NextQuestion(selection);
+        Assert.Equal("backend", backend!.Trait);
+        Assert.Contains(backend.Options, option => option.Value == "node");
+        selection.Dimensions["backend"] = "node";
+
+        var derived = new List<(string Trait, string Value)>();
+        Assert.Null(engine.NextQuestion(selection, derived));
+        Assert.Equal("none", selection.Dimensions["shell"]);
+
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        Assert.Equal(new[] { "nuxtFullstack" }, matches);
+        var plan = new CompositionPlanner(manifest).Plan(selection);
+        Assert.Contains(plan.ComponentIds, id => id == "nuxtFullstack");
+    }
+
+    [Fact]
+    public void 全路径仿真_每条交互路径可解析且唯一映射_34样例可达()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);

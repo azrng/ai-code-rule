@@ -27,6 +27,7 @@
 | vueLinkPython | Vue + Python 前后端分离 | `frontend` / `backend` / `doc` / `infra` | 同 reactLinkPython 但偏好 Vue 生态 |
 | reactLinkdotNet-ai | React + .NET + AI Agent 全栈 | `frontend` / `backend` / `ai` / `doc` / `infra` | AI Agent 产品 MVP、模型调用、工具与流式交互 |
 | nextFullstack | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | SaaS 平台、电商网站、SEO 敏感的公众网站、创业项目快速迭代、全栈一人搞定（仓库参考标准模板） |
+| nuxtFullstack | Nuxt 3 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | 同 nextFullstack 但偏好 Vue 生态：Nuxt 3 文件路由 + Nitro 服务路由 + Prisma，SEO 敏感站点与 Vue 团队全栈项目 |
 | generalProject | 通用项目协作模板 | `frontend` / `backend` / `doc` / `infra` | 尚未最终确定技术栈的新项目、需要先统一 AI 协作口径再细化实现方案的项目、希望尽量少预设框架约束的通用业务项目 |
 | reactOnly | React 纯前端 SPA | `frontend` / `doc` / `infra` | 无独立后端的 React 单页应用：纯展示 / 工具型前端、调第三方 API 的轻应用、先做界面后补后端的原型 |
 | reactOnly-ai | React 纯前端 + AI 产品 | `frontend` / `ai` / `doc` / `infra` | 无独立后端的 AI 前端产品：模型调用走托管网关 / 代理、密钥不下发浏览器、流式交互体验 |
@@ -70,6 +71,7 @@
 │   │
 │   ├── 同框架（全栈）
 │   │   ├── Next.js → nextFullstack
+│   │   ├── Nuxt → nuxtFullstack
 │   │   ├── Blazor → dotnetBlazor
 │   │   ├── Blazor Web App（SSR / Server / WebAssembly / Auto）→ dotnetBlazorWebApp
 │   │   └── 尚未锁定具体技术栈，先要通用协作规则 → generalProject
@@ -113,7 +115,7 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
-组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 33 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；`constraints` 承载壳 / 形态 / 前端 / 后端的钳制关系（如 tauri→rust、wails→go、electron 仅 dotnet/主进程、纯后端无前端），问答剪枝先过约束再过样例，违反钳制的组合在问答与 `--plan` 中直接拒绝。新增技术类型原则上扩展组件而非复制 Profile。
+组合内核（P2 阶段 2 已完成）：manifest 新增 `components` / `constraints` / `compatibilityCases` 节点，`CompositionPlanner` 可以把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并生成与旧 Profile 逐字节一致的产物；全部 34 个 Profile 已组件化并注册为兼容样例（族组合走「骨架 + 槽位 + 前端/后端组件」，单一组合走全量组件）。`--check` 对每个兼容样例同时运行新旧两条渲染路径并逐字节比对，等价被破坏即失败；`constraints` 承载壳 / 形态 / 前端 / 后端的钳制关系（如 tauri→rust、wails→go、electron 仅 dotnet/主进程、纯后端无前端），问答剪枝先过约束再过样例，违反钳制的组合在问答与 `--plan` 中直接拒绝。新增技术类型原则上扩展组件而非复制 Profile。
 
 ## 使用方式
 

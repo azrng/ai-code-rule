@@ -94,6 +94,22 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_NuxtProject_RecommendsNuxtFullstack()
+    {
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"nuxt\":\"^3.13.0\"}}");
+        File.WriteAllText(Path.Combine(_root, "nuxt.config.ts"), "export default defineNuxtConfig({})");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        // Nuxt 工程：nuxt.config / 依赖直接给出 web + vue + node 证据，收敛到 Nuxt 全栈
+        Assert.Equal("nuxtFullstack", result!.LegacyProfileId);
+        Assert.Equal("node", result.BuildLegacyAnswers()["backend"]);
+    }
+
+    [Fact]
     public void Detect_TauriReactProject_RecommendsReactTauriExe()
     {
         Directory.CreateDirectory(Path.Combine(_root, "src-tauri"));
