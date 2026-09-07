@@ -10,6 +10,9 @@
 
 | 任务 ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 AI | 任务状态 | 优先级 | 最近更新时间 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RULE-20260907-DRIFT | 真实执行反馈：依赖漂移修复 | 承接 `D:\temp\rulereview`（wpfExe 1.59.0）反馈：WPF-UI 包名与 xmlns 修正（`Wpf.Ui`→NuGet ID `WPF-UI`、2024→2022/xaml，以程序集 XmlnsDefinition 为准）；桌面/控制台 DI 注册改为显式 `Add*` 并标注 `RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`（Web 侧同步标注来源包）；统一结果包装对齐现行 Azrng.Core API（`ResultModelFactory` + 默认裸返回 / 业务异常取舍、`IResultModel<T>` 仅暴露 Data）；wpfExe 核心库不再固定版本号。版本 1.59.0 → 1.60.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-07 |
+| RULE-20260907-COMPACT | 规则内容压缩与真实产物复核 | 压缩测试未执行说明、KISS 细则、协作任务与反馈段落；保持契约语义，生成版本 1.58.0 → 1.59.0，并在 `D:\temp\rulereview` 复核实际产物 | 实现与验证 | Codex | DOING | 中 | 2026-09-07 |
+| RULE-20260907-COLLAB | 坦率反馈与规则退役机制 | 共享协作规则加入坦率反馈、常规细节判断与结论式过程更新；反馈闭环增加“冗余”类型；新增规则退役清单，并以固定行为规则段预算约束根文件膨胀；版本 1.57.0 → 1.58.0 | 已完成验证 | Codex | DONE | 中 | 2026-09-07 |
 | RULE-20260903-COLLAB | 协作规则下沉与需求澄清 | 新需求和 `/plan` 进入结构化澄清；将根文件中的按需流程下沉，降低常驻上下文 | 已完成验证 | Codex | DONE | 高 | 2026-09-03 |
 | RULE-20260904-DSBASELINE | 设计系统基线与定制口径 | `design-system.yaml` 从固定规范改为「内置基线 + 按产品品牌定制」：定制口径收敛到 `shared/ui/design-system-liveness.md` 并接入全部界面子规则；16 份 yaml 头部声明基线语义、`meta.status` 改「基线待定制」；生成器对已定制（或状态无法识别）的本地 `design-system.yaml` 保留不覆盖（`DesignSystemGuard`）。版本 1.48.0 → 1.49.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-04 |
 | RULE-20260904-EOL | 渲染管线行尾归一 | `ResourceStore.Read` 读取口统一 LF：此前根模板按 `\n` 写死的连续空行收敛对 CRLF 检出不生效，同一片段在 CRLF / LF 工作区产出内容有差异；归一后 CRLF worktree 与 LF 主目录 `--emit` 逐字节一致。仅代码与测试变更，生成内容不变，版本保持 1.49.0 | 已完成验证 | ZCode | DONE | 中 | 2026-09-04 |
@@ -21,28 +24,26 @@
 | RULE-20260906-P2S5 | 组合内核阶段 4：配方重放与兼容命令收尾 | 新增 `RecipeReplayer` + `--recipe <配方.json> [目标目录]`：按配方记录重放生成，selection 重建选择（旧配方仅有 profile_id 时经兼容样例反查）、组件集合与当前 manifest 不一致显式报错不静默生成、能力开关按配方重放（空 = 默认集）、版本差异以提示说明、design-system 已定制保留语义与交互一致，回写配方刷新版本并补 .gitignore。`--emit-all-legacy` 作为旧路径批量预览的规范名落地（`--emit` 保留为别名）。ruletest 实测：交互生成 → 清空目录 → 按配方重放，产物与基线逐字节一致；伪造 1.40.0 旧配方（仅 profile_id）反查重放 reactOnly 成功。6 个重放单元测试（逐字节还原/旧配方反查/篡改报错/能力子集/约束拒绝/空配方报错），197 测试全绿，`--check` 通过，版本保持 1.51.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 | RULE-20260906-P2S6 | 组合内核阶段 5：子规则槽位机制与 electron 内容收敛 | 生成器支持子规则骨架槽位：`Subrule.slots`（文件级）/ `Profile.slots`（旧路径）/ `CompositionPlan.Slots`（组件并集）三级取值，`ApplyFileSlots` 渲染期替换并以残留占位硬报错兜底。electron 家族 8 份按 backend 味道分化的文件收敛为 4 份骨架（frontend-react/vue-AGENTS.md + design-system-react/vue.yaml，react 对 5+3 槽位、vue 对 5+8 槽位，共消除约 1100 行重复），dotnet/main 槽位值由前端组件与旧 Profile 提供。计划内内容变更：2 份 design-system 的 `use-rule` 旧名修正为 `use-ai-rule`（首次随 1.52.0 生成生效）。版本 1.51.0 → 1.52.0。验证：28 兼容样例等价全绿、emit 161 个差异文件逐一核验均为计划内差异（版本戳 + 旧名修正）、ruletest 真实生成（web 分离路径 + electron 骨架槽位路径）版本还原后与基线逐字节一致。197 测试全绿 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
 | UPG-20260906-1 | 第二梯队：--upgrade 项目升级（本地修改检测） | 配方记录增补 `file_hashes`（生成内容 SHA256，向后兼容：交互/classic/wizard/重放四条路径统一写入）；`RecipeReplayer.PlanUpgrade` 比对磁盘哈希识别本地修改过的文件，默认保留只更新未修改文件（保留文件沿用旧哈希，下次升级仍可检测），`--force` 全部覆盖并重算哈希；早期配方无哈希时降级为「按配方直接重放」并明确提示。新增 `--upgrade [目录] [--force]` 命令。ruletest 实测完整闭环：生成 → 本地改 2 文件 → 升级保留修改写入其余 8 个 → force 覆盖并刷新哈希 → 再升级幂等。4 个新单元测试（未修改全更新/修改保留沿用旧哈希/旧配方不可检测/哈希一致性），201 测试全绿，生成内容零漂移，版本保持 1.52.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| UPG-20260906-2 | 第二梯队：self-contained 交付（mac/linux 与 CI） | 发布从 win-x64 框架相关改为三平台 self-contained 单文件矩阵（win-x64 / linux-x64 / osx-x64，目标机无需 .NET 运行时）：`publish.ps1` 支持 `-Rids` 矩阵参数与 `-FrameworkDependent` 回退，产物命名 `dist/use-ai-rule-<rid>`（win-x64 额外保留 `dist/use-ai-rule.exe` 兼容别名）；新增 `app/RuleAssembler/publish.sh`（Linux/mac/CI 入口，RID 语义与 ps1 一致，`.gitattributes` 强制 `*.sh` LF）；`build-use-ai-rule.bat` 默认快速打 win-x64、传参 `all` 打全矩阵；Gitee Go CI 新增「self-contained 发布矩阵 + linux 产物跑 `--check` 冒烟」两步，push 触发补 `guided-wizard-detect`；目标项目 gitignore 模板增补无扩展名 `use-ai-rule` 条目（mac/linux 本体），规则文件内容不变、版本保持 1.52.0。验证：本地三平台发布产物齐全（各约 75MB），win 产物独立运行 `--check` 通过，201 测试全绿 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| UPG-20260906-3 | 第二梯队：规则效果反馈闭环（命中/违反回传 fragments） | 生成规则内置反馈机制：`collaboration-AGENTS.md` 新增「规则效果反馈」小节（违反/冲突/缺失/有用四类条目，记入目标项目根目录 `.ai-rule-feedback.md`，长期登记不清理、随项目提交，与「重复问题回顾」的本地落实衔接），根文件触发式协作规则同步提示该章节；仓库侧新增 `doc/规则效果反馈承接.md`（收集 → 登记 → 按 §2.4 归属 → 改 fragments → 验证升版 → 回执到原反馈文件，`--upgrade` 闭环），仓库根 `AGENTS.md` 增承接段。新增 `EveryProfile_CollaborationRule_ContainsFeedbackLoop` 断言 28 Profile 全覆盖。规则内容变更 1.52.0 → 1.53.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-TAURI | 家族组件化第一批：Tauri 家族拆解与 vueTauri 解锁 | reactTauriExe 从「整仓 form 组件」拆为维度组件（`tauri-desktop-shell` + `tauri-frontend-react` / `tauri-frontend-vue` + `tauri-backend-rust`；react / vue 差异仅 subrule-index 前端行 1 处槽位 `tr-subr-2`）。backend 维度新增 `rust` 取值：reactTauriExe traits 由权宜复用的 `go` 修正为 `rust`（存量配方 `--upgrade` 时按组件集不一致显式报错，引导重新生成而非静默错乱）。backend / doc / infra 三份片段迁至 `shared/skeletons/tauri/` 双路径共用；新增 vueTauri Profile（Vue 3 + Tailwind + Radix Vue + TanStack Query Vue + Pinia + VeeValidate）与 `arch/vueTauri` 前端、设计系统基线。检测器 `tauri.conf.json` 补 backend=rust 证据，react / vue 双向收敛到对应 Profile。组件 37 → 40、Profile 28 → 29、兼容样例 28 → 29；`--check` 新旧两条渲染路径逐字节等价全绿，207 测试通过。规则内容变更（新增 Profile + 全量版本戳）1.53.0 → 1.54.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-DNW1 | dotnet Web 家族组件化第一批：纯后端分层/单层与 Blazor 全栈（保等价） | dotnet-layered / dotnet-core-single 由整仓 form 组件改为 backend 组件（`dotnet-backend-layered` / `dotnet-backend-single`，when 收敛为 form=backend-only + backend=dotnet + arch-style 三维，root 与文件零改动）；dotnetBlazor / dotnetBlazorWebApp 拆为 `web-frontend-blazor-traditional` / `web-frontend-blazor-webapp`（按 blazor-flavor 分叉，各持全量 root 与 ui-AGENTS.md）+ `web-backend-blazor`（两形态共用 backend / doc / infra 与 design-system）。组件 40 → 41（form 18 → 14、frontend 12 → 14、backend 8 → 9），Profile / 兼容样例保持 29；`--check` 两条渲染路径逐字节等价全绿，209 测试通过（新增纯后端 dotnet 与 Web Blazor 问答路径用例）。纯结构变更，生成内容零漂移，版本保持 1.54.0。下一步：reactLinkdotNet-ai 组件化与 web+layered 维度互换解锁 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-DNW2 | dotnet Web 家族组件化第二批：arch-style 成为 web+dotnet 真实维度，解锁分层/单项目互换 | reactLinkdotNet / vueLinkdotNet 归位为 arch-style=layered（其后端内容本就是多项目 Clean Architecture，原 single 标签是维度引入时的占位，与 tauri 的 backend=go 同类；存量配方 --upgrade 按组件集不一致显式引导重新生成）；新增 reactLinkdotNetSingle / vueLinkdotNetSingle（单项目整洁架构后端，内容收敛在 shared/skeletons/web-dotnet/backend-single-AGENTS.md，前端组件跨架构复用）与 web-backend-react-single / web-backend-vue-single 组件；检测器对「web + csproj 数量」证据此前无法收敛（layered 证据与 single 样例冲突后按最接近处理），现 3+ csproj 收敛 reactLinkdotNet、单 csproj 收敛 single 变体（AI 与否留待补答）。组件 41 → 43、Profile / 兼容样例 29 → 31，--check 等价全绿，216 测试通过。规则内容变更（新 Profile + desc 更新）1.54.0 → 1.55.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-DNW3 | web+python 分离组合解锁：react/vueLinkPython 落地 | 新增 reactLinkPython / vueLinkPython（React/Vue SPA + FastAPI 分离部署）与 web-python-shell、web-frontend-python-react/vue、web-backend-python-react/vue 五个组件；arch/python/backend-AGENTS.md 的「阶段」标题与入场要求槽位化（{{slot:py-stage-*}}），纯后端（阶段 1）与 web（阶段 2）两种阶段编号共用同一份后端内容，python Profile 与 form 组件补旧值保持逐字节等价；web 前端组件的后端口径槽位（wb-unde-1 / wb-sc-search_n / subrule-index backend 行）从前端组件迁移到后端组件持有，dotnet 四后端接收原值、python 后端提供 Python 措辞——前端措辞与后端措辞自此按组件归属分家，可跨后端栈复用。检测器对「前端工程 + pyproject」组合此前无候选可收敛，现直接命中 react/vueLinkPython。组件 43 → 48、Profile / 兼容样例 31 → 33，--check 等价全绿。规则内容变更（新 Profile）1.55.0 → 1.56.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260906-CONST | 约束化可行性判定收尾：钳制关系写全并接入问答剪枝 | manifest constraints 从 2 条扩到 25 条，从全部 33 个兼容样例推导并程序化校验零冲突：壳 ↔ 后端（tauri→rust、wails→go、electron 仅 dotnet / 主进程并禁 go/rust/python/node）、形态钳制（纯后端无前端无壳、web / 移动无壳、静态站限定 html 无后端）、前端归位（blazor→web+dotnet、avalonia/wpf/console/flutter/maui 的形态与后端、layered 仅 dotnet）、桌面 react/vue 禁无壳。引擎：CompositionPlanner 抽出 SatisfiesConstraints（forbid 立即生效、require 只对已回答维度生效的部分选择语义），SelectionEngine.IsViable 先过钳制约束再做样例剪枝——约束成为不依赖样例清单的独立防线，--plan 与组合解析对违反钳制的组合保持显式报错。纯结构与代码变更（剪枝行为与样例推导一致，零行为回归），版本保持 1.56.0；--check 33 样例等价全绿，225 测试通过（新增 3 个约束违反用例） | 已完成验证 | ZCode | DONE | 高 | 2026-09-06 |
+| RULE-20260907-NUXT | 前端×node 矩阵补格：Nuxt 3 全栈（nuxtFullstack） | 补齐 vue×node 缺格（react 侧已有 nextFullstack，node 选项语义即「Node 全栈」）：新增 nuxtFullstack Profile 与整仓 form 组件（Nuxt 3 文件路由 / Nitro server routes / server-utils 分层 / Prisma / VeeValidate+Zod / Pinia 轻状态 / @nuxt/fonts），五份片段在 arch/nuxtFullstack/ 独立成套（与 nextFullstack 同构互不共享，按 reactLinkdotNet-ai 同口径保留整仓，待第三个同构全栈成员出现再拆骨架）；检测器新增 nuxt.config.ts / package.json 依赖 nuxt 特征（web + vue + node 三证据直接收敛，PackageJsonWithoutBackend 排除 Nuxt）。Profile / 兼容样例 33 → 34、组件 48 → 49，--check 等价全绿。规则内容变更（新 Profile）1.56.0 → 1.57.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-07 |
 
 ## 1. 当前目标
 
-当前生成器仍然以 `Profile` 为组合和检测的最终单位。近期不立即删除现有 Profile，而是先完成低风险改造，并为完整组件化保留稳定入口。
+组合内核已全量落地：问答 / 检测 / 补答均产出 `Selection` 走 `CompositionPlanner` 与组合渲染路径；`Profile` 保留为旧渲染入口与兼容样例锚点（`--check` 对全部样例做两条渲染路径的逐字节等价比对）。manifest 的 `components` / `constraints` / `compatibilityCases` 是维度组合的事实来源，25 条钳制约束已接入问答剪枝；新增技术栈的边际成本是「加组件 + 证据映射 + 测试」。
 
-本任务的目标顺序：
-
-```text
-现有 Profile 兼容基线
-    -> 结构化输出声明
-    -> 部分检测结果与补答
-    -> doc / infra / AI / design-system 能力开关
-    -> 完整 Selection -> Component -> CompositionPlan（按触发条件启动）
-```
-
-当前交互要逐步靠近：
+当前交互口径：
 
 ```text
 Q1 形态：Web 前后端分离 / 桌面 / 移动 / 纯后端 / 通用
 Q2 前端：无 / React / Vue / Blazor / 静态 HTML（按形态追加已有技术栈，桌面追加 Avalonia / WPF / 控制台）
-Q3 后端：无 / .NET 分层 / .NET 单层 / Python FastAPI / Go(Wails)
-Q4 壳：桌面或混合应用时显示 Tauri / Wails / Electron
+Q3 壳：桌面或混合应用时显示 Tauri / Wails / Electron
+Q4 后端：无 / .NET 分层 / .NET 单层 / Python FastAPI / Go（Wails）/ Rust（Tauri）/ Node（Next.js / Nuxt 全栈）（选壳后仅问该壳下的分歧，如 Electron 的 主进程 vs .NET sidecar；Web 形态按前后端栈组合追问架构分层）
 Q5 能力：doc、infra 默认勾选；AI、design-system 按能力和场景选择
     -> 汇总确认
     -> 列出实际生成文件
@@ -52,6 +53,10 @@ Q5 能力：doc、infra 默认勾选；AI、design-system 按能力和场景选�
 “默认勾选”只适用于 Q5 能力，不代表存在默认技术栈组合。证据不足时不得隐式补出一个 Profile。
 
 2026-09-04 问答顺序调整为「前端先于后端」：原生桌面（Avalonia / WPF / 控制台）与混合壳（Electron / Wails / Tauri）的分歧在界面维度，先问后端会让 C# 桌面用户的「.NET」回答进入 Electron 分支、Avalonia / WPF 选项永不出现；先问界面后，原生桌面组合直接收敛，后端问题只对混合壳与 Web 形态出现。
+
+2026-09-06 reactLinkdotNet-ai 暂保留整仓 form 组件：其 root 发散覆盖 extra-sections / intro-quote / verify-quote / 阅读顺序等整套「AI Agent 产品 MVP」人设，前端/后端/doc/infra 文件也整体独立于 reactLinkdotNet；拆成 AI 骨架 + 组件只是换标签、无内容共享与互换收益。待出现第二个 AI 变体（如 vueLinkdotNet-ai）再抽 AI 骨架，届时两份人设的差异面才真实可见。与原生桌面家族「选前端即收敛、整仓合理」同一口径。
+
+2026-09-06 问答顺序再调整为「壳先于后端」（形态 → 前端 → 壳 → 后端）：混合壳桌面下后端一答完候选即唯一，壳问题从未真正出现过，Electron 自 1.39 移除 frontend=electron 取值后在问答里没有任何显式选项，用户只能靠「无后端」间接落进去；把壳问题提前后，桌面 + React/Vue 会先显示 Electron / Tauri / Wails 选项，选 Electron 后后端问题只区分主进程（无后端）与 .NET sidecar。「无后端」文案同步补充桌面壳主进程口径。
 
 ## 2. 不可破坏的扩展口
 
@@ -281,7 +286,7 @@ P1 新增能力选择不能直接用旧的“输出全部 Profile”命令表达
 
 ### 5. P2 完整组合内核
 
-P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile 组件化 → Selection 入口切换 → 配方重放 → 内容收敛），见 RULE-20260906-P2S1 至 P2S6；当前规则版本 1.52.0。收尾评估与后续方向：
+P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile 组件化 → Selection 入口切换 → 配方重放 → 内容收敛），见 RULE-20260906-P2S1 至 P2S6；当前规则版本 1.53.0。收尾评估与后续方向：
 
 1. ~~增加 `Selection`、`Component`、`Constraint`、`CompositionPlan` 和 `CompositionPlanner`，保留旧 Profile 渲染路径。~~（已完成）
 2. ~~将全部 Profile 迁移为组件，`compatibilityCases` 覆盖 28/28。~~（已完成）
@@ -289,7 +294,7 @@ P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile �
 4. ~~配方记录 `selection + component_ids + features`；`--recipe` / `--emit-all-legacy`。~~（已完成）
 5. ~~内容收敛：electron 家族 8 份按味道分化文件 → 4 份骨架 + 槽位（约 1100 行重复消除）。~~（已完成；wails/web 分离的 frontend 差异是 react/vue 框架维度而非 backend 维度，属合理差异不强收敛）
 6. `profiles` 节点评估：**保留**。它仍是三件事的事实来源——检测器候选过滤（ProjectDetector 按 traits 收敛推荐）、经典兼容入口、`--emit-all-legacy` 回归基线；组件等价校验保证两条路径产物一致，删除无收益且破坏回归能力。待检测器与经典入口也切换到组件口径后（远期）再评估。
-7. 第二梯队（已启动，见 UPG-20260906-1）：~~目标项目 `--upgrade`（配方 + 内容哈希检测本地修改）~~（已完成）；待办：self-contained 交付（覆盖 mac/linux 与 CI）、规则效果闭环（命中/违反反馈回 fragments）。
+7. 第二梯队（已全部完成，见 UPG-20260906-1 / UPG-20260906-2 / UPG-20260906-3）：~~目标项目 `--upgrade`（配方 + 内容哈希检测本地修改）~~（已完成）；~~self-contained 交付（覆盖 mac/linux 与 CI）~~（已完成：三平台 self-contained 单文件矩阵 + CI 发布与冒烟）；~~规则效果闭环~~（已完成：目标项目 `.ai-rule-feedback.md` 登记 + `doc/规则效果反馈承接.md` 承接，1.53.0）。
 
 P2 的完成标准是：新增常规前端、后端、壳或能力模块时，不需要复制完整 Profile，也不需要修改渲染器核心分发流程。
 
@@ -301,9 +306,9 @@ P2 的完成标准是：新增常规前端、后端、壳或能力模块时，�
 - `ManifestLoader.MergeFamilyDefaults` 在 JSON 层做 family rootDefaults 继承，新的结构化输出字段不能破坏该过程。
 - `OutputWriter.WriteFiles` 自带 staging、backup 和回滚；配方记录必须在规则文件写入成功后再写。
 - 预设产物回归基线：`dotnet run --project app/RuleAssembler -- --emit D:/tmp/rules-before`；该命令当前只用于旧 Profile 预览，不写配方记录。
-- 当前共有 28 个 Profile（1.43.0 批次与 reactElectron / vueElectron / dotnetBlazorWebApp 等后续新增），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；组合内核阶段 1 新增 `RuleRenderer.Plan(manifest, plan, features)` 组合入口，两条路径共用统一渲染核心，`--check` 保证兼容样例逐字节等价。
+- 当前共有 34 个 Profile（1.43.0 批次与 reactElectron / vueElectron / dotnetBlazorWebApp 及后续 Tauri 双前端、web 单项目、web+python、Nuxt 等新增），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；组合路径入口是 `RuleRenderer.Plan(manifest, plan, features)`，两条路径共用统一渲染核心，`--check` 保证兼容样例逐字节等价。
 - 当前有 `core`、`ai-capability`（.NET 后端口径）和 `ai-capability-frontend`（浏览器侧口径）三个顶层 module，不能把现状 module 数量误认为已经完成组件化。
-- 组合内核阶段 1 已落地：manifest 的 `components` / `constraints` / `compatibilityCases` 由 `CompositionPlanner` 消费；组件根骨架通过 `{{slot:x}}` 槽位注入 backend 差异，组件间覆盖同一根字段、同名输出、重复槽位都会报错。为既有组合补组件时，必须先在 `compatibilityCases` 加样例，让 `--check` 的逐字节等价校验兜底。
+- 组合内核阶段 1-5 已全部落地：manifest 的 `components` / `constraints` / `compatibilityCases` 由 `CompositionPlanner` 消费；组件根骨架通过 `{{slot:x}}` 槽位注入 backend 差异，组件间覆盖同一根字段、同名输出、重复槽位都会报错。为既有组合补组件时，必须先在 `compatibilityCases` 加样例，让 `--check` 的逐字节等价校验兜底。
 - 当前 `Subrule.sources` 已支持多源拼接，但只有显式声明时才能合并；重复输出不得静默覆盖。
 - 允许修改 `fragments/manifest.json` 和新增模块元数据；禁止为了完成 P1 无计划地重写已有规则正文。
 - Windows / PowerShell 文档和命令中禁止使用 `&&` 链式命令；新增注释统一使用中文。

@@ -2,11 +2,11 @@
 # 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
 # status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
 # 面向人和 AI 共同使用：可读、可解析、非可执行、易于比对
-# 技术栈：.NET（版本以仓库 TargetFramework 为准）+ WPF + Wpf.Ui + CommunityToolkit.Mvvm
+# 技术栈：.NET（版本以仓库 TargetFramework 为准）+ WPF + WPF-UI + CommunityToolkit.Mvvm
 
 meta:
   name: "WPF 桌面端设计系统"
-  version: "3.0.0"
+  version: "3.1.0"
   status: "基线待定制"
   platform: "Desktop"
   owners:
@@ -15,7 +15,7 @@ meta:
   tech_stack:
     runtime: ".NET（版本以仓库 TargetFramework 为准）"
     ui_framework: "WPF (Windows Presentation Foundation)"
-    component_library: "Wpf.Ui (WPF UI by lepo.co)"
+    component_library: "WPF-UI (lepoco；程序集命名空间 Wpf.Ui)"
     mvvm: "CommunityToolkit.Mvvm"
     data_access: "Dapper + SQLite / PostgreSQL / 其他（按项目选择，可选）"
     messaging: "IMessenger"
@@ -50,7 +50,7 @@ product:
 
 design_principles:
   - "Fluent Design 为主，保持简洁、克制、可依赖"
-  - "统一使用浅色主题作为默认主题，深色主题通过 Wpf.Ui 内置支持切换"
+  - "统一使用浅色主题作为默认主题，深色主题通过 WPF-UI 内置支持切换"
   - "主流程优先，次级信息弱化，危险操作显著区分"
   - "所有用户可见状态必须可解释：成功、失败、为空、加载中"
 
@@ -213,8 +213,8 @@ resources:
     controls: "Assets/Styles/Controls/*.xaml"
     global: "Assets/Styles/Global.xaml"
   wpfui_integration:
-    themes_dictionary: "xmlns:ui='http://schemas.lepo.co/wpfui/2024/xaml' 中 <ui:ThemesDictionary>"
-    controls_dictionary: "xmlns:ui='http://schemas.lepo.co/wpfui/2024/xaml' 中 <ui:ControlsDictionary>"
+    themes_dictionary: "xmlns:ui='http://schemas.lepo.co/wpfui/2022/xaml' 中 <ui:ThemesDictionary>"
+    controls_dictionary: "xmlns:ui='http://schemas.lepo.co/wpfui/2022/xaml' 中 <ui:ControlsDictionary>"
     theme_mode: "Wpf.Ui.Appearance.ApplicationThemeManager.ApplySystemTheme()"
   naming:
     brush_prefix: "Brush."
@@ -266,17 +266,17 @@ page_states:
 
 icons:
   source:
-    primary: "Wpf.Ui SymbolIcon (ui:SymbolIcon)"
+    primary: "WPF-UI SymbolIcon (ui:SymbolIcon)"
     secondary: "矢量图标 / 素材图片"
   wpfui_symbols:
-    description: "Wpf.Ui 内置 Fluent 图标系统，通过 SymbolIcon 控件使用"
+    description: "WPF-UI 内置 Fluent 图标系统，通过 SymbolIcon 控件使用"
     usage: "<ui:SymbolIcon Symbol='Home24' />"
     symbol_naming: "图标名 + 尺寸后缀，如 Home24、Settings24、Delete24"
   rules:
     - "图标尺寸优先使用 16、20、24"
     - "同一页面中的图标风格必须一致"
     - "业务图标优先语义明确，不使用纯装饰性图标堆砌"
-    - "优先使用 Wpf.Ui SymbolIcon，减少自定义图标资源"
+    - "优先使用 WPF-UI SymbolIcon，减少自定义图标资源"
 
 navigation:
   wpfui_implementation:
@@ -290,7 +290,7 @@ navigation:
         </ui:NavigationView.MenuItems>
       </ui:NavigationView>
   rules:
-    - "使用 Wpf.Ui 的 NavigationView 进行页面切换"
+    - "使用 WPF-UI 的 NavigationView 进行页面切换"
     - "导航逻辑封装在 NavigationService 中"
     - "页面参数通过导航消息或导航参数对象传递"
     - "支持前进、后退与当前页面高亮"
@@ -311,7 +311,7 @@ dialogs:
           }
       );
   rules:
-    - "统一使用 Wpf.Ui ContentDialog 或 MessageBox 组件"
+    - "统一使用 WPF-UI ContentDialog 或 MessageBox 组件"
     - "对话框内容必须绑定独立 ViewModel"
     - "结果通过 TaskCompletionSource 或服务封装异步返回"
     - "危险操作对话框必须突出后果与确认动作"
@@ -332,8 +332,8 @@ forms:
 
 tables:
   wpfui_implementation:
-    control: "ui:DataGrid (Wpf.Ui 增强版) 或 WPF 原生 DataGrid"
-    notes: "Wpf.Ui 对 DataGrid 提供了 Fluent 风格样式覆盖"
+    control: "ui:DataGrid (WPF-UI 增强版) 或 WPF 原生 DataGrid"
+    notes: "WPF-UI 对 DataGrid 提供了 Fluent 风格样式覆盖"
   rules:
     - "表头固定语义清晰，避免缩写难懂"
     - "行高以 40-44 为基准，支持紧凑模式"
@@ -342,7 +342,7 @@ tables:
 
 cards:
   wpfui_implementation:
-    control: "ui:Card / ui:CardAction (Wpf.Ui 提供)"
+    control: "ui:Card / ui:CardAction (WPF-UI 提供)"
   rules:
     - "卡片用于聚合信息，不代替页面主结构"
     - "卡片标题、说明、操作区分层清晰"
@@ -387,7 +387,7 @@ mvvm:
   dependency_injection:
     rule:
       - "ViewModel、Service、Repository 通过构造函数注入依赖"
-      - "服务通过 RegisterBusinessServices 批量注册"
+      - "服务按标记接口生命周期显式注册（RegisterBusinessServices 属 Azrng.AspNetCore.Core，桌面项目不使用）"
 
 accessibility:
   rules:
@@ -411,7 +411,7 @@ testing:
 do:
   - "使用 WPF ResourceDictionary (.xaml) 管理视觉规则"
   - "使用语义化资源名称，而不是直接使用原始色值"
-  - "使用 Wpf.Ui 控件优先构建导航、对话框、基础控件体验"
+  - "使用 WPF-UI 控件优先构建导航、对话框、基础控件体验"
   - "使用 ui:FluentWindow 作为窗口基类"
   - "让主界面左上角显示应用图标和应用名称"
   - "让所有可见按钮、菜单、操作入口都具备真实交互"

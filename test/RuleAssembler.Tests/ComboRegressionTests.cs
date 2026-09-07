@@ -53,14 +53,15 @@ public sealed class ComboRegressionTests : IDisposable
                 "{\"dependencies\":{\"react\":\"^18.0.0\"}}");
         });
 
-        // Web 工程 + 前端依赖 → form=web；单层 .NET + React 同时匹配 AI 与非 AI 两个 Profile，
+        // Web 工程 + 前端依赖 → form=web；单 csproj → arch-style=single，
+        // 单项目 .NET + React 同时匹配 AI 与非 AI 两个 Profile，
         // ai 维度无证据 → 部分结果交由补答，不得隐式二选一
         Assert.False(result.Converged);
         Assert.Null(result.LegacyProfileId);
         Assert.Contains("ai-capability", result.Unconfirmed);
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet");
+        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNetSingle");
         Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet-ai");
-        var profile = Assert.Single(result.Candidates, item => item.Id == "reactLinkdotNet");
+        var profile = Assert.Single(result.Candidates, item => item.Id == "reactLinkdotNetSingle");
         var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
         Assert.Contains(files, file => file.Output == "frontend-AGENTS.md");
         Assert.Contains(files, file => file.Output == "backend-AGENTS.md");
@@ -331,9 +332,9 @@ public sealed class ComboRegressionTests : IDisposable
     [Fact]
     public void Combo_AllProfiles_DefaultFeatureRenderIsStable()
     {
-        // 26 个 Profile 全量样例：默认能力集渲染、契约校验全部通过，
+        // 29 个 Profile 全量样例：默认能力集渲染、契约校验全部通过，
         // 旧 Profile 产物级零漂移由 --emit 基线对比与 Defaults_MatchLegacyPlan 共同保证
-        Assert.Equal(28, _manifest.Profiles.Count);
+        Assert.Equal(34, _manifest.Profiles.Count);
         foreach (var profile in _manifest.Profiles)
         {
             var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));

@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.35.0
-last_updated: 2026-09-02
+version: 1.60.0
+last_updated: 2026-09-07
 dependencies: [agents-root]
 ---
 
@@ -30,7 +30,7 @@ dependencies: [agents-root]
   - `ITransientDependency`：临时注入
   - `IScopedDependency`：作用域注入
   - `ISingletonDependency`：单例注入
-- 在 `Program.cs` 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
+- 在 `Program.cs` 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务（扩展由 `Azrng.AspNetCore.Core` 提供）
 - Blazor Server 中 Scoped 服务基于 SignalR 连接生命周期
 
 <!-- include: shared/application/tech-choice.md -->

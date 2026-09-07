@@ -1,8 +1,8 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.52.0",
-    "last_updated": "2026-09-06"
+    "version": "1.60.0",
+    "last_updated": "2026-09-07"
   },
   "schema_version": 2,
   "line_ending": "LF",
@@ -386,7 +386,7 @@
         "ai-capability": "no"
       }
     },
-    {
+        {
       "id": "python",
       "label": "Python FastAPI 后端",
       "family": "python-backend",
@@ -463,6 +463,10 @@
         "contract-error-line": "阶段 0 输出的接口契约、DTO 或字段说明在阶段 1 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
         "search-nouns": "路由、服务、数据访问、DTO 和测试实现"
       },
+      "slots": {
+        "py-stage-title": "阶段 1 — 后端实现",
+        "py-stage-entry": "阶段 0 设计文档或接口契约已明确；若为例外情况任务，可直接进入实现"
+      },
       "subrules": [
         {
           "source": "arch/python/backend-AGENTS.md",
@@ -490,11 +494,11 @@
         "ai-capability": "no"
       }
     },
-    {
+        {
       "id": "reactLinkdotNet",
       "label": "React + .NET 前后端分离",
       "family": "web-fullstack",
-      "desc": "React SPA（Vite）+ ASP.NET Core API，双工程分离部署",
+      "desc": "React SPA（Vite）+ ASP.NET Core API（多项目 Clean Architecture 后端），双工程分离部署",
       "root": {
         "target-list": [
           "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
@@ -618,16 +622,16 @@
         "backend": "dotnet",
         "frontend": "react",
         "shell": "none",
-        "arch-style": "single",
+        "arch-style": "layered",
         "blazor-flavor": "none",
         "ai-capability": "no"
       }
     },
-    {
+        {
       "id": "vueLinkdotNet",
       "label": "Vue + .NET 前后端分离",
       "family": "web-fullstack",
-      "desc": "Vue 3 SPA（Vite）+ ASP.NET Core API，双工程分离部署",
+      "desc": "Vue 3 SPA（Vite）+ ASP.NET Core API（多项目 Clean Architecture 后端），双工程分离部署",
       "root": {
         "target-list": [
           "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
@@ -736,6 +740,530 @@
         }
       ],
       "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "layered",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "reactLinkPython",
+      "label": "React + Python 前后端分离",
+      "family": "web-fullstack",
+      "desc": "React SPA（Vite）+ FastAPI（Pydantic + SQLAlchemy），双工程分离部署",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、路由、Pydantic schema 或数据模型时 |",
+          {
+            "when": [
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+                "features": [
+                  "doc",
+                  "design-system"
+                ]
+              },
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
+                "features": [
+                  "doc"
+                ]
+              }
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 API 路由、服务、Pydantic schema、SQLAlchemy 模型、调用方和现有测试"
+        ],
+        "search-nouns": "页面、组件、API 路由、Pydantic schema、SQLAlchemy 模型和测试实现"
+      },
+      "slots": {
+        "py-stage-title": "阶段 2 — 后端实现",
+        "py-stage-entry": "前端页面已完成，接口需求已明确"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/python/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/python/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/reactLinkPython/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "python",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "layered",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
+    },
+    {
+      "id": "vueLinkPython",
+      "label": "Vue + Python 前后端分离",
+      "family": "web-fullstack",
+      "desc": "Vue 3 SPA（Vite）+ FastAPI（Pydantic + SQLAlchemy），双工程分离部署",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、路由、Pydantic schema 或数据模型时 |",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   前端实现        →   后端实现         →   联调与交付",
+          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及后端时，已查看相关 API 路由、服务、Pydantic schema、SQLAlchemy 模型、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、API 路由、Pydantic schema、SQLAlchemy 模型和测试实现"
+      },
+      "slots": {
+        "py-stage-title": "阶段 2 — 后端实现",
+        "py-stage-entry": "前端页面已完成，接口需求已明确"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/python/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/python/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/vueLinkPython/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "python",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "layered",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
+    },
+    {
+      "id": "reactLinkdotNetSingle",
+      "label": "React + .NET 前后端分离（单项目后端）",
+      "family": "web-fullstack",
+      "desc": "React SPA（Vite）+ ASP.NET Core API（单项目整洁架构后端），双工程分离部署",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          {
+            "when": [
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+                "features": [
+                  "doc",
+                  "design-system"
+                ]
+              },
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
+                "features": [
+                  "doc"
+                ]
+              }
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
+          "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO / 类型定义、调用方和现有测试"
+        ],
+        "search-nouns": "页面、组件、Controller、Service、Repository、DTO / 类型定义和测试实现"
+      },
+      "subrules": [
+        {
+          "source": "arch/reactLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "shared/skeletons/web-dotnet/backend-single-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/reactLinkdotNet/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml",
+      "traits": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "vueLinkdotNetSingle",
+      "label": "Vue + .NET 前后端分离（单项目后端）",
+      "family": "web-fullstack",
+      "desc": "Vue 3 SPA（Vite）+ ASP.NET Core API（单项目整洁架构后端），双工程分离部署",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   前端实现        →   后端实现         →   联调与交付",
+          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Controller、Service、DTO 和测试实现"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "shared/skeletons/web-dotnet/backend-single-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/vueLinkdotNet/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml",
       "traits": {
         "form": "web",
         "backend": "dotnet",
@@ -1039,6 +1567,138 @@
         "blazor-flavor": "none",
         "ai-capability": "no"
       }
+    },
+    {
+      "id": "nuxtFullstack",
+      "label": "Nuxt 3 全栈",
+      "family": "web-fullstack",
+      "desc": "Nuxt 3（Nitro）+ Prisma，同构全栈单工程",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Nitro Server Routes、Service、Repository、Prisma、服务端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Nuxt 页面与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据库、鉴权、缓存、异常处理、服务端测试 | 涉及 Server Route、Prisma、Service 时 |",
+          {
+            "when": [
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护、设计系统时 |",
+                "features": [
+                  "doc",
+                  "design-system"
+                ]
+              },
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、契约说明时 |",
+                "features": [
+                  "doc"
+                ]
+              }
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、发布链路 | 涉及部署、容器化、环境变量时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   页面与交互实现   →   服务端与数据实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 Server Route、Service、Repository、schema / Prisma、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、Service、Repository、Prisma 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Server Route、Service、Repository、Prisma 与测试实现",
+        "destructive-nouns": "数据库破坏性变更、环境清理"
+      },
+      "subrules": [
+        {
+          "source": "arch/nuxtFullstack/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/nuxtFullstack/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/nuxtFullstack/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "source": "arch/nuxtFullstack/infra-AGENTS.md",
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
+        }
+      ],
+      "designSystem": true,
+      "traits": {
+        "form": "web",
+        "backend": "node",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "designSystemSource": "arch/nuxtFullstack/design-system.yaml"
     },
     {
       "id": "avaloniaExe",
@@ -2271,25 +2931,158 @@
           "output": "frontend-AGENTS.md"
         },
         {
-          "source": "arch/reactTauriExe/backend-AGENTS.md",
-          "output": "backend-AGENTS.md"
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/tauri/backend-AGENTS.md"
+          ]
         },
         {
-          "source": "arch/reactTauriExe/doc-AGENTS.md",
           "output": "doc-AGENTS.md",
-          "feature": "doc"
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/tauri/doc-AGENTS.md"
+          ]
         },
         {
-          "source": "arch/reactTauriExe/infra-AGENTS.md",
           "output": "infra-AGENTS.md",
-          "feature": "infra"
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/tauri/infra-AGENTS.md"
+          ]
         }
       ],
       "designSystem": true,
       "traits": {
         "form": "desktop",
-        "backend": "go",
+        "backend": "rust",
         "frontend": "react",
+        "shell": "tauri",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "id": "vueTauri",
+      "label": "Vue + Tauri 桌面应用",
+      "family": "hybrid-app",
+      "desc": "Vue 3 前端 + Rust 后端（Tauri Command）",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Vue 界面实现与交互时 |",
+          "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Rust / Tauri 实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （Rust 实现角色）        （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、签名或打包脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
+        "task-kind-nouns": "前端、Rust 后端还是基础设施",
+        "destructive-nouns": "数据破坏性变更、环境清理"
+      },
+      "subrules": [
+        {
+          "source": "arch/vueTauri/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/tauri/backend-AGENTS.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/tauri/doc-AGENTS.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/tauri/infra-AGENTS.md"
+          ]
+        }
+      ],
+      "designSystem": true,
+      "traits": {
+        "form": "desktop",
+        "backend": "rust",
+        "frontend": "vue",
         "shell": "tauri",
         "arch-style": "single",
         "blazor-flavor": "none",
@@ -3784,6 +4577,14 @@
         ]
       },
       {
+        "trait": "shell",
+        "question": "桌面壳方案用哪个？",
+        "applies-when-trait": "form",
+        "applies-when-values": [
+          "desktop"
+        ]
+      },
+      {
         "trait": "backend",
         "question": "后端（服务端）用什么技术栈？",
         "applies-when-trait": "form",
@@ -3792,10 +4593,6 @@
           "web",
           "desktop"
         ]
-      },
-      {
-        "trait": "shell",
-        "question": "桌面壳方案用哪个？"
       },
       {
         "trait": "arch-style",
@@ -3853,13 +4650,17 @@
           "label": "Go",
           "desc": "Go 服务端（Wails 桌面）"
         },
+        "rust": {
+          "label": "Rust",
+          "desc": "Rust 服务端（Tauri 桌面）"
+        },
         "node": {
           "label": "Node.js",
-          "desc": "Node 服务端（Next.js 全栈）"
+          "desc": "Node 服务端（Next.js / Nuxt 全栈）"
         },
         "none": {
           "label": "无后端",
-          "desc": "纯前端 SPA 或静态页面，无独立服务端"
+          "desc": "无独立服务端：纯前端 SPA、静态页面或桌面壳主进程本地逻辑"
         }
       },
       "frontend": {
@@ -4990,6 +5791,180 @@
       ]
     },
     {
+      "id": "tauri-desktop-shell",
+      "kind": "shell",
+      "label": "Tauri 桌面骨架",
+      "desc": "Tauri 桌面组合的根骨架：react / vue 差异经槽位注入",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust"
+      },
+      "family": "hybrid-app",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "{{slot:tr-subr-2}}",
+          "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                   阶段 3",
+          "设计文档   →   前端实现        →   Rust / Tauri 实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （Rust 实现角色）        （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、签名或打包脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
+          "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
+        "task-kind-nouns": "前端、Rust 后端还是基础设施",
+        "destructive-nouns": "数据破坏性变更、环境清理"
+      }
+    },
+    {
+      "id": "tauri-frontend-react",
+      "kind": "frontend",
+      "label": "Tauri + React 界面",
+      "desc": "Tauri + React 的界面组件（reactTauriExe）",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust",
+        "frontend": "react"
+      },
+      "slots": {
+        "tr-subr-2": "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 React 界面实现与交互时 |"
+      },
+      "files": [
+        {
+          "source": "arch/reactTauriExe/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        }
+      ],
+      "designSystemSource": "arch/reactTauriExe/design-system.yaml"
+    },
+    {
+      "id": "tauri-frontend-vue",
+      "kind": "frontend",
+      "label": "Tauri + Vue 3 界面",
+      "desc": "Tauri + Vue 3 的界面组件（vueTauri）",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust",
+        "frontend": "vue"
+      },
+      "slots": {
+        "tr-subr-2": "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Vue 界面实现与交互时 |"
+      },
+      "files": [
+        {
+          "source": "arch/vueTauri/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        }
+      ],
+      "designSystemSource": "arch/vueTauri/design-system.yaml"
+    },
+    {
+      "id": "tauri-backend-rust",
+      "kind": "backend",
+      "label": "Rust 宿主后端（Tauri Command）",
+      "desc": "Tauri 桌面组合的后端组件",
+      "when": {
+        "form": "desktop",
+        "shell": "tauri",
+        "backend": "rust"
+      },
+      "files": [
+        {
+          "output": "backend-AGENTS.md",
+          "sources": [
+            "shared/skeletons/tauri/backend-AGENTS.md"
+          ]
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/tauri/doc-AGENTS.md"
+          ]
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/tauri/infra-AGENTS.md"
+          ]
+        }
+      ]
+    },
+    {
       "id": "web-dotnet-shell",
       "kind": "shell",
       "label": ".NET 前后端分离骨架",
@@ -5067,7 +6042,7 @@
         "search-nouns": "{{slot:wb-sc-search_n}}"
       }
     },
-    {
+        {
       "id": "web-frontend-react",
       "kind": "frontend",
       "label": "React 前端（.NET 分离）",
@@ -5083,16 +6058,354 @@
         "wb-targ-3": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
         "wb-dev_-4": "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
         "wb-dev_-5": "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
-        "wb-unde-0": "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
-        "wb-unde-1": "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO / 类型定义、调用方和现有测试",
-        "wb-sc-search_n": "页面、组件、Controller、Service、Repository、DTO / 类型定义和测试实现"
+        "wb-unde-0": "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式"
       },
       "root": {
         "subrule-index": [
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
-          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          "{{slot:wb-subr-be}}",
+          {
+            "when": [
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护或设计系统时 |",
+                "features": [
+                  "doc",
+                  "design-system"
+                ]
+              },
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或契约说明时 |",
+                "features": [
+                  "doc"
+                ]
+              }
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ]
+      },
+      "files": [
+        {
+          "source": "arch/reactLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        }
+      ],
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
+    },
+        {
+      "id": "web-frontend-vue",
+      "kind": "frontend",
+      "label": "Vue 3 前端（.NET 分离）",
+      "desc": "Web 前后端分离 Vue 3 的界面组件（vueLinkdotNet）",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "shell": "none",
+        "frontend": "vue",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wb-targ-3": "- `doc-AGENTS.md`：设计文档、契约说明",
+        "wb-dev_-4": "设计文档   →   前端实现        →   后端实现         →   联调与交付",
+        "wb-dev_-5": "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+        "wb-unde-0": "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式"
+      },
+      "root": {
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "{{slot:wb-subr-be}}",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、构建打包链路 | 涉及部署、容器化、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段"
+      },
+      "files": [
+        {
+          "source": "arch/vueLinkdotNet/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        }
+      ],
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
+    },
+        {
+      "id": "web-backend-react",
+      "kind": "backend",
+      "label": ".NET 后端（React 分离变体）",
+      "desc": "Web 前后端分离 .NET 后端组件（reactLinkdotNet）",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "shell": "none",
+        "frontend": "react",
+        "arch-style": "layered",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wb-unde-1": "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO / 类型定义、调用方和现有测试",
+        "wb-sc-search_n": "页面、组件、Controller、Service、Repository、DTO / 类型定义和测试实现",
+        "wb-subr-be": "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |"
+      },
+      "files": [
+        {
+          "source": "arch/reactLinkdotNet/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/reactLinkdotNet/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ]
+    },
+        {
+      "id": "web-backend-vue",
+      "kind": "backend",
+      "label": ".NET 后端（Vue 分离变体）",
+      "desc": "Web 前后端分离 .NET 后端组件（vueLinkdotNet）",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "shell": "none",
+        "frontend": "vue",
+        "arch-style": "layered",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wb-unde-1": "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO、调用方和现有测试",
+        "wb-sc-search_n": "页面、组件、Controller、Service、DTO 和测试实现",
+        "wb-subr-be": "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |"
+      },
+      "files": [
+        {
+          "source": "arch/vueLinkdotNet/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/vueLinkdotNet/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ]
+    },
+        {
+      "id": "web-backend-react-single",
+      "kind": "backend",
+      "label": ".NET 单项目后端（React 分离变体）",
+      "desc": "Web 前后端分离 + .NET 单项目整洁架构的后端组件（reactLinkdotNetSingle）",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "shell": "none",
+        "frontend": "react",
+        "arch-style": "single",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wb-unde-1": "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO / 类型定义、调用方和现有测试",
+        "wb-sc-search_n": "页面、组件、Controller、Service、Repository、DTO / 类型定义和测试实现",
+        "wb-subr-be": "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |"
+      },
+      "family": "web-fullstack",
+      "files": [
+        {
+          "source": "shared/skeletons/web-dotnet/backend-single-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/reactLinkdotNet/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ]
+    },
+        {
+      "id": "web-backend-vue-single",
+      "kind": "backend",
+      "label": ".NET 单项目后端（Vue 分离变体）",
+      "desc": "Web 前后端分离 + .NET 单项目整洁架构的后端组件（vueLinkdotNetSingle）",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "shell": "none",
+        "frontend": "vue",
+        "arch-style": "single",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wb-unde-1": "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO、调用方和现有测试",
+        "wb-sc-search_n": "页面、组件、Controller、Service、DTO 和测试实现",
+        "wb-subr-be": "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |"
+      },
+      "family": "web-fullstack",
+      "files": [
+        {
+          "source": "shared/skeletons/web-dotnet/backend-single-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "output": "infra-AGENTS.md",
+          "feature": "infra",
+          "sources": [
+            "shared/skeletons/web-dotnet/infra-head.md",
+            "arch/vueLinkdotNet/infra-ports.md",
+            "shared/skeletons/web-dotnet/infra-tail.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "web-python-shell",
+      "kind": "shell",
+      "label": "Python 前后端分离骨架",
+      "desc": "Web 前后端分离（FastAPI）组合的根骨架：react / vue 差异经槽位注入，subrule-index 由前端组件整表持有",
+      "when": {
+        "form": "web",
+        "backend": "python",
+        "shell": "none",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "family": "web-fullstack",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：接口、服务、数据访问、业务逻辑、后端测试",
+          {
+            "line": "{{slot:wb-targ-3}}",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker / 构建 / 打包与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "{{slot:wb-dev_-4}}",
+          "{{slot:wb-dev_-5}}",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据访问、权限控制与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、打包与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "{{slot:wb-unde-0}}",
+          "{{slot:wb-unde-1}}"
+        ],
+        "search-nouns": "{{slot:wb-sc-search_n}}"
+      }
+    },
+    {
+      "id": "web-frontend-python-react",
+      "kind": "frontend",
+      "label": "React 前端（FastAPI 分离）",
+      "desc": "Web 前后端分离 Python 的界面组件（reactLinkPython）",
+      "when": {
+        "form": "web",
+        "backend": "python",
+        "shell": "none",
+        "frontend": "react",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wb-targ-3": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+        "wb-dev_-4": "设计文档   →   界面与功能实现   →   业务与数据实现   →   联调与交付",
+        "wb-dev_-5": "（用户确认）    （界面实现角色）      （业务实现角色）       （协作联调角色）",
+        "wb-unde-0": "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式"
+      },
+      "root": {
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
+          "{{slot:wb-subr-be}}",
           {
             "when": [
               {
@@ -5127,13 +6440,13 @@
       "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
     },
     {
-      "id": "web-frontend-vue",
+      "id": "web-frontend-python-vue",
       "kind": "frontend",
-      "label": "Vue 3 前端（.NET 分离）",
-      "desc": "Web 前后端分离 Vue 3 的界面组件（vueLinkdotNet）",
+      "label": "Vue 3 前端（FastAPI 分离）",
+      "desc": "Web 前后端分离 Python 的界面组件（vueLinkPython）",
       "when": {
         "form": "web",
-        "backend": "dotnet",
+        "backend": "python",
         "shell": "none",
         "frontend": "vue",
         "ai-capability": "no"
@@ -5142,16 +6455,14 @@
         "wb-targ-3": "- `doc-AGENTS.md`：设计文档、契约说明",
         "wb-dev_-4": "设计文档   →   前端实现        →   后端实现         →   联调与交付",
         "wb-dev_-5": "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
-        "wb-unde-0": "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
-        "wb-unde-1": "- 涉及后端时，已查看相关 Controller、Service、Repository、DTO、调用方和现有测试",
-        "wb-sc-search_n": "页面、组件、Controller、Service、DTO 和测试实现"
+        "wb-unde-0": "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式"
       },
       "root": {
         "subrule-index": [
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
           "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及界面实现与交互时 |",
-          "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、服务、Repository 或桥接逻辑时 |",
+          "{{slot:wb-subr-be}}",
           {
             "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
             "features": [
@@ -5176,24 +6487,32 @@
       "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
     },
     {
-      "id": "web-backend-react",
+      "id": "web-backend-python-react",
       "kind": "backend",
-      "label": ".NET 后端（React 分离变体）",
-      "desc": "Web 前后端分离 .NET 后端组件（reactLinkdotNet）",
+      "label": "FastAPI 后端（React 分离变体）",
+      "desc": "Web 前后端分离 Python 后端组件（reactLinkPython）",
       "when": {
         "form": "web",
-        "backend": "dotnet",
+        "backend": "python",
         "shell": "none",
         "frontend": "react",
         "ai-capability": "no"
       },
+      "family": "web-fullstack",
+      "slots": {
+        "wb-unde-1": "- 涉及后端时，已查看相关 API 路由、服务、Pydantic schema、SQLAlchemy 模型、调用方和现有测试",
+        "wb-sc-search_n": "页面、组件、API 路由、Pydantic schema、SQLAlchemy 模型和测试实现",
+        "wb-subr-be": "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、路由、Pydantic schema 或数据模型时 |",
+        "py-stage-title": "阶段 2 — 后端实现",
+        "py-stage-entry": "前端页面已完成，接口需求已明确"
+      },
       "files": [
         {
-          "source": "arch/reactLinkdotNet/backend-AGENTS.md",
+          "source": "arch/python/backend-AGENTS.md",
           "output": "backend-AGENTS.md"
         },
         {
-          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "source": "arch/python/doc-AGENTS.md",
           "output": "doc-AGENTS.md",
           "feature": "doc"
         },
@@ -5202,31 +6521,39 @@
           "feature": "infra",
           "sources": [
             "shared/skeletons/web-dotnet/infra-head.md",
-            "arch/reactLinkdotNet/infra-ports.md",
+            "arch/reactLinkPython/infra-ports.md",
             "shared/skeletons/web-dotnet/infra-tail.md"
           ]
         }
       ]
     },
     {
-      "id": "web-backend-vue",
+      "id": "web-backend-python-vue",
       "kind": "backend",
-      "label": ".NET 后端（Vue 分离变体）",
-      "desc": "Web 前后端分离 .NET 后端组件（vueLinkdotNet）",
+      "label": "FastAPI 后端（Vue 分离变体）",
+      "desc": "Web 前后端分离 Python 后端组件（vueLinkPython）",
       "when": {
         "form": "web",
-        "backend": "dotnet",
+        "backend": "python",
         "shell": "none",
         "frontend": "vue",
         "ai-capability": "no"
       },
+      "family": "web-fullstack",
+      "slots": {
+        "wb-unde-1": "- 涉及后端时，已查看相关 API 路由、服务、Pydantic schema、SQLAlchemy 模型、调用方和现有测试",
+        "wb-sc-search_n": "页面、组件、API 路由、Pydantic schema、SQLAlchemy 模型和测试实现",
+        "wb-subr-be": "| `backend-AGENTS.md` | 服务端逻辑、数据访问、缓存、异常处理、服务端测试 | 涉及接口、路由、Pydantic schema 或数据模型时 |",
+        "py-stage-title": "阶段 2 — 后端实现",
+        "py-stage-entry": "前端页面已完成，接口需求已明确"
+      },
       "files": [
         {
-          "source": "arch/vueLinkdotNet/backend-AGENTS.md",
+          "source": "arch/python/backend-AGENTS.md",
           "output": "backend-AGENTS.md"
         },
         {
-          "source": "arch/reactLinkdotNet/doc-AGENTS.md",
+          "source": "arch/python/doc-AGENTS.md",
           "output": "doc-AGENTS.md",
           "feature": "doc"
         },
@@ -5235,133 +6562,11 @@
           "feature": "infra",
           "sources": [
             "shared/skeletons/web-dotnet/infra-head.md",
-            "arch/vueLinkdotNet/infra-ports.md",
+            "arch/vueLinkPython/infra-ports.md",
             "shared/skeletons/web-dotnet/infra-tail.md"
           ]
         }
       ]
-    },
-    {
-      "id": "reactTauriExe",
-      "kind": "form",
-      "label": "React + Tauri 桌面应用",
-      "desc": "单一组合组件（由 Profile reactTauriExe 等价迁移）",
-      "when": {
-        "form": "desktop",
-        "backend": "go",
-        "frontend": "react",
-        "shell": "tauri",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
-      "family": "hybrid-app",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
-          "- `backend-AGENTS.md`：Tauri Command、Rust 服务、数据访问、本地能力、后端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、契约说明",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：环境变量、构建、签名、打包、更新与交付验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 React 界面实现与交互时 |",
-          "| `backend-AGENTS.md` | Tauri Command、Rust 服务、SQLite、本地文件、系统能力、后端测试 | 涉及 `src-tauri/` 或本地能力实现时 |",
-          {
-            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "| `infra-AGENTS.md` | 环境变量、签名、构建、打包、自动更新与交付链路 | 涉及发布、打包、环境变量或交付链路时 |",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "dev-stage": [
-          "### 四个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1            阶段 2                   阶段 3",
-          "设计文档   →   前端实现        →   Rust / Tauri 实现   →   联调与交付",
-          "（用户确认）    （前端实现角色）      （Rust 实现角色）        （协作联调角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量、签名或打包脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
-          "- 阶段 2：Tauri Command、Rust 服务、数据访问、系统能力与测试，细则见 `backend-AGENTS.md`",
-          {
-            "line": "- 阶段 3：联调、构建、启动、打包、签名与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "understanding-checklist": [
-          "- 涉及前端时，已查看相关页面、组件、路由、状态管理、样式资源和现有交互模式",
-          "- 涉及 Rust 后端时，已查看相关 Tauri Command、Rust 服务、SQLite、本地文件访问、调用方和现有测试"
-        ],
-        "contract-error-line": "阶段 1 输出的前端契约、schema、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / DTO 后同步前端、Tauri Command、Rust 服务、数据访问映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、组件、Tauri Command、Rust 服务、SQLite 表结构和测试实现",
-        "task-kind-nouns": "前端、Rust 后端还是基础设施",
-        "destructive-nouns": "数据破坏性变更、环境清理"
-      },
-      "files": [
-        {
-          "source": "arch/reactTauriExe/frontend-AGENTS.md",
-          "output": "frontend-AGENTS.md"
-        },
-        {
-          "source": "arch/reactTauriExe/backend-AGENTS.md",
-          "output": "backend-AGENTS.md"
-        },
-        {
-          "source": "arch/reactTauriExe/doc-AGENTS.md",
-          "output": "doc-AGENTS.md",
-          "feature": "doc"
-        },
-        {
-          "source": "arch/reactTauriExe/infra-AGENTS.md",
-          "output": "infra-AGENTS.md",
-          "feature": "infra"
-        }
-      ],
-      "designSystemSource": "arch/reactTauriExe/design-system.yaml"
     },
     {
       "id": "avaloniaExe",
@@ -5648,18 +6853,14 @@
       ]
     },
     {
-      "id": "dotnet-layered",
-      "kind": "form",
+      "id": "dotnet-backend-layered",
+      "kind": "backend",
       "label": ".NET 分层 API 后端",
-      "desc": "单一组合组件（由 Profile dotnet-layered 等价迁移）",
+      "desc": "纯后端 + .NET + 分层架构组合的后端组件（dotnet-layered）",
       "when": {
         "form": "backend-only",
         "backend": "dotnet",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "layered",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
+        "arch-style": "layered"
       },
       "family": "dotnet-backend",
       "root": {
@@ -5686,18 +6887,14 @@
       ]
     },
     {
-      "id": "dotnet-core-single",
-      "kind": "form",
+      "id": "dotnet-backend-single",
+      "kind": "backend",
       "label": ".NET 单层 API 后端",
-      "desc": "单一组合组件（由 Profile dotnet-core-single 等价迁移）",
+      "desc": "纯后端 + .NET + 单层架构组合的后端组件（dotnet-core-single）",
       "when": {
         "form": "backend-only",
         "backend": "dotnet",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
+        "arch-style": "single"
       },
       "family": "dotnet-backend",
       "root": {
@@ -5724,7 +6921,7 @@
         }
       ]
     },
-    {
+        {
       "id": "python",
       "kind": "form",
       "label": "Python FastAPI 后端",
@@ -5739,6 +6936,10 @@
         "ai-capability": "no"
       },
       "family": "python-backend",
+      "slots": {
+        "py-stage-title": "阶段 1 — 后端实现",
+        "py-stage-entry": "阶段 0 设计文档或接口契约已明确；若为例外情况任务，可直接进入实现"
+      },
       "root": {
         "target-list": [
           "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
@@ -5961,6 +7162,138 @@
       "designSystemSource": "arch/nextFullstack/design-system.yaml"
     },
     {
+      "id": "nuxtFullstack",
+      "kind": "form",
+      "label": "Nuxt 3 全栈",
+      "desc": "单一组合组件（由 Profile nuxtFullstack 等价迁移）",
+      "when": {
+        "form": "web",
+        "backend": "node",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "family": "web-fullstack",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
+          "- `backend-AGENTS.md`：Nitro Server Routes、Service、Repository、Prisma、服务端测试",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、前端 smoke test | 涉及 Nuxt 页面与交互时 |",
+          "| `backend-AGENTS.md` | 服务端逻辑、数据库、鉴权、缓存、异常处理、服务端测试 | 涉及 Server Route、Prisma、Service 时 |",
+          {
+            "when": [
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明、`design-system.yaml` | 涉及阶段 0、文档维护、设计系统时 |",
+                "features": [
+                  "doc",
+                  "design-system"
+                ]
+              },
+              {
+                "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护、契约说明时 |",
+                "features": [
+                  "doc"
+                ]
+              }
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | Docker、端口、环境变量、发布链路 | 涉及部署、容器化、环境变量时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   页面与交互实现   →   服务端与数据实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
+          "- 涉及后端时，已查看相关 Server Route、Service、Repository、schema / Prisma、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、Service、Repository、Prisma 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "页面、组件、Server Route、Service、Repository、Prisma 与测试实现",
+        "destructive-nouns": "数据库破坏性变更、环境清理"
+      },
+      "files": [
+        {
+          "source": "arch/nuxtFullstack/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/nuxtFullstack/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/nuxtFullstack/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "source": "arch/nuxtFullstack/infra-AGENTS.md",
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
+        }
+      ],
+      "designSystemSource": "arch/nuxtFullstack/design-system.yaml"
+    },
+    {
       "id": "reactLinkdotNet-ai",
       "kind": "form",
       "label": "React + .NET + AI Agent 全栈",
@@ -6125,19 +7458,18 @@
       ],
       "designSystemSource": "arch/reactLinkdotNet-ai/design-system.yaml"
     },
-    {
-      "id": "dotnetBlazor",
-      "kind": "form",
-      "label": ".NET Blazor Server（传统）",
-      "desc": "单一组合组件（由 Profile dotnetBlazor 等价迁移）",
+      {
+      "id": "web-frontend-blazor-traditional",
+      "kind": "frontend",
+      "label": "Blazor Server（传统）界面",
+      "desc": "Web + .NET + Blazor 传统形态的界面组件（dotnetBlazor）",
       "when": {
         "form": "web",
         "backend": "dotnet",
         "frontend": "blazor",
         "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "traditional",
-        "ai-capability": "no"
+        "ai-capability": "no",
+        "blazor-flavor": "traditional"
       },
       "family": "web-fullstack",
       "root": {
@@ -6252,37 +7584,22 @@
         {
           "source": "arch/dotnetBlazor/ui-AGENTS.md",
           "output": "ui-AGENTS.md"
-        },
-        {
-          "source": "arch/dotnetBlazor/backend-AGENTS.md",
-          "output": "backend-AGENTS.md"
-        },
-        {
-          "source": "arch/dotnetBlazor/infra-AGENTS.md",
-          "output": "infra-AGENTS.md",
-          "feature": "infra"
-        },
-        {
-          "source": "arch/dotnetBlazor/doc-AGENTS.md",
-          "output": "doc-AGENTS.md",
-          "feature": "doc"
         }
       ],
       "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
     },
-    {
-      "id": "dotnetBlazorWebApp",
-      "kind": "form",
-      "label": ".NET Blazor Web App",
-      "desc": "单一组合组件（由 Profile dotnetBlazorWebApp 等价迁移）",
+      {
+      "id": "web-frontend-blazor-webapp",
+      "kind": "frontend",
+      "label": "Blazor Web App 界面",
+      "desc": "Web + .NET + Blazor Web App 的界面组件（dotnetBlazorWebApp）",
       "when": {
         "form": "web",
         "backend": "dotnet",
         "frontend": "blazor",
         "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "webapp",
-        "ai-capability": "no"
+        "ai-capability": "no",
+        "blazor-flavor": "webapp"
       },
       "family": "web-fullstack",
       "root": {
@@ -6355,7 +7672,24 @@
         {
           "source": "arch/dotnetBlazorWebApp/ui-AGENTS.md",
           "output": "ui-AGENTS.md"
-        },
+        }
+      ],
+      "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
+    },
+      {
+      "id": "web-backend-blazor",
+      "kind": "backend",
+      "label": ".NET 后端（Blazor 全栈变体）",
+      "desc": "Web + .NET + Blazor 全栈组合的后端组件（两形态共用）",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "blazor",
+        "shell": "none",
+        "ai-capability": "no"
+      },
+      "family": "web-fullstack",
+      "files": [
         {
           "source": "arch/dotnetBlazor/backend-AGENTS.md",
           "output": "backend-AGENTS.md"
@@ -6370,8 +7704,7 @@
           "output": "doc-AGENTS.md",
           "feature": "doc"
         }
-      ],
-      "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
+      ]
     },
     {
       "id": "mauiMobile",
@@ -6997,23 +8330,227 @@
     }
   ],
   "constraints": [
-    {
-      "when": {
-        "shell": "electron"
-      },
-      "require": {
-        "form": "desktop"
-      }
+  {
+    "when": {
+      "shell": "tauri"
     },
-    {
-      "when": {
-        "shell": "wails"
-      },
-      "require": {
-        "form": "desktop"
-      }
+    "require": {
+      "form": "desktop",
+      "backend": "rust"
     }
-  ],
+  },
+  {
+    "when": {
+      "shell": "wails"
+    },
+    "require": {
+      "form": "desktop",
+      "backend": "go"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "require": {
+      "form": "desktop"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "go"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "rust"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "python"
+    }
+  },
+  {
+    "when": {
+      "shell": "electron"
+    },
+    "forbid": {
+      "backend": "node"
+    }
+  },
+  {
+    "when": {
+      "backend": "rust"
+    },
+    "require": {
+      "shell": "tauri"
+    }
+  },
+  {
+    "when": {
+      "backend": "go"
+    },
+    "require": {
+      "shell": "wails"
+    }
+  },
+  {
+    "when": {
+      "form": "backend-only"
+    },
+    "require": {
+      "frontend": "none",
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "web"
+    },
+    "require": {
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "static"
+    },
+    "require": {
+      "frontend": "html",
+      "backend": "none",
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "mobile"
+    },
+    "require": {
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "blazor"
+    },
+    "require": {
+      "form": "web",
+      "backend": "dotnet"
+    }
+  },
+  {
+    "when": {
+      "frontend": "avalonia"
+    },
+    "require": {
+      "form": "desktop",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "wpf"
+    },
+    "require": {
+      "form": "desktop",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "console"
+    },
+    "require": {
+      "form": "desktop",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "maui"
+    },
+    "require": {
+      "form": "mobile",
+      "shell": "none",
+      "backend": "dotnet"
+    }
+  },
+  {
+    "when": {
+      "frontend": "flutter"
+    },
+    "require": {
+      "form": "mobile",
+      "shell": "none",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "frontend": "html"
+    },
+    "require": {
+      "form": "static",
+      "backend": "none"
+    }
+  },
+  {
+    "when": {
+      "blazor-flavor": "traditional"
+    },
+    "require": {
+      "frontend": "blazor"
+    }
+  },
+  {
+    "when": {
+      "blazor-flavor": "webapp"
+    },
+    "require": {
+      "frontend": "blazor"
+    }
+  },
+  {
+    "when": {
+      "arch-style": "layered"
+    },
+    "require": {
+      "backend": "dotnet"
+    }
+  },
+  {
+    "when": {
+      "form": "desktop",
+      "frontend": "react"
+    },
+    "forbid": {
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "desktop",
+      "frontend": "vue"
+    },
+    "forbid": {
+      "shell": "none"
+    }
+  }
+],
+
   "compatibilityCases": [
     {
       "profile": "dotnet-layered",
@@ -7051,8 +8588,32 @@
         "ai-capability": "no"
       }
     },
-    {
+        {
       "profile": "reactLinkdotNet",
+      "selection": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "layered",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+        {
+      "profile": "vueLinkdotNet",
+      "selection": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "layered",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "reactLinkdotNetSingle",
       "selection": {
         "form": "web",
         "backend": "dotnet",
@@ -7064,10 +8625,34 @@
       }
     },
     {
-      "profile": "vueLinkdotNet",
+      "profile": "vueLinkdotNetSingle",
       "selection": {
         "form": "web",
         "backend": "dotnet",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "reactLinkPython",
+      "selection": {
+        "form": "web",
+        "backend": "python",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "vueLinkPython",
+      "selection": {
+        "form": "web",
+        "backend": "python",
         "frontend": "vue",
         "shell": "none",
         "arch-style": "single",
@@ -7093,6 +8678,18 @@
         "form": "web",
         "backend": "node",
         "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "nuxtFullstack",
+      "selection": {
+        "form": "web",
+        "backend": "node",
+        "frontend": "vue",
         "shell": "none",
         "arch-style": "single",
         "blazor-flavor": "none",
@@ -7211,8 +8808,20 @@
       "profile": "reactTauriExe",
       "selection": {
         "form": "desktop",
-        "backend": "go",
+        "backend": "rust",
         "frontend": "react",
+        "shell": "tauri",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "vueTauri",
+      "selection": {
+        "form": "desktop",
+        "backend": "rust",
+        "frontend": "vue",
         "shell": "tauri",
         "arch-style": "single",
         "blazor-flavor": "none",

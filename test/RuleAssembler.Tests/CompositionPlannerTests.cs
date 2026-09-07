@@ -17,6 +17,57 @@ public class CompositionPlannerTests
     }
 
     [Fact]
+    public void 违反约束的组合报错_tauri壳_要求rust后端()
+    {
+        var planner = new CompositionPlanner(LoadManifest());
+        var selection = FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "desktop",
+            ["frontend"] = "react",
+            ["shell"] = "tauri",
+            ["backend"] = "go"
+        });
+
+        var ex = Assert.Throws<InvalidOperationException>(() => planner.Plan(selection));
+        Assert.Contains("组合违反约束", ex.Message);
+        Assert.Contains("backend=rust", ex.Message);
+    }
+
+    [Fact]
+    public void 违反约束的组合报错_纯后端形态_要求无前端()
+    {
+        var planner = new CompositionPlanner(LoadManifest());
+        var selection = FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "backend-only",
+            ["frontend"] = "react",
+            ["backend"] = "dotnet",
+            ["arch-style"] = "layered"
+        });
+
+        var ex = Assert.Throws<InvalidOperationException>(() => planner.Plan(selection));
+        Assert.Contains("组合违反约束", ex.Message);
+        Assert.Contains("frontend=none", ex.Message);
+    }
+
+    [Fact]
+    public void 违反约束的组合报错_静态形态_要求html前端与无后端()
+    {
+        var planner = new CompositionPlanner(LoadManifest());
+        var selection = FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "static",
+            ["frontend"] = "react",
+            ["backend"] = "none",
+            ["shell"] = "none"
+        });
+
+        var ex = Assert.Throws<InvalidOperationException>(() => planner.Plan(selection));
+        Assert.Contains("组合违反约束", ex.Message);
+        Assert.Contains("frontend=html", ex.Message);
+    }
+
+    [Fact]
     public void 维度缺失时报错并列出待确认维度_不隐式补全()
     {
         var planner = new CompositionPlanner(LoadManifest());

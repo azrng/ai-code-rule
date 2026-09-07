@@ -7,7 +7,7 @@ public sealed class ManifestLoaderTests
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
 
-        Assert.Equal(28, manifest.Profiles.Count);
+        Assert.Equal(34, manifest.Profiles.Count);
         Assert.Contains(
             manifest.Modules.SelectMany(module => module.Pointers),
             pointer => pointer.Equals("GROK.md", StringComparison.OrdinalIgnoreCase));

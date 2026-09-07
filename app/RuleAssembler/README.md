@@ -5,7 +5,7 @@
 ## 入口流程
 
 1. **检测优先**：`ProjectDetector` 浅层扫描目标目录（深度 ≤2，跳过 node_modules/bin/obj 等），把 sln/csproj、package.json 依赖、wails.json、go.mod、src-tauri、pubspec、fastapi 依赖等信号映射为 trait 证据。证据按维度归并：同维度唯一才确认，冲突维度留待人工；候选 = 匹配全部已确认维度的 Profile。候选唯一时给出推荐组合与判断依据；证据不足时输出部分结果（已确认维度、待确认维度、候选组合），不伪造推荐。
-2. **问答决策树与补答（P2 阶段 3 起走组合内核）**：问答由 `SelectionEngine` 驱动——候选是 manifest 的 `components` 而非 Profile 列表，问题顺序沿用 `wizard.steps`（项目形态 → 前端/界面 → 后端 → 桌面壳 → 细分项）。只提问「存续组件之间仍有分歧」的维度：唯一取值自动推导（配方来源 `derived`），选项经可行性剪枝（取值后至少剩一个兼容样例，交互上不会选出无法生成的组合，未接入组合表现为「选项不出现」）。输入 0 可返回上一步。检测推荐与补答同样产出 `Selection` 走 `CompositionPlanner` 组合路径；「经典选择（兼容）」保留旧的大类 → Profile 入口与旧渲染路径。
+2. **问答决策树与补答（P2 阶段 3 起走组合内核）**：问答由 `SelectionEngine` 驱动——候选是 manifest 的 `components` 而非 Profile 列表，问题顺序沿用 `wizard.steps`（项目形态 → 前端/界面 → 桌面壳 → 后端 → 细分项）。只提问「存续组件之间仍有分歧」的维度：唯一取值自动推导（配方来源 `derived`），选项经可行性剪枝（取值后至少剩一个兼容样例，交互上不会选出无法生成的组合，未接入组合表现为「选项不出现」）。输入 0 可返回上一步。检测推荐与补答同样产出 `Selection` 走 `CompositionPlanner` 组合路径；「经典选择（兼容）」保留旧的大类 → Profile 入口与旧渲染路径。
 3. **经典选择**：技术大类 → Profile，作为兜底入口保留。
 4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 问答（Profile 选择）这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
 5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。
@@ -44,8 +44,8 @@ manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组
 - **组件**：单一技术职责（form / shell / frontend / backend / capability），声明 `when` 维度条件、根变量贡献（可携带 `{{slot:x}}` 槽位占位）、`files` 输出贡献与可选 `designSystemSource`。解析顺序按 kind 固定排序（form → shell → frontend → backend → capability），同 kind 按 manifest 声明顺序。
 - **槽位机制**：骨架组件（如 `electron-desktop-shell`）持有完整的根变量条目顺序，backend 等差异内容经 `slots` 注入槽位；槽位必须有唯一提供者，替换后残留占位即报错，已声明但未被消费的槽位降级为告警。
 - **根变量合并**：以组件声明的 `family` rootDefaults 为继承基线，组件值按「未写则继承、写了则覆盖」处理；组件之间覆盖同一字段才是冲突。组件未显式声明的标量字段携带类默认值，合并前会被剥离。
-- **证据不足不隐式补全**：组件 `when` 引用了选择中缺失的维度即视为部分匹配并报错，列出待确认维度，与检测器口径一致。`constraints` 声明维度间合法关系（when 命中时 require 必须成立、forbid 必须不成立）。
-- **等价回归**：`compatibilityCases` 把旧 Profile 固定为组合样例，`--check` 对每个样例同时运行旧渲染路径与组合路径并逐字节比对（含路径集合、顺序与内容）；`CompositionEquivalenceTests` 额外覆盖能力子集组合。全部 28 个 Profile 已组件化并注册为兼容样例：族组合走「骨架 + 槽位 + 前端/后端组件」（Electron 4、Wails 2、Web 分离 2、纯前端 AI 2），其余为「单一组合 = 全量 form 组件」（直接携带 Profile 完整 root / subrules / design-system；`reactLinkdotNet-ai` 的 `ai-AGENTS.md` 按旧渲染顺序前置）。新增技术类型原则上扩展组件与约束，不再复制整套 Profile；旧 Profile 渲染路径保持不变，向导与检测切换到 Selection 属阶段 3。
+- **证据不足不隐式补全**：组件 `when` 引用了选择中缺失的维度即视为部分匹配并报错，列出待确认维度，与检测器口径一致。`constraints` 声明维度间合法关系（when 命中时 require 必须成立、forbid 必须不成立），当前 25 条覆盖壳 ↔ 后端（tauri→rust、wails→go、electron 仅 dotnet / 主进程）、形态钳制（纯后端无前端、web / 移动无壳、静态站限定 html 无后端）、前端归位（blazor→web+dotnet、原生桌面 / 移动界面的形态与后端、layered 仅 dotnet）；`SelectionEngine` 剪枝先经 `CompositionPlanner.SatisfiesConstraints`（forbid 立即生效、require 只对已回答维度生效），再按兼容样例过滤。
+- **等价回归**：`compatibilityCases` 把旧 Profile 固定为组合样例，`--check` 对每个样例同时运行旧渲染路径与组合路径并逐字节比对（含路径集合、顺序与内容）；`CompositionEquivalenceTests` 额外覆盖能力子集组合。全部 34 个 Profile 已组件化并注册为兼容样例：族组合走「骨架 + 槽位 + 前端/后端组件」（Electron 4、Wails 2、Tauri 2、Web 分离 .NET 4 / Python 2、Blazor 全栈 2），纯前端 AI 2 与 .NET 纯后端 2（分层 / 单层）走「组件 + family 基线」，其余为「单一组合 = 全量 form 组件」（直接携带 Profile 完整 root / subrules / design-system；`reactLinkdotNet-ai` 的 `ai-AGENTS.md` 按旧渲染顺序前置）。新增技术类型原则上扩展组件与约束，不再复制整套 Profile；旧 Profile 渲染路径保持不变，向导与检测切换到 Selection 属阶段 3。
 - **组件根标量按 JSON 存在性判定**：组件根中未在 JSON 里真实声明的标量字段反序列化后携带类默认值，合并前按 `DeclaredScalarFields`（`ManifestLoader.AnnotateComponentRootPresence` 标注）剥离；刻意声明且恰好等于类默认值的覆盖（如回退通用措辞覆盖 family 基线）会被保留。
 
 ### 输出契约与能力开关
@@ -113,7 +113,7 @@ dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --emit-all-legacy
 
 ## 当前 Profile
 
-manifest 当前包含 8 个技术大类、28 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。新增技术类型优先走组合内核的 `components` 扩展口（见「组合内核」一节），不再新增完整 Profile。
+manifest 当前包含 8 个技术大类、34 个 Profile（数量以 `fragments/manifest.json` 为准）。新增 Profile 时，在 `fragments/manifest.json` 增加配方，并在 `fragments/arch/<id>/` 增加对应片段；新增可复用能力时优先增加 `modules`，再由 Profile 通过 `moduleIds` 引用，并按「新增模块清单」补全输出声明、检测映射与测试。新增技术类型优先走组合内核的 `components` 扩展口（见「组合内核」一节），不再新增完整 Profile。
 
 ## 版本与格式
 

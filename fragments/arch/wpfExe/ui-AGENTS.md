@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.31.0
-last_updated: 2026-09-02
+version: 1.60.0
+last_updated: 2026-09-07
 dependencies: [agents-root]
 ---
 
@@ -15,29 +15,29 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-- .NET + WPF + Wpf.Ui (WPF UI) + CommunityToolkit.Mvvm；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
+- .NET + WPF + WPF-UI + CommunityToolkit.Mvvm；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
 - 分层架构：View (视图层) → ViewModel (视图模型层) → Service (应用服务层) → Repository (仓储层) → Model (领域模型层)
 - 数据访问（可选）：Dapper + SQLite / PostgreSQL / 其他数据库
 - 消息传递：CommunityToolkit.Mvvm IMessenger
 - 依赖注入：Microsoft.Extensions.DependencyInjection
 
 ### 核心库
-- `Azrng.Core` (1.15.8)：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系）
-- `Azrng.Core.Json` (1.3.1)：JSON 序列化（基于 System.Text.Json）
+- `Azrng.Core`：基础类库（实体基类、扩展方法、工具类、结果包装、异常体系、DI 标记接口），版本以 NuGet 最新正式版为准，不在规则中固定版本号
+- `Azrng.Core.Json`：JSON 序列化（基于 System.Text.Json），版本以 NuGet 最新正式版为准
 
-### WPF UI (Wpf.Ui)
-- NuGet 包：`Wpf.Ui`（最新稳定版）
+### WPF-UI (Wpf.Ui)
+- NuGet 包：`WPF-UI`（最新稳定版；程序集与 C# 命名空间为 `Wpf.Ui`）
 - 提供 Fluent Design 风格控件：NavigationView、FluentWindow、Dialog、Snackbar、Card 等
 - 内置浅色/深色主题切换支持
-- 控件前缀命名空间：`xmlns:ui="http://schemas.lepo.co/wpfui/2024/xaml"`
+- 控件前缀命名空间：`xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"`；以所引用包程序集 XmlnsDefinition 实际注册的 URI 为准（4.x 为 2022/xaml），禁止凭记忆改写年份段
 
 ### 依赖注入规范
-- 使用 Azrng 标记接口方式批量注册服务：
+- 使用 Azrng 标记接口声明服务生命周期（标记接口由 `Azrng.Core` 提供）：
   - `ITransientDependency`：临时注入
   - `IScopedDependency`：作用域注入
   - `ISingletonDependency`：单例注入
-- 在 App.xaml.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
-- 服务类实现对应标记接口，自动被扫描注册到 DI 容器
+- 服务默认显式注册：在 App.xaml.cs 中按标记接口对应生命周期调用 `AddTransient` / `AddScoped` / `AddSingleton`，注册方式与标记声明必须一致
+- 批量扫描注册 `services.RegisterBusinessServices(...)` 由 `Azrng.AspNetCore.Core` 提供，属 Web 项目装配；桌面项目默认仅引用 `Azrng.Core`，不存在该扩展方法，禁止照抄
 
 ### 部署
 - 桌面应用打包：单文件发布
@@ -48,7 +48,7 @@ dependencies: [agents-root]
 - 使用 Fluent Design 风格，遵循 `design-system.yaml` 中定义的设计 token
 - 样式必须使用 WPF 资源字典 (ResourceDictionary)，禁止硬编码在控件属性中
 - 颜色、间距、圆角必须来自样式资源，使用 `{StaticResource}` 或 `{DynamicResource}` 引用
-- Wpf.Ui 内置 Fluent 主题，在此基础上扩展自定义样式
+- WPF-UI 内置 Fluent 主题，在此基础上扩展自定义样式
 
 <!-- include: shared/application/tech-choice.md -->
 
@@ -90,7 +90,7 @@ project-root/
 │   │   ├── Helpers/                  # 工具类、扩展方法
 │   │   ├── Assets/                   # 资源文件
 │   │   │   ├── Styles/               # WPF 资源字典
-│   │   │   │   ├── Theme.xaml        # Wpf.Ui 主题配置
+│   │   │   │   ├── Theme.xaml        # WPF-UI 主题配置
 │   │   │   │   ├── Colors.xaml       # 颜色资源
 │   │   │   │   ├── Fonts.xaml        # 字体资源
 │   │   │   │   └── Global.xaml       # 全局样式
@@ -146,18 +146,18 @@ project-root/
 - 所有颜色来自 `design-system.yaml` 中定义的语义化 token，通过资源字典引用
 - 所有间距使用 Margin / Padding 工具类，禁止硬编码数值
 - 响应式设计遵循窗口大小变化，必须在不同窗口尺寸下测试
-- Wpf.Ui 主题通过 `App.xaml` 中的 `<ui:ThemesDictionary>` 和 `<ui:ControlsDictionary>` 引入
+- WPF-UI 主题通过 `App.xaml` 中的 `<ui:ThemesDictionary>` 和 `<ui:ControlsDictionary>` 引入
 
 ### 窗口规则
-- 主窗口继承 `ui:FluentWindow`（Wpf.Ui 提供的现代窗口基类）
+- 主窗口继承 `ui:FluentWindow`（WPF-UI 提供的现代窗口基类）
 - 对话框窗口同样继承 `ui:FluentWindow`
-- 窗口圆角和 Mica/Acrylic 背景效果通过 Wpf.Ui 内置支持实现
+- 窗口圆角和 Mica/Acrylic 背景效果通过 WPF-UI 内置支持实现
 
 ### 组件规则
 - 优先复用 `src/AppName/Views/Controls/` 下已有组件，禁止重复创建
 - 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象
 - 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`
-- 优先使用 Wpf.Ui 控件（ui:Button、ui:TextBox、ui:DataGrid 等），必要时使用 WPF 原生控件
+- 优先使用 WPF-UI 控件（ui:Button、ui:TextBox、ui:DataGrid 等），必要时使用 WPF 原生控件
 
 ### MVVM 模式规则
 - **ViewModel 基类**：所有 ViewModel 最终都必须继承 `ObservableObject`（CommunityToolkit.Mvvm）；若项目已有 `BaseViewModel`，应由基类继承 `ObservableObject` 后统一复用
@@ -165,17 +165,17 @@ project-root/
 - **命令定义**：使用 `[RelayCommand]` 特性生成 ICommand，禁止手动创建 RelayCommand
 - **消息传递**：ViewModel 间通信使用 `IMessenger` (CommunityToolkit.Mvvm)
 - **依赖注入**：ViewModel 依赖通过构造函数注入
-- **服务注册**：服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册
+- **服务注册**：服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口表达生命周期，在 App.xaml.cs 中显式 `AddTransient`/`AddScoped`/`AddSingleton` 注册（`RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`，桌面项目不使用）
 
 ### 导航规则
-- 使用 Wpf.Ui 的 `ui:NavigationView` 进行页面切换
+- 使用 WPF-UI 的 `ui:NavigationView` 进行页面切换
 - 页面视图继承 `ui:UiPage` 或 `Page`
 - 导航逻辑封装在 NavigationService 中，禁止在 ViewModel 中直接操作 View
 - 页面参数通过导航消息传递，禁止使用静态全局状态
 - 支持导航历史记录（前进/后退）
 
 ### 对话框规则
-- 使用 Wpf.Ui 的 Dialog 组件或 `ui:MessageBox` 实现对话框
+- 使用 WPF-UI 的 Dialog 组件或 `ui:MessageBox` 实现对话框
 - 对话框内容必须使用 ViewModel，禁止 Code-behind 写业务逻辑
 - 对话框结果通过 TaskCompletionSource 异步返回
 - 危险操作对话框必须突出后果与确认动作

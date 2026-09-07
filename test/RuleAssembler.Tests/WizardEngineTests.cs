@@ -26,6 +26,7 @@ public sealed class WizardEngineTests
             ["form"] = "web",
             ["backend"] = "dotnet",
             ["frontend"] = "react",
+            ["arch-style"] = "layered",
             ["ai-capability"] = "no"
         };
 
@@ -251,9 +252,9 @@ public sealed class WizardEngineTests
     }
 
     [Fact]
-    public void NextQuestion_DesktopCandidates_AskFrontendBeforeBackend()
+    public void NextQuestion_DesktopCandidates_AskFrontendBeforeShell()
     {
-        // 问答顺序对齐 Q1 形态 → Q2 前端/界面 → Q3 后端 → Q4 壳；
+        // 问答顺序对齐 Q1 形态 → Q2 前端/界面 → Q3 壳 → Q4 后端；
         // 桌面先问界面：原生桌面（Avalonia/WPF/控制台）与混合壳的分歧在 frontend 维度，
         // 若先问后端，「.NET」回答会进入 Electron 分支导致 Avalonia/WPF 选项永不出现
         var manifest = LoadManifest();
@@ -304,18 +305,30 @@ public sealed class WizardEngineTests
     }
 
     [Fact]
-    public void NextQuestion_DesktopReactFrontend_StillAsksBackend()
+    public void NextQuestion_DesktopReactFrontend_AskShellThenBackend()
     {
-        // 混合壳桌面（React 界面）仍需后端问题区分 Electron+.NET 与 Wails/Tauri+Go
+        // 混合壳桌面（React 界面）先问壳：Electron / Tauri / Wails 必须作为显式选项出现，
+        // 不能只靠「无后端」之类的后端回答隐式落进去（否则用户在问答里永远看不到 Electron）
         var manifest = LoadManifest();
         var engine = new WizardEngine(manifest);
         var candidates = engine.Filter(engine.Filter(manifest.Profiles, "form", "desktop"), "frontend", "react");
 
-        var question = engine.NextQuestion(candidates);
+        var shellQuestion = engine.NextQuestion(candidates);
 
-        Assert.NotNull(question);
-        Assert.Equal("backend", question.Trait);
-        Assert.Contains(question.Options, option => option.Value == "dotnet");
-        Assert.Contains(question.Options, option => option.Value == "go");
+        Assert.NotNull(shellQuestion);
+        Assert.Equal("shell", shellQuestion.Trait);
+        Assert.Contains(shellQuestion.Options, option => option.Value == "electron");
+        Assert.Contains(shellQuestion.Options, option => option.Value == "tauri");
+        Assert.Contains(shellQuestion.Options, option => option.Value == "wails");
+
+        var electronCandidates = engine.Filter(candidates, "shell", "electron");
+        var backendQuestion = engine.NextQuestion(electronCandidates);
+
+        // 选 Electron 后后端问题只剩 主进程(none) 与 .NET sidecar(dotnet) 之分
+        Assert.NotNull(backendQuestion);
+        Assert.Equal("backend", backendQuestion.Trait);
+        Assert.Contains(backendQuestion.Options, option => option.Value == "none");
+        Assert.Contains(backendQuestion.Options, option => option.Value == "dotnet");
+        Assert.DoesNotContain(backendQuestion.Options, option => option.Value == "go" || option.Value == "rust");
     }
 }

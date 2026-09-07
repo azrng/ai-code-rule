@@ -1,0 +1,2 @@
+# bash 脚本必须保持 LF：CRLF 会让 Linux/mac 下执行报错（\r 混入解释器路径）
+*.sh text eol=lf

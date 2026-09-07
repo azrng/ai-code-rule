@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.22.0
-last_updated: 2026-08-31
+version: 1.60.0
+last_updated: 2026-09-07
 dependencies: [agents-root]
 ---
 
@@ -78,7 +78,7 @@ src/AppName/
 - 服务方法必须优先采用异步形式（返回 `Task<T>` 或 `ValueTask<T>`）。
 - 服务层处理所有业务逻辑，不直接访问 Repository 以外的数据依赖。
 - 服务层异常必须统一封装，抛出 Azrng 异常体系中的业务异常类型。
-- 服务类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册。
+- 服务类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口表达生命周期，按对应生命周期显式注册（`RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`，桌面项目不使用）。
 
 <!-- include: shared/application/dto-rules.md -->
 
