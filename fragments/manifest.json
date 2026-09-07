@@ -4656,7 +4656,7 @@
         },
         "node": {
           "label": "Node.js",
-          "desc": "Node 服务端（Next.js 全栈）"
+          "desc": "Node 服务端（Next.js / Nuxt 全栈）"
         },
         "none": {
           "label": "无后端",

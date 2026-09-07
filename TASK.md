@@ -32,25 +32,15 @@
 
 ## 1. 当前目标
 
-当前生成器仍然以 `Profile` 为组合和检测的最终单位。近期不立即删除现有 Profile，而是先完成低风险改造，并为完整组件化保留稳定入口。
+组合内核已全量落地：问答 / 检测 / 补答均产出 `Selection` 走 `CompositionPlanner` 与组合渲染路径；`Profile` 保留为旧渲染入口与兼容样例锚点（`--check` 对全部样例做两条渲染路径的逐字节等价比对）。manifest 的 `components` / `constraints` / `compatibilityCases` 是维度组合的事实来源，25 条钳制约束已接入问答剪枝；新增技术栈的边际成本是「加组件 + 证据映射 + 测试」。
 
-本任务的目标顺序：
-
-```text
-现有 Profile 兼容基线
-    -> 结构化输出声明
-    -> 部分检测结果与补答
-    -> doc / infra / AI / design-system 能力开关
-    -> 完整 Selection -> Component -> CompositionPlan（按触发条件启动）
-```
-
-当前交互要逐步靠近：
+当前交互口径：
 
 ```text
 Q1 形态：Web 前后端分离 / 桌面 / 移动 / 纯后端 / 通用
 Q2 前端：无 / React / Vue / Blazor / 静态 HTML（按形态追加已有技术栈，桌面追加 Avalonia / WPF / 控制台）
 Q3 壳：桌面或混合应用时显示 Tauri / Wails / Electron
-Q4 后端：无 / .NET 分层 / .NET 单层 / Python FastAPI / Go(Wails)（选壳后仅问该壳下的分歧，如 Electron 的 主进程 vs .NET sidecar）
+Q4 后端：无 / .NET 分层 / .NET 单层 / Python FastAPI / Go（Wails）/ Rust（Tauri）/ Node（Next.js / Nuxt 全栈）（选壳后仅问该壳下的分歧，如 Electron 的 主进程 vs .NET sidecar；Web 形态按前后端栈组合追问架构分层）
 Q5 能力：doc、infra 默认勾选；AI、design-system 按能力和场景选择
     -> 汇总确认
     -> 列出实际生成文件
@@ -313,9 +303,9 @@ P2 的完成标准是：新增常规前端、后端、壳或能力模块时，�
 - `ManifestLoader.MergeFamilyDefaults` 在 JSON 层做 family rootDefaults 继承，新的结构化输出字段不能破坏该过程。
 - `OutputWriter.WriteFiles` 自带 staging、backup 和回滚；配方记录必须在规则文件写入成功后再写。
 - 预设产物回归基线：`dotnet run --project app/RuleAssembler -- --emit D:/tmp/rules-before`；该命令当前只用于旧 Profile 预览，不写配方记录。
-- 当前共有 28 个 Profile（1.43.0 批次与 reactElectron / vueElectron / dotnetBlazorWebApp 等后续新增），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；组合内核阶段 1 新增 `RuleRenderer.Plan(manifest, plan, features)` 组合入口，两条路径共用统一渲染核心，`--check` 保证兼容样例逐字节等价。
+- 当前共有 34 个 Profile（1.43.0 批次与 reactElectron / vueElectron / dotnetBlazorWebApp 及后续 Tauri 双前端、web 单项目、web+python、Nuxt 等新增），旧渲染入口是 `RuleRenderer.Plan(manifest, profile)`；组合路径入口是 `RuleRenderer.Plan(manifest, plan, features)`，两条路径共用统一渲染核心，`--check` 保证兼容样例逐字节等价。
 - 当前有 `core`、`ai-capability`（.NET 后端口径）和 `ai-capability-frontend`（浏览器侧口径）三个顶层 module，不能把现状 module 数量误认为已经完成组件化。
-- 组合内核阶段 1 已落地：manifest 的 `components` / `constraints` / `compatibilityCases` 由 `CompositionPlanner` 消费；组件根骨架通过 `{{slot:x}}` 槽位注入 backend 差异，组件间覆盖同一根字段、同名输出、重复槽位都会报错。为既有组合补组件时，必须先在 `compatibilityCases` 加样例，让 `--check` 的逐字节等价校验兜底。
+- 组合内核阶段 1-5 已全部落地：manifest 的 `components` / `constraints` / `compatibilityCases` 由 `CompositionPlanner` 消费；组件根骨架通过 `{{slot:x}}` 槽位注入 backend 差异，组件间覆盖同一根字段、同名输出、重复槽位都会报错。为既有组合补组件时，必须先在 `compatibilityCases` 加样例，让 `--check` 的逐字节等价校验兜底。
 - 当前 `Subrule.sources` 已支持多源拼接，但只有显式声明时才能合并；重复输出不得静默覆盖。
 - 允许修改 `fragments/manifest.json` 和新增模块元数据；禁止为了完成 P1 无计划地重写已有规则正文。
 - Windows / PowerShell 文档和命令中禁止使用 `&&` 链式命令；新增注释统一使用中文。
