@@ -10,6 +10,7 @@
 
 | 任务 ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 AI | 任务状态 | 优先级 | 最近更新时间 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RULE-20260907-DRIFT | 真实执行反馈：依赖漂移修复 | 承接 `D:\temp\rulereview`（wpfExe 1.59.0）反馈：WPF-UI 包名与 xmlns 修正（`Wpf.Ui`→NuGet ID `WPF-UI`、2024→2022/xaml，以程序集 XmlnsDefinition 为准）；桌面/控制台 DI 注册改为显式 `Add*` 并标注 `RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`（Web 侧同步标注来源包）；统一结果包装对齐现行 Azrng.Core API（`ResultModelFactory` + 默认裸返回 / 业务异常取舍、`IResultModel<T>` 仅暴露 Data）；wpfExe 核心库不再固定版本号。版本 1.59.0 → 1.60.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-07 |
 | RULE-20260907-COMPACT | 规则内容压缩与真实产物复核 | 压缩测试未执行说明、KISS 细则、协作任务与反馈段落；保持契约语义，生成版本 1.58.0 → 1.59.0，并在 `D:\temp\rulereview` 复核实际产物 | 实现与验证 | Codex | DOING | 中 | 2026-09-07 |
 | RULE-20260907-COLLAB | 坦率反馈与规则退役机制 | 共享协作规则加入坦率反馈、常规细节判断与结论式过程更新；反馈闭环增加“冗余”类型；新增规则退役清单，并以固定行为规则段预算约束根文件膨胀；版本 1.57.0 → 1.58.0 | 已完成验证 | Codex | DONE | 中 | 2026-09-07 |
 | RULE-20260903-COLLAB | 协作规则下沉与需求澄清 | 新需求和 `/plan` 进入结构化澄清；将根文件中的按需流程下沉，降低常驻上下文 | 已完成验证 | Codex | DONE | 高 | 2026-09-03 |

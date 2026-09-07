@@ -1,7 +1,7 @@
 ---
 rule_id: infrastructure-agents
-version: 1.29.0
-last_updated: 2026-09-01
+version: 1.60.0
+last_updated: 2026-09-07
 dependencies: [agents-root]
 ---
 
@@ -30,12 +30,12 @@ dependencies: [agents-root]
 - 版本、发布目录和运行命令必须可追踪
 
 ### 依赖注入规范
-- 使用 Azrng 标记接口方式批量注册服务：
+- 使用 Azrng 标记接口声明服务生命周期（标记接口由 `Azrng.Core` 提供）：
   - `ITransientDependency`：临时注入
   - `IScopedDependency`：作用域注入
   - `ISingletonDependency`：单例注入
-- 在 `Program.cs` 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
-- 服务类实现对应标记接口，自动被扫描注册到 DI 容器
+- 服务默认显式注册：在 `Program.cs` 中按标记接口对应生命周期调用 `AddTransient` / `AddScoped` / `AddSingleton`，注册方式与标记声明必须一致
+- 批量扫描注册 `services.RegisterBusinessServices(...)` 由 `Azrng.AspNetCore.Core` 提供，属 Web 项目装配；桌面项目默认仅引用 `Azrng.Core`，不存在该扩展方法，禁止照抄
 
 <!-- include: shared/application/tech-choice.md -->
 
@@ -70,7 +70,7 @@ src/AppName/
 - 仓储实现负责具体数据访问，不把 SQL、连接串或事务细节泄漏到 ViewModel / Service。
 - 仓储方法必须优先采用异步形式，并支持取消令牌。
 - 涉及事务时，使用 `IDbTransaction` 或等价机制统一管理。
-- 仓储类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口，通过 `RegisterBusinessServices` 批量注册。
+- 仓储类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口表达生命周期，在 `Program.cs` 中按对应生命周期显式注册。
 
 ### 数据访问规则
 - 使用 Dapper 进行数据访问。

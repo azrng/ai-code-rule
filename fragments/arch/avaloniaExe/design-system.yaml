@@ -6,7 +6,7 @@
 
 meta:
   name: "Avalonia 桌面端设计系统"
-  version: "3.0.0"
+  version: "3.1.0"
   status: "基线待定制"
   platform: "Desktop"
   owners:
@@ -344,7 +344,7 @@ mvvm:
   dependency_injection:
     rule:
       - "ViewModel、Service、Repository 通过构造函数注入依赖"
-      - "服务通过 RegisterBusinessServices 批量注册"
+      - "服务按标记接口生命周期显式注册（RegisterBusinessServices 属 Azrng.AspNetCore.Core，桌面项目不使用）"
 
 accessibility:
   rules:

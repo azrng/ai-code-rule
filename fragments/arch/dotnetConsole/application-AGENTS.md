@@ -1,7 +1,7 @@
 ---
 rule_id: application-agents
-version: 1.45.0
-last_updated: 2026-09-03
+version: 1.60.0
+last_updated: 2026-09-07
 dependencies: [agents-root]
 ---
 
@@ -43,7 +43,7 @@ dependencies: [agents-root]
   - `ITransientDependency`：临时注入
   - `IScopedDependency`：作用域注入
   - `ISingletonDependency`：单例注入
-- 在 Program.cs 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务
+- 服务在 Program.cs 中按标记接口对应生命周期显式注册（`AddTransient` / `AddScoped` / `AddSingleton`）；`RegisterBusinessServices` 批量扫描由 `Azrng.AspNetCore.Core` 提供，控制台项目默认仅引用 `Azrng.Core`，不存在该扩展方法
 
 ### 日志
 - `Serilog`：结构化日志
@@ -224,7 +224,7 @@ project-root/
   - `ISingletonDependency`：应用程序生命周期单例
 - Command 通过构造函数注入服务（在 SetHandler 中手动创建作用域解析）
 - 禁止使用静态服务定位器 pattern
-- 禁止手动在 Program.cs 中逐一注册服务，应使用 `RegisterBusinessServices` 批量扫描注册
+- 显式注册的生命周期必须与标记接口声明一致；`RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`，控制台项目未引用该包时不存在此扩展，不照抄
 
 ### 退出码规范
 | 退出码 | 含义 |
