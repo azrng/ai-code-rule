@@ -1,6 +1,6 @@
 ---
 name: bootstrap-blazor
-description: "BootstrapBlazor 组件库开发指南。.NET Blazor 项目中使用 BootstrapBlazor 的最佳实践与代码模板。Keywords: BootstrapBlazor, Blazor, .NET, Table, Modal, TreeView, Form, Toast, CQRS, RBAC."
+description: "BootstrapBlazor 组件库开发指南。.NET Blazor 项目中使用 BootstrapBlazor 的最佳实践与代码模板。Keywords: BootstrapBlazor, Blazor, .NET, Table, Modal, TreeView, Form, Toast, Menu, Layout, 侧边栏, NavLinkMatch, CQRS, RBAC."
 ---
 
 ## 概述
@@ -742,6 +742,42 @@ Menus = new List<MenuItem>()
 };
 ```
 
+**CRITICAL - 侧边栏子菜单展开行为（源码行为，官方文档未写）**：
+
+Menu 组件初始化时（`InitMenus`），**仅当叶子菜单项的 `Url` 与当前页面路径完全相等**（忽略大小写、去前导 `/`、去查询串）时才自动展开其父分组——**不使用 `Match` 属性、不做前缀匹配**。因此进入子路由页面（如 `/users/edit/1`）时，所属分组会保持默认收起。
+
+修复方法：构建菜单数据后，按当前路径前缀命中子项，手动将分组 `IsCollapsed = false`（public 属性，继承自 CollapseItem；注意 `SetCollapse()` 是 protected internal，应用代码不可调用）：
+
+```csharp
+protected override async Task OnInitializedAsync()
+{
+    Menus = await BuildMenusAsync();
+
+    // 子路由页面 URL 不与任何菜单项完全相等，Menu 不会自动展开所属分组，需手动展开
+    var currentPath = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimStart('/');
+    foreach (var group in Menus)
+    {
+        if (group.Items == null) continue;
+        var hit = group.Items.Any(child =>
+        {
+            var url = (child.Url ?? string.Empty).TrimStart('/');
+            return url.Length > 0 && (currentPath.Equals(url, StringComparison.OrdinalIgnoreCase)
+                || currentPath.StartsWith(url + "/", StringComparison.OrdinalIgnoreCase));
+        });
+        if (hit)
+        {
+            group.IsCollapsed = false;
+        }
+    }
+}
+```
+
+**要点**：
+- 启用导航时 `InitMenus` 每次初始化都会把所有菜单项 `IsActive` 重置为 false（再按地址栏精确匹配回填），手动设置子项 `IsActive` 无效
+- `NavLinkMatch` 只有两个值：`All`（精确匹配）、`Prefix`（前缀匹配，**默认值**）；**没有 `Exact`**，写 `NavLinkMatch.Exact` 会编译报错 CS0117
+- 顶级菜单（如 `/admin`）务必显式 `Match = NavLinkMatch.All`，否则默认 Prefix 会吞掉所有 `/admin/*` 子页面的高亮
+- 叶子菜单保持默认 Prefix，子路由页面（编辑/详情）即可维持高亮
+
 **Tab 标签页属性**：
 ```razor
 @page "/your-page"
@@ -937,6 +973,12 @@ services.AddScoped<IEntityService, EntityService>();
 
 ### 菜单点击 404
 确保页面 `@page` 路由与菜单 `Component` 字段完全匹配（不带前导 `/`）。
+
+### 进入子路由页面（如编辑页 /users/edit/1）后侧边栏分组自动收起
+Menu 仅在叶子菜单 Url 与当前路径**完全相等**时才自动展开父分组（源码 `InitMenus` 精确比较，不看 Match/前缀），子路由不会触发。修复：构建菜单后按前缀命中子项并设置分组 `IsCollapsed = false`，见「Layout 布局组件 → 侧边栏子菜单展开行为」。注意手动设置子项 `IsActive` 无效（每次初始化被重置），`SetCollapse()` 是 protected internal 调不到。
+
+### 顶级菜单高亮异常（所有子页面都亮同一个菜单）
+顶级菜单 Url（如 `/admin`）默认 `Match = NavLinkMatch.Prefix`，前缀吞掉所有子页面的高亮。显式设置 `Match = NavLinkMatch.All` 改为精确匹配。`NavLinkMatch` 只有 `All` 和 `Prefix`，**没有 `Exact`**。
 
 ### 表格搜索不生效
 `CustomerSearchModel` 必须是组件属性（非局部变量），`OnQueryAsync` 中从 `QueryPageOptions` 获取分页参数。
