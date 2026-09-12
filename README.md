@@ -149,7 +149,7 @@ fragments/
 # 例外：已定制（meta.status=已定制）的 design-system.yaml 保留本地版本不覆盖，仍是基线时才刷新。
 # 不释放 TASK.md（运行时任务清单，不随规则分发，配方中按 referenced-existing 声明）。
 # 生成成功后会在目标项目写入 .ai-rule-profile.json 配方记录（记录维度选择、命中组件、回答来源与能力开关），
-# 并自动把该记录与生成器本体（use-ai-rule.exe / use-ai-rule）加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
+# 并自动把该记录与生成器本体（use-ai-rule* 通配，覆盖 .exe、无扩展名与带 RID 后缀的历史副本）加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
 # 已有配方时可用 --recipe 按记录重放生成（升级规则或在新项目还原同一组合）：
 #   use-ai-rule.exe --recipe .ai-rule-profile.json [目标目录]
 # 规则版本升级后用 --upgrade 原地升级：配方内容哈希识别本地修改，默认保留、--force 全部覆盖：

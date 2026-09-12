@@ -10,6 +10,7 @@
 
 | 任务 ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 AI | 任务状态 | 优先级 | 最近更新时间 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RULE-20260912-PKGNAME | 发布产物去重与 gitignore 通配覆盖 | 打包不再产出 `use-ai-rule-win-x64.exe` 副本：publish.ps1 / publish.sh 的 win 产物统一命名 `dist/use-ai-rule.exe`（linux/osx 仍带 RID 后缀）；目标项目 gitignore 生成器本体条目从精确名（`use-ai-rule.exe` / `use-ai-rule`）改为通配 `use-ai-rule*`，盖住带 RID 后缀的历史副本（精确名匹配不到 `use-ai-rule-win-x64.exe`，拷入目标项目会成为未跟踪文件）；同步 README 口径与 RecipeRecorderTests 断言。版本 1.60.0 → 1.61.0，已用新产物实测新建 / 追加两条 gitignore 路径与 `git check-ignore` 三名字变体 | 已完成验证 | ZCode | DONE | 中 | 2026-09-12 |
 | RULE-20260907-DRIFT | 真实执行反馈：依赖漂移修复 | 承接 `D:\temp\rulereview`（wpfExe 1.59.0）反馈：WPF-UI 包名与 xmlns 修正（`Wpf.Ui`→NuGet ID `WPF-UI`、2024→2022/xaml，以程序集 XmlnsDefinition 为准）；桌面/控制台 DI 注册改为显式 `Add*` 并标注 `RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`（Web 侧同步标注来源包）；统一结果包装对齐现行 Azrng.Core API（`ResultModelFactory` + 默认裸返回 / 业务异常取舍、`IResultModel<T>` 仅暴露 Data）；wpfExe 核心库不再固定版本号。版本 1.59.0 → 1.60.0 | 已完成验证 | ZCode | DONE | 高 | 2026-09-07 |
 | RULE-20260907-COMPACT | 规则内容压缩与真实产物复核 | 压缩测试未执行说明、KISS 细则、协作任务与反馈段落；保持契约语义，生成版本 1.58.0 → 1.59.0，并在 `D:\temp\rulereview` 复核实际产物 | 实现与验证 | Codex | DOING | 中 | 2026-09-07 |
 | RULE-20260907-COLLAB | 坦率反馈与规则退役机制 | 共享协作规则加入坦率反馈、常规细节判断与结论式过程更新；反馈闭环增加“冗余”类型；新增规则退役清单，并以固定行为规则段预算约束根文件膨胀；版本 1.57.0 → 1.58.0 | 已完成验证 | Codex | DONE | 中 | 2026-09-07 |

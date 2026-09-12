@@ -72,9 +72,8 @@ public sealed class RecipeRecorderTests : IDisposable
 
         var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
         Assert.Contains(".ai-rule-profile.json", content);
-        Assert.Contains("use-ai-rule.exe", content);
-        // mac/linux 本体无扩展名，必须作为独立条目出现
-        Assert.Contains("use-ai-rule\n", content);
+        // 通配条目同时覆盖 use-ai-rule.exe、无扩展名本体与历史带 RID 后缀的副本
+        Assert.Contains("use-ai-rule*", content);
         Assert.Contains("node_modules/", content);
         Assert.Contains("已创建", message);
     }
@@ -89,8 +88,7 @@ public sealed class RecipeRecorderTests : IDisposable
         var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
         Assert.StartsWith("bin/\nobj/\n", content);
         Assert.Contains(".ai-rule-profile.json", content);
-        Assert.Contains("use-ai-rule.exe", content);
-        Assert.Contains("use-ai-rule\n", content);
+        Assert.Contains("use-ai-rule*", content);
         Assert.DoesNotContain("node_modules/", content);
     }
 
@@ -105,9 +103,8 @@ public sealed class RecipeRecorderTests : IDisposable
         var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
         Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
             .Count(line => line.Trim() == ".ai-rule-profile.json"));
-        Assert.Contains("use-ai-rule.exe", content);
-        Assert.Contains("use-ai-rule\n", content);
-        Assert.Contains("追加忽略规则：use-ai-rule.exe、use-ai-rule", message);
+        Assert.Contains("use-ai-rule*", content);
+        Assert.Contains("追加忽略规则：use-ai-rule*", message);
     }
 
     [Fact]
