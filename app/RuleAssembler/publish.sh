@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 构建并发布 use-ai-rule 生成器（Linux/mac 入口，供 CI 与非 Windows 本机使用）。
 # RID 语义与产物命名和同目录 publish.ps1 保持一致：
-#   dist/use-ai-rule-win-x64.exe / dist/use-ai-rule-linux-x64 / dist/use-ai-rule-osx-x64
+#   dist/use-ai-rule.exe（win）/ dist/use-ai-rule-linux-x64 / dist/use-ai-rule-osx-x64
+# Windows 产物统一命名 use-ai-rule.exe，不再额外产出 use-ai-rule-win-x64.exe 等带 RID 后缀的副本。
 # 用法：
 #   ./publish.sh [rid ...]                         默认 win-x64 linux-x64 osx-x64
 #   ./publish.sh --framework-dependent [rid ...]   退回框架相关发布（目标机需自装 .NET 10 运行时）
@@ -42,11 +43,9 @@ for rid in "${rids[@]}"; do
     -p:IncludeNativeLibrariesForSelfExtract=true
 
   binary_name="use-ai-rule"
-  suffix=""
   case "$rid" in
     win-*)
       binary_name="use-ai-rule.exe"
-      suffix=".exe"
       ;;
   esac
   published_binary="$here/bin/Release/net10.0/$rid/publish/$binary_name"
@@ -55,15 +54,17 @@ for rid in "${rids[@]}"; do
     exit 1
   fi
 
-  dist_binary="$dist_directory/use-ai-rule-$rid$suffix"
+  # Windows 产物固定为 use-ai-rule.exe，非 Windows 带 RID 后缀
+  case "$rid" in
+    win-*)
+      dist_binary="$dist_directory/use-ai-rule.exe"
+      ;;
+    *)
+      dist_binary="$dist_directory/use-ai-rule-$rid"
+      ;;
+  esac
   cp -f "$published_binary" "$dist_binary"
   published+=("$dist_binary")
-
-  # 兼容历史用法：win-x64 额外复制为 dist/use-ai-rule.exe
-  if [ "$rid" = "win-x64" ]; then
-    cp -f "$published_binary" "$dist_directory/use-ai-rule.exe"
-    published+=("$dist_directory/use-ai-rule.exe")
-  fi
 done
 
 echo ""

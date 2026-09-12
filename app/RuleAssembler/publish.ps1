@@ -1,9 +1,10 @@
 ﻿# 构建并发布 use-ai-rule 生成器。
 # 默认三平台 self-contained 单文件矩阵（目标机无需安装 .NET 运行时）：
-#   dist/use-ai-rule.exe              —— win-x64（兼容历史用法的别名）
-#   dist/use-ai-rule-win-x64.exe      —— win-x64 规范名
+#   dist/use-ai-rule.exe              —— win-x64
 #   dist/use-ai-rule-linux-x64        —— linux-x64
 #   dist/use-ai-rule-osx-x64          —— osx-x64
+# Windows 产物统一命名 use-ai-rule.exe（与目标项目使用方式、gitignore 忽略条目一致），
+# 不再额外产出 use-ai-rule-win-x64.exe 等带 RID 后缀的副本。
 # 参数：
 #   -Rids <rid[,rid...]>        指定 RID 列表，默认 win-x64,linux-x64,osx-x64
 #   -FrameworkDependent         退回框架相关发布（目标机需自装 .NET 10 运行时）
@@ -53,16 +54,11 @@ foreach ($rid in $ridList) {
         throw "发布完成但未找到产物：$publishedBinary"
     }
 
-    $distBinary = Join-Path $distDirectory "use-ai-rule-$rid$(if ($rid -like 'win-*') { '.exe' })"
+    # Windows 产物固定为 use-ai-rule.exe，非 Windows 带 RID 后缀
+    $distName = if ($rid -like 'win-*') { 'use-ai-rule.exe' } else { "use-ai-rule-$rid" }
+    $distBinary = Join-Path $distDirectory $distName
     Copy-Item -LiteralPath $publishedBinary -Destination $distBinary -Force
     $published += $distBinary
-
-    # 兼容历史用法：win-x64 额外复制为 dist\use-ai-rule.exe
-    if ($rid -eq 'win-x64') {
-        $legacyBinary = Join-Path $distDirectory 'use-ai-rule.exe'
-        Copy-Item -LiteralPath $publishedBinary -Destination $legacyBinary -Force
-        $published += $legacyBinary
-    }
 }
 
 Write-Host ""

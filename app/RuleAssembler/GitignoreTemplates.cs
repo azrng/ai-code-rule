@@ -8,17 +8,16 @@ internal static class GitignoreTemplates
     public const string RecipeEntry = ".ai-rule-profile.json";
 
     // 生成器本体：使用方式是拷贝到目标项目根目录执行，属于本地产物，不应提交。
-    // Windows 产物带 .exe 后缀；mac/linux 的 self-contained 产物无扩展名，两条都要忽略
-    public const string ExeEntry = "use-ai-rule.exe";
-    public const string NonExeEntry = "use-ai-rule";
+    // 用通配覆盖全部发布名变体（use-ai-rule.exe、无扩展名产物与历史带 RID 后缀的副本），避免逐个枚举遗漏
+    public const string ExeEntry = "use-ai-rule*";
 
-    public static readonly string[] GeneratorEntries = { RecipeEntry, ExeEntry, NonExeEntry };
+    public static readonly string[] GeneratorEntries = { RecipeEntry, ExeEntry };
 
     public const string GeneratorComment =
         "# AI rule 生成器产物（use-ai-rule 生成：配方记录与生成器本体，勿提交）\n";
 
     public const string GeneratorBlock =
-        GeneratorComment + RecipeEntry + "\n" + ExeEntry + "\n" + NonExeEntry + "\n";
+        GeneratorComment + RecipeEntry + "\n" + ExeEntry + "\n";
 
     public static string Get(string stackKey)
     {

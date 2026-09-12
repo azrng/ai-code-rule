@@ -9,7 +9,7 @@
 3. **经典选择**：技术大类 → Profile，作为兜底入口保留。
 4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 问答（Profile 选择）这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
 5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。
-6. **收尾**：所有路径共用「列出实际生成文件 → 汇总确认 → 生成」；写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode / profile / 回答组合 / `answer_sources` 回答来源 / `features` 能力开关 / 版本 / 文件清单），并确保目标项目 `.gitignore` 忽略该记录与生成器本体 `use-ai-rule.exe`；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
+6. **收尾**：所有路径共用「列出实际生成文件 → 汇总确认 → 生成」；写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode / profile / 回答组合 / `answer_sources` 回答来源 / `features` 能力开关 / 版本 / 文件清单），并确保目标项目 `.gitignore` 忽略该记录与生成器本体（`use-ai-rule*` 通配，覆盖 exe、无扩展名与带 RID 后缀的副本）；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
 
 ## 设计
 
@@ -67,7 +67,7 @@ manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组
 ./publish.ps1
 ```
 
-产物位于仓库根目录 `dist/use-ai-rule.exe`（底层发布目录仍保留在 `bin/Release/net10.0/win-x64/publish/`）。当前发布为 Windows x64、框架相关单文件，目标机需要安装对应的 .NET 10 运行时；这是体积和部署依赖之间的明确取舍。
+产物位于仓库根目录 `dist/`：`use-ai-rule.exe`（win-x64）与 `use-ai-rule-linux-x64`、`use-ai-rule-osx-x64`（底层发布目录仍保留在 `bin/Release/net10.0/<rid>/publish/`）。当前发布为三平台 self-contained 单文件矩阵，目标机无需安装 .NET 运行时；Windows 产物统一命名 `use-ai-rule.exe`，不再产出带 RID 后缀的副本。
 
 ## 使用
 
