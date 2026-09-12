@@ -705,6 +705,16 @@ internal sealed class RecipeRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Dictionary<string, string>? FileHashes { get; init; }
 
+    // 导入的技能 ID 与目标工具 ID（交互路径勾选产生，技能目标见 SkillTargets）：
+    // --upgrade / --recipe 按配方同步重放；未导入技能时为 null 且不序列化，旧配方形状不变
+    [JsonPropertyName("skills")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? Skills { get; init; }
+
+    [JsonPropertyName("skill_targets")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? SkillTargets { get; init; }
+
     [JsonPropertyName("files")]
     public List<string> Files { get; init; } = new();
 }

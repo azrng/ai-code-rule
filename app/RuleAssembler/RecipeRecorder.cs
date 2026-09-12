@@ -77,6 +77,38 @@ internal sealed class RecipeRecorder
         return hashes;
     }
 
+    // init-only 记录的补写：技能勾选发生在规则配方构建之后，这里按原值重建并附加技能字段；
+    // 两个列表都为空时置 null，配方 JSON 与未导入技能时保持同形
+    public static RecipeRecord WithSkills(
+        RecipeRecord record, IReadOnlyList<string>? skills, IReadOnlyList<string>? skillTargets)
+    {
+        var skillList = skills is { Count: > 0 }
+            ? skills.OrderBy(id => id, StringComparer.Ordinal).ToList()
+            : null;
+        var targetList = skillTargets is { Count: > 0 }
+            ? skillTargets.OrderBy(id => id, StringComparer.Ordinal).ToList()
+            : null;
+        return new RecipeRecord
+        {
+            SchemaVersion = record.SchemaVersion,
+            ManifestVersion = record.ManifestVersion,
+            GeneratedAt = record.GeneratedAt,
+            Mode = record.Mode,
+            ProfileId = record.ProfileId,
+            ProfileLabel = record.ProfileLabel,
+            Family = record.Family,
+            Selection = record.Selection,
+            ComponentIds = record.ComponentIds,
+            Answers = record.Answers,
+            AnswerSources = record.AnswerSources,
+            Features = record.Features,
+            FileHashes = record.FileHashes,
+            Skills = skillList,
+            SkillTargets = targetList,
+            Files = record.Files
+        };
+    }
+
     public static string HashContent(string content)
     {
         var bytes = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(content));

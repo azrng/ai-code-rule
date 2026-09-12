@@ -269,4 +269,56 @@ public sealed class RecipeReplayerTests : IDisposable
         Assert.NotEqual(RecipeRecorder.HashContent(content), RecipeRecorder.HashContent(content + "x"));
         Assert.Equal(64, RecipeRecorder.HashContent(content).Length);
     }
+
+    [Fact]
+    public void 重放_配方带技能勾选_记录保持skills字段()
+    {
+        // 技能勾选随配方重放：重写记录保留 skills / skill_targets，供升级与重放路径同步技能
+        var (record, json) = BuildRecipe("vueWailsExe");
+        var skillJson = JsonSerializer.Serialize(
+            RecipeRecorder.WithSkills(record, new[] { "brainstorming" }, new[] { "codex", "claude" }),
+            new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+        var result = _replayer.Replay(skillJson, _tempDir);
+
+        Assert.Equal(new[] { "brainstorming" }, result.Record.Skills);
+        Assert.Equal(new[] { "claude", "codex" }, result.Record.SkillTargets);
+    }
+
+    [Fact]
+    public void 升级_本地修改保留时技能字段不丢失()
+    {
+        var files = WriteGeneratedFiles("reactOnly");
+        var json = BuildRecipeJson("reactOnly", files, withHashes: true);
+        var recipe = RecipeRecordFromJson(json);
+        var skillJson = JsonSerializer.Serialize(
+            RecipeRecorder.WithSkills(recipe, new[] { "summarize" }, new[] { "zcode" }),
+            new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+        // 本地修改一个文件，升级默认保留它；技能勾选不受影响地写入新配方
+        var firstRule = files[0].Output;
+        File.WriteAllText(Path.Combine(_tempDir, firstRule), "本地修改过");
+
+        var upgrade = _replayer.PlanUpgrade(skillJson, _tempDir);
+
+        Assert.Contains(firstRule, upgrade.SkippedFiles);
+        Assert.Equal(new[] { "summarize" }, upgrade.Record.Skills);
+        Assert.Equal(new[] { "zcode" }, upgrade.Record.SkillTargets);
+    }
+
+    private static RecipeRecord RecipeRecordFromJson(string json)
+    {
+        return JsonSerializer.Deserialize<RecipeRecord>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        })!;
+    }
 }

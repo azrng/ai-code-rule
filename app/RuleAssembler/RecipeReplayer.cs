@@ -100,6 +100,8 @@ internal sealed class RecipeReplayer
             AnswerSources = fresh.AnswerSources,
             Features = fresh.Features,
             FileHashes = hashes,
+            Skills = fresh.Skills,
+            SkillTargets = fresh.SkillTargets,
             Files = fresh.Files
         };
     }
@@ -170,6 +172,9 @@ internal sealed class RecipeReplayer
         var record = RecipeRecorder.BuildComposition(
             _manifest, selection, plan.ComponentIds, recipe.Mode,
             recipe.Answers, recipe.AnswerSources, features, files);
+
+        // 技能勾选随配方重放：记录保持 skills / skill_targets，供调用方在规则落盘后同步技能
+        record = RecipeRecorder.WithSkills(record, recipe.Skills, recipe.SkillTargets);
 
         return new ReplayResult(plan, features, files, record, notes);
     }

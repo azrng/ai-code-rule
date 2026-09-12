@@ -20,10 +20,11 @@ internal static class Program
             // 版本以 manifest.vars 为唯一事实来源，随规则内容一起演进，避免 exe 与规则版本漂移
             Console.WriteLine($"use-ai-rule {manifest.Vars.Version}（{manifest.Vars.LastUpdated}）");
 
+            var skills = new SkillsStore();
             if (args.Length > 0)
-                return RunCommand(args, manifest, resources);
+                return RunCommand(args, manifest, resources, skills);
 
-            return RunInteractive(manifest, resources);
+            return RunInteractive(manifest, resources, skills);
         }
         catch (Exception ex)
         {
@@ -43,7 +44,7 @@ internal static class Program
 
     // 交互主流程（P2 阶段 3）：问答 / 检测入口产出 Selection 走组合内核；
     // 经典大类 → Profile 保留为兼容入口，仍走旧渲染路径
-    private static int RunInteractive(Manifest manifest, ResourceStore resources)
+    private static int RunInteractive(Manifest manifest, ResourceStore resources, SkillsStore skillsStore)
     {
         Console.WriteLine(Banner);
         Console.WriteLine($"当前目录：{Environment.CurrentDirectory}");
@@ -135,11 +136,33 @@ internal static class Program
             }
 
             var written = new OutputWriter().WriteFiles(files);
+
+            // Skills 导入：规则文件落盘后的可选追加步骤，勾选结果随配方记录（--upgrade / --recipe 按配方同步）
+            var skillImport = OfferSkillsImport(ui, skillsStore);
+            var skillWritten = 0;
+            if (skillImport is not null)
+            {
+                Console.WriteLine($"导入 Skills 到 {Environment.CurrentDirectory}：");
+                skillWritten = new SkillImporter().Import(
+                    Environment.CurrentDirectory, skillImport.Targets, skillImport.Skills, skillsStore, skillImport.SkipKeys);
+            }
+
+            // 配方只记实际写入的技能：被跳过的同名技能保留本地版本，也不进入后续升级的同步范围
+            record = RecipeRecorder.WithSkills(
+                record,
+                skillImport?.Skills
+                    .Where(skill => skillImport.Targets.Any(target =>
+                        skillImport.SkipKeys?.Contains($"{target.Id}/{skill.Id}") != true))
+                    .Select(skill => skill.Id)
+                    .ToList(),
+                skillImport?.Targets.Select(target => target.Id).ToList());
+
             var recorder = new RecipeRecorder();
             recorder.Write(Environment.CurrentDirectory, record);
             var gitignoreMessage = recorder.EnsureGitignored(Environment.CurrentDirectory, stackKey);
 
-            Console.WriteLine($"完成：已释放 {written} 个文件到 {Environment.CurrentDirectory}");
+            Console.WriteLine($"完成：已释放 {written} 个文件到 {Environment.CurrentDirectory}" +
+                (skillWritten > 0 ? $"，另导入 Skills {skillWritten} 个文件" : ""));
             Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
             return 0;
         }
@@ -162,6 +185,122 @@ internal static class Program
         Selection selection, string mode, Dictionary<string, string> answers, Dictionary<string, string> sources)
     {
         return new EntryOutcome(selection, null, mode, answers, sources);
+    }
+
+    // Skills 导入勾选结果：技能与目标都是多选；SkipKeys 是「<targetId>/<skillId>」的跳过集合（保留本地同名技能）；
+    // null 表示用户跳过导入（不写入配方）
+    private sealed record SkillImportSelection(
+        IReadOnlyList<SkillInfo> Skills,
+        IReadOnlyList<SkillTarget> Targets,
+        IReadOnlySet<string>? SkipKeys);
+
+    // Skills 导入（可选步骤）：规则文件落盘后追加；技能多选（默认全不勾）→ 目标工具多选（默认全勾）。
+    // 导入是追加语义：目标目录已有同名技能（含 SKILL.md）时先问覆盖还是跳过，未选中的技能一律不动；
+    // 任何一步取消或零勾选都视为跳过导入，配方不记录技能字段
+    private static SkillImportSelection? OfferSkillsImport(IConsoleUi ui, SkillsStore skillsStore)
+    {
+        var skills = skillsStore.Discover();
+        if (skills.Count == 0)
+            return null;
+
+        var entry = ui.Choose(
+            "是否导入 AI Skills（内置于生成器，免手动拷贝）？",
+            "跳过，不导入",
+            new List<UiChoice>
+            {
+                new("选择 Skills 并导入", $"{skills.Count} 个内置技能，可选导入到 Codex / ZCode / Claude Code")
+            });
+        if (entry is null)
+            return null;
+
+        var picked = ui.ChooseMany(
+            "选择要导入的 Skills（可多选）：",
+            skills.Select(skill => new UiChoice(skill.Id, TruncateDescription(skill.Description))).ToList(),
+            new List<int>());
+        if (picked.Count == 0)
+        {
+            Console.WriteLine("未勾选任何 Skill，跳过导入。");
+            return null;
+        }
+
+        var targetPicked = ui.ChooseMany(
+            "选择导入到哪些工具（项目级目录，可多选）：",
+            SkillTargets.All.Select(target => new UiChoice(target.Label, $"{target.RelativeRoot}/<skill>/")).ToList(),
+            Enumerable.Range(0, SkillTargets.All.Count).ToList());
+        if (targetPicked.Count == 0)
+        {
+            Console.WriteLine("未选择任何目标工具，跳过导入。");
+            return null;
+        }
+
+        var selectedSkills = picked.Select(index => skills[index]).ToList();
+        var selectedTargets = targetPicked.Select(index => SkillTargets.All[index]).ToList();
+
+        // 同名冲突处置：追加导入的前提是同名技能显式确认；取消则整体放弃导入
+        var conflicts = new SkillImporter().DetectConflicts(Environment.CurrentDirectory, selectedTargets, selectedSkills);
+        IReadOnlySet<string>? skipKeys = null;
+        if (conflicts.Count > 0)
+        {
+            Console.WriteLine($"检测到 {conflicts.Count} 个同名 Skills 已存在于目标目录：");
+            foreach (var conflict in conflicts.Take(8))
+            {
+                var separator = conflict.IndexOf('/');
+                Console.WriteLine($"  - [{conflict[..separator]}] {conflict[(separator + 1)..]}");
+            }
+
+            if (conflicts.Count > 8)
+                Console.WriteLine($"  …等共 {conflicts.Count} 个");
+            var overwrite = ui.Choose(
+                "同名 Skills 如何处理？（未命中的新增技能照常导入）",
+                "取消导入",
+                new List<UiChoice>
+                {
+                    new("覆盖已存在的", "以生成器内置版本覆盖本地同名技能"),
+                    new("跳过已存在的", "保留本地版本不动，只导入新增技能")
+                });
+            if (overwrite is null)
+                return null;
+            if (overwrite == 1)
+                skipKeys = conflicts;
+        }
+
+        return new SkillImportSelection(selectedSkills, selectedTargets, skipKeys);
+    }
+
+    private static string TruncateDescription(string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+            return "（SKILL.md 未提供 description）";
+        return description.Length <= 60 ? description : description[..60] + "…";
+    }
+
+    // 重放 / 升级路径的技能同步：配方记录了 skills + skill_targets 时按内置内容覆盖重放，
+    // 技能或目标已不在当前版本生成器中时记告警跳过，不阻塞规则文件升级
+    private static int ImportRecordedSkills(string targetDirectory, RecipeRecord record, SkillsStore skillsStore)
+    {
+        if (record.Skills is not { Count: > 0 } || record.SkillTargets is not { Count: > 0 })
+            return 0;
+
+        var discovered = skillsStore.Discover();
+        var skills = discovered
+            .Where(skill => record.Skills.Contains(skill.Id, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        foreach (var missing in record.Skills.Where(skillId =>
+            !discovered.Any(candidate => candidate.Id.Equals(skillId, StringComparison.OrdinalIgnoreCase))))
+        {
+            Console.WriteLine($"告警：配方记录的技能 {missing} 已不在当前版本生成器中，跳过");
+        }
+
+        var targets = record.SkillTargets
+            .Select(SkillTargets.Find)
+            .Where(target => target is not null)
+            .Cast<SkillTarget>()
+            .ToList();
+        if (skills.Count == 0 || targets.Count == 0)
+            return 0;
+
+        Console.WriteLine($"按配方同步 Skills 到 {targetDirectory}（按内置内容覆盖更新）：");
+        return new SkillImporter().Import(targetDirectory, targets, skills, skillsStore);
     }
 
     // 逐字节比较两条渲染路径的产物：路径集合、顺序与内容都必须一致，任何差异都是回归
@@ -464,6 +603,32 @@ internal static class Program
         return $"{label}（{trait}={value}）";
     }
 
+    // --check 的技能资源校验：发现数 > 0、ID 不冲突（忽略大小写，目录名跨平台大小写不敏感）、
+    // 每个 SKILL.md 有 frontmatter description（选择列表与导入说明依赖它展示）
+    private static List<string> ValidateSkills(SkillsStore skillsStore)
+    {
+        var errors = new List<string>();
+        var skills = skillsStore.Discover();
+        if (skills.Count == 0)
+        {
+            errors.Add("未发现任何内置技能（skills/ 下没有含 SKILL.md 的目录）");
+            return errors;
+        }
+
+        var duplicateIds = skills
+            .GroupBy(skill => skill.Id, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"{group.Key}（{string.Join("、", group.Select(skill => skill.ResourceRoot))}）")
+            .ToList();
+        errors.AddRange(duplicateIds.Select(duplicate => $"技能 ID 冲突：{duplicate}"));
+
+        errors.AddRange(skills
+            .Where(skill => string.IsNullOrWhiteSpace(skill.Description))
+            .Select(skill => $"技能 {skill.Id}（{skill.ResourceRoot}）的 SKILL.md 缺少 description"));
+
+        return errors;
+    }
+
     private static IConsoleUi CreateUi()
     {
         if (Console.IsInputRedirected)
@@ -495,7 +660,7 @@ internal static class Program
         }
     }
 
-    private static int RunCommand(string[] args, Manifest manifest, ResourceStore resources)
+    private static int RunCommand(string[] args, Manifest manifest, ResourceStore resources, SkillsStore skillsStore)
     {
         if (args.Length == 1 && args[0].Equals("--check", StringComparison.OrdinalIgnoreCase))
         {
@@ -546,6 +711,18 @@ internal static class Program
             }
 
             Console.WriteLine($"组件问答校验通过：全部交互路径可解析，{manifest.CompatibilityCases.Count} 个兼容样例可达且无歧义。");
+
+            // 内置技能校验：资源里必须能发现技能、ID 全局唯一、每个 SKILL.md 带 description 供选择列表展示
+            var skillErrors = ValidateSkills(skillsStore);
+            if (skillErrors.Count > 0)
+            {
+                Console.Error.WriteLine("内置技能校验失败：");
+                foreach (var error in skillErrors)
+                    Console.Error.WriteLine($"- {error}");
+                return 1;
+            }
+
+            Console.WriteLine($"内置技能校验通过：{skillsStore.Discover().Count} 个技能，SKILL.md 齐全且 ID 无冲突。");
 
             // 组合内核兼容样例：组合路径与旧 Profile 产物逐字节等价，等价被破坏时 --check 失败
             if (manifest.CompatibilityCases.Count > 0)
@@ -680,13 +857,15 @@ internal static class Program
                 Console.WriteLine($"  - {file.Output}");
 
             var written = new OutputWriter().WriteFiles(targetDirectory, plan.FilesToWrite);
+            var skillWritten = ImportRecordedSkills(targetDirectory, plan.Record, skillsStore);
             var recorder = new RecipeRecorder();
             recorder.Write(targetDirectory, plan.Record);
             var gitignoreMessage = recorder.EnsureGitignored(
                 targetDirectory,
                 RecipeRecorder.StackKeyForComposition(manifest, replay.Plan));
 
-            Console.WriteLine($"完成：已升级 {written} 个文件（规则版本 {manifest.Vars.Version}）");
+            Console.WriteLine($"完成：已升级 {written} 个文件（规则版本 {manifest.Vars.Version}）" +
+                (skillWritten > 0 ? $"，另同步 Skills {skillWritten} 个文件" : ""));
             Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
             return 0;
         }
@@ -710,13 +889,15 @@ internal static class Program
                 Console.WriteLine($"  - {file.Output}");
 
             var written = new OutputWriter().WriteFiles(targetDirectory, result.Files);
+            var skillWritten = ImportRecordedSkills(targetDirectory, result.Record, skillsStore);
             var recorder = new RecipeRecorder();
             recorder.Write(targetDirectory, result.Record);
             var gitignoreMessage = recorder.EnsureGitignored(
                 targetDirectory,
                 RecipeRecorder.StackKeyForComposition(manifest, result.Plan));
 
-            Console.WriteLine($"完成：已重放 {written} 个文件到 {targetDirectory}");
+            Console.WriteLine($"完成：已重放 {written} 个文件到 {targetDirectory}" +
+                (skillWritten > 0 ? $"，另同步 Skills {skillWritten} 个文件" : ""));
             Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
             return 0;
         }
@@ -788,7 +969,8 @@ internal static class Program
         {
             Console.WriteLine(Banner);
             Console.WriteLine("直接双击或不带参数运行：自动检测当前项目给出推荐，也可进入问答选择并释放规则。");
-            Console.WriteLine("--check：只校验 manifest、片段、全部 Profile、输出契约一致性、问答决策树与组件问答决策树，不写入文件。");
+            Console.WriteLine("规则文件落盘后可选择把内置 Skills 导入到 Codex（.codex/skills）/ ZCode（.zcode/skills）/ Claude Code（.claude/skills），追加导入、同名技能可覆盖或跳过；--recipe / --upgrade 按配方同步已记录的 Skills。");
+            Console.WriteLine("--check：只校验 manifest、片段、全部 Profile、输出契约一致性、问答决策树、组件问答决策树与内置技能，不写入文件。");
             Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合；证据不足时打印待确认维度与候选组合，不写入文件。");
             Console.WriteLine("--plan 维度=取值 ...：按显式维度选择解析组合内核，打印命中组件与文件清单，不写入文件。");
             Console.WriteLine("--recipe <配方.json> [目标目录]：按配方记录重放生成（缺省写入当前目录），写入配方与 .gitignore。");

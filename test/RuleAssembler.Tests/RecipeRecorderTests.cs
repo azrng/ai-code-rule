@@ -138,4 +138,65 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Contains("node_modules/", template);
         Assert.Contains("[Bb]in/", template);
     }
+
+    [Fact]
+    public void WithSkills_AttachesSortedSkillSelection()
+    {
+        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.62.0", LastUpdated = "2026-09-12" } };
+        var profile = new Profile { Id = "reactOnly", Label = "React 静态站", Family = "frontend-static" };
+        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
+        var record = RecipeRecorder.Build(
+            manifest, profile, "wizard",
+            new Dictionary<string, string>(), new Dictionary<string, string>(), new[] { "doc" }, files);
+
+        var withSkills = RecipeRecorder.WithSkills(record, new[] { "summarize", "brainstorming" }, new[] { "zcode", "codex" });
+
+        Assert.Equal(new[] { "brainstorming", "summarize" }, withSkills.Skills);
+        Assert.Equal(new[] { "codex", "zcode" }, withSkills.SkillTargets);
+        Assert.Equal(record.ProfileId, withSkills.ProfileId);
+        Assert.Equal(record.Files, withSkills.Files);
+    }
+
+    [Fact]
+    public void Write_RecipeWithoutSkills_OmitsSkillFieldsFromJson()
+    {
+        // 未导入技能的配方与旧形状完全一致，不出现 skills / skill_targets 键
+        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.62.0", LastUpdated = "2026-09-12" } };
+        var profile = new Profile { Id = "reactOnly", Label = "React 静态站", Family = "frontend-static" };
+        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
+        var record = RecipeRecorder.Build(
+            manifest, profile, "wizard",
+            new Dictionary<string, string>(), new Dictionary<string, string>(), new[] { "doc" }, files);
+
+        new RecipeRecorder().Write(_root, record);
+
+        var json = File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName));
+        using var doc = JsonDocument.Parse(json);
+        Assert.False(doc.RootElement.TryGetProperty("skills", out _));
+        Assert.False(doc.RootElement.TryGetProperty("skill_targets", out _));
+
+        // 空勾选视为未导入：补写空列表后配方 JSON 保持原样
+        var withEmptySkills = RecipeRecorder.WithSkills(record, new List<string>(), new List<string>());
+        new RecipeRecorder().Write(_root, withEmptySkills);
+        Assert.Equal(json, File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));
+    }
+
+    [Fact]
+    public void Write_RecipeWithSkills_SerializesSkillFields()
+    {
+        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.62.0", LastUpdated = "2026-09-12" } };
+        var profile = new Profile { Id = "reactOnly", Label = "React 静态站", Family = "frontend-static" };
+        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
+        var record = RecipeRecorder.WithSkills(
+            RecipeRecorder.Build(
+                manifest, profile, "wizard",
+                new Dictionary<string, string>(), new Dictionary<string, string>(), new[] { "doc" }, files),
+            new[] { "brainstorming" }, new[] { "claude" });
+
+        new RecipeRecorder().Write(_root, record);
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));
+        Assert.Equal("brainstorming", doc.RootElement.GetProperty("skills")[0].GetString());
+        Assert.Equal("claude", doc.RootElement.GetProperty("skill_targets")[0].GetString());
+    }
 }
