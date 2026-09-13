@@ -74,6 +74,8 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Contains(".ai-rule-profile.json", content);
         // 通配条目同时覆盖 use-ai-rule.exe、无扩展名本体与历史带 RID 后缀的副本
         Assert.Contains("use-ai-rule*", content);
+        // 规则效果反馈记录属本地产物，随生成器忽略块一起写入
+        Assert.Contains(".ai-rule-feedback.md", content);
         Assert.Contains("node_modules/", content);
         Assert.Contains("已创建", message);
     }
@@ -89,13 +91,14 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.StartsWith("bin/\nobj/\n", content);
         Assert.Contains(".ai-rule-profile.json", content);
         Assert.Contains("use-ai-rule*", content);
+        Assert.Contains(".ai-rule-feedback.md", content);
         Assert.DoesNotContain("node_modules/", content);
     }
 
     [Fact]
     public void EnsureGitignored_AppendsOnlyMissingEntries()
     {
-        // 旧版生成器只忽略配方记录：再跑一次必须只补生成器本体，不重复已有条目
+        // 旧版生成器只忽略配方记录：再跑一次必须只补缺失条目，不重复已有条目
         File.WriteAllText(Path.Combine(_root, ".gitignore"), "bin/\n.ai-rule-profile.json\n");
 
         var message = new RecipeRecorder().EnsureGitignored(_root, "dotnet");
@@ -104,7 +107,8 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
             .Count(line => line.Trim() == ".ai-rule-profile.json"));
         Assert.Contains("use-ai-rule*", content);
-        Assert.Contains("追加忽略规则：use-ai-rule*", message);
+        Assert.Contains(".ai-rule-feedback.md", content);
+        Assert.Contains("追加忽略规则：use-ai-rule*、.ai-rule-feedback.md", message);
     }
 
     [Fact]

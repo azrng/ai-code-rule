@@ -2,7 +2,7 @@ namespace RuleAssembler;
 
 // 目标项目缺失 .gitignore 时按技术栈生成默认忽略规则。
 // 内容精选自 github/gitignore 标准模板（C# 参考仓库内 daily-examples 版本，Python 等参考 mcp_server 版本），
-// 每份保持精简，只覆盖构建产物、本地环境与编辑器目录，末尾统一带生成器产物忽略块（配方记录与生成器本体）。
+// 每份保持精简，只覆盖构建产物、本地环境与编辑器目录，末尾统一带生成器本地产物忽略块（配方记录、生成器本体与规则效果反馈记录）。
 internal static class GitignoreTemplates
 {
     public const string RecipeEntry = ".ai-rule-profile.json";
@@ -11,13 +11,16 @@ internal static class GitignoreTemplates
     // 用通配覆盖全部发布名变体（use-ai-rule.exe、无扩展名产物与历史带 RID 后缀的副本），避免逐个枚举遗漏
     public const string ExeEntry = "use-ai-rule*";
 
-    public static readonly string[] GeneratorEntries = { RecipeEntry, ExeEntry };
+    // 规则效果反馈记录：目标项目 AI 执行过程的本地登记文件，属本地产物，不随项目提交，回传规则源仓库时显式复制内容
+    public const string FeedbackEntry = ".ai-rule-feedback.md";
+
+    public static readonly string[] GeneratorEntries = { RecipeEntry, ExeEntry, FeedbackEntry };
 
     public const string GeneratorComment =
-        "# AI rule 生成器产物（use-ai-rule 生成：配方记录与生成器本体，勿提交）\n";
+        "# AI rule 本地产物（use-ai-rule 生成：配方记录、生成器本体与规则效果反馈记录，勿提交）\n";
 
     public const string GeneratorBlock =
-        GeneratorComment + RecipeEntry + "\n" + ExeEntry + "\n";
+        GeneratorComment + RecipeEntry + "\n" + ExeEntry + "\n" + FeedbackEntry + "\n";
 
     public static string Get(string stackKey)
     {

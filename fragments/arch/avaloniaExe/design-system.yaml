@@ -2,7 +2,7 @@
 # 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
 # status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
 # 面向人和 AI 共同使用：可读、可解析、非可执行、易于比对
-# 技术栈：.NET（版本以仓库 TargetFramework 为准）+ Avalonia 11 + Ursa.Avalonia + CommunityToolkit.Mvvm
+# 技术栈：.NET（版本以仓库 TargetFramework 为准）+ Avalonia（版本以仓库 NuGet 引用为准）+ Ursa.Avalonia + CommunityToolkit.Mvvm
 
 meta:
   name: "Avalonia 桌面端设计系统"
@@ -14,7 +14,7 @@ meta:
     - "desktop"
   tech_stack:
     runtime: ".NET（版本以仓库 TargetFramework 为准）"
-    ui_framework: "Avalonia 11+"
+    ui_framework: "Avalonia（版本以仓库 NuGet 引用为准）"
     component_library: "Ursa.Avalonia"
     mvvm: "CommunityToolkit.Mvvm"
     data_access: "Dapper + SQLite / PostgreSQL（按项目选择）"

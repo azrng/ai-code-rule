@@ -150,7 +150,7 @@ fragments/
 # 例外：已定制（meta.status=已定制）的 design-system.yaml 保留本地版本不覆盖，仍是基线时才刷新。
 # 不释放 TASK.md（运行时任务清单，不随规则分发，配方中按 referenced-existing 声明）。
 # 生成成功后会在目标项目写入 .ai-rule-profile.json 配方记录（记录维度选择、命中组件、回答来源与能力开关），
-# 并自动把该记录与生成器本体（use-ai-rule* 通配，覆盖 .exe、无扩展名与带 RID 后缀的历史副本）加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
+# 并自动把该记录、生成器本体（use-ai-rule* 通配，覆盖 .exe、无扩展名与带 RID 后缀的历史副本）与规则效果反馈记录（.ai-rule-feedback.md）加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
 # 规则文件落盘后还可选导入内置 AI Skills（生成器已全量打包仓库 skills/，无需再手动拷贝）：
 # 多选技能（35+ 个，含 dotnet-skills / officeSkills 等分组下的技能）、多选目标工具后按项目级目录约定整体写入：
 #   Codex → .codex/skills/<技能>/，ZCode → .zcode/skills/<技能>/，Claude Code → .claude/skills/<技能>/
@@ -164,7 +164,7 @@ fragments/
 
 发布产物是 self-contained 单文件（win-x64 / linux-x64 / osx-x64 三平台矩阵，目标机器无需安装 .NET 10 运行时；本机需 .NET SDK 10 构建）。拼接器把公共入口、指针和可复用能力抽成模块，按所选 Profile 填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部 Profile。后续只维护 `fragments/`，重新构建即可让所有 Profile 生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。
 
-生成的规则内置效果反馈闭环：AI 在目标项目协作中发现规则被违反、与现实冲突或缺失时，任务收尾把条目记入项目根目录 `.ai-rule-feedback.md`；把这些反馈回传本仓库，按 `doc/规则效果反馈承接.md` 的口径登记并转化为 `fragments/` 修改，目标项目再通过 `--upgrade` 拿到改进后的规则。
+生成的规则内置效果反馈闭环：AI 在目标项目协作中发现规则被违反、与现实冲突或缺失时，任务收尾把条目记入项目根目录 `.ai-rule-feedback.md`（本地产物，已加入 `.gitignore` 不随项目提交）；把这些反馈回传本仓库，按 `doc/规则效果反馈承接.md` 的口径登记并转化为 `fragments/` 修改，目标项目再通过 `--upgrade` 拿到改进后的规则。
 
 ## 共同规则
 
