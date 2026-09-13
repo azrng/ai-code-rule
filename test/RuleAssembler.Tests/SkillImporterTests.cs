@@ -3,7 +3,8 @@ using System.Text;
 namespace RuleAssembler.Tests;
 
 // SkillImporter 落盘行为回归：三目标（codex → .codex/skills、zcode、claude）目录约定、
-// 字节级原样拷贝、同名冲突检测（以 SKILL.md 为准）、skipKeys 跳过语义（保留本地版本）
+// 字节级原样拷贝、同名冲突检测（以 SKILL.md 为准）、同名技能先删后写（消除残留）、
+// 无 SKILL.md 目录并入不删除、skipKeys 跳过语义（保留本地版本）
 public sealed class SkillImporterTests : IDisposable
 {
     private readonly string _root;
@@ -57,20 +58,39 @@ public sealed class SkillImporterTests : IDisposable
     }
 
     [Fact]
-    public void Import_OverwritesExistingSkillContent_WhenNoSkipKeys()
+    public void Import_OverwriteDeletesSameNameSkillBeforeWriting_WhenNoSkipKeys()
     {
-        // 重放 / 升级路径语义：不带 skipKeys 时按内置内容直接覆盖
+        // 重放 / 升级路径语义：同名技能（以 SKILL.md 为准）先删后写，
+        // 内置内容整体重写，上游已删改的残留文件随之清理
         var skill = _store.Find("brainstorming");
         Assert.NotNull(skill);
         var skillRoot = Path.Combine(_root, ".zcode", "skills", skill.Id);
         Directory.CreateDirectory(skillRoot);
         File.WriteAllText(Path.Combine(skillRoot, "SKILL.md"), "旧的本地内容", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(skillRoot, "上游已删除的残留.md"), "stale", Encoding.UTF8);
 
         _importer.Import(_root, new[] { SkillTargets.Find("zcode")! }, new[] { skill! }, _store);
 
         var text = File.ReadAllText(Path.Combine(skillRoot, "SKILL.md"));
         Assert.NotEqual("旧的本地内容", text);
         Assert.Contains("name:", text);
+        Assert.False(File.Exists(Path.Combine(skillRoot, "上游已删除的残留.md")));
+    }
+
+    [Fact]
+    public void Import_DirectoryWithoutSkillManifestIsMergedNotDeleted()
+    {
+        // 无 SKILL.md 的目录不算同名技能：不删除目录，用户文件保留，内置文件并入写入
+        var skill = _store.Find("brainstorming");
+        Assert.NotNull(skill);
+        var skillRoot = Path.Combine(_root, ".codex", "skills", skill.Id);
+        Directory.CreateDirectory(skillRoot);
+        File.WriteAllText(Path.Combine(skillRoot, "用户笔记.txt"), "非技能内容", Encoding.UTF8);
+
+        _importer.Import(_root, new[] { SkillTargets.Find("codex")! }, new[] { skill! }, _store);
+
+        Assert.True(File.Exists(Path.Combine(skillRoot, "SKILL.md")));
+        Assert.Equal("非技能内容", File.ReadAllText(Path.Combine(skillRoot, "用户笔记.txt")));
     }
 
     [Fact]

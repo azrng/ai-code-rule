@@ -196,7 +196,7 @@ internal static class Program
 
     // Skills 导入（可选步骤）：规则文件落盘后追加；技能多选（默认全不勾）→ 目标工具多选（默认全勾）。
     // 导入是追加语义：目标目录已有同名技能（含 SKILL.md）时先问覆盖还是跳过，未选中的技能一律不动；
-    // 任何一步取消或零勾选都视为跳过导入，配方不记录技能字段
+    // 覆盖 = 同名技能目录先删后写、按内置内容整体重写；任何一步取消或零勾选都视为跳过导入，配方不记录技能字段
     private static SkillImportSelection? OfferSkillsImport(IConsoleUi ui, SkillsStore skillsStore)
     {
         var skills = skillsStore.Discover();
@@ -255,7 +255,7 @@ internal static class Program
                 "取消导入",
                 new List<UiChoice>
                 {
-                    new("覆盖已存在的", "以生成器内置版本覆盖本地同名技能"),
+                    new("覆盖已存在的", "删除本地同名技能后按内置版本整体重写（清理上游已删改的残留文件）"),
                     new("跳过已存在的", "保留本地版本不动，只导入新增技能")
                 });
             if (overwrite is null)
@@ -299,7 +299,7 @@ internal static class Program
         if (skills.Count == 0 || targets.Count == 0)
             return 0;
 
-        Console.WriteLine($"按配方同步 Skills 到 {targetDirectory}（按内置内容覆盖更新）：");
+        Console.WriteLine($"按配方同步 Skills 到 {targetDirectory}（同名技能先删后写，按内置内容整体重写）：");
         return new SkillImporter().Import(targetDirectory, targets, skills, skillsStore);
     }
 

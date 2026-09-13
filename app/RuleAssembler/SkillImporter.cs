@@ -20,8 +20,9 @@ internal static class SkillTargets
 }
 
 // 技能释放：按 <目标目录>/<RelativeRoot>/<技能ID>/ 整体写入，字节级原样拷贝。
-// 导入语义是追加：只写勾选的技能，目标目录里未选中的技能不动；交互路径对同名冲突先问覆盖还是跳过，
-// 重放 / 升级路径（--recipe / --upgrade）按配方同步、内置内容直接覆盖。
+// 导入语义是追加：只写勾选的技能，目标目录里未选中的技能不动；同名技能（以 SKILL.md 为准）先删后写——
+// 整目录删除后按内置内容重写，消除上游删改文件造成的残留；无 SKILL.md 的目录不算同名技能，保留原内容并入写入。
+// 交互路径对同名冲突先问覆盖还是跳过，重放 / 升级路径（--recipe / --upgrade）按配方同步（同名先删后写）。
 // 技能不单独加入 .gitignore、不参与规则文件的本地修改哈希检测；
 // 但 .claude/ 等工具目录已随生成器默认忽略（GitignoreTemplates.AiToolEntries），需共享技能的项目自行取反（如 !.claude/skills/）
 internal sealed class SkillImporter
@@ -63,6 +64,11 @@ internal sealed class SkillImporter
                     Console.WriteLine($"  [{target.Id}] {skill.Id}（已存在同名技能，跳过）");
                     continue;
                 }
+
+                // 同名技能（以 SKILL.md 为准）先删后写，配方外的技能与其他内容不受影响
+                var skillRoot = PathGuard.GetPathWithin(rootDirectory, $"{target.RelativeRoot}/{skill.Id}");
+                if (File.Exists(Path.Combine(skillRoot, "SKILL.md")))
+                    Directory.Delete(skillRoot, recursive: true);
 
                 foreach (var file in store.ReadFiles(skill))
                 {
