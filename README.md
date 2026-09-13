@@ -150,7 +150,7 @@ fragments/
 # 例外：已定制（meta.status=已定制）的 design-system.yaml 保留本地版本不覆盖，仍是基线时才刷新。
 # 不释放 TASK.md（运行时任务清单，不随规则分发，配方中按 referenced-existing 声明）。
 # 生成成功后会在目标项目写入 .ai-rule-profile.json 配方记录（记录维度选择、命中组件、回答来源与能力开关），
-# 并自动把该记录、生成器本体（use-ai-rule* 通配，覆盖 .exe、无扩展名与带 RID 后缀的历史副本）与规则效果反馈记录（.ai-rule-feedback.md）加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
+# 并自动把该记录、生成器本体（use-ai-rule* 通配，覆盖 .exe、无扩展名与带 RID 后缀的历史副本）、规则效果反馈记录（.ai-rule-feedback.md）与 AI 工具本地目录（.zcode/、.claude/、.dotnet/、.codex/、.cursor/、.codegraph/、.learnings/）加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
 # 规则文件落盘后还可选导入内置 AI Skills（生成器已全量打包仓库 skills/，无需再手动拷贝）：
 # 多选技能（35+ 个，含 dotnet-skills / officeSkills 等分组下的技能）、多选目标工具后按项目级目录约定整体写入：
 #   Codex → .codex/skills/<技能>/，ZCode → .zcode/skills/<技能>/，Claude Code → .claude/skills/<技能>/

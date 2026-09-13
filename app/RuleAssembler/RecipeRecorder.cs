@@ -146,11 +146,11 @@ internal sealed class RecipeRecorder
             var existing = File.ReadAllLines(path)
                 .Select(line => line.Trim())
                 .ToHashSet(StringComparer.Ordinal);
-            var missing = GitignoreTemplates.GeneratorEntries
+            var missing = GitignoreTemplates.AllGitignoreEntries
                 .Where(entry => !existing.Contains(entry))
                 .ToList();
             if (missing.Count == 0)
-                return ".gitignore 已包含配方记录与生成器忽略规则";
+                return ".gitignore 已包含配方记录、生成器与 AI 工具目录忽略规则";
 
             // 只追加缺失条目，已存在的忽略规则保持原样，保证重复执行幂等
             File.AppendAllText(
@@ -161,7 +161,7 @@ internal sealed class RecipeRecorder
         }
 
         File.WriteAllText(path, GitignoreTemplates.Get(stackKey), new UTF8Encoding(false));
-        return "已创建 .gitignore（含技术栈默认忽略规则、配方记录与生成器本体）";
+        return "已创建 .gitignore（含技术栈默认忽略规则、AI rule 本地产物与 AI 工具目录）";
     }
 
     // 家族 / Profile → gitignore 模板键

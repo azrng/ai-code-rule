@@ -76,6 +76,10 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Contains("use-ai-rule*", content);
         // 规则效果反馈记录属本地产物，随生成器忽略块一起写入
         Assert.Contains(".ai-rule-feedback.md", content);
+        // AI 工具本地目录随默认模板块一起写入
+        Assert.Contains(".zcode/", content);
+        Assert.Contains(".claude/", content);
+        Assert.Contains(".learnings/", content);
         Assert.Contains("node_modules/", content);
         Assert.Contains("已创建", message);
     }
@@ -92,6 +96,9 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Contains(".ai-rule-profile.json", content);
         Assert.Contains("use-ai-rule*", content);
         Assert.Contains(".ai-rule-feedback.md", content);
+        // 追加路径同样补齐 AI 工具本地目录
+        Assert.Contains(".claude/", content);
+        Assert.Contains(".cursor/", content);
         Assert.DoesNotContain("node_modules/", content);
     }
 
@@ -108,7 +115,8 @@ public sealed class RecipeRecorderTests : IDisposable
             .Count(line => line.Trim() == ".ai-rule-profile.json"));
         Assert.Contains("use-ai-rule*", content);
         Assert.Contains(".ai-rule-feedback.md", content);
-        Assert.Contains("追加忽略规则：use-ai-rule*、.ai-rule-feedback.md", message);
+        Assert.Contains(".codegraph/", content);
+        Assert.Contains("追加忽略规则：use-ai-rule*、.ai-rule-feedback.md、.zcode/", message);
     }
 
     [Fact]

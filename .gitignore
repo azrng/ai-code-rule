@@ -349,8 +349,11 @@ docs/
 # ai忽略文件
 .claude
 .codex
+.dotnet
 .dotnet-cli
 .codegraph
+.cursor
+.learnings
 
 NUL
 

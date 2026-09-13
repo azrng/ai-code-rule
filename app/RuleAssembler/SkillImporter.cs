@@ -22,7 +22,8 @@ internal static class SkillTargets
 // 技能释放：按 <目标目录>/<RelativeRoot>/<技能ID>/ 整体写入，字节级原样拷贝。
 // 导入语义是追加：只写勾选的技能，目标目录里未选中的技能不动；交互路径对同名冲突先问覆盖还是跳过，
 // 重放 / 升级路径（--recipe / --upgrade）按配方同步、内置内容直接覆盖。
-// 技能是可提交的项目资产：不进 .gitignore、不参与规则文件的本地修改哈希检测
+// 技能不单独加入 .gitignore、不参与规则文件的本地修改哈希检测；
+// 但 .claude/ 等工具目录已随生成器默认忽略（GitignoreTemplates.AiToolEntries），需共享技能的项目自行取反（如 !.claude/skills/）
 internal sealed class SkillImporter
 {
     // 冲突检测键集合：「<targetId>/<skillId>」表示该目标下已存在同名技能目录（以 SKILL.md 为准）。

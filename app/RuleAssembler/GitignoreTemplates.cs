@@ -2,7 +2,8 @@ namespace RuleAssembler;
 
 // 目标项目缺失 .gitignore 时按技术栈生成默认忽略规则。
 // 内容精选自 github/gitignore 标准模板（C# 参考仓库内 daily-examples 版本，Python 等参考 mcp_server 版本），
-// 每份保持精简，只覆盖构建产物、本地环境与编辑器目录，末尾统一带生成器本地产物忽略块（配方记录、生成器本体与规则效果反馈记录）。
+// 每份保持精简，只覆盖构建产物、本地环境与编辑器目录，末尾统一带 AI rule 忽略块（配方记录、生成器本体、
+// 规则效果反馈记录与 AI 工具本地目录）。
 internal static class GitignoreTemplates
 {
     public const string RecipeEntry = ".ai-rule-profile.json";
@@ -16,11 +17,28 @@ internal static class GitignoreTemplates
 
     public static readonly string[] GeneratorEntries = { RecipeEntry, ExeEntry, FeedbackEntry };
 
-    public const string GeneratorComment =
-        "# AI rule 本地产物（use-ai-rule 生成：配方记录、生成器本体与规则效果反馈记录，勿提交）\n";
+    // AI 工具本地目录：ZCode / Claude Code / Codex / Cursor 等的会话状态、本地缓存与导入副本，属本地产物不提交。
+    // 口径与规则源仓库自身 .gitignore 的「ai忽略文件」块一致；其中 .claude / .codex / .zcode 也是技能导入目标，
+    // 默认忽略后技能不再随项目提交，需要共享技能的项目自行取反（如 !.claude/skills/）
+    public static readonly string[] AiToolEntries =
+    {
+        ".zcode/",
+        ".claude/",
+        ".dotnet/",
+        ".codex/",
+        ".cursor/",
+        ".codegraph/",
+        ".learnings/"
+    };
 
-    public const string GeneratorBlock =
-        GeneratorComment + RecipeEntry + "\n" + ExeEntry + "\n" + FeedbackEntry + "\n";
+    // EnsureGitignored 对已存在 .gitignore 的追加清单：生成器本地产物 + AI 工具目录，与默认模板块同源
+    public static readonly string[] AllGitignoreEntries = GeneratorEntries.Concat(AiToolEntries).ToArray();
+
+    public const string GeneratorComment =
+        "# AI rule 本地产物与 AI 工具目录（use-ai-rule 生成：配方记录、生成器本体、规则效果反馈与 AI 工具本地目录，勿提交）\n";
+
+    public static readonly string GeneratorBlock =
+        GeneratorComment + string.Join("\n", AllGitignoreEntries) + "\n";
 
     public static string Get(string stackKey)
     {
@@ -42,7 +60,7 @@ internal static class GitignoreTemplates
         "Thumbs.db\n" +
         "desktop.ini\n";
 
-    private const string DotNet =
+    private static readonly string DotNet =
         "# .NET 构建产物与本地环境\n" +
         "[Bb]in/\n" +
         "[Oo]bj/\n" +
@@ -60,7 +78,7 @@ internal static class GitignoreTemplates
         "*.DotSettings.user\n" +
         "\n" + CommonOs + "\n" + GeneratorBlock;
 
-    private const string Python =
+    private static readonly string Python =
         "# Python 构建产物与虚拟环境\n" +
         "__pycache__/\n" +
         "*.py[cod]\n" +
@@ -77,7 +95,7 @@ internal static class GitignoreTemplates
         ".idea/\n" +
         "\n" + CommonOs + "\n" + GeneratorBlock;
 
-    private const string Node =
+    private static readonly string Node =
         "# Node.js 构建产物\n" +
         "node_modules/\n" +
         "dist/\n" +
@@ -88,7 +106,7 @@ internal static class GitignoreTemplates
         "\n" + CommonOs + "\n" + GeneratorBlock;
 
     // Web 前后端分离：前端 Node 产物 + .NET 后端产物都要覆盖
-    private const string WebStack =
+    private static readonly string WebStack =
         "# Node.js 构建产物（前端）\n" +
         "node_modules/\n" +
         "dist/\n" +
@@ -106,7 +124,7 @@ internal static class GitignoreTemplates
         ".idea/\n" +
         "\n" + CommonOs + "\n" + GeneratorBlock;
 
-    private const string Hybrid =
+    private static readonly string Hybrid =
         "# 桌面混合项目构建产物（Go + Node）\n" +
         "node_modules/\n" +
         "dist/\n" +
@@ -119,7 +137,7 @@ internal static class GitignoreTemplates
         ".idea/\n" +
         "\n" + CommonOs + "\n" + GeneratorBlock;
 
-    private const string Flutter =
+    private static readonly string Flutter =
         "# Flutter 构建产物\n" +
         ".dart_tool/\n" +
         ".flutter-plugins\n" +
@@ -129,7 +147,7 @@ internal static class GitignoreTemplates
         ".idea/\n" +
         "\n" + CommonOs + "\n" + GeneratorBlock;
 
-    private const string Minimal =
+    private static readonly string Minimal =
         "# 通用本地文件\n" +
         "*.log\n" +
         ".idea/\n" +
