@@ -214,6 +214,22 @@ public class CompositionPlannerTests
     }
 
     [Fact]
+    public void Python纯后端组合解析为后端组件()
+    {
+        var planner = new CompositionPlanner(LoadManifest());
+        var plan = planner.Plan(FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "backend-only",
+            ["backend"] = "python"
+        }));
+
+        Assert.Equal(new[] { "python" }, plan.ComponentIds);
+        Assert.Contains(plan.Files, file => file.Output == "backend-AGENTS.md");
+        Assert.Contains(plan.Files, file => file.Output == "doc-AGENTS.md");
+        Assert.Contains(plan.Files, file => file.Output == "infra-AGENTS.md");
+    }
+
+    [Fact]
     public void 解析后的根变量不再携带槽位占位()
     {
         var planner = new CompositionPlanner(LoadManifest());

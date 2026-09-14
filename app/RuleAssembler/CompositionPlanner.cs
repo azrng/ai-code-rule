@@ -92,7 +92,10 @@ internal sealed class CompositionPlanner
             throw new InvalidOperationException("组合选择非法：\n- " + string.Join("\n- ", errors));
     }
 
-    // 约束校验：when 全部命中时 require 必须成立、forbid 必须不成立
+    // 约束校验：when 全部命中时 require / forbid 只对已回答维度生效（与 SatisfiesConstraints 的
+    // 问答期语义一致）；未回答维度的钳制缺口由组件解析兜底——组合要解析成功必须存在
+    // when 全命中的组件集，组件 when 自身携带维度取值（如 tauri-backend-rust 要求 backend=rust），
+    // 不存在「require 未满足但组合仍解析成功」的漏洞
     private void ValidateConstraints(Selection selection)
     {
         foreach (var constraint in _manifest.Constraints)
@@ -102,7 +105,7 @@ internal sealed class CompositionPlanner
 
             foreach (var pair in constraint.Require)
             {
-                if (!selection.Dimensions.TryGetValue(pair.Key, out var value) || value != pair.Value)
+                if (selection.Dimensions.TryGetValue(pair.Key, out var value) && value != pair.Value)
                 {
                     throw new InvalidOperationException(
                         $"组合违反约束：当 {DescribePairs(constraint.When)} 时要求 {pair.Key}={pair.Value}，"

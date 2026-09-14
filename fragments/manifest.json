@@ -6846,17 +6846,12 @@
     },
     {
       "id": "python",
-      "kind": "form",
+      "kind": "backend",
       "label": "Python FastAPI 后端",
-      "desc": "单一组合组件（由 Profile python 等价迁移）",
+      "desc": "纯后端 + Python FastAPI 组合的后端组件（python）",
       "when": {
         "form": "backend-only",
-        "backend": "python",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
+        "backend": "python"
       },
       "family": "python-backend",
       "slots": {
