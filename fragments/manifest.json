@@ -7030,16 +7030,14 @@
       ]
     },
     {
-      "id": "nextFullstack",
-      "kind": "form",
-      "label": "Next.js 全栈",
-      "desc": "单一组合组件（由 Profile nextFullstack 等价迁移）",
+      "id": "web-node-shell",
+      "kind": "shell",
+      "label": "Node 全栈 Web 公共壳",
+      "desc": "Next.js / Nuxt 全栈组合的公共根骨架，前端与后端差异经槽位注入",
       "when": {
         "form": "web",
         "backend": "node",
-        "frontend": "react",
         "shell": "none",
-        "arch-style": "single",
         "blazor-flavor": "none",
         "ai-capability": "no"
       },
@@ -7048,7 +7046,7 @@
         "target-list": [
           "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
           "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
-          "- `backend-AGENTS.md`：Route Handlers、Server Actions、Service、Repository、Prisma、服务端测试",
+          "{{slot:wn-target-backend}}",
           {
             "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
             "features": [
@@ -7069,6 +7067,66 @@
           },
           "- `TASK.md`：唯一活动任务记录文件"
         ],
+        "dev-stage": [
+          "### 四个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1            阶段 2                阶段 3",
+          "设计文档   →   页面与交互实现   →   服务端与数据实现   →   联调与交付",
+          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量、部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
+          "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "{{slot:wn-understanding-frontend}}",
+          "{{slot:wn-understanding-backend}}"
+        ],
+        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、Service、Repository、Prisma 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "{{slot:wn-search-nouns}}",
+        "destructive-nouns": "数据库破坏性变更、环境清理"
+      }
+    },
+    {
+      "id": "web-frontend-next",
+      "kind": "frontend",
+      "label": "Next.js 全栈前端",
+      "desc": "Next.js 全栈组合的 React / App Router 界面组件",
+      "when": {
+        "form": "web",
+        "backend": "node",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wn-understanding-frontend": "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式"
+      },
+      "root": {
         "subrule-index": [
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
@@ -7097,53 +7155,36 @@
               "infra"
             ]
           }
-        ],
-        "dev-stage": [
-          "### 四个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1            阶段 2                阶段 3",
-          "设计文档   →   页面与交互实现   →   服务端与数据实现   →   联调与交付",
-          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量、部署脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
-          "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
-          {
-            "line": "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "understanding-checklist": [
-          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
-          "- 涉及后端时，已查看相关 Route Handler、Server Action、Service、Repository、schema / Prisma、调用方和现有测试"
-        ],
-        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、Service、Repository、Prisma 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、组件、Route Handler、Server Action、Service、Repository、Prisma 与测试实现",
-        "destructive-nouns": "数据库破坏性变更、环境清理"
+        ]
       },
       "files": [
         {
           "source": "arch/nextFullstack/frontend-AGENTS.md",
           "output": "frontend-AGENTS.md"
-        },
+        }
+      ],
+      "designSystemSource": "arch/nextFullstack/design-system.yaml"
+    },
+    {
+      "id": "web-backend-next",
+      "kind": "backend",
+      "label": "Next.js 全栈后端",
+      "desc": "Next.js Route Handlers / Server Actions 后端组件",
+      "when": {
+        "form": "web",
+        "backend": "node",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wn-target-backend": "- `backend-AGENTS.md`：Route Handlers、Server Actions、Service、Repository、Prisma、服务端测试",
+        "wn-understanding-backend": "- 涉及后端时，已查看相关 Route Handler、Server Action、Service、Repository、schema / Prisma、调用方和现有测试",
+        "wn-search-nouns": "页面、组件、Route Handler、Server Action、Service、Repository、Prisma 与测试实现"
+      },
+      "files": [
         {
           "source": "arch/nextFullstack/backend-AGENTS.md",
           "output": "backend-AGENTS.md"
@@ -7158,14 +7199,13 @@
           "output": "infra-AGENTS.md",
           "feature": "infra"
         }
-      ],
-      "designSystemSource": "arch/nextFullstack/design-system.yaml"
+      ]
     },
     {
-      "id": "nuxtFullstack",
-      "kind": "form",
-      "label": "Nuxt 3 全栈",
-      "desc": "单一组合组件（由 Profile nuxtFullstack 等价迁移）",
+      "id": "web-frontend-nuxt",
+      "kind": "frontend",
+      "label": "Nuxt 全栈前端",
+      "desc": "Nuxt 3 全栈组合的 Vue / 文件路由界面组件",
       "when": {
         "form": "web",
         "backend": "node",
@@ -7175,32 +7215,10 @@
         "blazor-flavor": "none",
         "ai-capability": "no"
       },
-      "family": "web-fullstack",
+      "slots": {
+        "wn-understanding-frontend": "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式"
+      },
       "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、前端测试",
-          "- `backend-AGENTS.md`：Nitro Server Routes、Service、Repository、Prisma、服务端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、契约说明、设计系统",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：端口、环境变量、Docker、容器化验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
         "subrule-index": [
           "| 文件 | 适用范围 | 何时阅读 |",
           "| --- | --- | --- |",
@@ -7229,53 +7247,36 @@
               "infra"
             ]
           }
-        ],
-        "dev-stage": [
-          "### 四个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1            阶段 2                阶段 3",
-          "设计文档   →   页面与交互实现   →   服务端与数据实现   →   联调与交付",
-          "（用户确认）    （前端实现角色）      （后端实现角色）       （协作联调角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量、部署脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、契约说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、交互、前端契约，细则见 `frontend-AGENTS.md`",
-          "- 阶段 2：服务端逻辑、数据持久化、鉴权与测试，细则见 `backend-AGENTS.md`",
-          {
-            "line": "- 阶段 3：联调、构建、启动、容器化与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "understanding-checklist": [
-          "- 涉及前端时，已查看相关页面、组件、样式资源、设计 token 和现有交互模式",
-          "- 涉及后端时，已查看相关 Server Route、Service、Repository、schema / Prisma、调用方和现有测试"
-        ],
-        "contract-error-line": "阶段 1 输出的前端契约、schema 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 schema / 类型后同步页面、Service、Repository、Prisma 映射和相关文档，再继续实现；不得绕过契约直接补临时字段",
-        "search-nouns": "页面、组件、Server Route、Service、Repository、Prisma 与测试实现",
-        "destructive-nouns": "数据库破坏性变更、环境清理"
+        ]
       },
       "files": [
         {
           "source": "arch/nuxtFullstack/frontend-AGENTS.md",
           "output": "frontend-AGENTS.md"
-        },
+        }
+      ],
+      "designSystemSource": "arch/nuxtFullstack/design-system.yaml"
+    },
+    {
+      "id": "web-backend-nuxt",
+      "kind": "backend",
+      "label": "Nuxt 全栈后端",
+      "desc": "Nuxt Nitro Server Routes 后端组件",
+      "when": {
+        "form": "web",
+        "backend": "node",
+        "frontend": "vue",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "wn-target-backend": "- `backend-AGENTS.md`：Nitro Server Routes、Service、Repository、Prisma、服务端测试",
+        "wn-understanding-backend": "- 涉及后端时，已查看相关 Server Route、Service、Repository、schema / Prisma、调用方和现有测试",
+        "wn-search-nouns": "页面、组件、Server Route、Service、Repository、Prisma 与测试实现"
+      },
+      "files": [
         {
           "source": "arch/nuxtFullstack/backend-AGENTS.md",
           "output": "backend-AGENTS.md"
@@ -7290,8 +7291,7 @@
           "output": "infra-AGENTS.md",
           "feature": "infra"
         }
-      ],
-      "designSystemSource": "arch/nuxtFullstack/design-system.yaml"
+      ]
     },
     {
       "id": "web-dotnet-ai-shell",

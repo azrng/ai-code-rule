@@ -160,6 +160,32 @@ public class CompositionPlannerTests
         Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("未被骨架消费"));
     }
 
+    [Theory]
+    [InlineData("react", "web-frontend-next", "web-backend-next")]
+    [InlineData("vue", "web-frontend-nuxt", "web-backend-nuxt")]
+    public void Node全栈组合解析出公共壳_前端_后端三类组件(
+        string frontend, string frontendComponent, string backendComponent)
+    {
+        var planner = new CompositionPlanner(LoadManifest());
+        var plan = planner.Plan(FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "node",
+            ["frontend"] = frontend,
+            ["shell"] = "none",
+            ["arch-style"] = "single",
+            ["blazor-flavor"] = "none",
+            ["ai-capability"] = "no"
+        }));
+
+        Assert.Equal(new[] { "web-node-shell", frontendComponent, backendComponent }, plan.ComponentIds);
+        Assert.Contains(plan.Files, file => file.Output == "frontend-AGENTS.md");
+        Assert.Contains(plan.Files, file => file.Output == "backend-AGENTS.md");
+        Assert.Contains(plan.Files, file => file.Output == "doc-AGENTS.md");
+        Assert.Contains(plan.Files, file => file.Output == "infra-AGENTS.md");
+        Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("未被骨架消费"));
+    }
+
     [Fact]
     public void 解析后的根变量不再携带槽位占位()
     {

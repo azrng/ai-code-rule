@@ -308,7 +308,9 @@ public class SelectionEngineTests
         var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
         Assert.Equal(new[] { "nuxtFullstack" }, matches);
         var plan = new CompositionPlanner(manifest).Plan(selection);
-        Assert.Contains(plan.ComponentIds, id => id == "nuxtFullstack");
+        Assert.Equal(
+            new[] { "web-node-shell", "web-frontend-nuxt", "web-backend-nuxt" },
+            plan.ComponentIds);
     }
 
     [Fact]
