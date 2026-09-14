@@ -386,7 +386,7 @@
         "ai-capability": "no"
       }
     },
-        {
+    {
       "id": "python",
       "label": "Python FastAPI 后端",
       "family": "python-backend",
@@ -494,7 +494,7 @@
         "ai-capability": "no"
       }
     },
-        {
+    {
       "id": "reactLinkdotNet",
       "label": "React + .NET 前后端分离",
       "family": "web-fullstack",
@@ -627,7 +627,7 @@
         "ai-capability": "no"
       }
     },
-        {
+    {
       "id": "vueLinkdotNet",
       "label": "Vue + .NET 前后端分离",
       "family": "web-fullstack",
@@ -5090,6 +5090,121 @@
       ]
     },
     {
+      "id": "frontend-static-web-shell",
+      "kind": "form",
+      "label": "纯前端 Web 公共壳",
+      "desc": "reactOnly / vueOnly / generalFrontend 共用根骨架：前端框架差异经槽位注入",
+      "when": {
+        "form": "web",
+        "backend": "none",
+        "shell": "none",
+        "ai-capability": "no"
+      },
+      "family": "frontend-static",
+      "root": {
+        "target-list": [
+          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
+          "{{slot:fs-target-frontend}}",
+          {
+            "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
+            "features": [
+              "design-system"
+            ]
+          },
+          "- `TASK.md`：唯一活动任务记录文件"
+        ],
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "{{slot:fs-subr-frontend}}",
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、数据口径与接口说明 | 涉及阶段 0、文档维护或数据口径时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0          阶段 1                阶段 2",
+          "设计文档   →   页面与交互实现     →   验证与交付",
+          "（用户确认）    （页面实现角色）       （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 已有页面的样式或文案微调",
+          "  - 配置、环境变量或部署脚本调整",
+          "  - 单个字段增删改，且不引入新页面或新业务流程",
+          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：需求整理、设计文档、数据口径说明，细则见 `doc-AGENTS.md`",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：页面骨架、交互、数据层与前端验证，细则见 `frontend-AGENTS.md`",
+          {
+            "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "reading-order": [
+          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+          "2. 根据任务类型命中对应子规则，不预读全部文件。",
+          {
+            "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
+            "features": [
+              "design-system"
+            ]
+          },
+          "4. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
+        ],
+        "understanding-checklist": [
+          "{{slot:fs-understanding-frontend}}",
+          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现"
+        ],
+        "search-nouns": "{{slot:fs-search-nouns}}",
+        "task-kind-nouns": "页面、数据还是构建部署",
+        "root-scope-nouns": "页面、数据、文档、基础设施",
+        "context-scope-nouns": "页面、交互与数据链路",
+        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、发布链路调整、环境变量变更",
+        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
+        "reuse-noun": "组件",
+        "destructive-nouns": "本地存储数据清理、环境清理",
+        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
+        "contract-error-line": "阶段 0 输出的数据口径、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 类型定义后同步页面实现、本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
+        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、部署方式与运行文档",
+        "rollback-scope": "发布产物",
+        "boundary-nouns": "页面与数据层职责"
+      }
+    },
+    {
       "id": "frontend-static-web-ai-shell",
       "kind": "form",
       "label": "纯前端 AI 产品骨架",
@@ -5314,9 +5429,9 @@
     },
     {
       "id": "frontend-static-frontend-react",
-      "kind": "form",
-      "label": "React 纯前端 SPA",
-      "desc": "单一组合组件（由 Profile reactOnly 等价迁移）",
+      "kind": "frontend",
+      "label": "React 纯前端界面",
+      "desc": "纯前端组合的 React 界面组件（reactOnly）",
       "when": {
         "form": "web",
         "backend": "none",
@@ -5326,109 +5441,13 @@
         "blazor-flavor": "none",
         "ai-capability": "no"
       },
-      "family": "frontend-static",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
-          {
-            "line": "| `doc-AGENTS.md` | 设计文档、数据口径与接口说明 | 涉及阶段 0、文档维护或数据口径时 |",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "dev-stage": [
-          "### 三个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1                阶段 2",
-          "设计文档   →   页面与交互实现     →   验证与交付",
-          "（用户确认）    （页面实现角色）       （交付验证角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量或部署脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、数据口径说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、交互、数据层与前端验证，细则见 `frontend-AGENTS.md`",
-          {
-            "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          {
-            "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-            "features": [
-              "design-system"
-            ]
-          },
-          "4. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
-        ],
-        "understanding-checklist": [
-          "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
-          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现"
-        ],
-        "search-nouns": "页面、组件、路由、状态管理、请求封装、mock / 本地存储实现和测试实现",
-        "task-kind-nouns": "页面、数据还是构建部署",
-        "root-scope-nouns": "页面、数据、文档、基础设施",
-        "context-scope-nouns": "页面、交互与数据链路",
-        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
-        "reuse-noun": "组件",
-        "destructive-nouns": "本地存储数据清理、环境清理",
-        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
-        "contract-error-line": "阶段 0 输出的数据口径、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 类型定义后同步页面实现、本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
-        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、部署方式与运行文档",
-        "rollback-scope": "发布产物",
-        "boundary-nouns": "页面与数据层职责"
+      "slots": {
+        "fs-search-nouns": "页面、组件、路由、状态管理、请求封装、mock / 本地存储实现和测试实现",
+        "fs-subr-frontend": "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
+        "fs-target-frontend": "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
+        "fs-understanding-frontend": "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式"
       },
+      "family": "frontend-static",
       "files": [
         {
           "source": "arch/reactOnly/frontend-AGENTS.md",
@@ -5449,9 +5468,9 @@
     },
     {
       "id": "frontend-static-frontend-vue",
-      "kind": "form",
-      "label": "Vue 纯前端 SPA",
-      "desc": "单一组合组件（由 Profile vueOnly 等价迁移）",
+      "kind": "frontend",
+      "label": "Vue 3 纯前端界面",
+      "desc": "纯前端组合的 Vue 3 界面组件（vueOnly）",
       "when": {
         "form": "web",
         "backend": "none",
@@ -5461,109 +5480,13 @@
         "blazor-flavor": "none",
         "ai-capability": "no"
       },
-      "family": "frontend-static",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
-          {
-            "line": "| `doc-AGENTS.md` | 设计文档、数据口径与接口说明 | 涉及阶段 0、文档维护或数据口径时 |",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "dev-stage": [
-          "### 三个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1                阶段 2",
-          "设计文档   →   页面与交互实现     →   验证与交付",
-          "（用户确认）    （页面实现角色）       （交付验证角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量或部署脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、数据口径说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、交互、数据层与前端验证，细则见 `frontend-AGENTS.md`",
-          {
-            "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          {
-            "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-            "features": [
-              "design-system"
-            ]
-          },
-          "4. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
-        ],
-        "understanding-checklist": [
-          "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式",
-          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现"
-        ],
-        "search-nouns": "页面、组件、路由、状态管理、请求封装、mock / 本地存储实现和测试实现",
-        "task-kind-nouns": "页面、数据还是构建部署",
-        "root-scope-nouns": "页面、数据、文档、基础设施",
-        "context-scope-nouns": "页面、交互与数据链路",
-        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
-        "reuse-noun": "组件",
-        "destructive-nouns": "本地存储数据清理、环境清理",
-        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
-        "contract-error-line": "阶段 0 输出的数据口径、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 类型定义后同步页面实现、本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
-        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、部署方式与运行文档",
-        "rollback-scope": "发布产物",
-        "boundary-nouns": "页面与数据层职责"
+      "slots": {
+        "fs-search-nouns": "页面、组件、路由、状态管理、请求封装、mock / 本地存储实现和测试实现",
+        "fs-subr-frontend": "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
+        "fs-target-frontend": "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
+        "fs-understanding-frontend": "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式"
       },
+      "family": "frontend-static",
       "files": [
         {
           "source": "arch/vueOnly/frontend-AGENTS.md",
@@ -6042,7 +5965,7 @@
         "search-nouns": "{{slot:wb-sc-search_n}}"
       }
     },
-        {
+    {
       "id": "web-frontend-react",
       "kind": "frontend",
       "label": "React 前端（.NET 分离）",
@@ -6099,7 +6022,7 @@
       ],
       "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
     },
-        {
+    {
       "id": "web-frontend-vue",
       "kind": "frontend",
       "label": "Vue 3 前端（.NET 分离）",
@@ -6146,7 +6069,7 @@
       ],
       "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
     },
-        {
+    {
       "id": "web-backend-react",
       "kind": "backend",
       "label": ".NET 后端（React 分离变体）",
@@ -6185,7 +6108,7 @@
         }
       ]
     },
-        {
+    {
       "id": "web-backend-vue",
       "kind": "backend",
       "label": ".NET 后端（Vue 分离变体）",
@@ -6224,7 +6147,7 @@
         }
       ]
     },
-        {
+    {
       "id": "web-backend-react-single",
       "kind": "backend",
       "label": ".NET 单项目后端（React 分离变体）",
@@ -6264,7 +6187,7 @@
         }
       ]
     },
-        {
+    {
       "id": "web-backend-vue-single",
       "kind": "backend",
       "label": ".NET 单项目后端（Vue 分离变体）",
@@ -6921,7 +6844,7 @@
         }
       ]
     },
-        {
+    {
       "id": "python",
       "kind": "form",
       "label": "Python FastAPI 后端",
@@ -7505,7 +7428,7 @@
         "ai-capability"
       ]
     },
-      {
+    {
       "id": "web-frontend-blazor-traditional",
       "kind": "frontend",
       "label": "Blazor Server（传统）界面",
@@ -7635,7 +7558,7 @@
       ],
       "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
     },
-      {
+    {
       "id": "web-frontend-blazor-webapp",
       "kind": "frontend",
       "label": "Blazor Web App 界面",
@@ -7723,7 +7646,7 @@
       ],
       "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
     },
-      {
+    {
       "id": "web-backend-blazor",
       "kind": "backend",
       "label": ".NET 后端（Blazor 全栈变体）",
@@ -7990,9 +7913,9 @@
     },
     {
       "id": "generalFrontend",
-      "kind": "form",
+      "kind": "frontend",
       "label": "通用纯前端（技术栈无关）",
-      "desc": "单一组合组件（由 Profile generalFrontend 等价迁移）",
+      "desc": "纯前端组合的通用界面组件（generalFrontend，技术栈无关）",
       "when": {
         "form": "web",
         "backend": "none",
@@ -8002,109 +7925,13 @@
         "blazor-flavor": "none",
         "ai-capability": "no"
       },
-      "family": "frontend-static",
-      "root": {
-        "target-list": [
-          "- `AGENTS.md`：只保留全局硬约束、阶段门控和按需导航；协作流程见 `collaboration-AGENTS.md`",
-          "- `frontend-AGENTS.md`：页面、视图、组件、交互、样式、数据层与前端测试",
-          {
-            "line": "- `doc-AGENTS.md`：设计文档、数据口径与接口说明",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "- `infra-AGENTS.md`：环境变量、构建、部署与交付验证",
-            "features": [
-              "infra"
-            ]
-          },
-          {
-            "line": "- `design-system.yaml`：设计 token 与 UI 规范（内置基线，按产品品牌定制后生效）",
-            "features": [
-              "design-system"
-            ]
-          },
-          "- `TASK.md`：唯一活动任务记录文件"
-        ],
-        "subrule-index": [
-          "| 文件 | 适用范围 | 何时阅读 |",
-          "| --- | --- | --- |",
-          "| `frontend-AGENTS.md` | 页面、视图、表单、交互、样式、数据层、前端 smoke test | 涉及任何用户界面、客户端交互或数据来源时 |",
-          {
-            "line": "| `doc-AGENTS.md` | 设计文档、数据口径与接口说明 | 涉及阶段 0、文档维护或数据口径时 |",
-            "features": [
-              "doc"
-            ]
-          },
-          {
-            "line": "| `infra-AGENTS.md` | 构建脚本、环境变量、部署与发布链路 | 涉及构建、部署、环境变量或交付链路时 |",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "dev-stage": [
-          "### 三个阶段",
-          "",
-          "```text",
-          "阶段 0          阶段 1                阶段 2",
-          "设计文档   →   页面与交互实现     →   验证与交付",
-          "（用户确认）    （页面实现角色）       （交付验证角色）",
-          "```",
-          "",
-          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
-          "  - Bug 修复",
-          "  - 已有页面的样式或文案微调",
-          "  - 配置、环境变量或部署脚本调整",
-          "  - 单个字段增删改，且不引入新页面或新业务流程",
-          "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
-          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
-          "",
-          "### 阶段职责",
-          {
-            "line": "- 阶段 0：需求整理、设计文档、数据口径说明，细则见 `doc-AGENTS.md`",
-            "features": [
-              "doc"
-            ]
-          },
-          "- 阶段 1：页面骨架、交互、数据层与前端验证，细则见 `frontend-AGENTS.md`",
-          {
-            "line": "- 阶段 2：构建、部署与交付验证，结合当前文件与 `infra-AGENTS.md`",
-            "features": [
-              "infra"
-            ]
-          }
-        ],
-        "reading-order": [
-          "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
-          "2. 根据任务类型命中对应子规则，不预读全部文件。",
-          {
-            "line": "3. 涉及界面时，在命中 `frontend-AGENTS.md` 后再读 `design-system.yaml`；`design-system.yaml` 中的读取建议不得覆盖本文件定义的根规则优先级。",
-            "features": [
-              "design-system"
-            ]
-          },
-          "4. 再阅读相关页面、组件与现有实现，确认复用点后再动手。"
-        ],
-        "understanding-checklist": [
-          "- 涉及页面或交互时，已查看相关页面、视图、组件、样式资源、设计 token 和现有交互模式",
-          "- 涉及数据时，已查看相关请求封装、mock / 本地存储 / 第三方 API 的现有实现"
-        ],
-        "search-nouns": "页面、视图、组件、路由、状态管理、请求封装和测试实现",
-        "task-kind-nouns": "页面、数据还是构建部署",
-        "root-scope-nouns": "页面、数据、文档、基础设施",
-        "context-scope-nouns": "页面、交互与数据链路",
-        "high-risk-nouns": "数据结构变更、第三方 API 对接变更、发布链路调整、环境变量变更",
-        "evidence-nouns": "页面状态、请求数据、控制台输出、测试",
-        "reuse-noun": "组件",
-        "destructive-nouns": "本地存储数据清理、环境清理",
-        "persistence-line": "- 页面功能必须真实可演示；需要持久化的数据必须落到本地存储或真实数据源，不能停留在刷新即丢的内存状态",
-        "contract-error-line": "阶段 0 输出的数据口径、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 类型定义后同步页面实现、本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
-        "checklist-infra": "- 涉及构建、部署或环境变量时，已查看构建脚本、环境变量配置、部署方式与运行文档",
-        "rollback-scope": "发布产物",
-        "boundary-nouns": "页面与数据层职责"
+      "slots": {
+        "fs-search-nouns": "页面、视图、组件、路由、状态管理、请求封装和测试实现",
+        "fs-subr-frontend": "| `frontend-AGENTS.md` | 页面、视图、表单、交互、样式、数据层、前端 smoke test | 涉及任何用户界面、客户端交互或数据来源时 |",
+        "fs-target-frontend": "- `frontend-AGENTS.md`：页面、视图、组件、交互、样式、数据层与前端测试",
+        "fs-understanding-frontend": "- 涉及页面或交互时，已查看相关页面、视图、组件、样式资源、设计 token 和现有交互模式"
       },
+      "family": "frontend-static",
       "files": [
         {
           "source": "arch/generalFrontend/frontend-AGENTS.md",
@@ -8377,239 +8204,238 @@
     }
   ],
   "constraints": [
-  {
-    "when": {
-      "shell": "tauri"
+    {
+      "when": {
+        "shell": "tauri"
+      },
+      "require": {
+        "form": "desktop",
+        "backend": "rust"
+      }
     },
-    "require": {
-      "form": "desktop",
-      "backend": "rust"
-    }
-  },
-  {
-    "when": {
-      "shell": "wails"
+    {
+      "when": {
+        "shell": "wails"
+      },
+      "require": {
+        "form": "desktop",
+        "backend": "go"
+      }
     },
-    "require": {
-      "form": "desktop",
-      "backend": "go"
-    }
-  },
-  {
-    "when": {
-      "shell": "electron"
+    {
+      "when": {
+        "shell": "electron"
+      },
+      "require": {
+        "form": "desktop"
+      }
     },
-    "require": {
-      "form": "desktop"
-    }
-  },
-  {
-    "when": {
-      "shell": "electron"
+    {
+      "when": {
+        "shell": "electron"
+      },
+      "forbid": {
+        "backend": "go"
+      }
     },
-    "forbid": {
-      "backend": "go"
-    }
-  },
-  {
-    "when": {
-      "shell": "electron"
+    {
+      "when": {
+        "shell": "electron"
+      },
+      "forbid": {
+        "backend": "rust"
+      }
     },
-    "forbid": {
-      "backend": "rust"
-    }
-  },
-  {
-    "when": {
-      "shell": "electron"
+    {
+      "when": {
+        "shell": "electron"
+      },
+      "forbid": {
+        "backend": "python"
+      }
     },
-    "forbid": {
-      "backend": "python"
-    }
-  },
-  {
-    "when": {
-      "shell": "electron"
+    {
+      "when": {
+        "shell": "electron"
+      },
+      "forbid": {
+        "backend": "node"
+      }
     },
-    "forbid": {
-      "backend": "node"
-    }
-  },
-  {
-    "when": {
-      "backend": "rust"
+    {
+      "when": {
+        "backend": "rust"
+      },
+      "require": {
+        "shell": "tauri"
+      }
     },
-    "require": {
-      "shell": "tauri"
-    }
-  },
-  {
-    "when": {
-      "backend": "go"
+    {
+      "when": {
+        "backend": "go"
+      },
+      "require": {
+        "shell": "wails"
+      }
     },
-    "require": {
-      "shell": "wails"
-    }
-  },
-  {
-    "when": {
-      "form": "backend-only"
+    {
+      "when": {
+        "form": "backend-only"
+      },
+      "require": {
+        "frontend": "none",
+        "shell": "none"
+      }
     },
-    "require": {
-      "frontend": "none",
-      "shell": "none"
-    }
-  },
-  {
-    "when": {
-      "form": "web"
+    {
+      "when": {
+        "form": "web"
+      },
+      "require": {
+        "shell": "none"
+      }
     },
-    "require": {
-      "shell": "none"
-    }
-  },
-  {
-    "when": {
-      "form": "static"
+    {
+      "when": {
+        "form": "static"
+      },
+      "require": {
+        "frontend": "html",
+        "backend": "none",
+        "shell": "none"
+      }
     },
-    "require": {
-      "frontend": "html",
-      "backend": "none",
-      "shell": "none"
-    }
-  },
-  {
-    "when": {
-      "form": "mobile"
+    {
+      "when": {
+        "form": "mobile"
+      },
+      "require": {
+        "shell": "none"
+      }
     },
-    "require": {
-      "shell": "none"
-    }
-  },
-  {
-    "when": {
-      "frontend": "blazor"
+    {
+      "when": {
+        "frontend": "blazor"
+      },
+      "require": {
+        "form": "web",
+        "backend": "dotnet"
+      }
     },
-    "require": {
-      "form": "web",
-      "backend": "dotnet"
-    }
-  },
-  {
-    "when": {
-      "frontend": "avalonia"
+    {
+      "when": {
+        "frontend": "avalonia"
+      },
+      "require": {
+        "form": "desktop",
+        "shell": "none",
+        "backend": "none"
+      }
     },
-    "require": {
-      "form": "desktop",
-      "shell": "none",
-      "backend": "none"
-    }
-  },
-  {
-    "when": {
-      "frontend": "wpf"
+    {
+      "when": {
+        "frontend": "wpf"
+      },
+      "require": {
+        "form": "desktop",
+        "shell": "none",
+        "backend": "none"
+      }
     },
-    "require": {
-      "form": "desktop",
-      "shell": "none",
-      "backend": "none"
-    }
-  },
-  {
-    "when": {
-      "frontend": "console"
+    {
+      "when": {
+        "frontend": "console"
+      },
+      "require": {
+        "form": "desktop",
+        "shell": "none",
+        "backend": "none"
+      }
     },
-    "require": {
-      "form": "desktop",
-      "shell": "none",
-      "backend": "none"
-    }
-  },
-  {
-    "when": {
-      "frontend": "maui"
+    {
+      "when": {
+        "frontend": "maui"
+      },
+      "require": {
+        "form": "mobile",
+        "shell": "none",
+        "backend": "dotnet"
+      }
     },
-    "require": {
-      "form": "mobile",
-      "shell": "none",
-      "backend": "dotnet"
-    }
-  },
-  {
-    "when": {
-      "frontend": "flutter"
+    {
+      "when": {
+        "frontend": "flutter"
+      },
+      "require": {
+        "form": "mobile",
+        "shell": "none",
+        "backend": "none"
+      }
     },
-    "require": {
-      "form": "mobile",
-      "shell": "none",
-      "backend": "none"
-    }
-  },
-  {
-    "when": {
-      "frontend": "html"
+    {
+      "when": {
+        "frontend": "html"
+      },
+      "require": {
+        "form": "static",
+        "backend": "none"
+      }
     },
-    "require": {
-      "form": "static",
-      "backend": "none"
-    }
-  },
-  {
-    "when": {
-      "blazor-flavor": "traditional"
+    {
+      "when": {
+        "blazor-flavor": "traditional"
+      },
+      "require": {
+        "frontend": "blazor"
+      }
     },
-    "require": {
-      "frontend": "blazor"
-    }
-  },
-  {
-    "when": {
-      "blazor-flavor": "webapp"
+    {
+      "when": {
+        "blazor-flavor": "webapp"
+      },
+      "require": {
+        "frontend": "blazor"
+      }
     },
-    "require": {
-      "frontend": "blazor"
-    }
-  },
-  {
-    "when": {
-      "arch-style": "layered"
+    {
+      "when": {
+        "arch-style": "layered"
+      },
+      "require": {
+        "backend": "dotnet"
+      }
     },
-    "require": {
-      "backend": "dotnet"
-    }
-  },
-  {
-    "when": {
-      "form": "desktop",
-      "frontend": "react"
+    {
+      "when": {
+        "form": "desktop",
+        "frontend": "react"
+      },
+      "forbid": {
+        "shell": "none"
+      }
     },
-    "forbid": {
-      "shell": "none"
-    }
-  },
-  {
-    "when": {
-      "form": "desktop",
-      "frontend": "vue"
+    {
+      "when": {
+        "form": "desktop",
+        "frontend": "vue"
+      },
+      "forbid": {
+        "shell": "none"
+      }
     },
-    "forbid": {
-      "shell": "none"
+    {
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "ai-capability": "yes"
+      },
+      "require": {
+        "frontend": "react",
+        "arch-style": "single",
+        "shell": "none"
+      }
     }
-  },
-  {
-    "when": {
-      "form": "web",
-      "backend": "dotnet",
-      "ai-capability": "yes"
-    },
-    "require": {
-      "frontend": "react",
-      "arch-style": "single",
-      "shell": "none"
-    }
-  }
-],
-
+  ],
   "compatibilityCases": [
     {
       "profile": "dotnet-layered",
@@ -8647,7 +8473,7 @@
         "ai-capability": "no"
       }
     },
-        {
+    {
       "profile": "reactLinkdotNet",
       "selection": {
         "form": "web",
@@ -8659,7 +8485,7 @@
         "ai-capability": "no"
       }
     },
-        {
+    {
       "profile": "vueLinkdotNet",
       "selection": {
         "form": "web",

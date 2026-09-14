@@ -186,6 +186,33 @@ public class CompositionPlannerTests
         Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("未被骨架消费"));
     }
 
+    [Theory]
+    [InlineData("react", "frontend-static-frontend-react", "arch/reactLinkdotNet/design-system.yaml")]
+    [InlineData("vue", "frontend-static-frontend-vue", "arch/vueLinkdotNet/design-system.yaml")]
+    [InlineData("general", "generalFrontend", "arch/generalProject/design-system.yaml")]
+    public void 纯前端组合解析出公共壳与前端组件(
+        string frontend, string frontendComponent, string designSystemSource)
+    {
+        var planner = new CompositionPlanner(LoadManifest());
+        var plan = planner.Plan(FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = frontend,
+            ["shell"] = "none",
+            ["arch-style"] = "single",
+            ["blazor-flavor"] = "none",
+            ["ai-capability"] = "no"
+        }));
+
+        Assert.Equal(new[] { "frontend-static-web-shell", frontendComponent }, plan.ComponentIds);
+        Assert.Equal(designSystemSource, plan.DesignSystemSource);
+        Assert.Contains(plan.Files, file => file.Output == "frontend-AGENTS.md");
+        Assert.Contains(plan.Files, file => file.Output == "doc-AGENTS.md");
+        Assert.Contains(plan.Files, file => file.Output == "infra-AGENTS.md");
+        Assert.DoesNotContain(plan.Warnings, warning => warning.Contains("未被骨架消费"));
+    }
+
     [Fact]
     public void 解析后的根变量不再携带槽位占位()
     {
