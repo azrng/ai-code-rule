@@ -45,11 +45,8 @@ dependencies: [agents-root]
 
 ## Docker 规则
 
-### 总体要求
-- 优先复用现有 Dockerfile 与 Compose 链路
-- 生产镜像优先采用多阶段构建
+<!-- include: shared/infra/general-requirements.md -->
 - Nuxt 生产构建使用 `nuxt build`（Nitro 输出 `.output/`），容器入口运行 `.output/server/index.mjs`
-- 不要把密钥写入镜像
 - 部署链路必须可追踪、可复现
 
 ### Docker 交付规则

@@ -1,6 +1,6 @@
 ---
 name: azrng-efcore
-description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when building or modifying data-access code that relies on these packages — installing/injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities with the IdentityBaseEntity/IdentityOperatorEntity base classes, calling IBaseRepository CRUD and IUnitOfWork transactions, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors like "Cannot write DateTime with Kind=Unspecified to timestamp with time zone".
+description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when installing or injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities on the Identity base classes, calling IBaseRepository / IUnitOfWork, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors. Keywords: Common.EFCore, IBaseRepository, IUnitOfWork, DbContext, 仓储, 迁移.
 ---
 
 # Azrng EFCore (Common.EFCore) 数据访问指南

@@ -1,6 +1,6 @@
 ---
 name: avalonia
-description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.1.2 + Semi.Avalonia 主题 + Ursa.Avalonia 控件 + CommunityToolkit.Mvvm）。覆盖样式系统与设计 token 管线、编译绑定、Flyout/Popup 弹层行为、动画 Animator 对照、虚拟化、自绘窗口、启动崩溃排查。Keywords: Avalonia, AvaloniaUI, XAML, axaml, .NET 桌面, Semi.Avalonia, Ursa, UrsaWindow, TitleBar, ThemeToggleButton, LoadingContainer, WindowDecorations, ControlTheme, Flyout, Popup, 编译绑定, x:DataType, VirtualizingStackPanel, MVVM, ObservableProperty, RelayCommand, 动画, Animator, 样式, 伪类, pointerover。"
+description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.1.2 + Semi.Avalonia + Ursa.Avalonia + CommunityToolkit.Mvvm）。在编写或修改 axaml 视图、样式与资源 token、编译绑定、MVVM 视图模型、Flyout/Popup 弹层、动画、虚拟化或自绘窗口时使用，也用于排查 AVLN2000 绑定错误与启动崩溃。Keywords: Avalonia, AvaloniaUI, axaml, XAML, .NET 桌面, Semi.Avalonia, Ursa, CommunityToolkit.Mvvm, 编译绑定, x:DataType。"
 ---
 
 # Avalonia UI 12.x 开发指南

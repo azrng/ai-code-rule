@@ -82,13 +82,8 @@ dependencies: [agents-root, ai-agents]
 
 ## Docker 规则
 
-### 总体要求
-- 优先复用现有 Docker 与 Compose 文件
-- 首次创建 `Dockerfile`、`docker-compose.yml`、`.dockerignore` 或其他部署文件前，必须把“将新增部署文件”作为独立一项向用户确认并获得同意；不得因为方案骨架或阶段计划里提及过就默认生成，用户确认后再创建。
-- 生产镜像优先采用多阶段构建
-- 不要把密钥（含模型密钥、数据库密码）写入镜像
+<!-- include: shared/infra/general-requirements.md -->
 - 部署链路要可追踪
-- 清理旧镜像时要保留最小回滚窗口
 - SQLite 默认场景下，数据文件通过卷挂载持久化，避免写进容器可写层
 
 ### Docker 交付规则

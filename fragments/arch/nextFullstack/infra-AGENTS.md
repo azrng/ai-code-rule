@@ -45,11 +45,8 @@ dependencies: [agents-root]
 
 ## Docker 规则
 
-### 总体要求
-- 优先复用现有 Dockerfile 与 Compose 链路
-- 生产镜像优先采用多阶段构建
+<!-- include: shared/infra/general-requirements.md -->
 - Next.js 生产构建优先使用 standalone 输出
-- 不要把密钥写入镜像
 - 部署链路必须可追踪、可复现
 
 ### Docker 交付规则
