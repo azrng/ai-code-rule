@@ -1,6 +1,6 @@
 ---
 name: avalonia
-description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.1.2 + Semi.Avalonia 主题 + Ursa.Avalonia 控件 + CommunityToolkit.Mvvm）。覆盖样式系统与设计 token 管线、编译绑定、Flyout/Popup 弹层行为、动画 Animator 对照、虚拟化、自绘窗口、启动崩溃排查。Keywords: Avalonia, AvaloniaUI, XAML, axaml, .NET 桌面, Semi.Avalonia, Ursa, ControlTheme, Flyout, Popup, 编译绑定, x:DataType, VirtualizingStackPanel, MVVM, ObservableProperty, RelayCommand, 动画, Animator, 样式, 伪类, pointerover。"
+description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.1.2 + Semi.Avalonia 主题 + Ursa.Avalonia 控件 + CommunityToolkit.Mvvm）。覆盖样式系统与设计 token 管线、编译绑定、Flyout/Popup 弹层行为、动画 Animator 对照、虚拟化、自绘窗口、启动崩溃排查。Keywords: Avalonia, AvaloniaUI, XAML, axaml, .NET 桌面, Semi.Avalonia, Ursa, UrsaWindow, TitleBar, ThemeToggleButton, LoadingContainer, WindowDecorations, ControlTheme, Flyout, Popup, 编译绑定, x:DataType, VirtualizingStackPanel, MVVM, ObservableProperty, RelayCommand, 动画, Animator, 样式, 伪类, pointerover。"
 ---
 
 # Avalonia UI 12.x 开发指南
@@ -11,7 +11,7 @@ description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.
 - 新建 / 修改 Avalonia 视图（.axaml）、样式（Styles / ControlTheme）、资源字典
 - 数据绑定报 `AVLN2000`、样式附加期抛 `InvalidCastException`、弹层不弹出或秒关
 - 写动画（`Style.Animations`）、操作剪贴板 / 文件选择等平台 API
-- 列表性能（虚拟化）、窗口自绘（`WindowDecorations="None"`）
+- 列表性能（虚拟化）、窗口自绘（`u:UrsaWindow` 托管装饰 / `WindowDecorations` + `ElementRole`）
 
 **范围外**：业务分层（ViewModel/Service/Repository 怎么摆）归 onion-architecture skill；EF Core 归 azrng-efcore skill；Semi/Ursa 全量控件 API 以各自源码为准，本 skill 只写装配与高频用法。
 
@@ -50,7 +50,8 @@ description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.
 
 ## 决策入口
 
-- **选弹层**：按钮附带小菜单 → `Button.Flyout`；右键菜单 → `ContextMenu`；菜单项列表 → `MenuFlyout`；模态确认对话框 → 项目既有 Dialog 方案（如 Ursa `OverlayDialogHost`）。注意：Transient 弹层在窗口失活时的首击会「打开即被光熄灭关闭」（references/windows-flyouts-popups.md）。
+- **选弹层**：按钮附带小菜单 → `Button.Flyout`；右键菜单 → `ContextMenu`；菜单项列表 → `MenuFlyout`；模态对话框 → Ursa `OverlayDialogHost`（装配、IDialogContext 关闭契约、叠加弹窗与迁移套路见 references/ursa-overlays.md）。注意：Transient 弹层在窗口失活时的首击会「打开即被光熄灭关闭」（references/windows-flyouts-popups.md）。
+- **选窗口基座**：需要标题栏内容 / 托管最小化-最大化-关闭按钮 → `u:UrsaWindow`（`TitleBarContent` / `LeftContent` / `RightContent` 槽位 + 托管 CaptionButton，见 references/windows-flyouts-popups.md「窗口装饰」节）；不用 Ursa 才走 `WindowDecorations="None"` + `BeginMoveDrag` 手工方案。
 - **选列表控件**：只读展示 → `ItemsControl`；可选中 → `ListBox`；大数据量 → 必须配 `VirtualizingStackPanel`（默认 ItemsPanel **不虚拟化**）。
 - **选绑定写法**：同 DataContext 内普通路径绑定；跨层级取值 `$parent[Window].((vm:X)DataContext)`；模板内先设 `x:DataType`。
 - **写动画**：先查 references/animation.md 的「属性类型 → Animator 对照表」，Transform 类动画用 `RotateTransform.Angle` 安全写法。
@@ -65,6 +66,7 @@ description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.
 | `references/styling-and-tokens.md` | 写样式 / 选择器 / 伪类 / ControlTheme / 资源 token |
 | `references/bindings-and-mvvm.md` | 绑定报错、写 ViewModel、消息通信 |
 | `references/windows-flyouts-popups.md` | 窗口自绘、Flyout/Popup 行为与陷阱、剪贴板、文件对话框 |
+| `references/ursa-overlays.md` | 用 Ursa Dialog/Drawer/MessageBox 装配弹层、IDialogContext 关闭契约、叠加弹窗、迁移手写弹窗 |
 | `references/animation.md` | 写 `Style.Animations`，Animator 选型 |
 | `references/controls-catalog.md` | 选控件、查伪类与易错默认值 |
 | `references/layout-and-virtualization.md` | 布局面板、对齐、列表虚拟化 |
@@ -102,5 +104,7 @@ Semi.Avalonia Version:   12.1.0.1
 Ursa.Avalonia Version:   2.2.0（Irihi.Ursa / Irihi.Ursa.Themes.Semi）
 CommunityToolkit.Mvvm:   以消费工程 csproj 为准
 Skill Generated:         2026-09-13
-事实来源：D:\SourceCode\avalonias\{Avalonia,Semi.Avalonia,Ursa.Avalonia} + 消费工程 D:\Work\github\ApixPress
+Skill Updated:           2026-09-13（新增 references/ursa-overlays.md：Ursa 弹层装配与 IDialogContext 关闭契约，消费工程 11 弹窗迁移实测）
+Skill Updated:           2026-09-13（窗口装饰改 UrsaWindow 托管为首选 + ElementRole 机制；ThemeToggleButton Default 变体首击异常坑与持久化口径；LoadingContainer 加载遮罩；Semi TextBox clearButton；内置 BoolConverters/ObjectConverters；Ursa 2.2.0 负面清单。消费工程 AzrngTool 12.1.1 实测）
+事实来源：D:\SourceCode\avalonias\{Avalonia,Semi.Avalonia,Ursa.Avalonia} + 消费工程 D:\Work\github\ApixPress + D:\Work\github\AzrngTool
 ```

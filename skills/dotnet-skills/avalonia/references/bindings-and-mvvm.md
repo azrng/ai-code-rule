@@ -57,6 +57,28 @@ public partial class ProjectWorkspaceTabsViewModel : ViewModelBase   // 基类�
 - 依赖通过构造函数注入。
 - 跨 ViewModel 通信用 `IMessenger` 弱引用消息（`WeakReferenceMessenger`），不用静态全局状态。
 
+## 内置值转换器（先查这里，再写自定义 IValueConverter）
+
+`Avalonia.Data.Converters` 下的静态转换器在默认 xmlns 直接可用（`{x:Static ...}`，编译绑定兼容，成员经 12.1.2 源码核实）：
+
+```xml
+<!-- 布尔取反（BoolConverters.Not） -->
+IsVisible="{Binding IsLoading, Converter={x:Static BoolConverters.Not}}"
+
+<!-- 多条件与（MultiBinding 用 BoolConverters.And / Or） -->
+<MultiBinding Converter="{x:Static BoolConverters.And}">
+    <Binding Path="HasItems" />
+    <Binding Path="IsNotBusy" />
+</MultiBinding>
+
+<!-- null 判断（ObjectConverters.IsNotNull / IsNull） -->
+IsEnabled="{Binding SelectedConnection, Converter={x:Static ObjectConverters.IsNotNull}}"
+```
+
+- `BoolConverters`：`Not`（IValueConverter）、`And` / `Or`（IMultiValueConverter）。
+- `ObjectConverters`：`IsNull` / `IsNotNull`、`Equal` / `NotEqual`（IValueConverter）、`AreAllNull` / `AreAnyNull` / `AreAllEqual`（IMultiValueConverter）。
+- 布尔取反、多条件与、空判断这类自建转换器属于重复造轮子：消费工程曾维护 3 个此类转换器、30+ 处引用，后全量替换为内置并删除。
+
 ## 常见绑定错误对照
 
 | 症状 | 原因 | 处理 |

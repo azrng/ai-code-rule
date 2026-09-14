@@ -12,6 +12,18 @@
 | AutoCompleteBox | 异步建议用 `PopulateAsync`；注意 Text 绑定的提交时机 |
 | Slider | 方向伪类 `:horizontal`/`:vertical`；拖动中 `:dragging` |
 
+### Semi 主题能力：可清除输入框（一行类名）
+
+Semi 的 TextBox ControlTheme 模板内置 `PART_ClearButton`，挂类即得清除按钮，**不用自造「输入框 + 清除图标」组合**：
+
+```xml
+<TextBox Classes="clearButton" Text="{Binding SearchKeyword}" ... />
+```
+
+- 显示条件（源码 TextBox.axaml `^.clearButton` 样式核实）：获得焦点或悬停、文本非空、`AcceptsReturn=False`、非只读；
+- 清除按钮 `Command="{Binding $parent[TextBox].Clear}"`，清空的是 TextBox 自身 Text 属性，变化沿 TwoWay 绑定回传 ViewModel，无需额外处理；
+- 类名 `clearButton` 与 `ClearButton` 均可，可与业务样式类并存（如 `Classes="modern clearButton"`）。
+
 ## 容器与列表
 
 | 控件 | 高频易错点 |
@@ -50,6 +62,47 @@ Segoe Fluent Icons / MDL2 字形必须显式设字体，否则渲染空白或方
 
 Windows 目标下同时声明两族（Fluent 缺字符回退 MDL2）。
 
+## Ursa 控件速记（Irihi.Ursa 2.2.0 源码核实）
+
+**没有这些控件，别凭经验捏造**：Ursa 无 TreeView / SearchBox / EmptyState / Segmented / 独立 Tag / Card / SelectableCard（全仓库 grep 核实，2.2.0）。树形下拉用 `TreeComboBox`，卡片式选择用 `SelectionList`/`SelectionListItem`，枚举分段选择用 `EnumSelector`；空态仍需自建（Ursa 只有 `Skeleton` / `Shimmer` / `Loading` 家族可辅助）。Semi.Avalonia 是纯主题库，没有自定义控件类。导航选 `NavMenu`，表单布局选 `Form` / `FormItem` / `FormGroup`，键值对展示选 `Descriptions`，消息通知用 `WindowToastManager` / `MessageBox` / `Dialog` / `Drawer` / `PopConfirm` 全家桶。
+
+| 控件 | 高频易错点 |
+|---|---|
+| UrsaWindow / TitleBar | 托管窗口装饰与标题栏槽位，用法见 windows-flyouts-popups.md「窗口装饰」节 |
+| ThemeToggleButton | Default 请求变体首击抛异常坑，见下 |
+| Loading / LoadingIcon / LoadingContainer | 加载状态标准件，见下 |
+| EnumSelector | 已验证可直接替换枚举 RadioButton 组（消费工程数据库工作台在用） |
+
+### ThemeToggleButton：Default 请求变体首击异常坑
+
+源码事实（`ThemeToggleButton.cs`，2.2.0 核实）：点击时 `_state` 为 `null` 且 `IsThreeState=False` 直接 `throw new InvalidOperationException("Invalid state")`。`_state` 由 `SyncThemeFromScope` 设置：Dark→false、Light→true、**Default/null→null**。默认 `Mode=Controller` 从 `Application.RequestedThemeVariant` 同步——应用初始请求变体为 Default（跟随系统的常见配置）时，首击即崩。
+
+安全写法（消费工程实测）：
+
+```xml
+<u:ThemeToggleButton Mode="Indicator" IsThreeState="False" />
+```
+
+- `Mode=Indicator` 从 `ActualThemeVariant` 同步（实际变体永不为 Default），两态循环 Light↔Dark；
+- `IsThreeState="True"`（Ursa demo用法）走 Default→Light→Dark 三态循环，同样安全；
+- 控件只设置 `Application.Current.RequestedThemeVariant`，**不做持久化**——偏好落盘需自行监听 `Application.Current.ActualThemeVariantChanged` 后写入设置服务（事件里读 `RequestedThemeVariant`）。
+
+### LoadingContainer：加载遮罩标准件
+
+```xml
+<u:LoadingContainer IsLoading="{Binding IsLoading}">
+    <u:LoadingContainer.LoadingMessage>
+        <StackPanel>
+            <TextBlock Text="正在加载..." />
+        </StackPanel>
+    </u:LoadingContainer.LoadingMessage>
+    <!-- 任意内容 -->
+</u:LoadingContainer>
+```
+
+- `IsLoading=True` 时盖罩（`LoadingMaskBackground`）+ 旋转指示器 + `LoadingMessage`；`:loading` 伪类自动给内容加 `blur(5)` 并由盖罩屏蔽交互。替代手写「IsVisible 遮罩 Border + ProgressBar」样板；
+- 行内加载指示（工具条、按钮旁）用 `u:LoadingIcon`，尺寸类 `Small` / `Large`。
+
 ## 状态四态（消费工程 UI 约定）
 
-列表/面板类界面必须完整覆盖：`loading`（spinner 遮罩）、`empty`（占位插画+文案）、`error`（危险横幅）、`no-permission`。用 ViewModel 布尔属性组合控制 IsVisible。
+列表/面板类界面必须完整覆盖：`loading`（`u:LoadingContainer` 包裹内容出遮罩）、`empty`（占位插画+文案）、`error`（危险横幅）、`no-permission`。用 ViewModel 布尔属性组合控制 IsVisible。

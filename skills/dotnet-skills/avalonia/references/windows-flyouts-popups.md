@@ -1,16 +1,46 @@
 # 窗口、弹层与平台 API
 
-## 自绘窗口（消费工程 MainWindow 模式）
+## 窗口装饰：首选 UrsaWindow 托管（Ursa 2.2.0 实测核实）
+
+需要自绘标题栏（拖动、双击最大化、最小化/最大化/关闭按钮）时，**优先直接换窗口基座 `u:UrsaWindow`**，不要手工拼装窗口控制逻辑：
+
+```xml
+<u:UrsaWindow xmlns:u="https://irihi.tech/ursa"
+              IsFullScreenButtonVisible="False"
+              Title="AzrngTools" ...>
+    <!-- ExtendClientAreaToDecorationsHint=True / WindowDecorations=Full 由 UrsaWindow 的
+         ControlTheme 统一设置，不必在窗口上重复写 -->
+    <u:UrsaWindow.TitleBarContent><!-- 标题栏中部；另有 LeftContent / RightContent 两个槽 -->
+        <TextBlock Classes="app-title" Text="{Binding AppTitle}" IsHitTestVisible="False" />
+    </u:UrsaWindow.TitleBarContent>
+    <u:UrsaWindow.RightContent>
+        <u:ThemeToggleButton Mode="Indicator" IsThreeState="False" />
+    </u:UrsaWindow.RightContent>
+    <!-- 常规内容直接写在窗口体内 -->
+</u:UrsaWindow>
+```
+
+- 拖动、双击最大化、最小化/最大化/关闭全部由库的 `WindowDrawnDecorations` 模板（Ursa.Themes.Semi `Controls/UrsaWindow.axaml`，标题栏高 32 / 窗框 4）渲染的 CaptionButton 提供，窗口代码**不需要**任何 `BeginMoveDrag` / `WindowState` 处理器。
+- `IsFullScreenButtonVisible` 默认开启（Windows 标题栏会多一个全屏键），要与常规三键布局一致就显式设 `False`。
+- code-behind 基类同步改为 `UrsaWindow`（`using Ursa.Controls;`）；Toast、`TopLevel.GetTopLevel` 等用法不受影响。
+
+### 底层机制（Avalonia 12，理解 UrsaWindow 在做什么）
+
+- `Window.WindowDecorations`（`src/Avalonia.Controls/Window.cs`）：`None`（无装饰）/ `BorderOnly`（仅边框）/ `Full`（默认）。
+- `WindowDecorationProperties.ElementRole` 附加属性（`src/Avalonia.Controls/Chrome/`）：把视觉树元素标记为非客户区命中角色，**仅在 `ExtendClientAreaToDecorationsHint=True` 时生效**。`WindowDecorationsElementRole`（`src/Avalonia.Base/Input/`）成员：`TitleBar`（拖动区，拖动即平台窗口移动，双击最大化随之免费获得）、`User` / `DecorationsElement`（交互元素，命中穿透回元素本身而不被非客户区逻辑拦截）、`ResizeN/S/E/W/NE/NW/SE/SW`（边缘缩放握把）、`None`。
+- Ursa 独立控件 `u:TitleBar`：`LeftContent` / `CenterContent` / `RightContent` 三槽，模板根挂 `ElementRole="TitleBar"`、内容槽挂 `User`——用于自定义窗口里标记标题栏拖动区（UrsaWindow 模板内部就用它做 PART_TitleBar）。
+
+### 不用 Ursa 的最小手工方案（遗留，仍有效）
 
 ```xml
 <Window WindowDecorations="None"
-        ExtendClientAreaToDecorationsHint="True"
-        WindowState="Maximized" ...>
+        ExtendClientAreaToDecorationsHint="True" ...>
 ```
 
 - 标题栏拖动：`window.BeginMoveDrag(e)`（在 `PointerPressed` 中，左键时触发）。
 - 最大化/还原切换：`window.WindowState = window.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized`。
 - 最小化：`window.WindowState = WindowState.Minimized`；关闭：`window.Close()`。
+- 拖动区、窗口按钮、伪类样式全要自己写（消费工程旧模式，已被 UrsaWindow 方案整体替换）。
 
 ## Flyout / Popup 行为（含两个高频陷阱）
 
@@ -60,9 +90,9 @@ private void OnCaretButtonClick(object? sender, RoutedEventArgs e)
 
 `Popup` 双宿主：窗口化 `PopupRoot` 与 Overlay 内 `OverlayPopupHost`。窗口化弹层在 OS 层有独立 HWND（`WM_MOUSEACTIVATE` 返回 `MA_NOACTIVATE`，不抢前台）；弹层异常消失优先怀疑光熄灭链路（Deactivated / LostFocus / NonClientClick）而非渲染。
 
-## 模态对话框模式（官方样例）
+## 模态对话框模式（官方样例 + Ursa 装配）
 
-非模态弹层之外需要**模态确认 / 输入对话框**时，优先用项目既有方案（消费工程：Ursa `OverlayDialogHost`）；从零搭建或要理解 ViewModel 驱动对话框的范式，读官方样例：
+非模态弹层之外需要**模态确认 / 输入对话框**时，优先用项目既有方案（消费工程：Ursa `OverlayDialogHost`）。**Ursa 弹层的装配、关闭契约（IDialogContext）、叠加弹窗与迁移套路见 `references/ursa-overlays.md`**；从零搭建或要理解 ViewModel 驱动对话框的范式，读官方样例：
 
 - `Avalonia.Samples/src/Avalonia.Samples/ViewInteraction/MvvmDialogSample/`——Window 作为对话框、`window.ShowDialog()` 异步等待结果
 - `Avalonia.Samples/src/Avalonia.Samples/ViewInteraction/DialogManagerSample/`——`DialogManager` + `IDialogParticipant` 的 ViewModel 驱动多对话框管理（含输入对话框）
