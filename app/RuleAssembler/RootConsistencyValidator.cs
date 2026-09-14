@@ -60,6 +60,8 @@ internal sealed class RootConsistencyValidator
     {
         var generated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var generatedContributions = new Dictionary<
+            string, List<(string Feature, string Merge)>>(StringComparer.OrdinalIgnoreCase);
 
         void AddGenerated(string path, string feature, string merge)
         {
@@ -73,8 +75,14 @@ internal sealed class RootConsistencyValidator
 
             ValidateFeature(manifest, profile, canonical, feature, errors);
             ValidateMerge(profile, canonical, merge, errors);
-            if (!generated.Add(canonical))
-                errors.Add(Illegal(profile, canonical, "重复声明 generated 输出"));
+            generated.Add(canonical);
+            if (!generatedContributions.TryGetValue(canonical, out var contributions))
+            {
+                contributions = new List<(string Feature, string Merge)>();
+                generatedContributions[canonical] = contributions;
+            }
+
+            contributions.Add((feature, merge));
         }
 
         // 根文件始终生成，归属核心（无 feature）
@@ -133,8 +141,14 @@ internal sealed class RootConsistencyValidator
             {
                 ValidateFeature(manifest, profile, canonical, declaration.Feature, errors);
                 ValidateMerge(profile, canonical, declaration.Merge, errors);
-                if (!generated.Add(canonical))
-                    errors.Add(Illegal(profile, canonical, "重复声明 generated 输出"));
+                generated.Add(canonical);
+                if (!generatedContributions.TryGetValue(canonical, out var contributions))
+                {
+                    contributions = new List<(string Feature, string Merge)>();
+                    generatedContributions[canonical] = contributions;
+                }
+
+                contributions.Add((declaration.Feature, declaration.Merge));
             }
             else
             {
@@ -148,6 +162,18 @@ internal sealed class RootConsistencyValidator
         // 同一路径不能既是生成目标又是引用现有文件
         foreach (var canonical in generated.Intersect(referenced))
             errors.Add(Illegal(profile, canonical, "同时声明为 generated 与 referenced-existing"));
+
+        if (errors.Count == 0)
+        {
+            foreach (var pair in generatedContributions)
+            {
+                var replacements = pair.Value.Count(item => item.Merge == OutputDeclaration.MergeReplace);
+                if (replacements > 1)
+                    errors.Add(Illegal(profile, pair.Key, "存在多个 replace 提供者"));
+                else if (replacements == 0)
+                    errors.Add(Illegal(profile, pair.Key, "只有 append，缺少 replace 基底"));
+            }
+        }
 
         return (generated, referenced);
     }

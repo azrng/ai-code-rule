@@ -7294,10 +7294,10 @@
       "designSystemSource": "arch/nuxtFullstack/design-system.yaml"
     },
     {
-      "id": "reactLinkdotNet-ai",
-      "kind": "form",
-      "label": "React + .NET + AI Agent 全栈",
-      "desc": "单一组合组件（由 Profile reactLinkdotNet-ai 等价迁移）",
+      "id": "web-dotnet-ai-shell",
+      "kind": "shell",
+      "label": ".NET Web + AI 公共壳",
+      "desc": "Web 前后端分离 .NET + AI 组合的公共根骨架，前端技术差异由前端组件承接",
       "when": {
         "form": "web",
         "backend": "dotnet",
@@ -7416,31 +7416,64 @@
           "- 涉及后端时，已查看相关端点 / Controller、Service、Repository、DTO / 类型定义、调用方和现有测试",
           "- 涉及 AI 时，已查看现有 Agent、工具、Skills、Prompt、模型客户端封装与流式处理实现"
         ],
-        "search-nouns": "页面、组件、端点、Service、Repository、Agent、工具、DTO / 类型定义和测试实现",
+        "search-nouns": "{{slot:wdnai-search-nouns}}",
         "task-kind-nouns": "前端、后端、AI 还是基础设施",
         "root-scope-nouns": "前端、后端、AI、文档、基础设施",
         "high-risk-nouns": "数据库迁移、缓存策略变更、鉴权模型变更、模型对接变更、Prompt 核心逻辑变更、发布链路调整、环境变量变更",
-        "extra-sections": [
-          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
-          "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n2. **核心 vs 可选**：`IChatClient` + Agent Framework 是核心；向量库、记忆、多 Agent、MCP、Redis、PostgreSQL 都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：技术栈文档与示例要充分、项目结构边界要清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程、本地运行可上云。\n5. **先做闭环，再做扩张**：先把\"用户输入 → Agent 运行 → 结果展示 → 用户确认 → 下一步\"跑通，再补 Skills / Memory / Middleware。"
-        ],
-        "intro-quote": "> 本规则以 React + .NET 全栈为工程底座，融合 AI Agent 产品的 MVP 选型理念。\n> 定位：一套面向 **AI Agent 产品** 的 React + .NET 全栈开发规范，强调工程规范与\"少仪式、快闭环、AI Coding 友好、可演进\"并存。\n",
         "checklist-infra": "- 涉及基础设施时，已查看启动命令、环境变量、Dockerfile、Compose、端口和运行文档",
         "model-behavior-extra": "- **模型调用不得散落**：业务代码不得直接依赖具体模型 SDK，统一走 `IChatClient`；细则见 `ai-AGENTS.md`",
         "verify-nouns": "模型能力、",
         "verify-quote": "> AI 领域包名与 API 演进较快（如 Microsoft Agent Framework、Microsoft.Extensions.AI），调用前以官方最新文档与项目锁定版本为准。",
         "rollback-scope": "Docker 镜像"
+      }
+    },
+    {
+      "id": "web-frontend-react-ai",
+      "kind": "frontend",
+      "label": "React + Tailwind/shadcn AI 前端",
+      "desc": "React + .NET + AI 组合的专用前端规则与设计系统",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "yes"
+      },
+      "root": {
+        "extra-sections": [
+          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
+          "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n2. **核心 vs 可选**：`IChatClient` + Agent Framework 是核心；向量库、记忆、多 Agent、MCP、Redis、PostgreSQL 都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：技术栈文档与示例要充分、项目结构边界要清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程、本地运行可上云。\n5. **先做闭环，再做扩张**：先把\"用户输入 → Agent 运行 → 结果展示 → 用户确认 → 下一步\"跑通，再补 Skills / Memory / Middleware。"
+        ],
+        "intro-quote": "> 本规则以 React + .NET 全栈为工程底座，融合 AI Agent 产品的 MVP 选型理念。\n> 定位：一套面向 **AI Agent 产品** 的 React + .NET 全栈开发规范，强调工程规范与\"少仪式、快闭环、AI Coding 友好、可演进\"并存。\n"
       },
       "files": [
         {
-          "source": "arch/reactLinkdotNet-ai/ai-AGENTS.md",
-          "output": "ai-AGENTS.md",
-          "feature": "ai-capability"
-        },
-        {
           "source": "arch/reactLinkdotNet-ai/frontend-AGENTS.md",
           "output": "frontend-AGENTS.md"
-        },
+        }
+      ],
+      "designSystemSource": "arch/reactLinkdotNet-ai/design-system.yaml"
+    },
+    {
+      "id": "web-backend-react-single-ai",
+      "kind": "backend",
+      "label": ".NET 单项目 AI 后端",
+      "desc": "React + .NET + AI 组合的单项目整洁架构后端输出",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "react",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "yes"
+      },
+      "slots": {
+        "wdnai-search-nouns": "页面、组件、端点、Service、Repository、Agent、工具、DTO / 类型定义和测试实现"
+      },
+      "files": [
         {
           "source": "arch/reactLinkdotNet-ai/backend-AGENTS.md",
           "output": "backend-AGENTS.md"
@@ -7453,10 +7486,24 @@
         {
           "source": "arch/reactLinkdotNet-ai/infra-AGENTS.md",
           "output": "infra-AGENTS.md",
-          "feature": "infra"
+          "feature": "infra",
+          "merge": "replace"
         }
-      ],
-      "designSystemSource": "arch/reactLinkdotNet-ai/design-system.yaml"
+      ]
+    },
+    {
+      "id": "web-ai-capability-dotnet",
+      "kind": "capability",
+      "label": ".NET AI Agent 能力",
+      "desc": "为 .NET Web AI 组合挂载模型与 Agent 规则模块",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "ai-capability": "yes"
+      },
+      "moduleIds": [
+        "ai-capability"
+      ]
     },
       {
       "id": "web-frontend-blazor-traditional",
@@ -8546,6 +8593,18 @@
       "frontend": "vue"
     },
     "forbid": {
+      "shell": "none"
+    }
+  },
+  {
+    "when": {
+      "form": "web",
+      "backend": "dotnet",
+      "ai-capability": "yes"
+    },
+    "require": {
+      "frontend": "react",
+      "arch-style": "single",
       "shell": "none"
     }
   }

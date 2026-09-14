@@ -68,6 +68,26 @@ public class CompositionPlannerTests
     }
 
     [Fact]
+    public void DotnetAI组合钳制到React单项目()
+    {
+        var planner = new CompositionPlanner(LoadManifest());
+        var selection = FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["frontend"] = "vue",
+            ["backend"] = "dotnet",
+            ["shell"] = "none",
+            ["arch-style"] = "single",
+            ["blazor-flavor"] = "none",
+            ["ai-capability"] = "yes"
+        });
+
+        var ex = Assert.Throws<InvalidOperationException>(() => planner.Plan(selection));
+        Assert.Contains("组合违反约束", ex.Message);
+        Assert.Contains("frontend=react", ex.Message);
+    }
+
+    [Fact]
     public void 维度缺失时报错并列出待确认维度_不隐式补全()
     {
         var planner = new CompositionPlanner(LoadManifest());

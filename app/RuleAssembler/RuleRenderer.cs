@@ -37,8 +37,16 @@ internal sealed class RuleRenderer
 
         // 兼容路径与组合路径共用同一渲染核心，保证两条路径的产物结构与顺序完全一致
         var files = modules
-            .SelectMany(module => module.Files)
-            .Concat(profile.Subrules)
+            .SelectMany(module => module.Files.Select(file => new FileContribution
+            {
+                OwnerId = module.Id,
+                File = file
+            }))
+            .Concat(profile.Subrules.Select(file => new FileContribution
+            {
+                OwnerId = profile.Id,
+                File = file
+            }))
             .ToList();
         var pointers = modules
             .SelectMany(module => module.Pointers)
@@ -57,9 +65,20 @@ internal sealed class RuleRenderer
         var rootModule = RequireRootModule(manifest, ownerId, modules);
         var rootTemplate = ReadRequired(rootModule.RootSource);
 
+        var planFiles = plan.FileContributions.Count > 0
+            ? plan.FileContributions
+            : plan.Files.Select(file => new FileContribution
+            {
+                OwnerId = ownerId,
+                File = file
+            }).ToList();
         var files = modules
-            .SelectMany(module => module.Files)
-            .Concat(plan.Files)
+            .SelectMany(module => module.Files.Select(file => new FileContribution
+            {
+                OwnerId = module.Id,
+                File = file
+            }))
+            .Concat(planFiles)
             .ToList();
         var pointers = modules
             .SelectMany(module => module.Pointers)
@@ -76,7 +95,7 @@ internal sealed class RuleRenderer
         string rootTemplate,
         RootVariables root,
         IReadOnlySet<string> features,
-        List<Subrule> files,
+        List<FileContribution> files,
         List<string> pointers,
         string designSystemSource,
         IReadOnlyDictionary<string, string>? planSlots = null)
@@ -86,28 +105,44 @@ internal sealed class RuleRenderer
         if (leftover.Count > 0)
             throw new InvalidOperationException($"{ownerId} 的根模板存在未填充变量：{string.Join("、", leftover)}");
 
-        var result = new List<PlannedFile>();
-        var outputs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        AddFile(result, outputs, "AGENTS.md", NormalizeNewlines(filled, manifest.LineEnding));
+        var contributions = new List<RenderedContribution>();
+        AddContribution(
+            contributions,
+            "AGENTS.md",
+            OutputDeclaration.MergeReplace,
+            "root",
+            NormalizeNewlines(filled, manifest.LineEnding));
 
         foreach (var file in files)
         {
-            if (IsFeatureEnabled(features, file.Feature))
-                AddRuleFile(result, outputs, file, manifest, planSlots);
+            if (IsFeatureEnabled(features, file.File.Feature))
+                AddRuleFile(contributions, file, manifest, planSlots);
         }
 
         foreach (var pointer in pointers)
-            AddFile(result, outputs, pointer, NormalizeNewlines(ReadRequired($"pointers/{pointer}"), manifest.LineEnding));
+        {
+            AddContribution(
+                contributions,
+                pointer,
+                OutputDeclaration.MergeReplace,
+                "pointer:" + pointer,
+                NormalizeNewlines(ReadRequired($"pointers/{pointer}"), manifest.LineEnding));
+        }
 
         if (designSystemSource.Length > 0 && features.Contains(RootConsistencyValidator.DesignSystemFeature))
         {
             var content = planSlots is { Count: > 0 }
                 ? ApplySlots(ReadRequired(designSystemSource), "design-system.yaml", planSlots)
                 : ReadRequired(designSystemSource);
-            AddFile(result, outputs, "design-system.yaml", NormalizeNewlines(content, manifest.LineEnding));
+            AddContribution(
+                contributions,
+                "design-system.yaml",
+                OutputDeclaration.MergeReplace,
+                "design-system",
+                NormalizeNewlines(content, manifest.LineEnding));
         }
 
-        return result;
+        return AssembleFiles(contributions, manifest.LineEnding);
     }
 
     private static ModuleDefinition RequireRootModule(
@@ -126,15 +161,19 @@ internal sealed class RuleRenderer
     }
 
     private void AddRuleFile(
-        List<PlannedFile> result,
-        HashSet<string> outputs,
-        Subrule file,
+        List<RenderedContribution> contributions,
+        FileContribution contribution,
         Manifest manifest,
         IReadOnlyDictionary<string, string>? planSlots = null)
     {
-        var content = CombineSources(file, manifest);
-        content = ApplyFileSlots(content, file, planSlots);
-        AddFile(result, outputs, file.Output, NormalizeNewlines(content, manifest.LineEnding));
+        var content = CombineSources(contribution.File, manifest);
+        content = ApplyFileSlots(content, contribution.File, planSlots);
+        AddContribution(
+            contributions,
+            contribution.File.Output,
+            contribution.File.Merge,
+            contribution.OwnerId,
+            NormalizeNewlines(content, manifest.LineEnding));
     }
 
     // 子规则骨架槽位替换：plan 级槽位（组合内核组件并集）为基础，文件级声明覆盖；
@@ -191,14 +230,87 @@ internal sealed class RuleRenderer
         return AlignVersion(content, manifest);
     }
 
-    private static void AddFile(List<PlannedFile> result, HashSet<string> outputs, string output, string content)
+    private static void AddContribution(
+        List<RenderedContribution> contributions,
+        string output,
+        string merge,
+        string ownerId,
+        string content)
     {
         if (!PathGuard.TryNormalizeRelative(output, out var canonical))
             throw new InvalidOperationException($"生成结果存在无效输出路径：{output}");
-        if (!outputs.Add(canonical))
-            throw new InvalidOperationException($"生成结果存在重复输出文件：{output}");
-        result.Add(new PlannedFile { Output = output, Content = content });
+        contributions.Add(new RenderedContribution(canonical, output, merge, ownerId, content));
     }
+
+    // 按输出首次出现的顺序落盘：replace 提供基底，append 按声明顺序接在基底之后。
+    // 每项贡献在聚合前独立做能力过滤与槽位替换，避免不同 feature 的内容互相污染。
+    private static List<PlannedFile> AssembleFiles(
+        List<RenderedContribution> contributions,
+        string lineEnding)
+    {
+        var groups = new Dictionary<string, List<RenderedContribution>>(StringComparer.OrdinalIgnoreCase);
+        var orderedGroups = new List<List<RenderedContribution>>();
+        foreach (var contribution in contributions)
+        {
+            if (!groups.TryGetValue(contribution.CanonicalOutput, out var group))
+            {
+                group = new List<RenderedContribution>();
+                groups[contribution.CanonicalOutput] = group;
+                orderedGroups.Add(group);
+            }
+
+            group.Add(contribution);
+        }
+
+        var result = new List<PlannedFile>();
+        foreach (var group in orderedGroups)
+        {
+            var replacements = group
+                .Where(contribution => contribution.Merge == OutputDeclaration.MergeReplace)
+                .ToList();
+            if (replacements.Count != 1)
+            {
+                var owners = string.Join("、", group.Select(contribution => contribution.OwnerId).Distinct());
+                var reason = replacements.Count == 0
+                    ? "缺少 replace 基底"
+                    : "存在多个 replace 提供者";
+                throw new InvalidOperationException(
+                    $"输出 {group[0].Output} 合并失败：{reason}（{owners}）");
+            }
+
+            var appendContributions = group
+                .Where(contribution => contribution.Merge == OutputDeclaration.MergeAppend)
+                .ToList();
+            foreach (var append in appendContributions)
+            {
+                if (append.Content.TrimStart().StartsWith("---", StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"输出 {append.Output} 的 append 贡献 {append.OwnerId} 不允许携带 front matter");
+                }
+            }
+
+            var contents = new List<string> { replacements[0].Content };
+            contents.AddRange(appendContributions.Select(contribution => contribution.Content));
+            var content = contents.Count == 1
+                ? contents[0]
+                : string.Join("\n\n", contents.Select(item => item.TrimEnd())) + "\n";
+            result.Add(new PlannedFile
+            {
+                Output = group[0].Output,
+                Content = NormalizeNewlines(content, lineEnding)
+            });
+        }
+
+        return result;
+    }
+
+    private sealed record RenderedContribution(
+        string CanonicalOutput,
+        string Output,
+        string Merge,
+        string OwnerId,
+        string Content);
 
     private List<ModuleDefinition> ResolveModules(Manifest manifest, Profile profile)
     {

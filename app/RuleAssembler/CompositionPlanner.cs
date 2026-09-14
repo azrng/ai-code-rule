@@ -45,15 +45,18 @@ internal sealed class CompositionPlanner
             .ToList();
 
         var root = BuildRoot(selection, ordered, out var warnings, out var slots);
-        var files = CollectFiles(ordered);
+        var fileContributions = CollectFiles(ordered);
         var designSystemSource = ResolveDesignSystemSource(ordered);
+        var moduleIds = ResolveModuleIds(ordered);
 
         return new CompositionPlan
         {
             Selection = selection,
+            ModuleIds = moduleIds,
             ComponentIds = ordered.Select(component => component.Id).ToList(),
             Root = root,
-            Files = files,
+            Files = fileContributions.Select(contribution => contribution.File).ToList(),
+            FileContributions = fileContributions,
             DesignSystemSource = designSystemSource,
             Slots = slots,
             Warnings = warnings
@@ -491,24 +494,64 @@ internal sealed class CompositionPlanner
         yield return ("persistence-line", root.PersistenceLine, value => root.PersistenceLine = value);
     }
 
-    // 输出文件合并：按组件顺序拼接，同名输出视为组件冲突（append 合并属阶段 2 的多源拼接，此处先行拦截）
-    private static List<Subrule> CollectFiles(List<ComponentDefinition> ordered)
+    // 模块集合：公共 core 始终在首位，其余模块按组件顺序与组件内声明顺序去重加入
+    private static List<string> ResolveModuleIds(List<ComponentDefinition> ordered)
     {
-        var files = new List<Subrule>();
-        var owners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var moduleIds = new List<string> { "core" };
+        foreach (var component in ordered)
+        {
+            foreach (var moduleId in component.ModuleIds)
+            {
+                if (!moduleIds.Contains(moduleId, StringComparer.OrdinalIgnoreCase))
+                    moduleIds.Add(moduleId);
+            }
+        }
+
+        return moduleIds;
+    }
+
+    // 输出文件合并：保留逐项贡献，允许一个 replace 基底后跟多个 append 片段；
+    // 同一路径的 replace 数量以及 append 是否有基底由渲染阶段按能力集最终校验
+    private static List<FileContribution> CollectFiles(List<ComponentDefinition> ordered)
+    {
+        var files = new List<FileContribution>();
+        var contributionsByOutput = new Dictionary<string, List<FileContribution>>(StringComparer.OrdinalIgnoreCase);
         foreach (var component in ordered)
         {
             foreach (var file in component.Files)
             {
-                if (owners.TryGetValue(file.Output, out var owner))
+                if (!PathGuard.TryNormalizeRelative(file.Output, out var canonical))
                 {
                     throw new InvalidOperationException(
-                        $"组件冲突：输出文件 {file.Output} 同时由 {owner} 与 {component.Id} 提供");
+                        $"组件 {component.Id} 存在无效输出路径：{file.Output}");
                 }
 
-                owners[file.Output] = component.Id;
-                files.Add(file);
+                var contribution = new FileContribution { OwnerId = component.Id, File = file };
+                files.Add(contribution);
+                if (!contributionsByOutput.TryGetValue(canonical, out var outputContributions))
+                {
+                    outputContributions = new List<FileContribution>();
+                    contributionsByOutput[canonical] = outputContributions;
+                }
+
+                outputContributions.Add(contribution);
             }
+        }
+
+        foreach (var pair in contributionsByOutput)
+        {
+            var replaceCount = pair.Value.Count(item => item.File.Merge == OutputDeclaration.MergeReplace);
+            if (replaceCount > 1)
+            {
+                throw new InvalidOperationException(
+                    $"组件冲突：输出文件 {pair.Key} 存在多个 replace 提供者："
+                    + string.Join("、", pair.Value
+                        .Where(item => item.File.Merge == OutputDeclaration.MergeReplace)
+                        .Select(item => item.OwnerId)));
+            }
+
+            // append-only 组件可以扩展公共模块提供的 replace 基底；最终是否有基底由渲染器
+            // 将模块贡献与组件贡献合并后校验。
         }
 
         return files;

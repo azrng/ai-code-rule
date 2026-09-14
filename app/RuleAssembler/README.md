@@ -25,7 +25,7 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
-公共能力通过 `modules` 复用。例如 `core` 提供根入口、`collaboration-AGENTS.md` 和指针；需求澄清、任务、交付、回退等协作流程只在命中场景读取。`ai-capability` 提供 .NET 后端口径的 `ai-AGENTS.md`，`ai-capability-frontend` 提供浏览器侧口径的 `ai-AGENTS.md`（托管网关 / 代理、密钥不下发前端、流式处理）。现有技术栈专属文件暂按 Profile 保留，避免为一次模块化迁移改写大量规则正文；新增组合优先使用模块，不再复制整套 Profile。
+公共能力通过 `modules` 复用。例如 `core` 提供根入口、`collaboration-AGENTS.md` 和指针；需求澄清、任务、交付、回退等协作流程只在命中场景读取。`ai-capability` 提供 .NET 后端口径的 `ai-AGENTS.md`，`ai-capability-frontend` 提供浏览器侧口径的 `ai-AGENTS.md`（托管网关 / 代理、密钥不下发前端、流式处理）。现有技术栈专属文件按复用价值逐步组件化：`reactLinkdotNet-ai` 已拆为 Web 壳、React 前端、单项目 .NET 后端与 AI capability/module，其他未完成拆分的组合暂保留 Profile 组件；新增组合优先使用模块，不再复制整套 Profile。
 
 每个 Profile 声明 `traits` 组合画像（form/backend/frontend/shell/arch-style/blazor-flavor/ai-capability，`*` 表示不适用），`wizard` 节点维护问题步骤与选项文案；问答向导与项目检测都基于 traits 过滤，因此新增 Profile 时必须同时补 traits 与 options 文案，否则 `--check` 会失败。
 
@@ -37,22 +37,23 @@ fragments/
 
 目标项目的需求、设计和契约草案不由生成器创建。生成的 `doc-AGENTS.md` 规定项目文档按业务模块/功能拆分：需求放在 `doc/requirements/`，设计放在 `doc/design/`，新契约草案放在 `doc/contracts/`，通过 `doc/index.md` 和目录索引按需定位；旧的 `doc/requirement.md` 与 `doc/design/设计文档.md` 仅作为迁移兼容入口。
 
-### 组合内核（P2 阶段 1）
+### 组合内核（P2）
 
 manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组件化组合模型，`CompositionPlanner` 把维度选择（`Selection`，`Dictionary<string, string>`）解析为确定性的 `CompositionPlan`：
 
-- **组件**：单一技术职责（form / shell / frontend / backend / capability），声明 `when` 维度条件、根变量贡献（可携带 `{{slot:x}}` 槽位占位）、`files` 输出贡献与可选 `designSystemSource`。解析顺序按 kind 固定排序（form → shell → frontend → backend → capability），同 kind 按 manifest 声明顺序。
+- **组件**：单一技术职责（form / shell / frontend / backend / capability），声明 `when` 维度条件、根变量贡献（可携带 `{{slot:x}}` 槽位占位）、`files` 输出贡献、可选 `moduleIds` 与 `designSystemSource`。解析顺序按 kind 固定排序（form → shell → frontend → backend → capability），同 kind 按 manifest 声明顺序；组合始终先加载 `core`，再按选中组件顺序合并模块并去重。
 - **槽位机制**：骨架组件（如 `electron-desktop-shell`）持有完整的根变量条目顺序，backend 等差异内容经 `slots` 注入槽位；槽位必须有唯一提供者，替换后残留占位即报错，已声明但未被消费的槽位降级为告警。
 - **根变量合并**：以组件声明的 `family` rootDefaults 为继承基线，组件值按「未写则继承、写了则覆盖」处理；组件之间覆盖同一字段才是冲突。组件未显式声明的标量字段携带类默认值，合并前会被剥离。
-- **证据不足不隐式补全**：组件 `when` 引用了选择中缺失的维度即视为部分匹配并报错，列出待确认维度，与检测器口径一致。`constraints` 声明维度间合法关系（when 命中时 require 必须成立、forbid 必须不成立），当前 25 条覆盖壳 ↔ 后端（tauri→rust、wails→go、electron 仅 dotnet / 主进程）、形态钳制（纯后端无前端、web / 移动无壳、静态站限定 html 无后端）、前端归位（blazor→web+dotnet、原生桌面 / 移动界面的形态与后端、layered 仅 dotnet）；`SelectionEngine` 剪枝先经 `CompositionPlanner.SatisfiesConstraints`（forbid 立即生效、require 只对已回答维度生效），再按兼容样例过滤。
-- **等价回归**：`compatibilityCases` 把旧 Profile 固定为组合样例，`--check` 对每个样例同时运行旧渲染路径与组合路径并逐字节比对（含路径集合、顺序与内容）；`CompositionEquivalenceTests` 额外覆盖能力子集组合。全部 34 个 Profile 已组件化并注册为兼容样例：族组合走「骨架 + 槽位 + 前端/后端组件」（Electron 4、Wails 2、Tauri 2、Web 分离 .NET 4 / Python 2、Blazor 全栈 2），纯前端 AI 2 与 .NET 纯后端 2（分层 / 单层）走「组件 + family 基线」，其余为「单一组合 = 全量 form 组件」（直接携带 Profile 完整 root / subrules / design-system；`reactLinkdotNet-ai` 的 `ai-AGENTS.md` 按旧渲染顺序前置）。新增技术类型原则上扩展组件与约束，不再复制整套 Profile；旧 Profile 渲染路径保持不变，向导与检测切换到 Selection 属阶段 3。
+- **证据不足不隐式补全**：组件 `when` 引用了选择中缺失的维度即视为部分匹配并报错，列出待确认维度，与检测器口径一致。`constraints` 声明维度间合法关系（when 命中时 require 必须成立、forbid 必须不成立），当前 26 条覆盖壳 ↔ 后端（tauri→rust、wails→go、electron 仅 dotnet / 主进程）、形态钳制（纯后端无前端、web / 移动无壳、静态站限定 html 无后端）、前端归位（blazor→web+dotnet、原生桌面 / 移动界面的形态与后端、layered 仅 dotnet）以及 .NET AI 组合（web + React + single）；`SelectionEngine` 剪枝先经 `CompositionPlanner.SatisfiesConstraints`（forbid 立即生效、require 只对已回答维度生效），再按兼容样例过滤。
+- **等价回归**：`compatibilityCases` 把旧 Profile 固定为组合样例，`--check` 对每个样例同时运行旧渲染路径与组合路径并逐字节比对（含路径集合、顺序与内容）；`CompositionEquivalenceTests` 额外覆盖能力子集组合。全部 34 个 Profile 已组件化并注册为兼容样例：族组合走「骨架 + 槽位 + 前端/后端组件」（Electron 4、Wails 2、Tauri 2、Web 分离 .NET 4 / Python 2、Blazor 全栈 2），`reactLinkdotNet-ai` 走「.NET AI Web 壳 + React AI 前端 + 单项目 .NET 后端 + AI capability/module」，纯前端 AI 2 与 .NET 纯后端 2（分层 / 单层）走「组件 + family 基线」，其余为「单一组合 = 全量 form 组件」（直接携带 Profile 完整 root / subrules / design-system）。新增技术类型原则上扩展组件与约束，不再复制整套 Profile；旧 Profile 渲染路径保持不变，向导与检测切换到 Selection 属阶段 3。
 - **组件根标量按 JSON 存在性判定**：组件根中未在 JSON 里真实声明的标量字段反序列化后携带类默认值，合并前按 `DeclaredScalarFields`（`ManifestLoader.AnnotateComponentRootPresence` 标注）剥离；刻意声明且恰好等于类默认值的覆盖（如回退通用措辞覆盖 family 基线）会被保留。
+- **输出合并**：同一路径必须有且仅有一个 `replace` 基底，可有多个 `append` 贡献；贡献按模块、组件和声明顺序聚合，能力过滤与槽位替换对每项独立执行。重复 `replace`、无基底的 `append` 以及 append 片段携带 front matter 都会显式报错，`CompositionPlan.Files` 保留扁平兼容视图，内部同时保留贡献归属。
 
 ### 输出契约与能力开关
 
 输出文件的结构化归属维护在 manifest，`--check` 不通过解析根文件 Markdown 反推输出契约：
 
-- `features` 注册能力 ID（doc / infra / ai-capability / design-system）；片段 `output` 可声明 `feature`（能力归属）与 `merge`（replace / append），Profile 可用显式 `outputs` 补充声明，全局 `outputs.referenced-existing` 维护「根规则提到但生成器不创建」的文件（如 TASK.md）。
+- `features` 注册能力 ID（doc / infra / ai-capability / design-system）；片段 `output` 可声明 `feature`（能力归属）与 `merge`（replace / append），同一输出允许一个 replace 基底和多个 append 贡献，Profile 可用显式 `outputs` 补充声明，全局 `outputs.referenced-existing` 维护「根规则提到但生成器不创建」的文件（如 TASK.md）。
 - `RootConsistencyValidator` 按 `RuleRenderer.Plan` 同序遍历推导声明，与实际产物三向比对（声明未生成 / 实际未声明 / referenced-existing 被生成），`--check` 集成该校验。
 - 根导航条目（target-list / subrule-index / dev-stage / reading-order / extra-sections）支持三种形态：纯文本、`{ "line": "...", "features": ["doc"] }`（能力条件）、`{ "when": [多档文案] }`（按启用能力取档）；reading-order 中连续的「1. 」编号行在能力行移除后自动重排。根模板支持行尾 `<!-- if-feature: doc -->` 行级条件。
 - `FeatureSelection` 从输出声明推导每个组合的可用能力与默认勾选集；关闭能力后产物与导航联动收敛，根入口不会引用不存在的子规则文件。

@@ -2,7 +2,7 @@
 
 > 本文件是当前任务的 AI 交接清单。接手后从“当前任务”继续执行，完成后可删除。
 >
-> 分支：`guided-wizard-detect`
+> 分支：`simplify`
 >
 > 北极星方案：[doc/组合式AI-Rule生成器改造方案.md](doc/组合式AI-Rule生成器改造方案.md)
 >
@@ -10,6 +10,8 @@
 
 | 任务 ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 AI | 任务状态 | 优先级 | 最近更新时间 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RULE-20260914-AICOMP | `reactLinkdotNet-ai` 能力组件化试点 | 将完整 AI Web 组合拆为可复用的 .NET Web 壳、React + Tailwind/shadcn 前端、单项目 .NET 后端与 AI capability/module；补齐 AI 组合钳制和计划组件断言，保留旧 Profile / compatibilityCase 并逐字节等价。264 个测试通过，34 个兼容样例 `--check` 全绿 | 已完成验证 | Codex | DONE | 高 | 2026-09-14 |
+| RULE-20260914-COMPOSE-MERGE | 组合输出 append 能力与规则公共骨架抽取 | 组件增加 `moduleIds` 并集能力，组合计划保留带归属的文件贡献；渲染器按一个 replace 基底 + 多个 append 片段聚合，逐项执行 feature 与槽位处理，补齐重复 replace / 缺少基底 / append front matter 校验；`generalFrontend` 与 `generalProject` 前端规则抽出通用原则、组件结构、组件行为和测试规范四个共享片段，`nextFullstack` 与 `nuxtFullstack` 后端 / 基础设施抽出精确重合的建议、Service、代码组织、端口控制和交付尾部骨架，保持生成内容逐字节不变。263 个测试通过，34 个兼容样例 `--check` 全绿 | 已完成验证 | Codex | DONE | 高 | 2026-09-14 |
 | RULE-20260914-DOCKERFULL | Docker 交付规则与提交前回归完整抽取共享源 | 用户指出 Docker 规则尚未完整抽取（上轮仅收敛总体要求），指定以 reactLinkdotNet-ai 版为准抽取、删除各项目本地副本：盘点发现 shared/infra/docker-delivery-web.md 已与 reactLinkdotNet-ai 交付规则的通用部分逐字一致（vueLinkdotNet / reactLinkdotNet 已 include），遂以它为共享交付规则唯一源——dotnet-layered（dotnet-core-single 经组件复用跟随）、dotnetBlazor（dotnetBlazorWebApp 跟随）、nextFullstack、nuxtFullstack 的本地「Docker 交付规则」删除换 include（Next.js / Nuxt 服务启动等框架专属验证点由「Compose 服务成功启动 + 关键服务可用」涵盖，统一获得健康检查与 `.dockerignore` 条目）；shared/infra/pre-commit-regression.md 按 reactLinkdotNet-ai 版泛化（补「模型密钥配置」「数据库 Provider」「或模型调用链路」），next / nuxt 本地 3 条精简回归与 reactLinkdotNet-ai 本地 4 条全删换 include，7 个引用该片段的 Profile 回归措辞同步泛化；reactLinkdotNet-ai 交付规则 include + 模型专属一条（模型对接配置触发 + 模型调用链路验证）。generalProject（部署含安装包）、python infra（任务清单转述非规则块）、桌面 infrastructure / skeletons（无 Docker 交付）不动。规则内容变更并入 1.66.0：`--check` 34 Profile 等价全绿、256 测试通过、emit 基线差异逐一核验（14 份 infra-AGENTS.md = 6 份交付规则统一 + 7 份回归泛化 + 1 份 ai 重组，零计划外漂移） | 已完成验证 | ZCode | DONE | 高 | 2026-09-14 |
 | RULE-20260914-DOCKERSHARED | Docker 总体要求收敛为共享片段单一维护源 | 用户指出 Dockerfile 口径修复时 reactLinkdotNet-ai 是硬拷贝、其他 Profile 也可受益：盘点 infra「总体要求」形态——dotnet-layered / dotnetBlazor / vueLinkdotNet / reactLinkdotNet 及 Single / Python 变体已 `include shared/infra/general-requirements.md`；reactLinkdotNet-ai 为近似硬拷贝（含模型密钥括号、部署链路可追踪、SQLite 卷挂载专属条目），nextFullstack / nuxtFullstack 为独立措辞变体（无 Dockerfile 单列口径与回滚窗口条目）。收敛三处为 include + 专属条目追加（reactLinkdotNet-ai 保留部署链路可追踪 + SQLite 卷挂载；next / nuxt 保留 standalone / nuxt build 框架条目与「部署链路必须可追踪、可复现」），shared 密钥条目泛化为「不要把密钥（含数据库密码、模型密钥等）写入镜像」吸收 AI 版括号扩展；generalProject（通用部署语境含安装包）与 python（无 Docker 段）不动。规则内容变更并入 1.66.0：`--check` 34 Profile 等价全绿、256 测试通过、emit 基线差异逐一核验（13 份 infra-AGENTS.md = 10 份密钥措辞 + 3 份重组，零计划外漂移；中间态曾因 shared 自带标题与本地标题叠加产生重复「### 总体要求」，按仓库 include 惯例删本地标题行后消除） | 已完成验证 | ZCode | DONE | 中 | 2026-09-14 |
 | RULE-20260914-GPT6AUDIT | 按 GPT-6 Astra 技能与提示词最佳实践修正规则与技能反模式 | 对照 OpenAI「重新思考 GPT-6 Astra 的技能与提示词」自查仓库命中项并修复：① staticHtml frontend-AGENTS.md「使用方式」从「每个 AI Agent 开始修改前都必须先阅读本文档 / design-system.yaml / 相关实现」的强制预读（与根模板「最小充分上下文」自相矛盾，为文章点名反模式）改为按需口径——小改动只读命中段落、`design-system.yaml` 按场景指向、修改前看相关页面现有实现；② infra 部署文件门槛从「首次创建 Dockerfile 等必须独立确认并获得同意」放宽为「新增部署文件在方案或最终说明单列说明、不静默生成，修改既有部署配置仍按高风险口径先确认」（shared/infra/general-requirements.md 与 reactLinkdotNet-ai 硬拷贝副本两处）；③ 自研技能描述收短保触发精度：avalonia / onion-architecture / azrng-efcore 删除 API 签名全文、控件级 Keywords 长尾与触发例句，保留 Use when 场景与栈级关键词；④ bootstrap-blazor（990 行单文件）拆为 56 行极简路由 + 9 个 references（setup / table / modal / forms / treeview-toast / layout-menu / misc-components / crud-template / troubleshooting，troubleshooting 交叉引用同步改指向 layout-menu.md），console-di（306 行）拆为 57 行路由 + 3 个 references（quickstart / configuration / runtime，根保留核心模型与验证清单），渐进式披露对齐 avalonia / onion-architecture 既有结构。规则内容变更 1.65.0 → 1.66.0：`--check` 34 Profile 等价全绿（含技能发现与 ID 冲突校验），256 测试通过，emit 基线差异逐一核验（195 文件 = 版本戳 + 10 份 infra Dockerfile 行 + reactLinkdotNet-ai 副本 + staticHtml 使用方式重写，零计划外漂移） | 已完成验证 | ZCode | DONE | 高 | 2026-09-14 |
@@ -297,10 +299,10 @@ P1 新增能力选择不能直接用旧的“输出全部 Profile”命令表达
 
 ### 5. P2 完整组合内核
 
-P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 28 Profile 组件化 → Selection 入口切换 → 配方重放 → 内容收敛），见 RULE-20260906-P2S1 至 P2S6；当前规则版本 1.53.0。收尾评估与后续方向：
+P2 已于 2026-09-06 启动，阶段 1-5 全部完成（内核 → 34 Profile 组件化 → Selection 入口切换 → 配方重放 → 内容收敛），并在 2026-09-14 完成首批组件输出合并与前端公共片段抽取；当前规则版本 1.66.0。收尾评估与后续方向：
 
 1. ~~增加 `Selection`、`Component`、`Constraint`、`CompositionPlan` 和 `CompositionPlanner`，保留旧 Profile 渲染路径。~~（已完成）
-2. ~~将全部 Profile 迁移为组件，`compatibilityCases` 覆盖 28/28。~~（已完成）
+2. ~~将全部 Profile 迁移为组件，`compatibilityCases` 覆盖 34/34。~~（已完成）
 3. ~~将向导、检测器和汇总界面切换到 Selection；Profile 列表移出主入口，仅保留兼容命令。~~（已完成）
 4. ~~配方记录 `selection + component_ids + features`；`--recipe` / `--emit-all-legacy`。~~（已完成）
 5. ~~内容收敛：electron 家族 8 份按味道分化文件 → 4 份骨架 + 槽位（约 1100 行重复消除）。~~（已完成；wails/web 分离的 frontend 差异是 react/vue 框架维度而非 backend 维度，属合理差异不强收敛）

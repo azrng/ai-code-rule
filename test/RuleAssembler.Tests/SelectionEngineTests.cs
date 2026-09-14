@@ -193,7 +193,7 @@ public class SelectionEngineTests
         selection.Dimensions["frontend"] = "react";
         selection.Dimensions["backend"] = "dotnet";
 
-        // 多项目（layered）与单项目（single，含 reactLinkdotNet-ai）仍有分歧，先问架构
+        // 多项目（layered）与单项目（single，含 AI 组件组合）仍有分歧，先问架构
         var arch = engine.NextQuestion(selection);
         Assert.Equal("arch-style", arch!.Trait);
         Assert.Contains(arch.Options, option => option.Value == "layered");
@@ -210,7 +210,16 @@ public class SelectionEngineTests
         var plan = planner.Plan(selection);
         var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
         Assert.Equal(new[] { "reactLinkdotNet-ai" }, matches);
-        Assert.Contains(plan.ComponentIds, id => id == "reactLinkdotNet-ai");
+        Assert.Equal(
+            new[]
+            {
+                "web-dotnet-ai-shell",
+                "web-frontend-react-ai",
+                "web-backend-react-single-ai",
+                "web-ai-capability-dotnet"
+            },
+            plan.ComponentIds);
+        Assert.Equal(new[] { "core", "ai-capability" }, plan.ModuleIds);
     }
 
     [Fact]

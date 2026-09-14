@@ -33,11 +33,7 @@ dependencies: [agents-root]
 
 ---
 
-## 主动建议规则
-- 发现业务逻辑放错层、Service 与 Repository 职责混杂、权限校验缺失、事务边界不清或异常处理不一致时，应主动提醒
-- 发现数据库结构、接口契约、缓存策略或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
-- 发现可以复用既有 Service、Repository、schema、校验器、错误处理封装或第三方集成封装时，应优先建议复用
-- 不确定业务规则、权限规则、数据含义或外部接口行为时，应先查证或列为待确认项，禁止按通用经验补写规则
+<!-- include: shared/skeletons/web-node/backend-advisory.md -->
 
 ---
 
@@ -81,10 +77,7 @@ dependencies: [agents-root]
 
 ### Service 层规则
 - 文件位置：`server/utils/service/`（Nitro 自动导入，跨路由复用）
-- Service 方法命名使用业务语义，如 `createOrder`、`approveRequest`
-- 业务校验、权限判断、去重判断、状态流转、事务边界放在 Service 层
-- 返回明确的类型结果，不返回未约束的 `any`
-- 对外部系统调用进行必要的超时、失败与重试控制
+<!-- include: shared/skeletons/web-node/backend-service.md -->
 
 ### Repository / Prisma 规则
 - Prisma Client 统一从 `server/utils/db/` 或等价目录导出
@@ -118,10 +111,7 @@ dependencies: [agents-root]
 
 ### 代码组织规范
 - 一个文件只放一个主对象：Server Route、Service、Repository、Prisma model、Schema 各自独立文件，文件名与主对象一致。
-- 数据契约（请求 / 响应 / DTO / Schema）按业务域分文件定义，不合并到一个大杂烩文件。
-- 触发拆分的信号：单文件出现多个主对象、函数或字段持续堆叠、模块跨多个不相关业务。
-- 允许例外：紧耦合的常量、类型分组、测试 fixture。
-- 反模式：一个文件堆放所有 Prisma model 或所有请求 / 响应定义；把多个不相关 Service 塞进同一文件。
+<!-- include: shared/skeletons/web-node/backend-code-organization.md -->
 
 ---
 

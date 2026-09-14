@@ -27,19 +27,14 @@ dependencies: [agents-root]
 | Next.js Web | 3000 | 3000 |
 | PostgreSQL | 5432 | 5432 |
 
-- 若宿主机端口冲突，优先调整 Compose 映射端口，容器内端口保持不变。
-- 浏览器端同站点请求优先使用相对地址 `/api`，禁止在客户端代码中硬编码完整后端地址。
+<!-- include: shared/skeletons/web-node/infra-common-controls.md -->
 - 外部服务地址、数据库连接串、鉴权密钥等必须通过环境变量配置。
 
 <!-- include: shared/application/tech-choice.md -->
 
 ---
 
-## 主动建议规则
-- 发现环境变量、端口、Docker、构建脚本、启动命令或部署链路存在不一致、不可复现或文档缺失时，应主动提醒
-- 发现可以复用现有 Dockerfile、Compose、环境变量命名或发布脚本时，应优先建议复用，不新增平行部署链路
-- 不确定端口占用、外部服务地址、密钥来源或运行命令时，应先查证或列为待确认项，禁止凭经验写死配置
-- 涉及清理环境、删除数据、停止未知进程、修改部署配置等高风险操作时，只能提出建议，必须等待明确确认后执行
+<!-- include: shared/skeletons/web-node/infra-advisory.md -->
 
 ---
 
@@ -51,10 +46,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/infra/docker-delivery-web.md -->
 
-<!-- include: shared/infra/local-data-safety.md -->
-
-<!-- include: shared/infra/pre-commit-regression.md -->
-
-<!-- include: shared/no-test-fallback.md -->
+<!-- include: shared/skeletons/web-node/infra-delivery-tail.md -->
 
 ---

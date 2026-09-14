@@ -91,6 +91,10 @@ internal sealed class ComponentDefinition
     [JsonPropertyName("when")]
     public Dictionary<string, string> When { get; set; } = new(StringComparer.Ordinal);
 
+    // 组件可附带公共模块；组合器始终先加载 core，再按选中组件声明顺序去重合并模块
+    [JsonPropertyName("moduleIds")]
+    public List<string> ModuleIds { get; set; } = new();
+
     // 骨架组件声明：根变量未覆盖字段继承该 family 的 rootDefaults（与旧 Profile 行为一致）
     [JsonPropertyName("family")]
     public string Family { get; set; } = "";
@@ -160,6 +164,10 @@ internal sealed class CompositionPlan
 
     [JsonPropertyName("files")]
     public List<Subrule> Files { get; init; } = new();
+
+    // 组合文件的逐项贡献，保留组件归属与声明顺序；Files 是兼容旧调用方的扁平视图
+    [JsonIgnore]
+    public List<FileContribution> FileContributions { get; init; } = new();
 
     // 空 = 本组合不提供 design-system.yaml
     [JsonPropertyName("design_system_source")]
@@ -646,6 +654,13 @@ internal sealed class Subrule
     {
         return Sources.Count > 0 ? Sources : new List<string> { Source };
     }
+}
+
+// 一个输出文件的单项贡献；同一路径允许一个 replace 基底和多个 append 片段
+internal sealed class FileContribution
+{
+    public string OwnerId { get; init; } = "";
+    public Subrule File { get; init; } = new();
 }
 
 internal sealed class PlannedFile

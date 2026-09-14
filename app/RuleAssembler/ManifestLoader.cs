@@ -267,6 +267,10 @@ internal sealed class ManifestLoader
     private void ValidateComponents(Manifest manifest, ICollection<string> errors)
     {
         ValidateUniqueIds(manifest.Components.Select(component => component.Id), "component", errors);
+        var moduleIds = manifest.Modules
+            .Select(module => module.Id)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var component in manifest.Components)
         {
@@ -280,6 +284,12 @@ internal sealed class ManifestLoader
 
             foreach (var pair in component.When)
                 ValidateDimensionValue(manifest, $"component {component.Id} when.{pair.Key}", pair.Key, pair.Value, errors);
+
+            foreach (var moduleId in component.ModuleIds)
+            {
+                if (string.IsNullOrWhiteSpace(moduleId) || !moduleIds.Contains(moduleId))
+                    errors.Add($"component {component.Id} 引用了不存在的 module：{moduleId}");
+            }
 
             if (!string.IsNullOrWhiteSpace(component.Family)
                 && !manifest.Families.Any(family => family.Id.Equals(component.Family, StringComparison.OrdinalIgnoreCase)))
@@ -592,7 +602,10 @@ internal sealed class ManifestLoader
         IReadOnlyDictionary<string, ModuleDefinition> moduleMap,
         ICollection<string> errors)
     {
-        var outputs = new List<string> { "AGENTS.md" };
+        var outputs = new List<(string Path, string Merge)>
+        {
+            ("AGENTS.md", OutputDeclaration.MergeReplace)
+        };
         var moduleIds = profile.ModuleIds.Count > 0
             ? profile.ModuleIds
             : new List<string> { "core" };
@@ -601,17 +614,42 @@ internal sealed class ManifestLoader
             .Select(id => moduleMap[id])
             .ToList();
 
-        outputs.AddRange(modules.SelectMany(module => module.Files).Select(file => file.Output));
-        outputs.AddRange(profile.Subrules.Select(file => file.Output));
+        outputs.AddRange(modules
+            .SelectMany(module => module.Files)
+            .Select(file => (file.Output, file.Merge)));
+        outputs.AddRange(profile.Subrules.Select(file => (file.Output, file.Merge)));
         outputs.AddRange(modules
             .SelectMany(module => module.Pointers)
             .Concat(profile.Pointers)
-            .Distinct(StringComparer.OrdinalIgnoreCase));
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(pointer => (pointer, OutputDeclaration.MergeReplace)));
 
         if (profile.DesignSystem)
-            outputs.Add("design-system.yaml");
+            outputs.Add(("design-system.yaml", OutputDeclaration.MergeReplace));
 
-        ValidateUniqueOutputs(outputs, $"Profile {profile.Id}", errors);
+        ValidateOutputMergeConflicts(outputs, $"Profile {profile.Id}", errors);
+    }
+
+    private static void ValidateOutputMergeConflicts(
+        IEnumerable<(string Path, string Merge)> declarations,
+        string kind,
+        ICollection<string> errors)
+    {
+        var groups = declarations
+            .Where(item => !string.IsNullOrWhiteSpace(item.Path))
+            .GroupBy(item => PathGuard.TryNormalizeRelative(item.Path, out var canonical)
+                ? canonical
+                : item.Path.Trim().Replace('\\', '/'), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in groups)
+        {
+            var replaceCount = group.Count(item => item.Merge == OutputDeclaration.MergeReplace);
+            if (replaceCount > 1)
+                errors.Add($"{kind} 输出重复：{group.Key} 存在多个 replace 提供者");
+            else if (replaceCount == 0
+                && group.Any(item => item.Merge == OutputDeclaration.MergeAppend))
+                errors.Add($"{kind} 输出重复：{group.Key} 只有 append，缺少 replace 基底");
+        }
     }
 
     private static void ValidateUniqueOutputs(IEnumerable<string> outputs, string kind, ICollection<string> errors)
