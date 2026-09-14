@@ -157,11 +157,8 @@ frontend/
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：项目现有的静态检查、类型检查或编译校验
-- 页面、路由、表单、交互、流式展示改动：至少补一次受影响页面或组件的 smoke test / 交互验证
-- 仅样式或文案微调：至少确认受影响页面的关键状态、布局与核心交互未回退
-- 若改动影响共享组件、布局或状态流转，优先验证影响范围最大的页面，而不是只看局部组件
+<!-- include: shared/frontend/pre-commit-regression.md -->
+- 流式展示改动：按交互改动口径补一次流式渲染与内容呈现的 smoke test
 
 <!-- include: shared/common/general-requirements.md -->
 

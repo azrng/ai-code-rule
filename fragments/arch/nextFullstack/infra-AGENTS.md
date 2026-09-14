@@ -44,8 +44,6 @@ dependencies: [agents-root]
 - Next.js 生产构建优先使用 standalone 输出
 - 部署链路必须可追踪、可复现
 
-<!-- include: shared/infra/docker-delivery-web.md -->
-
 <!-- include: shared/skeletons/web-node/infra-delivery-tail.md -->
 
 ---

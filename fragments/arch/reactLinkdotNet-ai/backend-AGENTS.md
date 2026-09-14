@@ -212,13 +212,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：项目现有的静态检查、类型检查或编译校验
-- 业务逻辑改动：至少补一项业务规则、权限判断或状态流转验证
-- 接口 / 路由 / 端点改动：至少补一项输入输出、状态码或异常分支验证
-- 数据访问、缓存、迁移改动：至少补一项查询结果、缓存行为、事务或迁移同步验证
+<!-- include: shared/backend/pre-commit-regression.md -->
 - AI / Agent 改动：按 `ai-AGENTS.md` 用 mock `IChatClient` 验证链路
-- 若仓库暂时缺少自动化测试基础，可使用接口调用、页面联调、脚本或命令行验证替代，但必须能证明核心逻辑真实生效
 
 <!-- include: shared/common/general-requirements.md -->
 

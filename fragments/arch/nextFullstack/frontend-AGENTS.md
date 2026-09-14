@@ -128,11 +128,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/frontend/general-requirements.md -->
 
-### 提交前最小回归
-- 默认执行：`lint`、`typecheck`
-- 页面、路由、表单、交互改动：至少补一次受影响页面或组件的手工 smoke test，或等价的自动化验证
-- **微小调整**（文案修改、颜色调整、间距优化等不影响逻辑的改动，修改内容少于10行）：可不补自动化测试，但仍应检查受影响页面显示、状态和关键交互未回退
-- 若改动影响共享组件、布局或状态流转，优先补受影响范围最大的页面验证，而不是只看局部组件
+<!-- include: shared/frontend/pre-commit-regression.md -->
 
 ### 前端测试
 - 组件测试优先使用 Vitest + Testing Library

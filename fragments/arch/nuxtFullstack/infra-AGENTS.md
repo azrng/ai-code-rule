@@ -44,8 +44,6 @@ dependencies: [agents-root]
 - Nuxt 生产构建使用 `nuxt build`（Nitro 输出 `.output/`），容器入口运行 `.output/server/index.mjs`
 - 部署链路必须可追踪、可复现
 
-<!-- include: shared/infra/docker-delivery-web.md -->
-
 <!-- include: shared/skeletons/web-node/infra-delivery-tail.md -->
 
 ---

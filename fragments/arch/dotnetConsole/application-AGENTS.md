@@ -261,11 +261,7 @@ project-root/
 
 ## 测试规则
 
-### 提交前最小回归
-- 默认执行：项目现有的编译、静态检查或单元测试
-- 命令、Service 改动：至少验证一项业务流程、状态流转或错误分支
-- DTO、映射、结果包装改动：至少验证输入输出结构和边界条件
-- 与数据访问、集成或配置相关的改动：至少补一项集成验证或等价验证，证明真实链路生效
+<!-- include: shared/application/pre-commit-regression.md -->
 
 <!-- include: shared/common/general-requirements.md -->
 
