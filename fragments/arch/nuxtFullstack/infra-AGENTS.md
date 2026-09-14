@@ -49,21 +49,11 @@ dependencies: [agents-root]
 - Nuxt 生产构建使用 `nuxt build`（Nitro 输出 `.output/`），容器入口运行 `.output/server/index.mjs`
 - 部署链路必须可追踪、可复现
 
-### Docker 交付规则
-- 只要本次任务新增或修改了 Dockerfile、`docker-compose.yml`、运行端口、环境变量或启动命令，完成实现后应主动执行一次构建与启动验证；若环境限制无法执行，必须明确说明
-- 容器化验证至少包括：
-  - 镜像构建是否成功
-  - Nuxt 服务是否成功启动
-  - 数据库依赖是否可用
-  - 核心访问链路是否可用
-- 若发现端口冲突，不要直接停止未知本地进程；优先调整 Compose 映射端口，并同步更新文档和配置
+<!-- include: shared/infra/docker-delivery-web.md -->
 
 <!-- include: shared/infra/local-data-safety.md -->
 
-### 提交前最小回归
-- 修改 Dockerfile、Compose、启动命令或端口映射时：至少执行一次构建与启动验证
-- 修改环境变量时：确认 `.env.example`、文档和运行方式同步更新
-- 若本次改动同时影响应用访问链路，应至少补一次容器内或启动后的核心链路检查
+<!-- include: shared/infra/pre-commit-regression.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

@@ -51,15 +51,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/infra/general-requirements.md -->
 
-### Docker 交付规则
-- 只要本次任务新增或修改了 Dockerfile、`docker-compose.yml`、运行端口、环境变量或启动命令，完成实现后应主动执行一次镜像构建和容器化启动验证；若因环境限制无法执行，必须明确说明。
-- 容器化验证至少包括：
-  - 镜像构建是否成功
-  - Compose 服务是否成功启动
-  - 关键服务是否处于可用状态
-  - Blazor 应用核心访问链路是否可用
-- 若发现宿主机端口冲突，不要直接停止未知本地进程；优先调整 Compose 映射端口，并同步更新文档。
-- 新增镜像构建链路时，应同步补充 `.dockerignore`。
+<!-- include: shared/infra/docker-delivery-web.md -->
 
 <!-- include: shared/infra/pre-commit-regression.md -->
 
