@@ -14,12 +14,8 @@ dependencies: [agents-root]
 - 作用域：前端实现、页面、组件、路由、状态、样式与前端测试
 - 触发场景：涉及页面、布局、组件、交互、样式、流式展示、前端 smoke test 时阅读
 
-### 常见任务入口
-- 新增页面或布局：先看页面 / 组件规则与目录约定
-- 改表单、筛选、交互：先看状态管理、请求规则与校验约定
-- 改样式、组件展示：先看样式规则与设计系统约束（`design-system.yaml`）
+<!-- include: shared/frontend/common-tasks.md -->
 - 做 Agent 对话 / 流式输出展示：先看流式展示规则与组件组织
-- 补前端回归：先看 `提交前最小回归` 与测试规则
 
 ---
 
@@ -102,21 +98,11 @@ frontend/
 
 <!-- include: shared/frontend/component-communication-react.md -->
 
-### 路由管理规范
-- 路由配置集中放在 `src/router/routes.tsx`
-- 使用 React Router 6 的 `createBrowserRouter` + `RouterProvider`
-- 路由守卫通过 `loader` 函数或 `ProtectedRoute` 包裹组件实现
-- 路由跳转使用 `useNavigate()` hook
-- 获取路由参数使用 `useParams()` 和 `useSearchParams()`
-- 路由命名使用有意义的路径（如 `/chat/:sessionId`、`/writing/outline`）
+<!-- include: shared/frontend/routing-management-react.md -->
+- Agent 对话类路由示例：`/chat/:sessionId`、`/writing/outline`
 
-### Zustand 状态管理规范
-- Store 按业务域拆分，放在 `src/stores/` 目录
-- 使用 `create` 函数定义 store
-- Store 命名：`use[Domain]Store`（如 `useUserStore`、`useChatStore`、`useAgentStore`）
-- 修改 store 状态直接通过 set 方法，推荐使用 immer 中间件简化不可变更新
-- 异步操作直接在 store actions 或组件中通过 async/await 处理
-- Agent 会话与消息流建议独立 store，便于流式增量更新与多会话切换
+<!-- include: shared/frontend/zustand.md -->
+- Agent 会话与消息流建议独立 store（如 `useChatStore`、`useAgentStore`），便于流式增量更新与多会话切换
 
 ### 样式规则
 - 唯一样式引擎为 Tailwind CSS；颜色、间距、圆角、阴影统一使用 Tailwind 工具类或 shadcn CSS 变量，禁止硬编码
@@ -139,19 +125,11 @@ frontend/
 - 涉及用户确认的关键节点（高风险动作、下一步分支）必须有明确的确认按钮，不靠用户猜
 - 流式事件结构以后端契约为准（见 `doc-AGENTS.md`），前端只做渲染与状态管理
 
-### 请求规则
-- 禁止在组件中直接调用后端 API，统一通过 `src/api/` 下的请求模块封装
-- Axios 实例统一配置，拦截器处理 token、错误
-- 流式接口单独封装（基于 fetch + ReadableStream 或 EventSource），与普通 Axios 请求分层
-- 业务常量不要散落在页面组件内部
-- API 函数命名规范：`getXxx`、`createXxx`、`updateXxx`、`deleteXxx`、`streamXxx`
+<!-- include: shared/frontend/request-rules.md -->
+- 流式接口单独封装（基于 fetch + ReadableStream 或 EventSource），与普通 Axios 请求分层，命名用 `streamXxx`
 
-### 代码组织规范
-- 一个文件只放一个主对象：页面组件、布局组件、通用组件、Hook、Store 各自独立文件，文件名与导出的主对象一致。
-- 组件职责单一：一个组件只做一件事，发现持续膨胀或多个不相关职责堆在同一文件时，应拆分为更小的子组件、Hook 或工具函数。
-- 触发拆分的信号：单文件出现多个主组件、props 或状态持续堆叠、组件跨多个不相关业务、阅读成本明显升高。
-- 允许例外：仅服务当前组件的局部子组件、紧耦合的类型定义、测试文件中的 fixture；`src/components/ui/` 下的 shadcn 组件遵循 shadcn 自身的组织约定。
-- 反模式：一个文件同时导出页面、表单、列表、弹窗等多个组件；把多个不相关 Hook 或工具函数堆在同一文件。
+<!-- include: shared/frontend/code-organization.md -->
+- 例外补充：`src/components/ui/` 下的 shadcn 组件遵循 shadcn 自身的组织约定
 
 ---
 

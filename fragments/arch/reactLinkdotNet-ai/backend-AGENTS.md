@@ -50,12 +50,8 @@ dependencies: [agents-root, ai-agents]
 
 ---
 
-## 主动建议规则
-- 发现业务逻辑放错层、端点与 Service 职责混杂、权限校验缺失、事务边界不清或异常处理不一致时，应主动提醒
-- 发现接口契约、DTO、存储结构、缓存策略或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
+<!-- include: shared/backend/advisory.md -->
 - 发现模型调用绕过 `IChatClient`、Agent 越界直接操作 Repository、或 Prompt 散落业务代码时，应提醒并指向 `ai-AGENTS.md`
-- 发现可以复用既有服务、数据访问封装、DTO、校验器或错误处理封装时，应优先建议复用
-- 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
 
 ## 推荐目录结构（单项目整洁架构）
 
@@ -143,12 +139,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 外部服务（邮件、文件存储等）实现在此层
 - 模型客户端（`IChatClient` 注册、模型选择）放在 `AI/Clients/`（见 `ai-AGENTS.md` 方案 A），逻辑偏基础设施，向 Application 暴露抽象
 
-### 代码组织规范
-- 一个文件只放一个主类型：Endpoint 映射、Controller、Service 接口与实现、Entity、值对象、DTO 等，默认一个类一个文件，文件名与类名一致。
-- DTO 目录组织：应用层 DTO 放 `Application/DTOs/{业务域}/`，Request 与 Response 各自独立文件；领域事件放 `Domain/Events/`，不合并到 `Dtos.cs`。
-- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
-- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
-- 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把端点专用 request 内联写在端点文件里；业务逻辑放到 Infrastructure。
+<!-- include: shared/backend/code-organization-dotnet.md -->
 
 <!-- include: shared/application/kiss.md -->
 
@@ -175,13 +166,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 <!-- include: shared/backend/exception-handling.md -->
 - 模型调用异常（超时、限流、空响应）需转换为可读的业务异常，不向上层泄漏 SDK 细节
 
-### Redis 缓存使用规范（可选）
-- 仅在明确需要缓存时引入 `Common.Cache.Redis`，封装的 `IRedisProvider` 接口
-- 通过 `services.AddRedisCacheStore()` 注册 Redis 服务
-- 缓存操作必须设置合理的过期时间
-- 热点数据使用本地缓存 + Redis 二级缓存
-- 发布订阅场景使用 `PublishAsync`/`SubscribeAsync`
-- 禁止在循环中频繁调用 Redis
+<!-- include: shared/backend/redis-cache.md -->
+- Redis 为可选项：仅在明确需要缓存时引入，默认不引入
 
 ### 数据库迁移规则
 - **迁移工具优先级**：**PostgreSQL 优先用 `Azrng.SqlMigration`（SQL 脚本迁移）**；**SQLite（默认）及其他场景优先用 EF Core Migrations**
@@ -191,18 +177,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - EF Core Migrations 通过 `dotnet ef migrations add` 生成，注意 SQLite 与 PostgreSQL 的 Provider 差异（大小写敏感、JSON、并发等）
 - 应用启动时自动执行迁移（可选配置）；默认 SQLite 需注意文件锁与并发限制，生产场景再评估是否切 PostgreSQL
 
-### 代码注释规范
-- 必须补 XML 注释的位置：
-  - 接口 / 端点 / Controller action：用 `<summary>` 说明用途、关键参数、返回结果。
-  - Application 层服务接口方法：说明应用能力，不写实现细节。
-  - Domain 核心业务规则方法：说明规则意图。
-  - 不来自接口的实现类自有方法（接口未约束的核心方法）：补 `<summary>` 说明该能力做什么。
-- 接口已注释时，实现方法不重复注释，也不加 `/// <inheritdoc />`；只有实现类自有的、接口未定义的方法才需要补注释。
-- 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按“不写实现细节”原则省略。
-  - 例外：端点需要向调用方暴露事件格式、鉴权要求、流式约定、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
-- 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等、模型调用风险或降级的复杂业务分支，说明“为什么这样做”——包括 fail fast 的原因、为什么跳过某类脏数据、为什么保留某一层结构。
-- 不要补的注释：普通属性的 get / set、简单 `if` / `return`、“返回结果”这类复述代码的低价值注释。
-- 注释统一使用中文，不使用纯英文注释；不在注释里泄露密钥、token、连接串、模型密钥或真实生产地址。
+<!-- include: shared/backend/comment-rules.md -->
+- 行内注释的关注点额外包括模型调用风险与降级；注释与 XML 注释中不得泄露模型密钥、Base URL 或真实生产地址
 
 <!-- include: shared/application/anti-patterns.md -->
 
@@ -217,13 +193,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 
 <!-- include: shared/common/general-requirements.md -->
 
-### 后端测试
-- 单元测试使用 xUnit + Moq
-- 端点 / Controller 测试：验证状态码、响应结构、参数校验
-- Service 测试：验证业务逻辑分支，使用 mock 隔离依赖
-- Repository 测试：使用 In-Memory 数据库或 Testcontainers（注意 SQLite In-Memory 与 PostgreSQL 行为差异）
-- 集成测试：使用 WebApplicationFactory 测试完整请求管道
-- AI 测试：mock `IChatClient`，不真实调用模型服务
+<!-- include: shared/backend/backend-testing.md -->
+- AI 测试：mock `IChatClient`，不真实调用模型服务；Repository 测试注意 SQLite In-Memory 与 PostgreSQL 的行为差异
 
 <!-- include: shared/external-dependencies.md -->
 
