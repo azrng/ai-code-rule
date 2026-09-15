@@ -17,11 +17,10 @@ dependencies: [agents-root]
 
 <!-- include: shared/application/layered-arch.md -->
 
-### 核心库
-- `CommunityToolkit.Mvvm`：`[ObservableProperty]`、`[RelayCommand]`、`IMessenger`
+<!-- include: shared/application/stack-mvvm.md -->
 - `Syncfusion.Maui.Toolkit`：UI 控件库（图表、下拉刷新、卡片等）
 - `CommunityToolkit.Maui`：移动端扩展能力（弹窗、转换器、动画等）
-- `Azrng.Core`：实体基类、扩展方法、工具类、结果包装、异常体系（如项目已使用则沿用）
+- `Azrng.Core`（如项目已使用则沿用）
 
 <!-- include: shared/application/tech-choice.md -->
 

@@ -23,14 +23,8 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-### 前端
-- Electron（渲染进程）+ React + TypeScript + Vite
-- Tailwind CSS（唯一样式体系）
-- Radix UI Primitive + `class-variance-authority` + `clsx` / `tailwind-merge`（推荐的组件基础设施）
-- React Router（页面与导航）
-- TanStack Query（异步数据状态）
-- React Hook Form + Zod（表单与校验）
-- Zustand（仅用于客户端跨组件共享状态）
+<!-- include: shared/frontend/stack-react-radix.md -->
+- Electron（渲染进程）：前端构建产物由主进程加载，运行在渲染进程中
 {{slot:bk-fr-1}}
 
 <!-- include: shared/frontend/testing.md -->

@@ -17,9 +17,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/application/layered-arch.md -->
 
-### 核心库
-- `CommunityToolkit.Mvvm`：`[ObservableProperty]`、`[RelayCommand]`、`IMessenger`
-- `Azrng.Core`：实体基类、扩展方法、工具类、结果包装、异常体系
+<!-- include: shared/application/stack-mvvm.md -->
 - `Azrng.Core.Json`：基于 `System.Text.Json` 的 JSON 序列化
 
 <!-- include: shared/application/tech-choice.md -->

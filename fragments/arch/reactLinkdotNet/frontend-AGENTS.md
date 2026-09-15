@@ -15,13 +15,7 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-### 前端
-- React 19 + TypeScript + Vite
-- Ant Design 5 组件库（antd）
-- Ant Design Icons（@ant-design/icons，唯一图标库）
-- React Router 6（路由管理）
-- Zustand（全局状态管理：用户信息、权限、通知等跨组件共享状态）
-- Axios（HTTP 客户端）
+<!-- include: shared/frontend/stack-react-antd.md -->
 
 ### 设计系统
 <!-- include: shared/ui/design-system-liveness.md -->

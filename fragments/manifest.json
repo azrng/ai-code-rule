@@ -1,7 +1,7 @@
 {
   "note": "Profile 配方：公共模块 + Profile 根变量 + Profile 专属规则文件。生成器读此文件决定如何拼装。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "1.72.0",
+    "version": "1.73.0",
     "last_updated": "2026-09-14"
   },
   "schema_version": 2,

@@ -18,14 +18,9 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-### 前端
-- React + TypeScript + Vite；版本以仓库锁定为准，不主动升级，新项目先联网检索当前最新正式版
-- Ant Design 5 组件库（antd）
-- Ant Design Icons（@ant-design/icons，唯一图标库）
-- React Router 6（路由管理）
-- Zustand（全局状态管理：用户信息、权限、通知等跨组件共享状态）
+<!-- include: shared/frontend/stack-react-antd.md -->
 - ECharts + echarts-for-react（图表，主题与使用规则见 `design-system.yaml`）
-- Axios（HTTP 客户端，仅用于外部 API 调用）
+- Axios 仅用于外部 API 调用，与 Go 后端的交互走 Wails 绑定
 
 ### 设计系统
 <!-- include: shared/ui/design-system-liveness.md -->
