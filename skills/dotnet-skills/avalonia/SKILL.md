@@ -1,6 +1,6 @@
 ---
 name: avalonia
-description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.1.2 + Semi.Avalonia + Ursa.Avalonia + CommunityToolkit.Mvvm）。在编写或修改 axaml 视图、样式与资源 token、编译绑定、MVVM 视图模型、Flyout/Popup 弹层、动画、虚拟化或自绘窗口时使用，也用于排查 AVLN2000 绑定错误与启动崩溃。Keywords: Avalonia, AvaloniaUI, axaml, XAML, .NET 桌面, Semi.Avalonia, Ursa, CommunityToolkit.Mvvm, 编译绑定, x:DataType。"
+description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Avalonia 12.1.2 + Semi.Avalonia + Ursa.Avalonia + CommunityToolkit.Mvvm）。在编写或修改 axaml 视图、样式与资源 token、编译绑定、MVVM 视图模型、Flyout/Popup 弹层、动画、虚拟化或自绘窗口时使用，也用于排查 AVLN2000 绑定错误与启动崩溃，以及 dotnet publish 单文件打包、产物体积优化（R2R / 裁剪 / ExcludeFromSingleFile 剔除冗余运行时）。Keywords: Avalonia, AvaloniaUI, axaml, XAML, .NET 桌面, Semi.Avalonia, Ursa, CommunityToolkit.Mvvm, 编译绑定, x:DataType, 发布, 打包, 单文件, 体积。"
 ---
 
 # Avalonia UI 12.x 开发指南
@@ -12,6 +12,7 @@ description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.
 - 数据绑定报 `AVLN2000`、样式附加期抛 `InvalidCastException`、弹层不弹出或秒关
 - 写动画（`Style.Animations`）、操作剪贴板 / 文件选择等平台 API
 - 列表性能（虚拟化）、窗口自绘（`u:UrsaWindow` 托管装饰 / `WindowDecorations` + `ElementRole`）
+- `dotnet publish` 单文件打包、产物体积异常或瘦身、发布参数取舍（R2R / 压缩 / 裁剪 / 剔除冗余依赖）
 
 **范围外**：业务分层（ViewModel/Service/Repository 怎么摆）归 onion-architecture skill；EF Core 归 azrng-efcore skill；Semi/Ursa 全量控件 API 以各自源码为准，本 skill 只写装配与高频用法。
 
@@ -73,6 +74,7 @@ description: "Avalonia UI 12.x 桌面客户端开发指南（.NET + Avalonia 12.
 | `references/startup-crash-checklist.md` | 编译过但启动崩 / 运行崩 |
 | `references/logging-and-crash-report.md` | 接全局异常挂点、崩溃落盘、日志分层（**新桌面项目必读**） |
 | `references/testing-and-performance.md` | 界面回归测试、性能基线 |
+| `references/publishing-and-single-file.md` | `dotnet publish` 单文件打包、产物体积优化（R2R/压缩/裁剪取舍、剔除冗余运行时）、发布配置变更后的验证 |
 
 ## 代码生成优先级
 
@@ -106,5 +108,6 @@ CommunityToolkit.Mvvm:   以消费工程 csproj 为准
 Skill Generated:         2026-09-13
 Skill Updated:           2026-09-13（新增 references/ursa-overlays.md：Ursa 弹层装配与 IDialogContext 关闭契约，消费工程 11 弹窗迁移实测）
 Skill Updated:           2026-09-13（窗口装饰改 UrsaWindow 托管为首选 + ElementRole 机制；ThemeToggleButton Default 变体首击异常坑与持久化口径；LoadingContainer 加载遮罩；Semi TextBox clearButton；内置 BoolConverters/ObjectConverters；Ursa 2.2.0 负面清单。消费工程 AzrngTool 12.1.1 实测）
+Skill Updated:           2026-09-15（新增 references/publishing-and-single-file.md：单文件发布体积优化——R2R/压缩/裁剪实测取舍、ExcludeFromSingleFile 剔除机制与无效写法、MSAL 拖 WinForms 运行时 facet 的定位与剔除、发布验证清单。消费工程 AzrngTool 348MB→161MB 实测）
 事实来源：D:\SourceCode\avalonias\{Avalonia,Semi.Avalonia,Ursa.Avalonia} + 消费工程 D:\Work\github\ApixPress + D:\Work\github\AzrngTool
 ```
