@@ -63,7 +63,7 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 | 文件 | 何时读 |
 |---|---|
-| `references/version-and-setup.md` | 建项目、加包、配置 App.axaml 与主题 |
+| `references/version-and-setup.md` | 建项目、加包、查包版本矩阵、配置 App.axaml 与主题 |
 | `references/styling-and-tokens.md` | 写样式 / 选择器 / 伪类 / ControlTheme / 资源 token |
 | `references/bindings-and-mvvm.md` | 绑定报错、写 ViewModel、消息通信 |
 | `references/windows-flyouts-popups.md` | 窗口自绘、Flyout/Popup 行为与陷阱、剪贴板、文件对话框 |
@@ -98,16 +98,7 @@ Avalonia 官方控件 + ControlTheme
 - 禁止在 DataTemplate 漏写 `x:DataType`（编译绑定默认开启时直接编译失败）
 - 禁止用普通 StackPanel 作大列表的 ItemsPanel 还期望虚拟化
 
-## 版本记录
+## 版本与事实来源
 
-```text
-Avalonia Version:        12.1.2（消费工程 csproj；源码 tag 12.1.2 逐一核实）
-Semi.Avalonia Version:   12.1.0.1
-Ursa.Avalonia Version:   2.2.0（Irihi.Ursa / Irihi.Ursa.Themes.Semi）
-CommunityToolkit.Mvvm:   以消费工程 csproj 为准
-Skill Generated:         2026-09-13
-Skill Updated:           2026-09-13（新增 references/ursa-overlays.md：Ursa 弹层装配与 IDialogContext 关闭契约，消费工程 11 弹窗迁移实测）
-Skill Updated:           2026-09-13（窗口装饰改 UrsaWindow 托管为首选 + ElementRole 机制；ThemeToggleButton Default 变体首击异常坑与持久化口径；LoadingContainer 加载遮罩；Semi TextBox clearButton；内置 BoolConverters/ObjectConverters；Ursa 2.2.0 负面清单。消费工程 AzrngTool 12.1.1 实测）
-Skill Updated:           2026-09-15（新增 references/publishing-and-single-file.md：单文件发布体积优化——R2R/压缩/裁剪实测取舍、ExcludeFromSingleFile 剔除机制与无效写法、MSAL 拖 WinForms 运行时 facet 的定位与剔除、发布验证清单。消费工程 AzrngTool 348MB→161MB 实测）
-事实来源：D:\SourceCode\avalonias\{Avalonia,Semi.Avalonia,Ursa.Avalonia} + 消费工程 D:\Work\github\ApixPress + D:\Work\github\AzrngTool
-```
+- 包版本矩阵（Avalonia / Semi.Avalonia / Ursa / CommunityToolkit.Mvvm）**唯一维护在 `references/version-and-setup.md`**：加包、升级、查精确版本只看那张表；本文件概述与 description 的基准组合随表同步。
+- 事实来源：`D:\SourceCode\avalonias\{Avalonia, Semi.Avalonia, Ursa.Avalonia}` 源码（按 tag `12.1.2` 核实）+ 消费工程 `D:\Work\github\ApixPress`、`D:\Work\github\AzrngTool` 实测。
