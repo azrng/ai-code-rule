@@ -73,12 +73,7 @@ src/AppName/
 
 <!-- include: shared/application/viewmodel-rules.md -->
 
-### Service 层规则
-- 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录。
-- 服务方法必须优先采用异步形式（返回 `Task<T>` 或 `ValueTask<T>`）。
-- 服务层处理所有业务逻辑，不直接访问 Repository 以外的数据依赖。
-- 服务层异常必须统一封装，抛出 Azrng 异常体系中的业务异常类型。
-- 服务类实现 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 接口表达生命周期，按对应生命周期显式注册（`RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`，桌面项目不使用）。
+<!-- include: shared/application/service-layer-dotnet.md -->
 
 <!-- include: shared/application/dto-rules.md -->
 
@@ -89,14 +84,9 @@ src/AppName/
 <!-- include: shared/application/result-wrapping.md -->
 
 ### 异常处理规范
-- 业务异常继承 `BaseException` 或其子类：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `ForbiddenException`：禁止访问
-  - `InternalServerException`：服务器内部错误
-- 禁止抛出非 Azrng 体系的随意自定义异常。
-- 异常处理应尽量保留可定位信息，同时对用户输出友好、可理解的提示。
+<!-- include: shared/application/azrng-exception-types.md -->
+- 禁止抛出非 Azrng 体系的随意自定义异常
+- 异常处理应尽量保留可定位信息，同时对用户输出友好、可理解的提示
 
 <!-- include: shared/application/comment-rules.md -->
 

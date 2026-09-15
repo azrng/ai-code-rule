@@ -74,12 +74,7 @@ src/AppName/
 
 <!-- include: shared/application/viewmodel-rules.md -->
 
-### Service 层规则
-- 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录
-- 服务方法必须优先采用异步形式（返回 `Task<T>` 或 `ValueTask<T>`）
-- 服务层处理所有业务逻辑，不直接访问 Repository 以外的数据依赖
-- 服务层异常必须统一封装，抛出项目异常体系中的业务异常类型
-- 若项目使用标记接口模式批量注册（如 `ITransientDependency`），服务类应实现对应接口
+<!-- include: shared/application/service-layer-dotnet.md -->
 
 <!-- include: shared/application/dto-rules.md -->
 

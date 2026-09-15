@@ -189,11 +189,7 @@ project-root/
 
 ### 异常处理规范
 - 顶层捕获所有未处理异常，输出友好错误信息后以非零退出码退出
-- 业务异常继承 Azrng 异常体系：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `InternalServerException`：内部错误
+<!-- include: shared/application/azrng-exception-types.md -->
 - Command 内捕获异常后决定退出码：
   - 0：成功
   - 1：一般错误

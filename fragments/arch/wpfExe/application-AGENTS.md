@@ -59,13 +59,7 @@ dependencies: [agents-root]
 | `Models/DTOs/` | DTO（视图与业务层契约），一类一文件 | `{名称}Dto.cs` |
 | `Models/Entities/` | 数据实体，一类一文件 | `{实体名}.cs` |
 
-### Service 层规则
-- 服务类必须实现接口，接口定义在 `Services/Interfaces/` 目录
-- 服务方法必须是异步的（返回 `Task<T>` 或 `ValueTask<T>`）
-- 服务层处理所有业务逻辑，不直接承担视图渲染、控件操作与数据访问实现细节
-- 服务层异常必须统一封装，抛出 Azrng 异常体系的业务异常类型
-- 服务类实现 `ITransientDependency`/`IScopedDependency`/`ISingletonDependency` 接口表达生命周期，按对应生命周期显式 `AddTransient`/`AddScoped`/`AddSingleton` 注册（`RegisterBusinessServices` 属 `Azrng.AspNetCore.Core`，桌面项目不使用）
-- 禁止在 ViewModel、Service、Repository、Model、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数
+<!-- include: shared/application/service-layer-dotnet.md -->
 
 ### 应用层协作边界
 - ViewModel 只依赖 Service 接口，不直接依赖 Repository、数据库连接或 SQL
@@ -80,12 +74,7 @@ dependencies: [agents-root]
 - 异常处理使用 Azrng.Core 异常体系
 
 ### 异常处理规范
-- 业务异常继承 `BaseException` 或其子类：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `ForbiddenException`：禁止访问
-  - `InternalServerException`：服务器内部错误
+<!-- include: shared/application/azrng-exception-types.md -->
 - 异常在 ViewModel 层捕获并转换为用户友好的提示信息
 
 <!-- include: shared/application/comment-rules.md -->

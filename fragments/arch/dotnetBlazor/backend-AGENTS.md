@@ -116,36 +116,20 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/domain-layer.md -->
 
-### 代码组织规范
-- 一个文件只放一个主类型：实体、值对象、DTO、Service 接口与实现等公开契约类，默认一个类一个文件，文件名与类名一致。
-- DTO 目录组织：应用层 DTO 放 `Application/DTOs/{业务域}/`，Request 与 Response 各自独立文件；通用 DTO 放 Domain 层对应目录，不合并到 `Dtos.cs`。
-- 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
-- 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
-- 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；把业务逻辑塞回 Razor 组件。
+<!-- include: shared/backend/code-organization-dotnet.md -->
+- 通用 DTO 放 Domain 层对应目录；业务逻辑不塞回 Razor 组件
 
 <!-- include: shared/application/kiss.md -->
 
-### 数据访问规则（可选）
-- 使用 Entity Framework Core 进行数据访问。
-- DbContext 通过构造函数注入。
-- 使用 LINQ 查询，避免原生 SQL。
-- 涉及事务时使用 `IDbContextTransaction`。
-- 软删除通过全局查询过滤器实现。
+<!-- include: shared/backend/data-access-rules.md -->
 
 <!-- include: shared/backend/response-format.md -->
 
 <!-- include: shared/backend/di-rules.md -->
 - Blazor Server 中 Scoped 服务基于 SignalR 连接生命周期；Blazor 组件通过 `@inject` 注入服务
 
-### 异常处理规范
-- 业务异常继承 `BaseException` 或其子类：
-  - `LogicBusinessException`：业务逻辑异常
-  - `ParameterException`：参数校验异常
-  - `NotFoundException`：资源不存在
-  - `ForbiddenException`：禁止访问
-  - `InternalServerException`：服务器内部错误
-- Blazor 页面使用 `ErrorBoundary` 组件捕获渲染异常。
-- API 接口异常由中间件统一捕获并转换为 `ResultModel` 响应。
+<!-- include: shared/backend/exception-handling.md -->
+- Blazor 页面使用 `ErrorBoundary` 组件捕获渲染异常
 
 ### Redis 缓存使用规范（可选）
 - 使用 `Common.Cache.Redis` 封装的 `IRedisProvider` 接口。
