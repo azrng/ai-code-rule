@@ -90,8 +90,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/response-format.md -->
 
-<!-- include: shared/backend/di-rules.md -->
-
 <!-- include: shared/backend/exception-handling.md -->
 
 <!-- include: shared/backend/redis-cache.md -->

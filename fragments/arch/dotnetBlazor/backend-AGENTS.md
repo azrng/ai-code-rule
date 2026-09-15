@@ -25,14 +25,6 @@ dependencies: [agents-root]
 <!-- include: shared/backend/core-libs.md -->
 - Blazor 项目中数据库、`Azrng.SqlMigration` 迁移与 Redis 缓存为可选能力，按项目实际启用
 
-### 依赖注入规范
-- 使用 Azrng 标记接口方式：
-  - `ITransientDependency`：临时注入
-  - `IScopedDependency`：作用域注入
-  - `ISingletonDependency`：单例注入
-- 在 `Program.cs` 中调用 `services.RegisterBusinessServices(assemblies)` 扫描并注册服务（扩展由 `Azrng.AspNetCore.Core` 提供）
-- Blazor Server 中 Scoped 服务基于 SignalR 连接生命周期
-
 <!-- include: shared/application/tech-choice.md -->
 
 ---
@@ -142,13 +134,8 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/response-format.md -->
 
-### 依赖注入规范
-- 服务类必须实现以下接口之一：
-  - `ITransientDependency`：每次请求创建新实例
-  - `IScopedDependency`：每个 SignalR 连接作用域内单例
-  - `ISingletonDependency`：应用程序生命周期单例
-- Blazor 组件通过 `@inject` 注入服务。
-- 禁止使用静态服务定位器 pattern。
+<!-- include: shared/backend/di-rules.md -->
+- Blazor Server 中 Scoped 服务基于 SignalR 连接生命周期；Blazor 组件通过 `@inject` 注入服务
 
 ### 异常处理规范
 - 业务异常继承 `BaseException` 或其子类：

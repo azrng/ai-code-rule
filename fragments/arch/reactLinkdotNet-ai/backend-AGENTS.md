@@ -47,6 +47,7 @@ dependencies: [agents-root, ai-agents]
 - `Microsoft.Extensions.AI` + Microsoft Agent Framework，规则全部以 `ai-AGENTS.md` 为准
 
 <!-- include: shared/backend/di-rules.md -->
+- `IChatClient` 按 `ai-AGENTS.md` 注册，业务层注入抽象
 
 ---
 
@@ -153,15 +154,6 @@ Endpoints → Application → Domain ← Infrastructure / AI
 
 <!-- include: shared/backend/response-format.md -->
 - 流式接口（如 Agent 输出）可不套 `ResultModel<T>`，按 `ai-AGENTS.md` 与 `doc-AGENTS.md` 约定的事件结构返回
-
-### 依赖注入规范
-- 服务类必须实现以下接口之一：
-  - `ITransientDependency`：每次请求创建新实例
-  - `IScopedDependency`：每个请求作用域内单例
-  - `ISingletonDependency`：应用程序生命周期单例
-- 端点 / Controller 通过构造函数注入服务
-- `IChatClient` 按 `ai-AGENTS.md` 注册，业务层注入抽象
-- 禁止使用静态服务定位器 pattern
 
 <!-- include: shared/backend/exception-handling.md -->
 - 模型调用异常（超时、限流、空响应）需转换为可读的业务异常，不向上层泄漏 SDK 细节

@@ -25,7 +25,7 @@ dependencies: [agents-root]
 - 数据库：SQLite（本地默认）/ PostgreSQL（按项目需要扩展）
 - 依赖注入：`Microsoft.Extensions.DependencyInjection`
 
-### 发布
+### 发布方式
 - 桌面应用打包：单文件发布
 - 版本、发布目录和运行命令必须可追踪
 

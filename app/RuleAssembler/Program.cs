@@ -671,6 +671,14 @@ internal static class Program
             {
                 var files = renderer.Plan(manifest, profile);
                 var errors = validator.Validate(manifest, renderer, profile);
+                // 产物级重复标题：同文件内 ## / ### 标题重复即 include 叠加或骨架残留的症状
+                foreach (var file in files)
+                {
+                    var duplicatedHeadings = HeadingDuplicationValidator.FindDuplicateHeadings(file.Content);
+                    foreach (var heading in duplicatedHeadings)
+                        errors.Add($"{profile.Id}/{file.Output} 存在重复标题：{heading}");
+                }
+
                 if (errors.Count == 0)
                 {
                     Console.WriteLine($"通过：{profile.Id}（{files.Count} 个文件）");
