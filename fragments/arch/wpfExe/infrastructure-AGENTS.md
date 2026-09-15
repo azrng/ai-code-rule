@@ -71,10 +71,7 @@ dependencies: [agents-root]
 
 ## 测试规则
 
-### 总体要求
-- 影响行为的改动应优先补充或更新测试，而不是只修改实现代码
-- 若本次改动未补测试，必须在最终说明中写明原因和风险
-- 测试应覆盖真实基础设施行为，不要只验证空壳调用
+<!-- include: shared/common/general-requirements.md -->
 
 ### 基础设施测试
 - Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试

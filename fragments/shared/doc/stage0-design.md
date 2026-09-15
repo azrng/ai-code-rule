@@ -1,10 +1,4 @@
-### 阶段 0 — 设计文档（新功能强制前置）
-
-**触发条件**：用户提出新功能需求
-
-**执行方式**：由用户与 AI 对话协作产出，用户最终确认定稿
-
-**产物**：当前业务模块/功能对应的 `doc/design/<module>/<feature>.md`，并关联已确认的 `doc/requirements/<module>/<feature>.md`；跨模块方案另记入 `doc/design/architecture.md`
+<!-- include: shared/doc/stage0-head.md -->
 
 **文档必须包含以下四个部分**：
 
@@ -16,6 +10,4 @@
 | 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / empty / error） |
 | 交互与异常 | 操作流程、状态流转、边界场景、错误处理方式和验证方式 |
 
-**门控规则**：
-- 用户明确确认对应的需求文档和设计文档后，才允许进入阶段 1
-- AI 在此阶段只输出文档内容，不写任何实现代码
+<!-- include: shared/doc/stage0-gate.md -->

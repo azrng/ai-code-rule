@@ -23,12 +23,8 @@ dependencies: [agents-root]
 
 ## 契约说明规范
 
-### 契约要求
-
-- **唯一事实来源**：`src/schemas/`（或 `shared/`）中的 Zod schema 与共享类型定义
-- **定义方式**：表单 schema、查询 schema、服务出参 schema 必须成对维护
-- **变更规则**：字段或行为变化时，必须同步更新 schema、类型、页面和测试
-- **回退规则**：后续阶段发现契约缺口时，按 `collaboration-AGENTS.md`「纠错、回退与重构」回到契约变更流程，不在实现层绕过契约。
+<!-- include: shared/doc/contract-schema-web.md -->
+- **唯一事实来源目录**：`src/schemas/`（或 `shared/`）
 - **接口选择原则**：
   - 同站点表单提交、状态切换、管理后台操作：统一走 `server/api` 路由，前端用 `$fetch` / `useFetch` 调用
   - 需被外部系统访问、Webhook、文件流、第三方调用：使用 `server/routes`（自定义路径，不带 `/api` 前缀）
