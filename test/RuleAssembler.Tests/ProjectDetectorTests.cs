@@ -326,6 +326,57 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_AvaloniaAppWithWebTestApi_RecommendsAvaloniaExe()
+    {
+        // ApixPress 真实布局：src 下 Avalonia 主工程 + Core，tools 下 Sdk.Web 测试 API。
+        // 测试 API 属辅助工程，不得用 form=backend-only 与桌面形态打擂台，
+        // 否则候选只剩通配的通用 Profile，推荐会收敛到「通用项目」
+        File.WriteAllText(Path.Combine(_root, "ApixPress.slnx"), "");
+        Directory.CreateDirectory(Path.Combine(_root, "src", "ApixPress.App"));
+        Directory.CreateDirectory(Path.Combine(_root, "src", "ApixPress.Core"));
+        Directory.CreateDirectory(Path.Combine(_root, "tools", "ApixPress.TestApi"));
+        File.WriteAllText(
+            Path.Combine(_root, "src", "ApixPress.App", "ApixPress.App.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>WinExe</OutputType></PropertyGroup><ItemGroup><PackageReference Include=\"Avalonia\" Version=\"12.1.2\" /></ItemGroup></Project>");
+        File.WriteAllText(
+            Path.Combine(_root, "src", "ApixPress.Core", "ApixPress.Core.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"></Project>");
+        File.WriteAllText(
+            Path.Combine(_root, "tools", "ApixPress.TestApi", "ApixPress.TestApi.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.True(result!.Converged);
+        Assert.Equal("avaloniaExe", result.LegacyProfileId);
+        Assert.Equal("desktop", result.Confirmed["form"]);
+        Assert.Equal("avalonia", result.Confirmed["frontend"]);
+        Assert.DoesNotContain(result.Notes, note => note.Contains("证据冲突"));
+    }
+
+    [Fact]
+    public void Detect_WpfAppWithWebTestApi_RecommendsWpfExe()
+    {
+        // 与 Avalonia 场景对称：WPF 方案携带 Sdk.Web 测试 API 时同样收敛到桌面 Profile
+        Directory.CreateDirectory(Path.Combine(_root, "src"));
+        Directory.CreateDirectory(Path.Combine(_root, "tools"));
+        File.WriteAllText(
+            Path.Combine(_root, "src", "Demo.App.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><UseWPF>true</UseWPF></PropertyGroup></Project>");
+        File.WriteAllText(
+            Path.Combine(_root, "tools", "Demo.TestApi.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.True(result!.Converged);
+        Assert.Equal("wpfExe", result.LegacyProfileId);
+        Assert.DoesNotContain(result.Notes, note => note.Contains("证据冲突"));
+    }
+
+    [Fact]
     public void Detect_EmptyDirectory_ReturnsNull()
     {
         var result = new ProjectDetector(_manifest).Detect(_root);

@@ -171,6 +171,51 @@ internal sealed class ProjectDetector
         return _manifest.Wizard.Steps.FirstOrDefault(step => step.Trait == trait)?.Question ?? trait;
     }
 
+    // 单个 .NET 工程的类别判定，分支优先级与证据发放顺序一致；
+    // 仅 Blazor 受全局 .razor 文件信号影响（工程本身无 SDK 标记时也按 Blazor 处理）
+    private enum DotnetProjectKind
+    {
+        Plain,
+        MauiMobile,
+        WpfDesktop,
+        AvaloniaDesktop,
+        ElectronNetHost,
+        Blazor,
+        WebService
+    }
+
+    private static DotnetProjectKind ClassifyDotnetProject(string content, bool hasRazorFiles)
+    {
+        if (content.Contains("UseMaui", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("net8.0-android", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("net9.0-android", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("net10.0-android", StringComparison.OrdinalIgnoreCase))
+        {
+            return DotnetProjectKind.MauiMobile;
+        }
+
+        if (content.Contains("UseWPF", StringComparison.OrdinalIgnoreCase))
+            return DotnetProjectKind.WpfDesktop;
+
+        if (content.Contains("Avalonia", StringComparison.OrdinalIgnoreCase))
+            return DotnetProjectKind.AvaloniaDesktop;
+
+        if (content.Contains("ElectronNET.API", StringComparison.OrdinalIgnoreCase))
+            return DotnetProjectKind.ElectronNetHost;
+
+        if (content.Contains("Microsoft.NET.Sdk.Blazor", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("Microsoft.AspNetCore.Components.WebAssembly", StringComparison.OrdinalIgnoreCase)
+            || hasRazorFiles)
+        {
+            return DotnetProjectKind.Blazor;
+        }
+
+        if (content.Contains("Microsoft.NET.Sdk.Web", StringComparison.OrdinalIgnoreCase))
+            return DotnetProjectKind.WebService;
+
+        return DotnetProjectKind.Plain;
+    }
+
     private static List<DetectionEvidence> CollectEvidence(ScanSignals signals)
     {
         var evidence = new List<DetectionEvidence>();
@@ -210,69 +255,75 @@ internal sealed class ProjectDetector
             evidence.Add(new("frontend", "flutter", "发现 pubspec.yaml（Flutter 界面技术）"));
         }
 
-        foreach (var content in signals.CsprojContents)
+        // 先把每个工程归到唯一类别（分支优先级与旧 continue 链一致），再统一发证据。
+        // MAUI / WPF / Avalonia / ElectronNET / Blazor 是能独立定义方案形态的 UI 工程；
+        // 方案形态已被 UI 工程或桌面壳（Wails / Tauri / Electron）定义时，
+        // Microsoft.NET.Sdk.Web 工程视为辅助工程（tests/tools 下的测试 API、Mock 服务等），
+        // 不再声明 form / backend / arch-style 这类方案级证据——
+        // 否则桌面方案携带测试 API 时形态证据互相冲突，候选只剩通配的通用 Profile 兜底
+        var kinds = signals.CsprojContents
+            .Select(content => ClassifyDotnetProject(content, signals.HasRazorFiles))
+            .ToList();
+        var uiFormDefined = kinds.Any(kind => kind is DotnetProjectKind.MauiMobile
+            or DotnetProjectKind.WpfDesktop
+            or DotnetProjectKind.AvaloniaDesktop
+            or DotnetProjectKind.ElectronNetHost
+            or DotnetProjectKind.Blazor)
+            || signals.HasWailsJson
+            || signals.HasTauriConf
+            || electronSignal;
+
+        foreach (var (content, kind) in signals.CsprojContents.Zip(kinds))
         {
-            if (content.Contains("UseMaui", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("net8.0-android", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("net9.0-android", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("net10.0-android", StringComparison.OrdinalIgnoreCase))
+            switch (kind)
             {
-                evidence.Add(new("form", "mobile", "csproj 启用 MAUI / 移动目标框架"));
-                evidence.Add(new("frontend", "maui", "csproj 启用 MAUI（.NET MAUI 界面）"));
-                continue;
-            }
-
-            if (content.Contains("UseWPF", StringComparison.OrdinalIgnoreCase))
-            {
-                evidence.Add(new("form", "desktop", "csproj 启用 UseWPF"));
-                evidence.Add(new("frontend", "wpf", "csproj 启用 UseWPF（WPF 界面）"));
-                continue;
-            }
-
-            if (content.Contains("Avalonia", StringComparison.OrdinalIgnoreCase))
-            {
-                evidence.Add(new("form", "desktop", "csproj 引用 Avalonia"));
-                evidence.Add(new("frontend", "avalonia", "csproj 引用 Avalonia（Avalonia UI）"));
-                continue;
-            }
-
-            if (content.Contains("ElectronNET.API", StringComparison.OrdinalIgnoreCase))
-            {
-                evidence.Add(new("form", "desktop", "csproj 引用 ElectronNET.API"));
-                evidence.Add(new("backend", "dotnet", "csproj 引用 ElectronNET.API（.NET 宿主）"));
-                // ElectronNET.API 本身说明 Electron + .NET 宿主；渲染层框架（react/vue）
-                // 交给 package.json 依赖证据判定，这里不再给 frontend 定值
-                continue;
-            }
-
-            var isBlazor = content.Contains("Microsoft.NET.Sdk.Blazor", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("Microsoft.AspNetCore.Components.WebAssembly", StringComparison.OrdinalIgnoreCase);
-            if (isBlazor || signals.HasRazorFiles)
-            {
-                evidence.Add(new("form", "web", isBlazor ? "csproj 使用 Blazor SDK" : "发现 .razor 组件文件"));
-                evidence.Add(new("backend", "dotnet", "发现 .NET 工程（csproj）"));
-                evidence.Add(new("frontend", "blazor", isBlazor ? "csproj 使用 Blazor SDK" : "发现 .razor 组件文件"));
-                if (content.Contains("WebAssembly", StringComparison.OrdinalIgnoreCase))
-                    evidence.Add(new("blazor-flavor", "webapp", "csproj 引用 Blazor WebAssembly"));
-                // 传统 / Web App 之争证据不足时交给 wizard step 的 detect-default（traditional）
-                continue;
-            }
-
-            if (content.Contains("Microsoft.NET.Sdk.Web", StringComparison.OrdinalIgnoreCase))
-            {
-                // Web 工程伴随前端框架依赖时按前后端分离处理，避免与 frontend 证据组合出无匹配候选
-                var hasJsFrontend = signals.ReactInPackageJson || signals.VueInPackageJson || signals.NextInPackageJson;
-                evidence.Add(new(
-                    "form",
-                    hasJsFrontend ? "web" : "backend-only",
-                    hasJsFrontend
-                        ? "Web 工程伴随前端框架依赖（前后端分离）"
-                        : "csproj 使用 Microsoft.NET.Sdk.Web（ASP.NET Core 服务）"));
-                evidence.Add(new("backend", "dotnet", "发现 .NET 工程（csproj）"));
-                if (signals.CsprojCount >= 3)
-                    evidence.Add(new("arch-style", "layered", $"发现 {signals.CsprojCount} 个 csproj，符合多项目分层结构"));
-                else
-                    evidence.Add(new("arch-style", "single", $"仅发现 {signals.CsprojCount} 个 csproj，按单层结构处理"));
+                case DotnetProjectKind.MauiMobile:
+                    evidence.Add(new("form", "mobile", "csproj 启用 MAUI / 移动目标框架"));
+                    evidence.Add(new("frontend", "maui", "csproj 启用 MAUI（.NET MAUI 界面）"));
+                    continue;
+                case DotnetProjectKind.WpfDesktop:
+                    evidence.Add(new("form", "desktop", "csproj 启用 UseWPF"));
+                    evidence.Add(new("frontend", "wpf", "csproj 启用 UseWPF（WPF 界面）"));
+                    continue;
+                case DotnetProjectKind.AvaloniaDesktop:
+                    evidence.Add(new("form", "desktop", "csproj 引用 Avalonia"));
+                    evidence.Add(new("frontend", "avalonia", "csproj 引用 Avalonia（Avalonia UI）"));
+                    continue;
+                case DotnetProjectKind.ElectronNetHost:
+                    evidence.Add(new("form", "desktop", "csproj 引用 ElectronNET.API"));
+                    evidence.Add(new("backend", "dotnet", "csproj 引用 ElectronNET.API（.NET 宿主）"));
+                    // ElectronNET.API 本身说明 Electron + .NET 宿主；渲染层框架（react/vue）
+                    // 交给 package.json 依赖证据判定，这里不再给 frontend 定值
+                    continue;
+                case DotnetProjectKind.Blazor:
+                    var isBlazorSource = content.Contains("Microsoft.NET.Sdk.Blazor", StringComparison.OrdinalIgnoreCase)
+                        || content.Contains("Microsoft.AspNetCore.Components.WebAssembly", StringComparison.OrdinalIgnoreCase);
+                    evidence.Add(new("form", "web", isBlazorSource ? "csproj 使用 Blazor SDK" : "发现 .razor 组件文件"));
+                    evidence.Add(new("backend", "dotnet", "发现 .NET 工程（csproj）"));
+                    evidence.Add(new("frontend", "blazor", isBlazorSource ? "csproj 使用 Blazor SDK" : "发现 .razor 组件文件"));
+                    if (content.Contains("WebAssembly", StringComparison.OrdinalIgnoreCase))
+                        evidence.Add(new("blazor-flavor", "webapp", "csproj 引用 Blazor WebAssembly"));
+                    // 传统 / Web App 之争证据不足时交给 wizard step 的 detect-default（traditional）
+                    continue;
+                case DotnetProjectKind.WebService:
+                    if (uiFormDefined)
+                        continue;
+                    // Web 工程伴随前端框架依赖时按前后端分离处理，避免与 frontend 证据组合出无匹配候选
+                    var hasJsFrontend = signals.ReactInPackageJson || signals.VueInPackageJson || signals.NextInPackageJson;
+                    evidence.Add(new(
+                        "form",
+                        hasJsFrontend ? "web" : "backend-only",
+                        hasJsFrontend
+                            ? "Web 工程伴随前端框架依赖（前后端分离）"
+                            : "csproj 使用 Microsoft.NET.Sdk.Web（ASP.NET Core 服务）"));
+                    evidence.Add(new("backend", "dotnet", "发现 .NET 工程（csproj）"));
+                    if (signals.CsprojCount >= 3)
+                        evidence.Add(new("arch-style", "layered", $"发现 {signals.CsprojCount} 个 csproj，符合多项目分层结构"));
+                    else
+                        evidence.Add(new("arch-style", "single", $"仅发现 {signals.CsprojCount} 个 csproj，按单层结构处理"));
+                    continue;
+                default:
+                    continue;
             }
         }
 
