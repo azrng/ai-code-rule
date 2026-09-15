@@ -36,12 +36,7 @@ dependencies: [agents-root]
 
 ---
 
-## 主动建议规则
-- 发现业务逻辑放错层、Provider 与 Service 职责混杂、状态管理混乱或异常处理不一致时，应主动提醒
-- 发现 Provider 状态流转、Service 逻辑、数据模型可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
-- 发现可以复用既有 Service、Provider、DTO、校验器或错误处理封装时，应优先建议复用
-- 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
-
+<!-- include: shared/application/advisory.md -->
 ---
 
 ## 推荐目录结构

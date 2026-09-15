@@ -56,12 +56,7 @@ final itemListProvider = AsyncNotifierProvider.autoDispose<ItemListNotifier, Lis
 
 ---
 
-## 主动建议规则
-- 发现业务逻辑放错层、Repository 与 Service 职责混杂、数据访问不一致或异常处理不一致时，应主动提醒
-- 发现数据模型、存储结构、配置策略或平台服务可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改
-- 发现可以复用既有 Repository、数据访问封装、DTO、校验器或错误处理封装时，应优先建议复用
-- 不确定业务规则、权限规则、数据含义或外部接口行为时，应按根 `AGENTS.md` 的查证优先级处理，禁止按通用经验补写规则
-
+<!-- include: shared/backend/advisory.md -->
 ---
 
 ## 推荐目录结构
