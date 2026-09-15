@@ -35,11 +35,7 @@ dependencies: [agents-root]
 - 仓储实现注册到 DI 容器时，统一复用现有批量注册方式
 
 ### 数据访问规则（可选，仅在使用数据库时）
-- 数据库连接字符串从配置文件读取，禁止硬编码
-- 数据库连接必须使用 `using` 或等价机制管理生命周期
-- Dapper 映射通过 `Column` 特性或集中式映射处理
-- 所有查询必须使用参数化查询，禁止拼接 SQL
-- 数据库字段命名使用 snake_case
+<!-- include: shared/infrastructure/data-access-desktop-core.md -->
 
 ### 依赖注入与配置规则
 - Repository、基础设施服务和外部集成统一通过依赖注入提供

@@ -1,0 +1,6 @@
+- 使用 Azrng 标记接口声明服务生命周期（标记接口由 `Azrng.Core` 提供）：
+  - `ITransientDependency`：临时注入
+  - `IScopedDependency`：作用域注入
+  - `ISingletonDependency`：单例注入
+- 服务默认显式注册：在应用入口按标记接口对应生命周期调用 `AddTransient` / `AddScoped` / `AddSingleton`，注册方式与标记声明必须一致
+- 批量扫描注册 `services.RegisterBusinessServices(...)` 由 `Azrng.AspNetCore.Core` 提供，属 Web 项目装配；桌面项目默认仅引用 `Azrng.Core`，不存在该扩展方法，禁止照抄

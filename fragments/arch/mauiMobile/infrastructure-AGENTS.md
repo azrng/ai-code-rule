@@ -87,10 +87,7 @@ src/AppName/
 ### 数据访问规则
 - 本地数据访问使用 SQLite + Dapper 或 EF Core（以项目现有方案为准）
 - 远程数据访问通过 `HttpClient` 或 `Refit` 调用 REST API
-- SQL 查询必须使用参数化查询，禁止字符串拼接构造可注入 SQL
-- 数据库连接字符串从配置文件读取，禁止硬编码
-- 数据库连接必须正确管理生命周期，移动端注意及时释放资源
-- 数据库存储字段建议使用 `snake_case`，映射通过 `Column` 特性或显式映射处理
+<!-- include: shared/infrastructure/data-access-desktop-core.md -->
 - 网络请求必须有超时控制、错误处理和重试策略
 - 移动端网络请求需考虑离线场景，关键操作应支持本地缓存或队列
 

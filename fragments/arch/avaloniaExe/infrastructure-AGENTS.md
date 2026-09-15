@@ -30,12 +30,8 @@ dependencies: [agents-root]
 - 版本、发布目录和运行命令必须可追踪
 
 ### 依赖注入规范
-- 使用 Azrng 标记接口声明服务生命周期（标记接口由 `Azrng.Core` 提供）：
-  - `ITransientDependency`：临时注入
-  - `IScopedDependency`：作用域注入
-  - `ISingletonDependency`：单例注入
-- 服务默认显式注册：在 `Program.cs` 中按标记接口对应生命周期调用 `AddTransient` / `AddScoped` / `AddSingleton`，注册方式与标记声明必须一致
-- 批量扫描注册 `services.RegisterBusinessServices(...)` 由 `Azrng.AspNetCore.Core` 提供，属 Web 项目装配；桌面项目默认仅引用 `Azrng.Core`，不存在该扩展方法，禁止照抄
+<!-- include: shared/infrastructure/di-azrng-desktop.md -->
+- 应用入口为 `Program.cs`
 
 <!-- include: shared/application/tech-choice.md -->
 
@@ -74,10 +70,7 @@ src/AppName/
 
 ### 数据访问规则
 - 使用 Dapper 进行数据访问。
-- SQL 查询必须使用参数化查询，禁止字符串拼接构造可注入 SQL。
-- 数据库连接字符串从配置文件读取，禁止硬编码。
-- 数据库连接必须正确管理生命周期。
-- 数据库存储字段建议使用 `snake_case`，映射通过 `Column` 特性或显式映射处理。
+<!-- include: shared/infrastructure/data-access-desktop-core.md -->
 
 <!-- include: shared/desktop/db-migration.md -->
 

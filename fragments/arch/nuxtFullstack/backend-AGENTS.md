@@ -99,15 +99,12 @@ dependencies: [agents-root]
 - 对权限相关、实时性强的数据默认谨慎缓存
 
 ### 异常处理规范
-- 自定义业务异常统一收敛到 `server/utils/errors/` 或等价目录
-- 区分校验错误、权限错误、资源不存在、状态冲突、系统异常
-- Server Route 负责把业务异常转换为稳定响应（`createError` + `statusCode`）
-- 禁止把原始数据库异常直接透传给页面
+<!-- include: shared/skeletons/web-node/backend-exception-core.md -->
+- 错误目录：`server/utils/errors/`；转换为稳定响应用 `createError` + `statusCode`
 
 ### 第三方集成规范
-- 邮件、短信、对象存储、Webhook、支付等第三方能力统一放在 `server/utils/integrations/`
-- 第三方密钥只允许从服务端环境变量读取，不得放入 `NUXT_PUBLIC_*`
-- 所有第三方调用都必须具备错误处理与日志
+<!-- include: shared/skeletons/web-node/backend-integration-core.md -->
+- 集成目录：`server/utils/integrations/`；第三方密钥不得放入 `NUXT_PUBLIC_*`
 
 ### 代码组织规范
 - 一个文件只放一个主对象：Server Route、Service、Repository、Prisma model、Schema 各自独立文件，文件名与主对象一致。
