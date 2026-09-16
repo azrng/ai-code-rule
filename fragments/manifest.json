@@ -336,16 +336,7 @@
           "feature": "infra"
         }
       ],
-      "designSystem": false,
-      "traits": {
-        "form": "backend-only",
-        "backend": "dotnet",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "layered",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": false
     },
     {
       "id": "dotnet-core-single",
@@ -375,16 +366,7 @@
           "feature": "infra"
         }
       ],
-      "designSystem": false,
-      "traits": {
-        "form": "backend-only",
-        "backend": "dotnet",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": false
     },
     {
       "id": "python",
@@ -483,16 +465,7 @@
           "feature": "infra"
         }
       ],
-      "designSystem": false,
-      "traits": {
-        "form": "backend-only",
-        "backend": "python",
-        "frontend": "none",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": false
     },
     {
       "id": "reactLinkdotNet",
@@ -616,16 +589,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "react",
-        "shell": "none",
-        "arch-style": "layered",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "vueLinkdotNet",
@@ -739,16 +703,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "vue",
-        "shell": "none",
-        "arch-style": "layered",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "reactLinkPython",
@@ -877,15 +832,7 @@
         }
       ],
       "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "python",
-        "frontend": "react",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
+
       "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
     },
     {
@@ -1005,15 +952,7 @@
         }
       ],
       "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "python",
-        "frontend": "vue",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
+
       "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
     },
     {
@@ -1139,16 +1078,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "react",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
     },
     {
       "id": "vueLinkdotNetSingle",
@@ -1263,16 +1193,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "vue",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
     },
     {
       "id": "reactLinkdotNet-ai",
@@ -1426,16 +1347,7 @@
           "feature": "infra"
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "react",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "yes"
-      }
+      "designSystem": true
     },
     {
       "id": "nextFullstack",
@@ -1557,16 +1469,7 @@
           "feature": "infra"
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "node",
-        "frontend": "react",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "nuxtFullstack",
@@ -1689,15 +1592,7 @@
         }
       ],
       "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "node",
-        "frontend": "vue",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
+
       "designSystemSource": "arch/nuxtFullstack/design-system.yaml"
     },
     {
@@ -1790,16 +1685,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "none",
-        "frontend": "avalonia",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "wpfExe",
@@ -1879,16 +1765,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "none",
-        "frontend": "wpf",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "dotnetBlazor",
@@ -2023,16 +1900,7 @@
           "feature": "doc"
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "blazor",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "traditional",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "dotnetBlazorWebApp",
@@ -2126,16 +1994,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/dotnetBlazor/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "dotnet",
-        "frontend": "blazor",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "webapp",
-        "ai-capability": "no"
-      }
+      "designSystemSource": "arch/dotnetBlazor/design-system.yaml"
     },
     {
       "id": "dotnetConsole",
@@ -2218,16 +2077,7 @@
           "feature": "doc"
         }
       ],
-      "designSystem": false,
-      "traits": {
-        "form": "desktop",
-        "backend": "none",
-        "frontend": "console",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": false
     },
     {
       "id": "reactElectronDotNet",
@@ -2357,15 +2207,7 @@
         }
       ],
       "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "dotnet",
-        "frontend": "react",
-        "shell": "electron",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
+
       "designSystemSource": "shared/skeletons/electron/design-system-react.yaml",
       "slots": {
         "bk-fr-1": "- Electron preload + `contextBridge` 暴露的 IPC SDK（与主进程 / .NET sidecar 通信）",
@@ -2506,15 +2348,7 @@
         }
       ],
       "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "dotnet",
-        "frontend": "vue",
-        "shell": "electron",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
+
       "designSystemSource": "shared/skeletons/electron/design-system-vue.yaml",
       "slots": {
         "bk-fv-1": "- Electron preload + `contextBridge` 暴露的 IPC SDK（与主进程 / .NET sidecar 通信）",
@@ -2660,15 +2494,7 @@
         }
       ],
       "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "none",
-        "frontend": "react",
-        "shell": "electron",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
+
       "designSystemSource": "shared/skeletons/electron/design-system-react.yaml",
       "slots": {
         "bk-fr-1": "- Electron preload + `contextBridge` 暴露的 IPC SDK（与主进程通信）",
@@ -2809,15 +2635,7 @@
         }
       ],
       "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "none",
-        "frontend": "vue",
-        "shell": "electron",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      },
+
       "designSystemSource": "shared/skeletons/electron/design-system-vue.yaml",
       "slots": {
         "bk-fv-1": "- Electron preload + `contextBridge` 暴露的 IPC SDK（与主进程通信）",
@@ -2951,16 +2769,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "rust",
-        "frontend": "react",
-        "shell": "tauri",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "vueTauri",
@@ -3078,16 +2887,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "rust",
-        "frontend": "vue",
-        "shell": "tauri",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "reactWailsExe",
@@ -3204,16 +3004,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "go",
-        "frontend": "react",
-        "shell": "wails",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "vueWailsExe",
@@ -3330,16 +3121,7 @@
           ]
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "desktop",
-        "backend": "go",
-        "frontend": "vue",
-        "shell": "wails",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "mauiMobile",
@@ -3449,16 +3231,7 @@
           "feature": "doc"
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "mobile",
-        "backend": "dotnet",
-        "frontend": "maui",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "flutterMobile",
@@ -3563,16 +3336,7 @@
           "feature": "doc"
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "mobile",
-        "backend": "none",
-        "frontend": "flutter",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "reactOnly",
@@ -3698,16 +3462,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "none",
-        "frontend": "react",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
     },
     {
       "id": "reactOnly-ai",
@@ -3860,16 +3615,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "none",
-        "frontend": "react",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "yes"
-      }
+      "designSystemSource": "arch/reactLinkdotNet/design-system.yaml"
     },
     {
       "id": "vueOnly",
@@ -3995,16 +3741,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "none",
-        "frontend": "vue",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
     },
     {
       "id": "vueOnly-ai",
@@ -4157,16 +3894,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "none",
-        "frontend": "vue",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "yes"
-      }
+      "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
     },
     {
       "id": "generalFrontend",
@@ -4292,16 +4020,7 @@
         }
       ],
       "designSystem": true,
-      "designSystemSource": "arch/generalProject/design-system.yaml",
-      "traits": {
-        "form": "web",
-        "backend": "none",
-        "frontend": "general",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystemSource": "arch/generalProject/design-system.yaml"
     },
     {
       "id": "staticHtml",
@@ -4410,16 +4129,7 @@
           "feature": "doc"
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "static",
-        "backend": "none",
-        "frontend": "html",
-        "shell": "none",
-        "arch-style": "single",
-        "blazor-flavor": "none",
-        "ai-capability": "no"
-      }
+      "designSystem": true
     },
     {
       "id": "generalProject",
@@ -4548,16 +4258,7 @@
           "feature": "infra"
         }
       ],
-      "designSystem": true,
-      "traits": {
-        "form": "general",
-        "backend": "*",
-        "frontend": "*",
-        "shell": "*",
-        "arch-style": "*",
-        "blazor-flavor": "*",
-        "ai-capability": "*"
-      }
+      "designSystem": true
     }
   ],
   "wizard": {
@@ -4569,51 +4270,32 @@
       {
         "trait": "frontend",
         "question": "前端 / 界面用什么技术？",
-        "absent": "none",
-        "applies-when-trait": "form",
-        "applies-when-values": [
-          "web",
-          "desktop",
-          "mobile"
-        ]
+        "absent": "none"
       },
       {
         "trait": "shell",
         "question": "桌面壳方案用哪个？",
-        "absent": "none",
-        "applies-when-trait": "form",
-        "applies-when-values": [
-          "desktop"
-        ]
+        "absent": "none"
       },
       {
         "trait": "backend",
         "question": "后端（服务端）用什么技术栈？",
-        "absent": "none",
-        "applies-when-trait": "form",
-        "applies-when-values": [
-          "backend-only",
-          "web",
-          "desktop"
-        ]
+        "absent": "none"
       },
       {
         "trait": "arch-style",
         "question": "后端架构风格？",
-        "absent": "single",
-        "detect-default": "single"
+        "absent": "single"
       },
       {
         "trait": "blazor-flavor",
         "question": "Blazor 用哪种形态？",
-        "absent": "none",
-        "detect-default": "traditional"
+        "absent": "none"
       },
       {
         "trait": "ai-capability",
         "question": "是否需要 AI Agent 能力模块？",
-        "absent": "no",
-        "detect-default": "no"
+        "absent": "no"
       }
     ],
     "options": {

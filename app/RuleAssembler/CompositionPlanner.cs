@@ -78,13 +78,14 @@ internal sealed class CompositionPlanner
         };
     }
 
-    // 维度键必须属于已知 trait，取值必须有 wizard.options 文案，防止组合结果游离于问答与检测之外
+    // 维度键必须由 wizard.steps 声明（维度空间的唯一事实来源），取值必须有 wizard.options 文案，
+    // 防止组合结果游离于问答与检测之外
     private void ValidateDimensions(Selection selection)
     {
         var errors = new List<string>();
         foreach (var pair in selection.Dimensions)
         {
-            if (!ProfileTraits.KnownTraits.Contains(pair.Key, StringComparer.Ordinal))
+            if (!_manifest.Wizard.Steps.Any(step => step.Trait == pair.Key))
             {
                 errors.Add($"未知维度：{pair.Key}");
                 continue;

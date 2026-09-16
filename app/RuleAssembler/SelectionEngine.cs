@@ -1,5 +1,12 @@
 namespace RuleAssembler;
 
+// 问答选项的展示视图（trait + 取值 + 文案），由各交互实现渲染
+internal sealed record WizardOptionView(
+    string Trait,
+    string Value,
+    string Label,
+    string Desc);
+
 // 组件驱动的 Selection 问答引擎（P2 阶段 3）：候选不是 Profile 列表，而是 manifest.components。
 // 存续组件 = when 与当前已回答维度全部命中（未回答维度不参与判断）；
 // 只提问「存续组件之间仍有分歧」的维度，唯一取值自动推导（记录来源 derived），不问不猜。

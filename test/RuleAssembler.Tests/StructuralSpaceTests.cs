@@ -11,7 +11,8 @@ public sealed class StructuralSpaceTests
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var planner = new CompositionPlanner(manifest);
-        var dims = ProfileTraits.KnownTraits;
+        // 维度空间唯一事实来源是 wizard.steps（不再由 C# 硬编码维度清单）
+        var dims = manifest.Wizard.Steps.Select(step => step.Trait).ToArray();
         var values = dims
             .Select(trait => manifest.Wizard.Options[trait].Keys.Order(StringComparer.Ordinal).ToList())
             .ToList();

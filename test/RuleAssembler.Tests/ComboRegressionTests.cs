@@ -37,6 +37,17 @@ public sealed class ComboRegressionTests : IDisposable
         return _manifest.Profiles.Single(profile => profile.Id == result.LegacyProfileId);
     }
 
+    // 按维度回答经兼容样例反查 Profile（与检测收敛、经典入口、配方重放同口径）：
+    // 断言该回答组合可达 expectedId（回答未覆盖的维度不参与区分，与旧决策树过滤语义一致）
+    private Profile ResolveProfile(Dictionary<string, string> answers, string expectedId)
+    {
+        Assert.Contains(_manifest.CompatibilityCases, item =>
+            item.Profile.Equals(expectedId, StringComparison.OrdinalIgnoreCase)
+            && answers.All(pair => item.Selection.TryGetValue(pair.Key, out var value) && value == pair.Value));
+        return _manifest.Profiles.Single(profile =>
+            profile.Id.Equals(expectedId, StringComparison.OrdinalIgnoreCase));
+    }
+
     private void AssertContractPasses(Profile profile, IReadOnlySet<string>? features = null)
     {
         var errors = features is null
@@ -243,13 +254,12 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.Contains("backend", result.Unconfirmed);
         Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactOnly");
 
-        var engine = new WizardEngine(_manifest);
-        var profile = Assert.Single(engine.Resolve(new Dictionary<string, string>
+        var profile = ResolveProfile(new Dictionary<string, string>
         {
             ["form"] = "web",
             ["backend"] = "none",
             ["frontend"] = "react"
-        }), item => item.Id == "reactOnly");
+        }, "reactOnly");
         var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
         Assert.Contains(files, file => file.Output == "frontend-AGENTS.md");
         Assert.Contains(files, file => file.Output == "doc-AGENTS.md");
@@ -262,21 +272,18 @@ public sealed class ComboRegressionTests : IDisposable
     public void Combo_VueOnlyAndGeneralFrontend_RenderWithContract()
     {
         // 纯前端家族的另外两个组合：默认能力集渲染与契约校验通过
-        var engine = new WizardEngine(_manifest);
-        var vueOnly = Assert.Single(
-            engine.Resolve(new Dictionary<string, string>
-            {
-                ["form"] = "web",
-                ["backend"] = "none",
-                ["frontend"] = "vue"
-            }), item => item.Id == "vueOnly");
-        var generalFrontend = Assert.Single(
-            engine.Resolve(new Dictionary<string, string>
-            {
-                ["form"] = "web",
-                ["backend"] = "none",
-                ["frontend"] = "general"
-            }), item => item.Id == "generalFrontend");
+        var vueOnly = ResolveProfile(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "vue"
+        }, "vueOnly");
+        var generalFrontend = ResolveProfile(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["backend"] = "none",
+            ["frontend"] = "general"
+        }, "generalFrontend");
 
         foreach (var profile in new[] { vueOnly, generalFrontend })
         {
@@ -292,14 +299,13 @@ public sealed class ComboRegressionTests : IDisposable
     {
         // 纯前端 + AI：ai-AGENTS.md 来自前端 AI 模块，frontend/doc/infra 为骨架追加 AI 补充段，
         // 关闭文档能力后契约仍一致
-        var engine = new WizardEngine(_manifest);
-        var profile = Assert.Single(engine.Resolve(new Dictionary<string, string>
+        var profile = ResolveProfile(new Dictionary<string, string>
         {
             ["form"] = "web",
             ["backend"] = "none",
             ["frontend"] = "react",
             ["ai-capability"] = "yes"
-        }), item => item.Id == "reactOnly-ai");
+        }, "reactOnly-ai");
 
         var defaults = FeatureSelection.Defaults(_manifest, profile);
         Assert.Contains("ai-capability", defaults);
@@ -321,14 +327,13 @@ public sealed class ComboRegressionTests : IDisposable
     [Fact]
     public void Combo_VueOnlyAi_RendersWithContract()
     {
-        var engine = new WizardEngine(_manifest);
-        var profile = Assert.Single(engine.Resolve(new Dictionary<string, string>
+        var profile = ResolveProfile(new Dictionary<string, string>
         {
             ["form"] = "web",
             ["backend"] = "none",
             ["frontend"] = "vue",
             ["ai-capability"] = "yes"
-        }), item => item.Id == "vueOnly-ai");
+        }, "vueOnly-ai");
 
         var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
         Assert.Contains(files, file => file.Output == "ai-AGENTS.md");

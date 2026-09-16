@@ -328,10 +328,8 @@ internal sealed class ManifestLoader
         }
     }
 
-    // 兼容样例校验：引用的 Profile 必须存在；检测候选已切换为兼容样例口径，
-    // 因此进一步守卫 traits 与样例的一致性——Profile 的具体（非通配）traits
-    // 必须与其唯一样例的 selection 逐项一致，且每个 Profile 都必须有样例，
-    // 否则该组合在检测与组件问答中不可达（样例缺失）或与经典入口口径分叉（取值漂移）
+    // 兼容样例校验：引用的 Profile 必须存在，且每个 Profile 恰好注册一个样例——
+    // 检测候选、经典入口与配方重放都按样例收敛，缺样例的 Profile 组合不可达
     internal static void ValidateCompatibilityCases(Manifest manifest, ICollection<string> errors)
     {
         var profileIds = manifest.Profiles
@@ -350,33 +348,13 @@ internal sealed class ManifestLoader
 
         var casesByProfile = manifest.CompatibilityCases
             .GroupBy(item => item.Profile, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
+            .ToDictionary(group => group.Key, group => group.Count());
         foreach (var profile in manifest.Profiles)
         {
-            if (!casesByProfile.TryGetValue(profile.Id, out var grouped))
-            {
+            if (!casesByProfile.TryGetValue(profile.Id, out var count))
                 errors.Add($"Profile {profile.Id} 缺少兼容样例：检测与组件问答按样例收敛，该组合将不可达");
-                continue;
-            }
-
-            if (grouped.Count > 1)
-            {
+            else if (count > 1)
                 errors.Add($"Profile {profile.Id} 声明了多个兼容样例");
-                continue;
-            }
-
-            var concrete = ProfileTraits.KnownTraits
-                .Select(trait => (Trait: trait, Value: profile.Traits?.Get(trait)))
-                .Where(pair => !string.IsNullOrEmpty(pair.Value) && pair.Value != ProfileTraits.Wildcard)
-                .ToDictionary(pair => pair.Trait, pair => pair.Value!, StringComparer.Ordinal);
-            var selection = grouped[0].Selection;
-            if (concrete.Count != selection.Count
-                || concrete.Any(pair => !selection.TryGetValue(pair.Key, out var value) || value != pair.Value))
-            {
-                var actual = string.Join("、", concrete.Select(pair => $"{pair.Key}={pair.Value}"));
-                var expected = string.Join("、", selection.Select(pair => $"{pair.Key}={pair.Value}"));
-                errors.Add($"Profile {profile.Id} 的具体 traits（{actual}）与兼容样例 selection（{expected}）不一致");
-            }
         }
     }
 
@@ -390,7 +368,8 @@ internal sealed class ManifestLoader
     private static void ValidateDimensionValue(
         Manifest manifest, string field, string trait, string value, ICollection<string> errors)
     {
-        if (!ProfileTraits.KnownTraits.Contains(trait, StringComparer.Ordinal))
+        // 维度空间的唯一事实来源是 wizard.steps：组件 when、约束与兼容样例引用的维度都必须在此声明
+        if (!manifest.Wizard.Steps.Any(step => step.Trait == trait))
         {
             errors.Add($"{field} 引用了未知维度：{trait}");
             return;
@@ -417,8 +396,8 @@ internal sealed class ManifestLoader
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    // 决策树与 traits 的结构校验：trait 键合法、每个 Profile 的 trait 值都有展示文案，
-    // 保证问答向导与检测器在任何候选集上都能渲染出可读选项
+    // 向导结构校验：steps 定义维度空间（无重复、问题文案齐全），options 的每个维度
+    // 与取值都有展示文案，保证问答与检测在任何候选集上都能渲染出可读选项
     private void ValidateWizard(Manifest manifest, ICollection<string> errors)
     {
         var wizard = manifest.Wizard;
@@ -428,30 +407,19 @@ internal sealed class ManifestLoader
             return;
         }
 
-        var knownTraits = ProfileTraits.KnownTraits.ToHashSet(StringComparer.Ordinal);
+        var stepTraits = wizard.Steps
+            .Select(step => step.Trait)
+            .ToHashSet(StringComparer.Ordinal);
         var seenTraits = new HashSet<string>(StringComparer.Ordinal);
         foreach (var step in wizard.Steps)
         {
-            if (string.IsNullOrWhiteSpace(step.Trait) || !knownTraits.Contains(step.Trait))
-            {
-                errors.Add($"wizard step trait 非法：{step.Trait}");
-            }
+            if (string.IsNullOrWhiteSpace(step.Trait))
+                errors.Add("wizard step trait 不能为空");
             else if (!seenTraits.Add(step.Trait))
-            {
                 errors.Add($"wizard step trait 重复：{step.Trait}");
-            }
 
             if (string.IsNullOrWhiteSpace(step.Question))
                 errors.Add($"wizard step {step.Trait} 缺少 question");
-
-            if (!string.IsNullOrWhiteSpace(step.AppliesWhenTrait)
-                && (!knownTraits.Contains(step.AppliesWhenTrait) || step.AppliesWhenValues.Count == 0))
-                errors.Add($"wizard step {step.Trait} 的先决条件配置不完整");
-
-            if (!string.IsNullOrWhiteSpace(step.DetectDefault)
-                && (!wizard.Options.TryGetValue(step.Trait, out var defaults)
-                    || !defaults.ContainsKey(step.DetectDefault)))
-                errors.Add($"wizard step {step.Trait} 的 detect-default 不在 options 中：{step.DetectDefault}");
 
             if (!string.IsNullOrWhiteSpace(step.Absent)
                 && (!wizard.Options.TryGetValue(step.Trait, out var absentOptions)
@@ -461,31 +429,15 @@ internal sealed class ManifestLoader
 
         foreach (var trait in wizard.Options.Keys)
         {
-            if (!knownTraits.Contains(trait))
+            if (!stepTraits.Contains(trait))
                 errors.Add($"wizard options 出现未知 trait：{trait}");
         }
 
-        foreach (var profile in manifest.Profiles)
+        // 每个维度的取值都必须有展示文案：无 options 的维度在问答里渲染不出选项
+        foreach (var trait in stepTraits)
         {
-            if (profile.Traits is null)
-            {
-                errors.Add($"Profile {profile.Id} 缺少 traits");
-                continue;
-            }
-
-            foreach (var trait in ProfileTraits.KnownTraits)
-            {
-                var value = profile.Traits.Get(trait);
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    errors.Add($"Profile {profile.Id} traits 缺少 {trait}");
-                }
-                else if (value != ProfileTraits.Wildcard
-                    && (!wizard.Options.TryGetValue(trait, out var options) || !options.ContainsKey(value)))
-                {
-                    errors.Add($"Profile {profile.Id} traits.{trait} 值 {value} 缺少 wizard.options 文案");
-                }
-            }
+            if (!wizard.Options.TryGetValue(trait, out var options) || options.Count == 0)
+                errors.Add($"维度 {trait} 缺少 wizard.options 取值文案");
         }
     }
 

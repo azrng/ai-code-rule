@@ -207,11 +207,13 @@ internal sealed class WizardConfig
     [JsonPropertyName("steps")]
     public List<WizardStep> Steps { get; set; } = new();
 
-    // trait -> 选项值 -> 展示文案；Profile traits 中出现的每个非 * 值都必须在这里有文案
+    // trait -> 选项值 -> 展示文案；维度取值（组件 when、约束、兼容样例）都必须在这里有文案
     [JsonPropertyName("options")]
     public Dictionary<string, Dictionary<string, WizardOption>> Options { get; set; } = new();
 }
 
+// 向导步骤：steps 是维度空间的唯一事实来源（组件 when / 约束 / 兼容样例引用的维度
+// 都必须在此声明），不再由 C# 硬编码维度清单
 internal sealed class WizardStep
 {
     [JsonPropertyName("trait")]
@@ -222,17 +224,6 @@ internal sealed class WizardStep
 
     [JsonPropertyName("hint")]
     public string Hint { get; set; } = "";
-
-    // 只在先决回答命中时才提问；留空表示始终适用（仍受“候选间存在差异才问”的约束）
-    [JsonPropertyName("applies-when-trait")]
-    public string? AppliesWhenTrait { get; set; }
-
-    [JsonPropertyName("applies-when-values")]
-    public List<string> AppliesWhenValues { get; set; } = new();
-
-    // 检测无证据时的默认倾向值（如分层 vs 单层默认单层）
-    [JsonPropertyName("detect-default")]
-    public string DetectDefault { get; set; } = "";
 
     // 该维度的「不适用」标记值（如 frontend/backend 的 none、arch-style 的 single）：
     // 结构完备性校验只要求非标记取值被选中组件的 when 锚定，标记取值允许无组件消费
@@ -328,10 +319,6 @@ internal sealed class Profile
     [JsonPropertyName("designSystemSource")]
     public string DesignSystemSource { get; set; } = "";
 
-    // 组合画像：问答向导与项目检测按 trait 过滤 Profile；* 表示该项不适用（匹配任意回答）
-    [JsonPropertyName("traits")]
-    public ProfileTraits? Traits { get; set; }
-
     // 显式输出声明：补充派生清单之外的条目（如把某文件标记为 referenced-existing），
     // 与片段结构派生的声明合并后构成该 Profile 的完整输出契约
     [JsonPropertyName("outputs")]
@@ -364,52 +351,6 @@ internal sealed class OutputDeclaration
 
     [JsonPropertyName("merge")]
     public string Merge { get; set; } = MergeReplace;
-}
-
-internal sealed class ProfileTraits
-{
-    public const string Wildcard = "*";
-
-    public static readonly string[] KnownTraits =
-    {
-        "form", "backend", "frontend", "shell", "arch-style", "blazor-flavor", "ai-capability"
-    };
-
-    [JsonPropertyName("form")]
-    public string Form { get; set; } = "";
-
-    [JsonPropertyName("backend")]
-    public string Backend { get; set; } = "";
-
-    [JsonPropertyName("frontend")]
-    public string Frontend { get; set; } = "";
-
-    [JsonPropertyName("shell")]
-    public string Shell { get; set; } = "";
-
-    [JsonPropertyName("arch-style")]
-    public string ArchStyle { get; set; } = "";
-
-    [JsonPropertyName("blazor-flavor")]
-    public string BlazorFlavor { get; set; } = "";
-
-    [JsonPropertyName("ai-capability")]
-    public string AiCapability { get; set; } = "";
-
-    public string? Get(string trait)
-    {
-        return trait switch
-        {
-            "form" => Form,
-            "backend" => Backend,
-            "frontend" => Frontend,
-            "shell" => Shell,
-            "arch-style" => ArchStyle,
-            "blazor-flavor" => BlazorFlavor,
-            "ai-capability" => AiCapability,
-            _ => null
-        };
-    }
 }
 
 // 根变量条目：普通文本始终渲染；带 features 的条目仅在所列能力全部启用时渲染；

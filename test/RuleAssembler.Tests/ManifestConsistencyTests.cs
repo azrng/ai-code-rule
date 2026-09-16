@@ -1,29 +1,16 @@
 namespace RuleAssembler.Tests;
 
-// traits 与兼容样例一致性守卫：检测候选切换为样例口径后，
-// 两侧取值漂移会让经典入口与检测 / 组件问答推荐不同组合（先例：python Web 组合的 arch-style），
-// 必须在装载期拦截
+// 兼容样例完整性守卫：检测候选、经典入口与配方重放都按样例收敛，
+// 每个 Profile 必须恰好注册一个样例，缺失或多注册都在装载期拦截
 public sealed class ManifestConsistencyTests
 {
     [Fact]
-    public void RealManifest_TraitsMatchCompatibilityCaseSelections()
+    public void RealManifest_EveryProfileHasExactlyOneCase()
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var errors = new List<string>();
         ManifestLoader.ValidateCompatibilityCases(manifest, errors);
         Assert.Empty(errors);
-    }
-
-    [Fact]
-    public void TraitDrift_IsRejected()
-    {
-        var manifest = new ManifestLoader(new ResourceStore()).Load();
-        var profile = manifest.Profiles.Single(item => item.Id == "wpfExe");
-        profile.Traits!.ArchStyle = "layered";
-
-        var errors = new List<string>();
-        ManifestLoader.ValidateCompatibilityCases(manifest, errors);
-        Assert.Contains(errors, error => error.Contains("与兼容样例 selection", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -35,5 +22,21 @@ public sealed class ManifestConsistencyTests
         var errors = new List<string>();
         ManifestLoader.ValidateCompatibilityCases(manifest, errors);
         Assert.Contains(errors, error => error.Contains("缺少兼容样例", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void DuplicateCase_IsRejected()
+    {
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
+        var original = manifest.CompatibilityCases.First(item => item.Profile == "wpfExe");
+        manifest.CompatibilityCases.Add(new CompatibilityCase
+        {
+            Profile = "wpfExe",
+            Selection = new Dictionary<string, string>(original.Selection, StringComparer.Ordinal)
+        });
+
+        var errors = new List<string>();
+        ManifestLoader.ValidateCompatibilityCases(manifest, errors);
+        Assert.Contains(errors, error => error.Contains("多个兼容样例", StringComparison.Ordinal));
     }
 }

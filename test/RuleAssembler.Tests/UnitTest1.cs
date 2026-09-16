@@ -13,53 +13,57 @@ public sealed class ManifestLoaderTests
             pointer => pointer.Equals("GROK.md", StringComparison.OrdinalIgnoreCase));
 
         // 纯前端组合：form=web + backend=none，问答 Q2 才能推出「无后端」选项
-        var reactOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "reactOnly");
-        Assert.Equal("frontend-static", reactOnly.Family);
-        Assert.Equal("web", reactOnly.Traits!.Form);
-        Assert.Equal("none", reactOnly.Traits.Backend);
-        Assert.Equal("react", reactOnly.Traits.Frontend);
-        var vueOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "vueOnly");
-        Assert.Equal("vue", vueOnly.Traits!.Frontend);
-        Assert.Equal("none", vueOnly.Traits.Backend);
-        var generalFrontend = Assert.Single(manifest.Profiles, profile => profile.Id == "generalFrontend");
-        Assert.Equal("general", generalFrontend.Traits!.Frontend);
-        Assert.Equal("none", generalFrontend.Traits.Backend);
+        // （维度取值唯一事实来源是兼容样例，Profile 不再声明 traits）
+        var reactOnlyCase = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "reactOnly").Selection;
+        Assert.Equal("web", reactOnlyCase["form"]);
+        Assert.Equal("none", reactOnlyCase["backend"]);
+        Assert.Equal("react", reactOnlyCase["frontend"]);
+        Assert.Equal("frontend-static", Assert.Single(manifest.Profiles, profile => profile.Id == "reactOnly").Family);
+        var vueOnlyCase = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "vueOnly").Selection;
+        Assert.Equal("vue", vueOnlyCase["frontend"]);
+        Assert.Equal("none", vueOnlyCase["backend"]);
+        var generalFrontendCase = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "generalFrontend").Selection;
+        Assert.Equal("general", generalFrontendCase["frontend"]);
+        Assert.Equal("none", generalFrontendCase["backend"]);
 
         // 纯前端 AI 变体：挂前端口径的 AI 模块，文档 / 基础设施骨架追加 AI 补充段
         var reactOnlyAi = Assert.Single(manifest.Profiles, profile => profile.Id == "reactOnly-ai");
-        Assert.Equal("yes", reactOnlyAi.Traits!.AiCapability);
-        Assert.Equal("none", reactOnlyAi.Traits.Backend);
+        Assert.Equal("yes", Assert.Single(manifest.CompatibilityCases, item => item.Profile == "reactOnly-ai").Selection["ai-capability"]);
         Assert.Contains(reactOnlyAi.ModuleIds, id => id == "ai-capability-frontend");
         Assert.Contains(
             reactOnlyAi.Subrules,
             rule => rule.GetSources().Contains("shared/skeletons/frontend-ai/frontend-ai-appendix.md"));
         var vueOnlyAi = Assert.Single(manifest.Profiles, profile => profile.Id == "vueOnly-ai");
-        Assert.Equal("yes", vueOnlyAi.Traits!.AiCapability);
+        Assert.Equal("yes", Assert.Single(manifest.CompatibilityCases, item => item.Profile == "vueOnly-ai").Selection["ai-capability"]);
         Assert.Contains(vueOnlyAi.ModuleIds, id => id == "ai-capability-frontend");
 
         // Electron + .NET 拆为 React / Vue 双变体，backend/doc/infra 共享骨架
         var reactElectron = Assert.Single(manifest.Profiles, profile => profile.Id == "reactElectronDotNet");
-        Assert.Equal("react", reactElectron.Traits!.Frontend);
-        Assert.Equal("electron", reactElectron.Traits!.Shell);
+        var reactElectronCase = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "reactElectronDotNet").Selection;
+        Assert.Equal("react", reactElectronCase["frontend"]);
+        Assert.Equal("electron", reactElectronCase["shell"]);
         Assert.Contains(
             reactElectron.Subrules,
             rule => rule.GetSources().Contains("shared/skeletons/electron-dotnet/backend-AGENTS.md"));
         var vueElectron = Assert.Single(manifest.Profiles, profile => profile.Id == "vueElectronDotNet");
-        Assert.Equal("vue", vueElectron.Traits!.Frontend);
-        Assert.Equal("electron", vueElectron.Traits!.Shell);
+        var vueElectronCase = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "vueElectronDotNet").Selection;
+        Assert.Equal("vue", vueElectronCase["frontend"]);
+        Assert.Equal("electron", vueElectronCase["shell"]);
 
         // 纯 Electron 变体：无 .NET 后端，本地逻辑由主进程承担，backend/doc/infra 走 electron 族骨架
         var reactElectronOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "reactElectron");
-        Assert.Equal("react", reactElectronOnly.Traits!.Frontend);
-        Assert.Equal("none", reactElectronOnly.Traits!.Backend);
-        Assert.Equal("electron", reactElectronOnly.Traits!.Shell);
+        var reactElectronOnlyCase = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "reactElectron").Selection;
+        Assert.Equal("react", reactElectronOnlyCase["frontend"]);
+        Assert.Equal("none", reactElectronOnlyCase["backend"]);
+        Assert.Equal("electron", reactElectronOnlyCase["shell"]);
         Assert.Contains(
             reactElectronOnly.Subrules,
             rule => rule.GetSources().Contains("shared/skeletons/electron/backend-AGENTS.md"));
         var vueElectronOnly = Assert.Single(manifest.Profiles, profile => profile.Id == "vueElectron");
-        Assert.Equal("vue", vueElectronOnly.Traits!.Frontend);
-        Assert.Equal("none", vueElectronOnly.Traits!.Backend);
-        Assert.Equal("electron", vueElectronOnly.Traits!.Shell);
+        var vueElectronOnlyCase = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "vueElectron").Selection;
+        Assert.Equal("vue", vueElectronOnlyCase["frontend"]);
+        Assert.Equal("none", vueElectronOnlyCase["backend"]);
+        Assert.Equal("electron", vueElectronOnlyCase["shell"]);
 
         var blazorServer = Assert.Single(manifest.Profiles, profile => profile.Id == "dotnetBlazor");
         Assert.Contains("Blazor Server", blazorServer.Label);

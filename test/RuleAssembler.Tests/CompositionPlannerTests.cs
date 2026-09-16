@@ -281,11 +281,8 @@ public class CompositionPlannerTests
     {
         var manifest = LoadManifest();
         var planner = new CompositionPlanner(manifest);
-        var traits = manifest.Profiles.First(profile => profile.Id == "reactOnly-ai").Traits!;
-        var dimensions = ProfileTraits.KnownTraits.ToDictionary(
-            trait => trait,
-            trait => traits.Get(trait) ?? "",
-            StringComparer.Ordinal);
+        var dimensions = manifest.CompatibilityCases
+            .First(item => item.Profile == "reactOnly-ai").Selection;
         var plan = planner.Plan(FromDimensions(dimensions));
 
         var outputs = plan.Files.Select(file => file.Output).ToList();
