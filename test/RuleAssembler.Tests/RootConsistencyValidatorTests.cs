@@ -25,6 +25,68 @@ public sealed class RootConsistencyValidatorTests
         }
     }
 
+    // ==== 组合口径：--check 契约校验与 --emit 的生产路径 ====
+
+    private (CompositionPlan Plan, HashSet<string> Features) PlanForProfile(Profile profile)
+    {
+        var caseItem = _manifest.CompatibilityCases.Single(item =>
+            item.Profile.Equals(profile.Id, StringComparison.OrdinalIgnoreCase));
+        var plan = new CompositionPlanner(_manifest).Plan(new Selection
+        {
+            Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
+        });
+        return (plan, FeatureSelection.Defaults(_manifest, plan));
+    }
+
+    [Fact]
+    public void Validate_AllCompositionPlans_ContractMatchesRenderedFiles()
+    {
+        // 每个 Profile 的兼容样例经组合渲染后，契约声明与实际产物一致（与 --check 契约段同口径）
+        foreach (var profile in _manifest.Profiles)
+        {
+            var (plan, features) = PlanForProfile(profile);
+            var errors = _validator.Validate(_manifest, _renderer, plan, features, profile.Id);
+            Assert.True(errors.Count == 0, $"{profile.Id}: {string.Join("；", errors)}");
+        }
+    }
+
+    [Fact]
+    public void Validate_PlanOutputCollidingWithReferencedExisting_Fails()
+    {
+        // 组件贡献撞上全局 referenced-existing 清单（如 TASK.md）：组合口径必须报冲突
+        var profile = _manifest.Profiles[0];
+        var (plan, features) = PlanForProfile(profile);
+        plan.FileContributions.Add(new FileContribution
+        {
+            OwnerId = "test-colliding-component",
+            File = new Subrule { Source = "shared/no-test-fallback.md", Output = "TASK.md" }
+        });
+
+        var errors = _validator.Validate(_manifest, _renderer, plan, features, profile.Id);
+
+        var error = Assert.Single(errors);
+        Assert.Contains("TASK.md", error, StringComparison.Ordinal);
+        Assert.Contains("同时声明为 generated 与 referenced-existing", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Validate_PlanInvalidMerge_Fails()
+    {
+        var profile = _manifest.Profiles[0];
+        var (plan, features) = PlanForProfile(profile);
+        plan.FileContributions.Add(new FileContribution
+        {
+            OwnerId = "test-bad-merge-component",
+            File = new Subrule { Source = "shared/no-test-fallback.md", Output = "extra.md", Merge = "overwrite" }
+        });
+
+        var errors = _validator.Validate(_manifest, _renderer, plan, features, profile.Id);
+
+        var error = Assert.Single(errors);
+        Assert.Contains("extra.md", error, StringComparison.Ordinal);
+        Assert.Contains("merge 值无效", error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Validate_TaskMdReferencedExisting_Passes()
     {

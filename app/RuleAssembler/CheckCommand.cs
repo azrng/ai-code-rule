@@ -8,11 +8,34 @@ internal static class CheckCommand
     {
         var renderer = new RuleRenderer(resources);
         var validator = new RootConsistencyValidator();
+        var planner = new CompositionPlanner(manifest);
+
+        // 契约校验走组合口径：每个 Profile 经其兼容样例反查组合渲染产物（装载校验保证每个
+        // Profile 恰好一个样例）；同一份 plan 也供下方等价比对消费，避免双重解析。
+        // 旧 Profile 渲染路径在本命令里只剩等价比对一项职责
         var contractErrors = new List<string>();
+        var plansByProfile = new Dictionary<string, (CompositionPlan Plan, HashSet<string> Features)>(
+            StringComparer.OrdinalIgnoreCase);
         foreach (var profile in manifest.Profiles)
         {
-            var files = renderer.Plan(manifest, profile);
-            var errors = validator.Validate(manifest, renderer, profile);
+            var caseItem = manifest.CompatibilityCases.FirstOrDefault(item =>
+                item.Profile.Equals(profile.Id, StringComparison.OrdinalIgnoreCase));
+            if (caseItem is null)
+            {
+                contractErrors.Add($"Profile {profile.Id} 缺少兼容样例，无法走组合路径校验");
+                continue;
+            }
+
+            var selection = new Selection
+            {
+                Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
+            };
+            var plan = planner.Plan(selection);
+            var features = FeatureSelection.Defaults(manifest, plan);
+            plansByProfile[profile.Id] = (plan, features);
+
+            var files = renderer.Plan(manifest, plan, features);
+            var errors = validator.Validate(manifest, renderer, plan, features, profile.Id);
             // 产物级重复标题：同文件内 ## / ### 标题重复即 include 叠加或骨架残留的症状
             foreach (var file in files)
             {
@@ -65,20 +88,19 @@ internal static class CheckCommand
         Console.WriteLine($"内置技能校验通过：{skillsStore.Discover().Count} 个技能，SKILL.md 齐全且 ID 无冲突。");
 
         // 组合内核兼容样例：组合路径与旧 Profile 产物逐字节等价，等价被破坏时 --check 失败
+        // （这是旧 Profile 渲染路径仅存的生产职责；plan 已在契约段解析，这里直接复用）
         if (manifest.CompatibilityCases.Count > 0)
         {
-            var planner = new CompositionPlanner(manifest);
             var compositionErrors = new List<string>();
             foreach (var item in manifest.CompatibilityCases)
             {
                 var profile = manifest.Profiles.First(candidate =>
                     candidate.Id.Equals(item.Profile, StringComparison.OrdinalIgnoreCase));
-                var selection = new Selection { Dimensions = new Dictionary<string, string>(item.Selection, StringComparer.Ordinal) };
                 try
                 {
-                    var plan = planner.Plan(selection);
+                    var (plan, features) = plansByProfile[profile.Id];
                     var legacyFiles = renderer.Plan(manifest, profile);
-                    var composeFiles = renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
+                    var composeFiles = renderer.Plan(manifest, plan, features);
                     var caseErrors = ComparePlannedFiles(profile.Id, legacyFiles, composeFiles);
                     if (caseErrors.Count == 0)
                     {
