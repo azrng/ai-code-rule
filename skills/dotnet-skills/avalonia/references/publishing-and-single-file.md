@@ -26,7 +26,7 @@ dotnet publish <proj> -c Release -r win-x64 -p:PublishSingleFile=false -o <目�
 | 关闭 `PublishReadyToRun`（R2R） | 常规省 40%~50% | 启动从 ~1.2s 变 ~3s（JIT） | 体积优先选关；启动敏感选开，**别两边都要又抱怨体积** |
 | 剔除无用运行时文件 / 包 | 视情况几 MB~几十 MB | 需逐个核实真实使用面 | 见下方剔除机制 |
 | 合并功能重叠的包 | 一个整包（~8MB 量级） | 改造一个功能点 | 先 grep 各包实际使用面，找「一个库能干两个的活」的合并机会 |
-| `EnableCompressionInSingleFile=true` | ~50%（下载体积） | **每次启动全量解压**：实测启动 4.8s vs 1.2s、内存翻倍 | 下载渠道有 zip 外层压缩时基本无收益，慎开 |
+| `EnableCompressionInSingleFile=true` | ~50%（下载体积） | **每次启动全量解压**：实测启动 4.8s vs 1.2s、内存翻倍 | 下载渠道有 zip 外层压缩时对下载体积**零收益**（外层已压平，实测 47.3 vs 47.4MB）；取舍只剩磁盘体积 vs 启动解压开销，产物 ≤50MB 量级时解压开销可忽略（实测 ~0.2s） |
 | `PublishTrimmed=true`（非 AOT） | **可能反而变大** | 裁剪后 R2R/单文件剥离机制失效，实测 285MB > 基线 174MB | 带反射/UI 库的桌面项目默认别碰；AOT 场景另说 |
 
 功能库取舍原则：两个库如果各撑一个功能（如 PdfSharp 写 PDF 分割、PdfPig 读 PDF 文本），**不可互替，去哪个砍哪个功能**——这是产品决策，必须让用户拍板；只有「一个库已具备另一个库的能力」（如 OpenXml 与 NPOI.XWPF 都能写 Word）才做合并改造。
@@ -59,19 +59,33 @@ dotnet publish <proj> -c Release -r win-x64 -p:PublishSingleFile=false -o <目�
 
 注意：单文件 bundle 是有输入缓存的（`_GenerateSingleFileBundleInputCache`），改 target 后重测体积前**先删 `obj`/`bin` 强制全量发布**，否则拿旧产物字节对比会误判无效。
 
+**文件夹发布与单文件 bundle 需要两个挂钩**（缺一会漏剔）：`_ComputeFilesToBundle` 在非单文件发布时**不存在**，只挂它会让文件夹发布的 pdb 全数留下（libSkiaSharp.pdb 84MB 实锤）。文件夹剔除用 `AfterTargets="ComputeResolvedFileToPublishList"` + `ResolvedFileToPublish Remove`；单文件剔除用上面 `_ComputeFilesToBundle` 前的 Update 标记写法。单文件 bundle 本身不含这两类 pdb（两种挂钩组合下 bundle 字节一致），文件夹发布才是滋生地。
+
+**顺带**：`UsePlatformDetect()` 定义在 Avalonia.Desktop 包；win-x64-only 产品可直接引用 `Avalonia.Win32` + `Avalonia.Skia` + `Avalonia.HarfBuzz` 并改为 `UseWin32()+UseSkia()+UseHarfBuzz()`（省 ~4-5MB Linux/macOS 后端）。**`UseHarfBuzz()` 不能漏**：缺失时文本整形抛 `InvalidOperationException: No text shaping system configured`（编译通过、启动/测试期崩）。测试工程经 ProjectReference 传递拿平台包，其中的平台初始化也要同步。
+
 ## 包依赖侧的瘦身
 
 - 停用功能时同步注释 `PackageReference` 并留恢复注释（改哪里、还原哪里的调用），别只删代码
 - 包是否真被使用：grep 全项目命名空间引用，**一个使用点都没有才删**；只有一个使用点时评估「用自带能力的库替代」
 - NuGet 包的 nuspec/assets 可能声明 `frameworkReferences` 传递运行时依赖——瘦身前先查 `project.assets.json`
 
+## framework-dependent 单文件的原生库捆绑（ApixPress 2026-09-15 实测）
+
+FDD（`--self-contained false`）单文件发布**默认不打包原生库**：libSkiaSharp、av_libglesv2（ANGLE）、e_sqlite3、libHarfBuzzSharp 全部散落 exe 旁——用户看到的就是「exe + 一堆 dll」而非单文件。单文件 bundle 的清单校验不会报错，exe 也能跑，极易漏检。
+
+- `IncludeNativeLibrariesForSelfExtract` 对自包含 / framework-dependent **都合法且都要开**，禁止加 `Condition="'$(SelfContained)'=='true'"` 之类的条件——ApixPress 曾因此让 framework 版持续散装
+- NETSDK1176 只约束「压缩」：`EnableCompressionInSingleFile` 确实仅自包含合法，FDD 下须关；它与原生库捆绑无关，**不要把两者写进同一个条件**
+- 原生库进 bundle 后运行时解压到 `%TEMP%\.net\` 加载：ApixPress 34.9MB FDD 单文件实测冷启动 2.44s，与自包含版持平，无额外代价
+- 验收标准：framework 发布目录里**只允许存在 exe**（ pdb 由脚本剔除），任何散落 dll 都是捆绑没生效
+
 ## 发布验证清单（改发布配置后必做）
 
 1. `dotnet build` 0 警 0 错 + 全量测试
 2. **删 obj/bin 全量重发**，记录两种产物体积：自包含（`-r win-x64`）与依赖框架（`--self-contained false -p:PublishSingleFile=true`）
-3. 启动冒烟：拉起 exe，等主窗口句柄出现（JIT 版与 R2R 版启动差异大，实测记录）
-4. 被剔除文件对应的功能**真实走一遍**（如剔除 Oracle 驱动后连一次 Oracle；换 Word 引擎后真导出一次）——deps.json 仍列着被剔除的文件，只有触达时才报错，必须冒烟确认剔除不破坏主路径
-5. README / 架构文档里的体积与参数口径同步
+3. **检查两种形态的发布目录内容**：自包含与 framework 都应只含单个 exe——目录里出现 dll 即单文件捆绑失效
+4. 启动冒烟：拉起 exe，等主窗口句柄出现（JIT 版与 R2R 版启动差异大，实测记录）
+5. 被剔除文件对应的功能**真实走一遍**（如剔除 Oracle 驱动后连一次 Oracle；换 Word 引擎后真导出一次）——deps.json 仍列着被剔除的文件，只有触达时才报错，必须冒烟确认剔除不破坏主路径
+6. README / 架构文档里的体积与参数口径同步
 
 ## Windows 环境注意
 
