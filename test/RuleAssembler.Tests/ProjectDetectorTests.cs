@@ -72,7 +72,7 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.NotNull(result);
         // 单项目后端：arch-style=single 证据确认，候选含单项目变体（AI 与否留待补答）
         Assert.Equal("single", result!.Confirmed["arch-style"]);
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNetSingle");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNetSingle");
     }
 
     [Fact]
@@ -88,9 +88,11 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        // 前端工程 + Python 后端工程：web+python 组合此前无法收敛，现直接命中分离组合
+        // 前端工程 + Python 后端工程：web+python 组合此前无法收敛，现直接命中分离组合；
+        // 回答组合的 arch-style 取兼容样例口径（single），与组件问答一致
         Assert.Equal("reactLinkPython", result!.LegacyProfileId);
         Assert.Equal("python", result.BuildLegacyAnswers()["backend"]);
+        Assert.Equal("single", result.BuildLegacyAnswers()["arch-style"]);
     }
 
     [Fact]
@@ -233,8 +235,8 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Equal("electron", result.Confirmed["shell"]);
         Assert.Equal("dotnet", result.Confirmed["backend"]);
         Assert.Equal(2, result.Candidates.Count);
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactElectronDotNet");
-        Assert.Contains(result.Candidates, profile => profile.Id == "vueElectronDotNet");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactElectronDotNet");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "vueElectronDotNet");
     }
 
     [Fact]
@@ -255,13 +257,13 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Equal("react", result.Confirmed["frontend"]);
         // 候选包含纯前端组合（含 AI 变体）后，「无后端」才能作为补答选项出现
         Assert.Equal(7, result.Candidates.Count);
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly");
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly-ai");
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet");
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNetSingle");
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkPython");
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet-ai");
-        Assert.Contains(result.Candidates, profile => profile.Id == "nextFullstack");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactOnly");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactOnly-ai");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNet");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNetSingle");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkPython");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNet-ai");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "nextFullstack");
     }
 
     [Fact]
@@ -321,8 +323,8 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Equal("electron", result.Confirmed["shell"]);
         Assert.Equal("none", result.Confirmed["backend"]);
         Assert.Equal(2, result.Candidates.Count);
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactElectron");
-        Assert.Contains(result.Candidates, profile => profile.Id == "vueElectron");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactElectron");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "vueElectron");
     }
 
     [Fact]
@@ -382,5 +384,25 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void Detect_WorksWithoutProfiles_CandidatesComeFromCompatibilityCases()
+    {
+        // 组件口径解耦验证：清空 profiles 后检测仍按兼容样例收敛，
+        // 证明候选来源不再依赖 Profile traits（标签退化为维度描述兜底）
+        _manifest.Profiles.Clear();
+        File.WriteAllText(
+            Path.Combine(_root, "Demo.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><UseWPF>true</UseWPF></PropertyGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.True(result!.Converged);
+        Assert.Equal("wpfExe", result.LegacyProfileId);
+        Assert.Equal("desktop", result.Confirmed["form"]);
+        Assert.Equal("wpf", result.Confirmed["frontend"]);
+        Assert.Contains("form=desktop", result.LegacyProfileLabel, StringComparison.Ordinal);
     }
 }

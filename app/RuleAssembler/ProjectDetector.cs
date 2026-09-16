@@ -4,43 +4,41 @@ namespace RuleAssembler;
 
 internal sealed record DetectionEvidence(string Trait, string Value, string Reason);
 
-// 检测结果：既可能是收敛到唯一 Profile 的完整结果，也可能是带待确认维度的部分结果。
-// 部分结果不伪造完整推荐；Legacy* 成员仅在候选唯一时给出，供旧「推荐组合」路径迁移兼容。
+// 检测候选：一个候选对应一个兼容样例（维度组合 + 样例映射的 Profile ID 与标签，仅供旧展示路径）。
+// 样例未携带的维度即通配维度；候选顺序与 manifest Profile 顺序对齐，与旧 traits 过滤口径的展示一致
+internal sealed record DetectionCandidate(
+    Selection Selection,
+    string? SampleProfileId,
+    string Label);
+
+// 检测结果：既可能是收敛到唯一组合的完整结果，也可能是带待确认维度的部分结果。
+// 部分结果不伪造完整推荐；Legacy* 成员仅在候选唯一时给出，供旧「推荐组合」路径迁移兼容
 internal sealed record DetectionResult(
     Dictionary<string, string> Confirmed,
     List<string> Unconfirmed,
-    List<Profile> Candidates,
+    List<DetectionCandidate> Candidates,
     List<string> Reasons,
     List<string> Notes)
 {
     public bool Converged => Candidates.Count == 1;
 
     // 迁移期兼容：旧路径需要的唯一候选与其完整回答组合
-    public Profile LegacyProfile => Candidates[0];
-
-    public string? LegacyProfileId => Converged ? Candidates[0].Id : null;
+    public string? LegacyProfileId => Converged ? Candidates[0].SampleProfileId : null;
 
     public string? LegacyProfileLabel => Converged ? Candidates[0].Label : null;
 
-    // 完整回答组合取候选 Profile 的全部具体 trait，保证按配方能还原到同一 Profile
+    // 完整回答组合取候选样例的全部维度选择，保证按配方能还原到同一组合
     public Dictionary<string, string> BuildLegacyAnswers()
     {
-        var answers = new Dictionary<string, string>(StringComparer.Ordinal);
         if (!Converged)
-            return answers;
-        foreach (var trait in ProfileTraits.KnownTraits)
-        {
-            var value = Candidates[0].Traits?.Get(trait);
-            if (!string.IsNullOrEmpty(value) && value != ProfileTraits.Wildcard)
-                answers[trait] = value;
-        }
-
-        return answers;
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+        return new Dictionary<string, string>(Candidates[0].Selection.Dimensions, StringComparer.Ordinal);
     }
 }
 
 // 目标项目技术栈检测：扫描目录中的特征文件（sln/csproj/package.json/wails.json/tauri/pubspec 等），
-// 产出 trait 证据，再沿决策树贪心走到底，保证推荐的一定是可生成的 Profile。
+// 产出维度证据，再按兼容样例收敛候选（组件口径：候选来源是 compatibilityCases 而非 Profile traits，
+// 样例未携带的维度视为通配），保证推荐的一定是可生成的组合。
 // 只做浅层扫描（深度 ≤2，跳过 node_modules/bin/obj 等），双击启动时也要保持瞬时完成。
 internal sealed class ProjectDetector
 {
@@ -86,37 +84,52 @@ internal sealed class ProjectDetector
             }
         }
 
-        // 候选 = 匹配全部已确认维度的 Profile；不满足时才退回整体打分取最接近
-        var candidates = _manifest.Profiles
-            .Where(profile => confirmed.All(pair => WizardEngine.Matches(profile, pair.Key, pair.Value)))
-            .ToList();
-        if (candidates.Count == 0)
+        // 候选 = 与已确认维度相容的兼容样例（组件口径事实来源）：
+        // 样例携带的维度须与证据相等，样例未携带的维度视为通配；Profile traits 不再参与检测收敛
+        var matchedCases = MatchCases(confirmed);
+        if (matchedCases.Count == 0)
         {
-            // 已确认组合在候选空间没有精确匹配（跨族组合尚未接入）：仅供旧推荐路径就近处理
-            Profile? best = null;
+            // 已确认组合在样例空间没有精确匹配（跨族组合尚未接入）：按证据整体打分取最接近样例
+            CompatibilityCase? best = null;
             double bestScore = double.NegativeInfinity;
-            foreach (var profile in _manifest.Profiles)
+            foreach (var item in _manifest.CompatibilityCases)
             {
-                var score = ScoreProfile(profile, evidence);
+                var score = ScoreCase(item, evidence);
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    best = profile;
+                    best = item;
                 }
             }
 
             if (best is null || bestScore <= 0)
                 return null;
-            candidates = new List<Profile> { best };
-            notes.Add("已确认组合没有完全匹配的 Profile，按整体最接近处理");
+            matchedCases = new List<CompatibilityCase> { best };
+            notes.Add("已确认组合没有完全匹配的兼容样例，按整体最接近处理");
         }
+
+        // 展示顺序与 manifest Profile 顺序对齐，保持与旧 traits 过滤口径一致的候选列表
+        var candidates = matchedCases
+            .OrderBy(item => _manifest.Profiles.FindIndex(profile =>
+                profile.Id.Equals(item.Profile, StringComparison.OrdinalIgnoreCase)))
+            .Select(item =>
+            {
+                var profile = _manifest.Profiles.FirstOrDefault(profile =>
+                    profile.Id.Equals(item.Profile, StringComparison.OrdinalIgnoreCase));
+                return new DetectionCandidate(
+                    new Selection { Dimensions = new Dictionary<string, string>(item.Selection, StringComparer.Ordinal) },
+                    item.Profile,
+                    profile?.Label ?? DescribeSelection(item.Selection));
+            })
+            .ToList();
 
         var reasons = evidence
             .Where(item => confirmed.TryGetValue(item.Trait, out var value) && value == item.Value)
             .Select(item => item.Reason)
             .ToList();
 
-        // 未确认维度：按问答顺序取「证据未覆盖且候选之间仍有分歧」的维度；
+        // 未确认维度：按问答顺序取「证据未覆盖且候选样例之间仍有分歧」的维度；
+        // 样例未携带的维度不参与分歧统计（等价于旧口径的通配 trait），
         // 候选之间无分歧的维度由唯一候选补全，不需要人工回答
         var unconfirmed = new List<string>();
         foreach (var step in _manifest.Wizard.Steps)
@@ -124,8 +137,8 @@ internal sealed class ProjectDetector
             if (confirmed.ContainsKey(step.Trait))
                 continue;
             var distinctValues = candidates
-                .Select(profile => profile.Traits?.Get(step.Trait))
-                .Where(value => value is not null && value != ProfileTraits.Wildcard)
+                .Select(candidate => candidate.Selection.Dimensions.TryGetValue(step.Trait, out var value) ? value : null)
+                .Where(value => value is not null)
                 .Distinct(StringComparer.Ordinal)
                 .Count();
             if (distinctValues > 1)
@@ -135,26 +148,43 @@ internal sealed class ProjectDetector
         return new DetectionResult(confirmed, unconfirmed, candidates, reasons, notes);
     }
 
-    // Profile 与证据的匹配分：匹配加权重、矛盾减权重；稀有证据权重更高（值越少见指向性越强）
-    private double ScoreProfile(Profile profile, List<DetectionEvidence> evidence)
+    // 兼容样例匹配：样例维度与已确认证据在共有维度上全部相等即候选；
+    // 样例未携带的维度视为通配（与旧 Profile traits 的 * 语义一致）
+    private List<CompatibilityCase> MatchCases(Dictionary<string, string> confirmed)
+    {
+        return _manifest.CompatibilityCases
+            .Where(item => confirmed.All(pair =>
+                !item.Selection.TryGetValue(pair.Key, out var value) || value == pair.Value))
+            .ToList();
+    }
+
+    // 样例与证据的匹配分：匹配加权重、矛盾减权重；稀有证据权重更高（值越少见指向性越强）。
+    // 样例未携带的维度视为通配，不计分
+    private double ScoreCase(CompatibilityCase item, List<DetectionEvidence> evidence)
     {
         double score = 0;
-        foreach (var item in evidence)
+        foreach (var evidenceItem in evidence)
         {
-            var value = profile.Traits?.Get(item.Trait);
-            if (value == null || value == ProfileTraits.Wildcard)
+            if (!item.Selection.TryGetValue(evidenceItem.Trait, out var value))
                 continue;
-            var weight = TraitWeight(item.Trait, item.Value);
-            score += value == item.Value ? weight : -weight;
+            var weight = CaseWeight(evidenceItem.Trait, evidenceItem.Value);
+            score += value == evidenceItem.Value ? weight : -weight;
         }
 
         return score;
     }
 
-    private double TraitWeight(string trait, string value)
+    private double CaseWeight(string trait, string value)
     {
-        var holders = _manifest.Profiles.Count(p => p.Traits?.Get(trait) == value);
-        return holders > 0 ? (double)_manifest.Profiles.Count / holders : 1;
+        var holders = _manifest.CompatibilityCases.Count(item =>
+            item.Selection.TryGetValue(trait, out var caseValue) && caseValue == value);
+        return holders > 0 ? (double)_manifest.CompatibilityCases.Count / holders : 1;
+    }
+
+    // 无 Profile 标签可用时的候选描述兜底：按维度=取值列出样例选择
+    private static string DescribeSelection(Dictionary<string, string> selection)
+    {
+        return "组合（" + string.Join("、", selection.Select(pair => $"{pair.Key}={pair.Value}")) + "）";
     }
 
     private string Describe(string trait, string value)

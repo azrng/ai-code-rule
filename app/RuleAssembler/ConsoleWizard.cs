@@ -72,14 +72,23 @@ internal sealed class ConsoleWizard
     }
 
     // 检测补答：保留检测已确认的维度（不重复提问、不被覆盖），只对候选间仍有分歧的维度继续提问；
-    // 补答完成的配方沿用 mode=detected，回答来源区分检测确认（detected）与人工补答（manual）
+    // 补答完成的配方沿用 mode=detected，回答来源区分检测确认（detected）与人工补答（manual）。
+    // 检测候选是兼容样例，这里映射回 Profile 走旧决策树（找不到映射的候选直接跳过）
     public ProfileSelection? SupplementByWizard(Manifest manifest, DetectionResult detection)
     {
         var seedSources = detection.Confirmed.Keys
             .ToDictionary(trait => trait, _ => "detected", StringComparer.Ordinal);
+        var profiles = detection.Candidates
+            .Select(candidate => manifest.Profiles.FirstOrDefault(profile =>
+                profile.Id.Equals(candidate.SampleProfileId, StringComparison.OrdinalIgnoreCase)))
+            .Where(profile => profile is not null)
+            .Select(profile => profile!)
+            .ToList();
+        if (profiles.Count == 0)
+            return null;
         return WalkDecisionTree(
             manifest,
-            detection.Candidates,
+            profiles,
             detection.Confirmed,
             seedSources,
             "detected");

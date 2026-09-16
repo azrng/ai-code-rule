@@ -381,8 +381,8 @@ internal static class Program
         if (!detection.Converged)
             return OfferSupplement(manifest, ui, detection);
 
-        var profile = detection.LegacyProfile;
-        ui.Line($"推荐组合：{profile.Label}");
+        var profileLabel = detection.LegacyProfileLabel;
+        ui.Line($"推荐组合：{profileLabel}");
 
         while (true)
         {
@@ -561,7 +561,10 @@ internal static class Program
         }
 
         ui.Line("候选组合：");
-        ui.Bullets(detection.Candidates.Select(profile => $"{profile.Label}（{profile.Id}）"));
+        ui.Bullets(detection.Candidates.Select(candidate =>
+            candidate.SampleProfileId is null
+                ? candidate.Label
+                : $"{candidate.Label}（{candidate.SampleProfileId}）"));
         ui.Line("");
 
         var choice = ui.Choose(
@@ -810,7 +813,7 @@ internal static class Program
                 Console.WriteLine($"待确认维度：{trait}");
             Console.WriteLine("候选组合：");
             foreach (var candidate in result.Candidates)
-                Console.WriteLine($"  - {candidate.Label}（{candidate.Id}）");
+                Console.WriteLine($"  - {candidate.Label}（{candidate.SampleProfileId}）");
             return 0;
         }
 

@@ -30,6 +30,13 @@ public sealed class ComboRegressionTests : IDisposable
         return result!;
     }
 
+    // 检测收敛到兼容样例后，旧渲染路径按样例映射的 Profile ID 反查（与 --recipe 旧配方口径一致）
+    private Profile ProfileOf(DetectionResult result)
+    {
+        Assert.True(result.Converged);
+        return _manifest.Profiles.Single(profile => profile.Id == result.LegacyProfileId);
+    }
+
     private void AssertContractPasses(Profile profile, IReadOnlySet<string>? features = null)
     {
         var errors = features is null
@@ -59,9 +66,9 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.False(result.Converged);
         Assert.Null(result.LegacyProfileId);
         Assert.Contains("ai-capability", result.Unconfirmed);
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNetSingle");
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactLinkdotNet-ai");
-        var profile = Assert.Single(result.Candidates, item => item.Id == "reactLinkdotNetSingle");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNetSingle");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNet-ai");
+        var profile = _manifest.Profiles.Single(item => item.Id == "reactLinkdotNetSingle");
         var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
         Assert.Contains(files, file => file.Output == "frontend-AGENTS.md");
         Assert.Contains(files, file => file.Output == "backend-AGENTS.md");
@@ -88,13 +95,13 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.True(result.Converged);
         Assert.Equal("dotnet-layered", result.LegacyProfileId);
         Assert.Equal("layered", result.Confirmed["arch-style"]);
-        var files = _renderer.Plan(_manifest, result.LegacyProfile);
+        var files = _renderer.Plan(_manifest, ProfileOf(result));
         Assert.Equal(8, files.Count);
         var doc = Assert.Single(files, file => file.Output == "doc-AGENTS.md");
         Assert.Contains("doc/requirements/<module>/<feature>.md", doc.Content, StringComparison.Ordinal);
         Assert.Contains("契约引用", doc.Content, StringComparison.Ordinal);
         Assert.DoesNotContain("| 功能需求 |", doc.Content, StringComparison.Ordinal);
-        AssertContractPasses(result.LegacyProfile);
+        AssertContractPasses(ProfileOf(result));
     }
 
     [Fact]
@@ -113,9 +120,9 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.Equal("reactWailsExe", result.LegacyProfileId);
         Assert.Equal("react", result.Confirmed["frontend"]);
         Assert.Equal("wails", result.Confirmed["shell"]);
-        var files = _renderer.Plan(_manifest, result.LegacyProfile);
+        var files = _renderer.Plan(_manifest, ProfileOf(result));
         Assert.Equal(10, files.Count);
-        AssertContractPasses(result.LegacyProfile);
+        AssertContractPasses(ProfileOf(result));
     }
 
     [Fact]
@@ -135,7 +142,7 @@ public sealed class ComboRegressionTests : IDisposable
 
         Assert.True(result.Converged);
         Assert.Equal("reactElectronDotNet", result.LegacyProfileId);
-        var profile = result.LegacyProfile;
+        var profile = ProfileOf(result);
 
         // 能力开关回归：取消文档与设计系统后仅剩核心 + 基础设施，契约仍一致
         var features = FeatureSelection.Defaults(_manifest, profile);
@@ -164,7 +171,7 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.True(result.Converged);
         Assert.Equal("reactElectron", result.LegacyProfileId);
         Assert.Equal("none", result.Confirmed["backend"]);
-        var profile = result.LegacyProfile;
+        var profile = ProfileOf(result);
 
         var files = _renderer.Plan(_manifest, profile, FeatureSelection.Defaults(_manifest, profile));
         var backend = Assert.Single(files, file => file.Output == "backend-AGENTS.md");
@@ -187,7 +194,7 @@ public sealed class ComboRegressionTests : IDisposable
 
         Assert.True(result.Converged);
         Assert.Equal("vueElectron", result.LegacyProfileId);
-        AssertContractPasses(result.LegacyProfile);
+        AssertContractPasses(ProfileOf(result));
     }
 
     [Fact]
@@ -201,9 +208,9 @@ public sealed class ComboRegressionTests : IDisposable
 
         Assert.True(result.Converged);
         Assert.Equal("staticHtml", result.LegacyProfileId);
-        var files = _renderer.Plan(_manifest, result.LegacyProfile);
+        var files = _renderer.Plan(_manifest, ProfileOf(result));
         Assert.Equal(8, files.Count);
-        AssertContractPasses(result.LegacyProfile);
+        AssertContractPasses(ProfileOf(result));
     }
 
     [Fact]
@@ -217,9 +224,9 @@ public sealed class ComboRegressionTests : IDisposable
         Assert.True(result.Converged);
         Assert.Equal("python", result.LegacyProfileId);
         Assert.Equal("python", result.Confirmed["backend"]);
-        var files = _renderer.Plan(_manifest, result.LegacyProfile);
+        var files = _renderer.Plan(_manifest, ProfileOf(result));
         Assert.Equal(8, files.Count);
-        AssertContractPasses(result.LegacyProfile);
+        AssertContractPasses(ProfileOf(result));
     }
 
     [Fact]
@@ -234,7 +241,7 @@ public sealed class ComboRegressionTests : IDisposable
 
         Assert.False(result.Converged);
         Assert.Contains("backend", result.Unconfirmed);
-        Assert.Contains(result.Candidates, profile => profile.Id == "reactOnly");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactOnly");
 
         var engine = new WizardEngine(_manifest);
         var profile = Assert.Single(engine.Resolve(new Dictionary<string, string>

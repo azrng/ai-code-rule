@@ -882,7 +882,7 @@
         "backend": "python",
         "frontend": "react",
         "shell": "none",
-        "arch-style": "layered",
+        "arch-style": "single",
         "blazor-flavor": "none",
         "ai-capability": "no"
       },
@@ -1010,7 +1010,7 @@
         "backend": "python",
         "frontend": "vue",
         "shell": "none",
-        "arch-style": "layered",
+        "arch-style": "single",
         "blazor-flavor": "none",
         "ai-capability": "no"
       },

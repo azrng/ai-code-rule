@@ -328,8 +328,11 @@ internal sealed class ManifestLoader
         }
     }
 
-    // 兼容样例校验：引用的 Profile 必须存在，等价性比对由 --check 与回归测试执行
-    private static void ValidateCompatibilityCases(Manifest manifest, ICollection<string> errors)
+    // 兼容样例校验：引用的 Profile 必须存在；检测候选已切换为兼容样例口径，
+    // 因此进一步守卫 traits 与样例的一致性——Profile 的具体（非通配）traits
+    // 必须与其唯一样例的 selection 逐项一致，且每个 Profile 都必须有样例，
+    // 否则该组合在检测与组件问答中不可达（样例缺失）或与经典入口口径分叉（取值漂移）
+    internal static void ValidateCompatibilityCases(Manifest manifest, ICollection<string> errors)
     {
         var profileIds = manifest.Profiles
             .Select(profile => profile.Id)
@@ -343,6 +346,37 @@ internal sealed class ManifestLoader
             }
 
             ValidateDimensionPairs(manifest, $"compatibilityCases {item.Profile} selection", item.Selection, errors);
+        }
+
+        var casesByProfile = manifest.CompatibilityCases
+            .GroupBy(item => item.Profile, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
+        foreach (var profile in manifest.Profiles)
+        {
+            if (!casesByProfile.TryGetValue(profile.Id, out var grouped))
+            {
+                errors.Add($"Profile {profile.Id} 缺少兼容样例：检测与组件问答按样例收敛，该组合将不可达");
+                continue;
+            }
+
+            if (grouped.Count > 1)
+            {
+                errors.Add($"Profile {profile.Id} 声明了多个兼容样例");
+                continue;
+            }
+
+            var concrete = ProfileTraits.KnownTraits
+                .Select(trait => (Trait: trait, Value: profile.Traits?.Get(trait)))
+                .Where(pair => !string.IsNullOrEmpty(pair.Value) && pair.Value != ProfileTraits.Wildcard)
+                .ToDictionary(pair => pair.Trait, pair => pair.Value!, StringComparer.Ordinal);
+            var selection = grouped[0].Selection;
+            if (concrete.Count != selection.Count
+                || concrete.Any(pair => !selection.TryGetValue(pair.Key, out var value) || value != pair.Value))
+            {
+                var actual = string.Join("、", concrete.Select(pair => $"{pair.Key}={pair.Value}"));
+                var expected = string.Join("、", selection.Select(pair => $"{pair.Key}={pair.Value}"));
+                errors.Add($"Profile {profile.Id} 的具体 traits（{actual}）与兼容样例 selection（{expected}）不一致");
+            }
         }
     }
 
