@@ -2,7 +2,7 @@
 
 ## 反例：只有 LogToTrace 等于崩溃零记录（真实案例）
 
-消费工程 ApixPress 曾连续出现「双击启动即闪退」，事后全仓库排查：
+消费工程曾连续出现「双击启动即闪退」，事后全仓库排查：
 
 - **无任何全局异常挂点**：`AppDomain.CurrentDomain.UnhandledException`、`Dispatcher.UIThread.UnhandledException`、`TaskScheduler.UnobservedTaskException` 三处都没有
 - **无日志框架**（Serilog / NLog 均未引入），也没有任何写日志文件的代码
@@ -30,7 +30,7 @@ internal static class CrashLog
         {
             var dir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "ApixPress", "logs");
+                "MyApp", "logs");
             Directory.CreateDirectory(dir);
             var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{source}] "
                      + $"{exception.GetType().FullName}: {exception.Message}"

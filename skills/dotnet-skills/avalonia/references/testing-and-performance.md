@@ -5,7 +5,7 @@
 轻量层：XAML 结构断言（不依赖 Headless，纯 XDocument）：
 
 ```csharp
-var document = XDocument.Load(FindSourceFile("src", "ApixPress.App", "Views", "Controls", "MainWindow.axaml"));
+var document = XDocument.Load(FindSourceFile("src", "MyApp", "Views", "Controls", "MainWindow.axaml"));
 
 // 断言结构契约：宿主类、绑定路径、必挂类
 var host = document.Descendants()
@@ -19,7 +19,7 @@ ViewModel 层：普通 xunit + 替身服务，覆盖命令逻辑与生命周期�
 
 ## Avalonia.Headless（大改动时推荐接入）
 
-官方样板：`D:\SourceCode\avalonias\Avalonia.Samples\src\Avalonia.Samples\Testing\TestableApp.Headless.XUnit\`（NUnit / Appium 版本同目录），以下写法已回 12.1.2 样板核实。
+官方样板：Avalonia.Samples 仓库（`github.com/AvaloniaUI/Avalonia.Samples`）的 `src/Avalonia.Samples/Testing/TestableApp.Headless.XUnit/`（NUnit / Appium 版本同目录），以下写法已回 12.1.2 样板核实。
 
 测试工程包引用：
 

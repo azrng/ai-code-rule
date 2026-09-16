@@ -1,6 +1,6 @@
 # 「编译通过但启动/运行崩溃」排查清单
 
-Avalonia 的三大类崩溃都发生在**运行时**：样式附加期（启动即崩）、资源解析期（启动即崩）、动画启动期（界面首次触发时崩）。`dotnet build` 全绿不代表能启动。以下三类全部来自真实工程踩坑（ApixPress，2026-09 一天内实际命中三类）。
+Avalonia 的三大类崩溃都发生在**运行时**：样式附加期（启动即崩）、资源解析期（启动即崩）、动画启动期（界面首次触发时崩）。`dotnet build` 全绿不代表能启动。以下三类全部来自真实工程踩坑（消费工程，2026-09 一天内实际命中三类）。
 
 **排查前置**：如果应用还没有全局异常挂点（`AppDomain.CurrentDomain.UnhandledException` / `Dispatcher.UIThread.UnhandledException` / `TaskScheduler.UnobservedTaskException`）与文件日志，闪退原因会完全丢失——先按 logging-and-crash-report.md 把挂点补上再排查；历史崩溃可去事件查看器（`.NET Runtime` 来源条目）与 `%LOCALAPPDATA%\CrashDumps` 找回线索。
 

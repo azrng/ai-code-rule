@@ -1,6 +1,6 @@
 # Ursa 弹层：Dialog / Drawer / MessageBox 装配与高频用法
 
-适用 Ursa.Avalonia 2.2.0（Irihi.Ursa / Irihi.Ursa.Themes.Semi）。API 形态在 `D:\SourceCode\avalonias\Ursa.Avalonia` 源码逐一核实，装配与关闭链路在消费工程弹窗迁移任务（11 个弹窗：新建项目 / 环境管理 / 设置 / 保存 / 生成代码 / 导入 / 确认类）中实测通过。
+适用 Ursa.Avalonia 2.2.0（Irihi.Ursa / Irihi.Ursa.Themes.Semi）。API 形态已回 Ursa.Avalonia 2.2.0 官方源码（`github.com/irihitech/Ursa.Avalonia`）逐一核实，装配与关闭链路在消费工程弹窗迁移任务（11 个弹窗：新建项目 / 环境管理 / 设置 / 保存 / 生成代码 / 导入 / 确认类）中实测通过。
 
 ## 装配
 

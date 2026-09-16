@@ -7,7 +7,7 @@
 ```xml
 <u:UrsaWindow xmlns:u="https://irihi.tech/ursa"
               IsFullScreenButtonVisible="False"
-              Title="AzrngTools" ...>
+              Title="MyApp" ...>
     <!-- ExtendClientAreaToDecorationsHint=True / WindowDecorations=Full 由 UrsaWindow 的
          ControlTheme 统一设置，不必在窗口上重复写 -->
     <u:UrsaWindow.TitleBarContent><!-- 标题栏中部；另有 LeftContent / RightContent 两个槽 -->

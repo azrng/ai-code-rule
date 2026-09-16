@@ -5,7 +5,7 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 # Avalonia UI 12.x 开发指南
 
-指导在 .NET 桌面项目中正确使用 Avalonia UI（锁定 12.x，消费工程基准 12.1.2 + Semi.Avalonia 12.1.0.1 + Ursa.Avalonia 2.2.0 + CommunityToolkit.Mvvm）：样式与资源管线、编译绑定、弹层体系、动画、列表虚拟化、窗口自绘，以及三类「编译通过但启动/运行崩溃」的高频坑。
+指导在 .NET 桌面项目中正确使用 Avalonia UI（锁定 12.x，基准组合 12.1.2 + Semi.Avalonia 12.1.0.1 + Ursa.Avalonia 2.2.0 + CommunityToolkit.Mvvm）：样式与资源管线、编译绑定、弹层体系、动画、列表虚拟化、窗口自绘，以及三类「编译通过但启动/运行崩溃」的高频坑。
 
 **适用场景**：
 - 新建 / 修改 Avalonia 视图（.axaml）、样式（Styles / ControlTheme）、资源字典
@@ -18,24 +18,29 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 ## 工作原则
 
-1. **版本纪律**：Avalonia 12 与 11.x 存在破坏性差异（IClipboard 重构、PresentationSource、Obsolete 清理）。涉及动画、剪贴板、平台 API 时，**先查本地源码或 NuGet ref 程序集确认 12.x 的真实 API，不凭 11.x 或 WPF 经验书写**。本地源码路径：`D:\SourceCode\avalonias\Avalonia`（核对 tag `12.1.2`）。
+1. **版本纪律**：Avalonia 12 与 11.x 存在破坏性差异（IClipboard 重构、PresentationSource、Obsolete 清理）。涉及动画、剪贴板、平台 API 时，**先回上游源码对应 tag 或 NuGet ref 程序集确认 12.x 的真实 API，不凭 11.x 或 WPF 经验书写**（查证方式见下节）。
 2. **样式走管线**：颜色 / 间距 / 圆角 / 阴影一律来自资源 token（`Assets/Styles/*.axaml`），通过 `Classes` + 选择器 Setter 生效，**禁止控件内联硬编码**。新 token 先加资源字典（注意类型：`x:Double` 标量 ≠ `Thickness`），再引用。
 3. **视觉状态用伪类**：`:pointerover` / `:pressed` / `:selected` / `:checked`（不是 WPF 的 Trigger，Avalonia 没有 Trigger）。数据驱动的条件视觉用 `Classes.Xxx="{Binding}"`。
 4. **编译绑定必须带 `x:DataType`**：Window / UserControl / DataTemplate 都要写；跨 ViewModel 用 `$parent[Window].((vm:Xxx)DataContext)` 强转，不靠反射绑定兜底。
 
-## 本地源码按需查询（不确定就查，禁止凭经验写）
+## 上游源码按需查证（不确定就查，禁止凭经验写）
 
-`D:\SourceCode\avalonias\` 下三个仓库是本 skill 的事实来源，**写任何不确定的 API / 样式 / 控件行为前，先按下面方式查证**（Windows 下用 `git -C <仓库> ...`，PowerShell 禁止 `&&`）：
+本 skill 的事实来源是上游官方仓库，**写任何不确定的 API / 样式 / 控件行为前，先按下面方式查证**。本机没有源码克隆时先浅克隆对应 tag（`git clone --depth 1 --branch <tag> <仓库地址>`），不要直接看 main——main 可能超前；Windows 下用 `git -C <仓库目录> ...`，PowerShell 禁止 `&&`：
 
-| 查什么 | 在哪查 | 怎么查 |
+| 仓库 | 核对 tag | 地址 |
 |---|---|---|
-| 某成员 / 签名在 12.1.2 是否存在 | Avalonia 仓库 | `git -C D:\SourceCode\avalonias\Avalonia show 12.1.2:src/Avalonia.Base/Input/Platform/IClipboard.cs`（版本锚定，别看 main——main 可能超前） |
+| Avalonia | `12.1.2` | `github.com/AvaloniaUI/Avalonia` |
+| Semi.Avalonia | `12.1.0.1` | `github.com/irihitech/Semi.Avalonia` |
+| Ursa.Avalonia | `2.2.0` | `github.com/irihitech/Ursa.Avalonia` |
+
+| 查什么 | 在哪查（仓库内路径） | 怎么查 |
+|---|---|---|
+| 某成员 / 签名在 12.1.2 是否存在 | Avalonia 仓库 | `git -C <Avalonia 源码目录> show 12.1.2:src/Avalonia.Base/Input/Platform/IClipboard.cs`（版本锚定 tag） |
 | 控件有哪些属性 / 伪类 | `Avalonia/src/Avalonia.Controls/*.cs` | grep `StyledProperty` / `PseudoClasses.Set(":...")` |
 | 某类型有没有 Animator | `Avalonia/src/Avalonia.Base/Animation/Animators/` | 列目录比对属性类型 |
 | 官方主题怎么写某控件样式 | `Semi.Avalonia/src/Semi.Avalonia/Controls/*.axaml` | 直接读对应控件 axaml（ControlTheme 范式） |
-| 官方可运行示例（Headless 测试 / 对话框模式 / 自定义控件 / MVVM 验证 / IDataTemplate / TrayIcon） | `Avalonia.Samples/src/Avalonia.Samples/{Testing,ViewInteraction,CustomControls,MVVM,DataTemplates,DesktopIntegration}` | 每个样例目录带 README.adoc 讲解；写交互测试、对话框、自绘控件前先找对应官方样例 |
+| 官方可运行示例（Headless 测试 / 对话框模式 / 自定义控件 / MVVM 验证 / IDataTemplate / TrayIcon） | Avalonia.Samples（`github.com/AvaloniaUI/Avalonia.Samples`）的 `src/Avalonia.Samples/{Testing,ViewInteraction,CustomControls,MVVM,DataTemplates,DesktopIntegration}` | 每个样例目录带 README.adoc 讲解；写交互测试、对话框、自绘控件前先找对应官方样例 |
 | Ursa 控件（Dialog / Loading 等） | `Ursa.Avalonia/src/Ursa.Avalonia` + `Ursa.Themes.Semi` | 读控件实现与主题 axaml |
-| 免检参照 | `D:\Work\github\ApixPress\src\ApixPress.App` | 消费工程已在 12.1.2 实测通过的写法，优先复用 |
 
 辅助：NuGet ref 程序集 XML（`~/.nuget/packages/avalonia/12.1.2/ref/net8.0/Avalonia.Base.xml`）可 grep 快速确认 API 存在性。查不到、核实不了的一律不写，向用户说明。
 
@@ -59,7 +64,7 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 ## references 导航
 
-下表是提炼后的速查；**超出覆盖范围或与源码疑有不符的细节，一律回 `D:\SourceCode\avalonias` 按上节方式查证，不猜**。
+下表是提炼后的速查；**超出覆盖范围或与源码疑有不符的细节，一律按「上游源码按需查证」一节的方式回源码核实，不猜**。
 
 | 文件 | 何时读 |
 |---|---|
@@ -101,4 +106,4 @@ Avalonia 官方控件 + ControlTheme
 ## 版本与事实来源
 
 - 包版本矩阵（Avalonia / Semi.Avalonia / Ursa / CommunityToolkit.Mvvm）**唯一维护在 `references/version-and-setup.md`**：加包、升级、查精确版本只看那张表；本文件概述与 description 的基准组合随表同步。
-- 事实来源：`D:\SourceCode\avalonias\{Avalonia, Semi.Avalonia, Ursa.Avalonia}` 源码（按 tag `12.1.2` 核实）+ 消费工程 `D:\Work\github\ApixPress`、`D:\Work\github\AzrngTool` 实测。
+- 事实来源：上游官方源码按 tag 核实（Avalonia `12.1.2` / Semi.Avalonia `12.1.0.1` / Ursa.Avalonia `2.2.0`，地址见「上游源码按需查证」）+ 消费工程实测。

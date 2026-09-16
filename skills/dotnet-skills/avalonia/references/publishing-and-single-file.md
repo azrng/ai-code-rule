@@ -1,6 +1,6 @@
 # 发布打包与单文件体积优化
 
-适用：`dotnet publish` 产出桌面单文件（自包含 / 依赖框架）、产物体积异常排查与瘦身、发布配置变更后的验证。经验锚点：消费工程 AzrngTool（Avalonia + net10.0-windows，win-x64，2026-09 实测，自包含 348MB → 161MB）。
+适用：`dotnet publish` 产出桌面单文件（自包含 / 依赖框架）、产物体积异常排查与瘦身、发布配置变更后的验证。经验锚点：消费工程（Avalonia + net10.0-windows，win-x64，2026-09 实测，自包含 348MB → 161MB）。
 
 ## 体积构成先诊断，再动手
 
@@ -69,13 +69,13 @@ dotnet publish <proj> -c Release -r win-x64 -p:PublishSingleFile=false -o <目�
 - 包是否真被使用：grep 全项目命名空间引用，**一个使用点都没有才删**；只有一个使用点时评估「用自带能力的库替代」
 - NuGet 包的 nuspec/assets 可能声明 `frameworkReferences` 传递运行时依赖——瘦身前先查 `project.assets.json`
 
-## framework-dependent 单文件的原生库捆绑（ApixPress 2026-09-15 实测）
+## framework-dependent 单文件的原生库捆绑（2026-09-15 实测）
 
 FDD（`--self-contained false`）单文件发布**默认不打包原生库**：libSkiaSharp、av_libglesv2（ANGLE）、e_sqlite3、libHarfBuzzSharp 全部散落 exe 旁——用户看到的就是「exe + 一堆 dll」而非单文件。单文件 bundle 的清单校验不会报错，exe 也能跑，极易漏检。
 
-- `IncludeNativeLibrariesForSelfExtract` 对自包含 / framework-dependent **都合法且都要开**，禁止加 `Condition="'$(SelfContained)'=='true'"` 之类的条件——ApixPress 曾因此让 framework 版持续散装
+- `IncludeNativeLibrariesForSelfExtract` 对自包含 / framework-dependent **都合法且都要开**，禁止加 `Condition="'$(SelfContained)'=='true'"` 之类的条件——消费工程曾因此让 framework 版持续散装
 - NETSDK1176 只约束「压缩」：`EnableCompressionInSingleFile` 确实仅自包含合法，FDD 下须关；它与原生库捆绑无关，**不要把两者写进同一个条件**
-- 原生库进 bundle 后运行时解压到 `%TEMP%\.net\` 加载：ApixPress 34.9MB FDD 单文件实测冷启动 2.44s，与自包含版持平，无额外代价
+- 原生库进 bundle 后运行时解压到 `%TEMP%\.net\` 加载：34.9MB FDD 单文件实测冷启动 2.44s，与自包含版持平，无额外代价
 - 验收标准：framework 发布目录里**只允许存在 exe**（ pdb 由脚本剔除），任何散落 dll 都是捆绑没生效
 
 ## 发布验证清单（改发布配置后必做）

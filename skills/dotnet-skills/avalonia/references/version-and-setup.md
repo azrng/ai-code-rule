@@ -37,10 +37,10 @@ App.axaml 资源合并顺序（后合并的优先）：
     <ResourceDictionary.MergedDictionaries>
       <ResourceInclude Source="avares://Semi.Avalonia/Themes/Index.axaml" />
       <ResourceInclude Source="avares://Ursa.Themes.Semi/Index.axaml" />
-      <!-- 项目自有 token 与样式在主题之后，允许覆盖 -->
-      <ResourceInclude Source="avares://ApixPress/Assets/Styles/Colors.axaml" />
-      <ResourceInclude Source="avares://ApixPress/Assets/Styles/Spacing.axaml" />
-      <ResourceInclude Source="avares://ApixPress/Assets/Styles/Shadows.axaml" />
+      <!-- 项目自有 token 与样式在主题之后，允许覆盖（avares:// 后为当前项目程序集名） -->
+      <ResourceInclude Source="avares://MyApp/Assets/Styles/Colors.axaml" />
+      <ResourceInclude Source="avares://MyApp/Assets/Styles/Spacing.axaml" />
+      <ResourceInclude Source="avares://MyApp/Assets/Styles/Shadows.axaml" />
       <!-- 各领域 Styles.axaml ... -->
     </ResourceDictionary.MergedDictionaries>
   </ResourceDictionary>
