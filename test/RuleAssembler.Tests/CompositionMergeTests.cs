@@ -78,7 +78,7 @@ public sealed class CompositionMergeTests
     [Fact]
     public void 组件引用未知模块时清单校验报错()
     {
-        var loader = new ManifestLoader(new ResourceStore());
+        var validator = new ManifestValidator(new ResourceStore());
         var manifest = LoadManifest();
         manifest.Components.Add(new ComponentDefinition
         {
@@ -92,7 +92,7 @@ public sealed class CompositionMergeTests
             ModuleIds = { "missing-module" }
         });
 
-        var ex = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var ex = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("component test-missing-module 引用了不存在的 module：missing-module", ex.Message);
     }

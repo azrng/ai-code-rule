@@ -168,6 +168,7 @@ public sealed class RootConsistencyValidatorTests
     [Fact]
     public void LoaderValidate_UnregisteredFeature_Throws()
     {
+        var validator = new ManifestValidator(new ResourceStore());
         var loader = new ManifestLoader(new ResourceStore());
         var manifest = loader.Load();
         var subrule = Assert.Single(
@@ -175,7 +176,7 @@ public sealed class RootConsistencyValidatorTests
             rule => rule.Output == "backend-AGENTS.md");
         subrule.Feature = "unknown-feature";
 
-        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("feature 未在 manifest.features 注册", exception.Message);
     }
@@ -183,11 +184,12 @@ public sealed class RootConsistencyValidatorTests
     [Fact]
     public void LoaderValidate_InvalidSubruleMerge_Throws()
     {
+        var validator = new ManifestValidator(new ResourceStore());
         var loader = new ManifestLoader(new ResourceStore());
         var manifest = loader.Load();
         manifest.Profiles[0].Subrules[0].Merge = "overwrite";
 
-        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("merge 只能是 replace 或 append", exception.Message);
     }

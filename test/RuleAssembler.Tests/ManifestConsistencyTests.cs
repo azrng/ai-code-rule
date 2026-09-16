@@ -9,7 +9,7 @@ public sealed class ManifestConsistencyTests
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var errors = new List<string>();
-        ManifestLoader.ValidateCompatibilityCases(manifest, errors);
+        CompositionValidator.ValidateCompatibilityCases(manifest, errors);
         Assert.Empty(errors);
     }
 
@@ -20,7 +20,7 @@ public sealed class ManifestConsistencyTests
         manifest.CompatibilityCases.RemoveAll(item => item.Profile.Equals("wpfExe", StringComparison.OrdinalIgnoreCase));
 
         var errors = new List<string>();
-        ManifestLoader.ValidateCompatibilityCases(manifest, errors);
+        CompositionValidator.ValidateCompatibilityCases(manifest, errors);
         Assert.Contains(errors, error => error.Contains("缺少兼容样例", StringComparison.Ordinal));
     }
 
@@ -36,7 +36,7 @@ public sealed class ManifestConsistencyTests
         });
 
         var errors = new List<string>();
-        ManifestLoader.ValidateCompatibilityCases(manifest, errors);
+        CompositionValidator.ValidateCompatibilityCases(manifest, errors);
         Assert.Contains(errors, error => error.Contains("多个兼容样例", StringComparison.Ordinal));
     }
 }

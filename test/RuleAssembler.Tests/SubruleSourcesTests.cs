@@ -2,7 +2,7 @@ namespace RuleAssembler.Tests;
 
 public sealed class SubruleSourcesTests
 {
-    private static ManifestLoader CreateLoader() => new(new ResourceStore());
+    private static ManifestValidator CreateValidator() => new(new ResourceStore());
 
     [Fact]
     public void GetSources_SingleFallsBackToSource()
@@ -52,7 +52,7 @@ public sealed class SubruleSourcesTests
             Output = "x.md"
         };
 
-        CreateLoader().ValidateRuleFile(subrule, "测试 Profile", errors);
+        CreateValidator().ValidateRuleFile(subrule, "测试 Profile", errors);
 
         Assert.Contains(errors, error => error.Contains("不能同时配置"));
     }
@@ -67,7 +67,7 @@ public sealed class SubruleSourcesTests
             Output = "x.md"
         };
 
-        CreateLoader().ValidateRuleFile(subrule, "测试 Profile", errors);
+        CreateValidator().ValidateRuleFile(subrule, "测试 Profile", errors);
 
         // 第二个源带 front matter，必须报错
         Assert.Contains(errors, error => error.Contains("front matter"));
@@ -83,7 +83,7 @@ public sealed class SubruleSourcesTests
             Output = "x.md"
         };
 
-        CreateLoader().ValidateRuleFile(subrule, "测试 Profile", errors);
+        CreateValidator().ValidateRuleFile(subrule, "测试 Profile", errors);
 
         Assert.Empty(errors);
     }

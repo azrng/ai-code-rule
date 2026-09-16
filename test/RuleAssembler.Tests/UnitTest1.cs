@@ -82,12 +82,12 @@ public sealed class ManifestLoaderTests
     [Fact]
     public void Validate_DuplicateModulePointer_Throws()
     {
-        var loader = new ManifestLoader(new ResourceStore());
-        var manifest = loader.Load();
+        var validator = new ManifestValidator(new ResourceStore());
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
         var module = Assert.Single(manifest.Modules, item => item.Pointers.Count > 0);
         module.Pointers.Add(module.Pointers[0].ToUpperInvariant());
 
-        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("pointer 输出重复", exception.Message);
     }
@@ -95,13 +95,13 @@ public sealed class ManifestLoaderTests
     [Fact]
     public void Validate_DuplicateProfilePointer_Throws()
     {
-        var loader = new ManifestLoader(new ResourceStore());
-        var manifest = loader.Load();
+        var validator = new ManifestValidator(new ResourceStore());
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
         var profile = manifest.Profiles[0];
         profile.Pointers.Add("GROK.md");
         profile.Pointers.Add("grok.md");
 
-        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("pointer 输出重复", exception.Message);
     }
@@ -109,13 +109,13 @@ public sealed class ManifestLoaderTests
     [Fact]
     public void Validate_SubruleConflictingWithRootOutput_Throws()
     {
-        var loader = new ManifestLoader(new ResourceStore());
-        var manifest = loader.Load();
+        var validator = new ManifestValidator(new ResourceStore());
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
         var profile = manifest.Profiles[0];
         var source = manifest.Modules.SelectMany(module => module.Files).First().Source;
         profile.Subrules.Add(new Subrule { Source = source, Output = "agents.md" });
 
-        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("Profile", exception.Message);
         Assert.Contains("输出重复", exception.Message);
@@ -125,11 +125,11 @@ public sealed class ManifestLoaderTests
     [Fact]
     public void Validate_ProfileIdWithTraversal_Throws()
     {
-        var loader = new ManifestLoader(new ResourceStore());
-        var manifest = loader.Load();
+        var validator = new ManifestValidator(new ResourceStore());
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
         manifest.Profiles[0].Id = "../outside";
 
-        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("安全的单级目录名", exception.Message);
     }
@@ -137,14 +137,14 @@ public sealed class ManifestLoaderTests
     [Fact]
     public void Validate_OutputPathAliases_Throws()
     {
-        var loader = new ManifestLoader(new ResourceStore());
-        var manifest = loader.Load();
+        var validator = new ManifestValidator(new ResourceStore());
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
         var profile = manifest.Profiles[0];
         var source = manifest.Modules.SelectMany(module => module.Files).First().Source;
         profile.Subrules.Add(new Subrule { Source = source, Output = "nested/./rule.md" });
         profile.Subrules.Add(new Subrule { Source = source, Output = "nested\\rule.md" });
 
-        var exception = Assert.Throws<InvalidOperationException>(() => loader.Validate(manifest));
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("nested/rule.md", exception.Message);
     }
