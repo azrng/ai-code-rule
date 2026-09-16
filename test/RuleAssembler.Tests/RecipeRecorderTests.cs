@@ -17,16 +17,37 @@ public sealed class RecipeRecorderTests : IDisposable
         Directory.Delete(_root, recursive: true);
     }
 
+    // 直接构造配方记录（组合路径产物形态）：配方写入测试只关心序列化形状，
+    // 不依赖具体构建入口
+    private static RecipeRecord MakeRecord(
+        string mode = "wizard",
+        Dictionary<string, string>? answers = null,
+        Dictionary<string, string>? sources = null,
+        List<string>? features = null)
+    {
+        return new RecipeRecord
+        {
+            ManifestVersion = "1.75.0",
+            GeneratedAt = "2026-09-16T10:00:00+08:00",
+            Mode = mode,
+            ProfileId = "reactWailsExe",
+            ProfileLabel = "React + Wails 桌面应用",
+            Family = "hybrid-app",
+            Answers = answers ?? new Dictionary<string, string>(),
+            AnswerSources = sources ?? new Dictionary<string, string>(),
+            Features = features ?? new List<string> { "doc" },
+            FileHashes = new Dictionary<string, string>(),
+            Files = new List<string> { "AGENTS.md" }
+        };
+    }
+
     [Fact]
     public void Write_ProducesJsonRecordWithProfile()
     {
-        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.36.0", LastUpdated = "2026-09-02" } };
-        var profile = new Profile { Id = "reactWailsExe", Label = "React + Wails 桌面应用", Family = "hybrid-app" };
-        var answers = new Dictionary<string, string> { ["form"] = "desktop" };
-        var sources = new Dictionary<string, string> { ["form"] = "manual" };
-        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
-
-        var record = RecipeRecorder.Build(manifest, profile, "wizard", answers, sources, new[] { "doc", "infra" }, files);
+        var record = MakeRecord(
+            answers: new Dictionary<string, string> { ["form"] = "desktop" },
+            sources: new Dictionary<string, string> { ["form"] = "manual" },
+            features: new List<string> { "doc", "infra" });
         new RecipeRecorder().Write(_root, record);
 
         var path = Path.Combine(_root, RecipeRecorder.RecordFileName);
@@ -44,19 +65,17 @@ public sealed class RecipeRecorderTests : IDisposable
     public void Write_RecordDetectedAnswerSources()
     {
         // 补答完成的配方保留 mode=detected，回答来源区分检测确认与人工补答
-        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.39.0", LastUpdated = "2026-09-02" } };
-        var profile = new Profile { Id = "vueElectronDotNet", Label = "Vue + Electron + .NET 桌面应用", Family = "hybrid-app" };
-        var answers = new Dictionary<string, string>
-        {
-            ["form"] = "desktop", ["backend"] = "dotnet", ["shell"] = "electron", ["frontend"] = "vue"
-        };
-        var sources = new Dictionary<string, string>
-        {
-            ["form"] = "detected", ["backend"] = "detected", ["shell"] = "detected", ["frontend"] = "manual"
-        };
-        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
-
-        var record = RecipeRecorder.Build(manifest, profile, "detected", answers, sources, new[] { "doc", "infra", "design-system" }, files);
+        var record = MakeRecord(
+            mode: "detected",
+            answers: new Dictionary<string, string>
+            {
+                ["form"] = "desktop", ["backend"] = "dotnet", ["shell"] = "electron", ["frontend"] = "vue"
+            },
+            sources: new Dictionary<string, string>
+            {
+                ["form"] = "detected", ["backend"] = "detected", ["shell"] = "detected", ["frontend"] = "manual"
+            },
+            features: new List<string> { "doc", "infra", "design-system" });
         new RecipeRecorder().Write(_root, record);
 
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));
@@ -154,12 +173,7 @@ public sealed class RecipeRecorderTests : IDisposable
     [Fact]
     public void WithSkills_AttachesSortedSkillSelection()
     {
-        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.62.0", LastUpdated = "2026-09-12" } };
-        var profile = new Profile { Id = "reactOnly", Label = "React 静态站", Family = "frontend-static" };
-        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
-        var record = RecipeRecorder.Build(
-            manifest, profile, "wizard",
-            new Dictionary<string, string>(), new Dictionary<string, string>(), new[] { "doc" }, files);
+        var record = MakeRecord();
 
         var withSkills = RecipeRecorder.WithSkills(record, new[] { "summarize", "brainstorming" }, new[] { "zcode", "codex" });
 
@@ -173,13 +187,7 @@ public sealed class RecipeRecorderTests : IDisposable
     public void Write_RecipeWithoutSkills_OmitsSkillFieldsFromJson()
     {
         // 未导入技能的配方与旧形状完全一致，不出现 skills / skill_targets 键
-        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.62.0", LastUpdated = "2026-09-12" } };
-        var profile = new Profile { Id = "reactOnly", Label = "React 静态站", Family = "frontend-static" };
-        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
-        var record = RecipeRecorder.Build(
-            manifest, profile, "wizard",
-            new Dictionary<string, string>(), new Dictionary<string, string>(), new[] { "doc" }, files);
-
+        var record = MakeRecord();
         new RecipeRecorder().Write(_root, record);
 
         var json = File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName));
@@ -196,13 +204,8 @@ public sealed class RecipeRecorderTests : IDisposable
     [Fact]
     public void Write_RecipeWithSkills_SerializesSkillFields()
     {
-        var manifest = new Manifest { Vars = new ManifestVars { Version = "1.62.0", LastUpdated = "2026-09-12" } };
-        var profile = new Profile { Id = "reactOnly", Label = "React 静态站", Family = "frontend-static" };
-        var files = new List<PlannedFile> { new() { Output = "AGENTS.md", Content = "x" } };
         var record = RecipeRecorder.WithSkills(
-            RecipeRecorder.Build(
-                manifest, profile, "wizard",
-                new Dictionary<string, string>(), new Dictionary<string, string>(), new[] { "doc" }, files),
+            MakeRecord(),
             new[] { "brainstorming" }, new[] { "claude" });
 
         new RecipeRecorder().Write(_root, record);

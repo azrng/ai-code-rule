@@ -9,31 +9,6 @@ internal sealed class RecipeRecorder
 {
     public const string RecordFileName = GitignoreTemplates.RecipeEntry;
 
-    public static RecipeRecord Build(
-        Manifest manifest,
-        Profile profile,
-        string mode,
-        IReadOnlyDictionary<string, string> answers,
-        IReadOnlyDictionary<string, string> answerSources,
-        IEnumerable<string> features,
-        IReadOnlyList<PlannedFile> files)
-    {
-        return new RecipeRecord
-        {
-            ManifestVersion = manifest.Vars.Version,
-            GeneratedAt = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm:sszzz"),
-            Mode = mode,
-            ProfileId = profile.Id,
-            ProfileLabel = profile.Label,
-            Family = profile.Family,
-            Answers = new Dictionary<string, string>(answers, StringComparer.Ordinal),
-            AnswerSources = new Dictionary<string, string>(answerSources, StringComparer.Ordinal),
-            Features = features.OrderBy(id => id, StringComparer.Ordinal).ToList(),
-            FileHashes = HashFiles(files),
-            Files = files.Select(file => file.Output).ToList()
-        };
-    }
-
     // 组合内核路径的配方：额外记录维度选择与命中组件；唯一映射到兼容样例时回填 profile 三件套，
     // 供旧读者与升级流程继续按 Profile 语义消费
     public static RecipeRecord BuildComposition(

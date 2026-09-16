@@ -53,7 +53,8 @@ internal sealed class ScriptedConsoleUi : IConsoleUi
     }
 }
 
-// P1-2 检测补答：部分检测结果保留已确认维度，只对未收敛维度补答
+// P1-2 检测补答（组件路径）：部分检测结果保留已确认维度，只对未收敛维度补答。
+// 生产补答入口是 Program.RunSelectionWizard(seeds=detection.Confirmed)，测试直接驱动它
 public sealed class SupplementWizardTests : IDisposable
 {
     private readonly string _root;
@@ -95,23 +96,24 @@ public sealed class SupplementWizardTests : IDisposable
         var detection = DetectElectronWithoutRenderer();
         Assert.Equal(new[] { "frontend" }, detection.Unconfirmed);
 
-        // frontend 问题的选项从候选推导：React / Vue 各一，按 label 序 React 在前，选 1 = Vue
+        // frontend 问题的选项从存续组件推导：React / Vue 各一，按 label 序 React 在前，选 1 = Vue
         var ui = new ScriptedConsoleUi(1);
-        var selection = new ConsoleWizard(ui).SupplementByWizard(_manifest, detection);
+        var outcome = Program.RunSelectionWizard(
+            _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
-        Assert.NotNull(selection);
-        Assert.Equal("vueElectronDotNet", selection!.Profile.Id);
+        Assert.NotNull(outcome);
+        Assert.Equal("vue", outcome!.Selection.Dimensions["frontend"]);
         // 补答完成的配方保留 mode=detected
-        Assert.Equal("detected", selection.Mode);
-        Assert.Equal("vue", selection.Answers["frontend"]);
+        Assert.Equal("detected", outcome.Mode);
+        Assert.Equal("vue", outcome.Answers["frontend"]);
         // 已确认维度保留且来源为 detected，不被覆盖
-        Assert.Equal("desktop", selection.Answers["form"]);
-        Assert.Equal("dotnet", selection.Answers["backend"]);
-        Assert.Equal("electron", selection.Answers["shell"]);
-        Assert.Equal("detected", selection.AnswerSources["form"]);
-        Assert.Equal("detected", selection.AnswerSources["backend"]);
-        Assert.Equal("detected", selection.AnswerSources["shell"]);
-        Assert.Equal("manual", selection.AnswerSources["frontend"]);
+        Assert.Equal("desktop", outcome.Answers["form"]);
+        Assert.Equal("dotnet", outcome.Answers["backend"]);
+        Assert.Equal("electron", outcome.Answers["shell"]);
+        Assert.Equal("detected", outcome.AnswerSources["form"]);
+        Assert.Equal("detected", outcome.AnswerSources["backend"]);
+        Assert.Equal("detected", outcome.AnswerSources["shell"]);
+        Assert.Equal("manual", outcome.AnswerSources["frontend"]);
     }
 
     [Fact]
@@ -120,7 +122,8 @@ public sealed class SupplementWizardTests : IDisposable
         var detection = DetectElectronWithoutRenderer();
 
         var ui = new ScriptedConsoleUi(1);
-        _ = new ConsoleWizard(ui).SupplementByWizard(_manifest, detection);
+        _ = Program.RunSelectionWizard(
+            _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
         // 整个补答只提问 frontend 一问，form/backend/shell 不重复提问
         Assert.Single(ui.Titles);
@@ -133,9 +136,10 @@ public sealed class SupplementWizardTests : IDisposable
         var detection = DetectElectronWithoutRenderer();
 
         var ui = new ScriptedConsoleUi((int?)null);
-        var selection = new ConsoleWizard(ui).SupplementByWizard(_manifest, detection);
+        var outcome = Program.RunSelectionWizard(
+            _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
-        Assert.Null(selection);
+        Assert.Null(outcome);
     }
 
     [Fact]
@@ -148,5 +152,21 @@ public sealed class SupplementWizardTests : IDisposable
         Assert.Null(detection.LegacyProfileLabel);
         Assert.Empty(detection.BuildLegacyAnswers());
         Assert.Equal(2, detection.Candidates.Count);
+    }
+
+    [Fact]
+    public void Supplement_CompletedSelectionPlansToElectronFamily()
+    {
+        // 补答完成的选择必须能被组合内核解析为 Electron + Vue + .NET 组件集
+        var detection = DetectElectronWithoutRenderer();
+        var ui = new ScriptedConsoleUi(1);
+        var outcome = Program.RunSelectionWizard(
+            _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
+
+        Assert.NotNull(outcome);
+        var plan = new CompositionPlanner(_manifest).Plan(outcome!.Selection);
+        Assert.Contains(plan.ComponentIds, id => id == "electron-desktop-shell");
+        Assert.Contains(plan.ComponentIds, id => id == "electron-frontend-vue-dotnet");
+        Assert.Contains(plan.ComponentIds, id => id == "electron-backend-dotnet");
     }
 }

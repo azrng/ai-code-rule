@@ -42,8 +42,8 @@ internal static class Program
         }
     }
 
-    // 交互主流程（P2 阶段 3）：问答 / 检测入口产出 Selection 走组合内核；
-    // 经典大类 → Profile 保留为兼容入口，仍走旧渲染路径
+    // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染；
+    // 旧 Profile 渲染路径只保留给 --emit-all-legacy 与 --check 等价比对
     private static int RunInteractive(Manifest manifest, ResourceStore resources, SkillsStore skillsStore)
     {
         Console.WriteLine(Banner);
@@ -70,39 +70,26 @@ internal static class Program
             string summaryLabel;
             RecipeRecord record;
             string stackKey;
-            if (entry.Selection is not null)
+            CompositionPlan plan;
+            try
             {
-                CompositionPlan plan;
-                try
-                {
-                    plan = planner.Plan(entry.Selection);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    // 组合无法解析时回到入口菜单，不让用户从头再来
-                    Console.WriteLine($"组合无法解析：{ex.Message}");
-                    Console.WriteLine();
-                    continue;
-                }
+                plan = planner.Plan(entry.Selection);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // 组合无法解析时回到入口菜单，不让用户从头再来
+                Console.WriteLine($"组合无法解析：{ex.Message}");
+                Console.WriteLine();
+                continue;
+            }
 
-                var features = ChooseFeaturesForPlan(manifest, ui, plan);
-                files = renderer.Plan(manifest, plan, features);
-                summaryLabel = DescribeCompositionLabel(manifest, plan);
-                stackKey = RecipeRecorder.StackKeyForComposition(manifest, plan);
-                record = RecipeRecorder.BuildComposition(
-                    manifest, entry.Selection, plan.ComponentIds, entry.Mode,
-                    entry.Answers, entry.AnswerSources, features, files);
-            }
-            else
-            {
-                var legacy = entry.Legacy!;
-                var features = ChooseFeatures(manifest, ui, legacy.Profile);
-                files = renderer.Plan(manifest, legacy.Profile, features);
-                summaryLabel = legacy.Profile.Label;
-                stackKey = RecipeRecorder.StackKeyFor(legacy.Profile);
-                record = RecipeRecorder.Build(
-                    manifest, legacy.Profile, legacy.Mode, legacy.Answers, legacy.AnswerSources, features, files);
-            }
+            var features = ChooseFeaturesForPlan(manifest, ui, plan);
+            files = renderer.Plan(manifest, plan, features);
+            summaryLabel = DescribeCompositionLabel(manifest, plan);
+            stackKey = RecipeRecorder.StackKeyForComposition(manifest, plan);
+            record = RecipeRecorder.BuildComposition(
+                manifest, entry.Selection, plan.ComponentIds, entry.Mode,
+                entry.Answers, entry.AnswerSources, features, files);
 
             // 已定制的设计系统文件属于产品资产：本次计划包含 design-system.yaml 且本地已是定制版时，保留本地不覆盖
             if (files.Any(file => file.Output.Equals("design-system.yaml", StringComparison.OrdinalIgnoreCase))
@@ -116,8 +103,7 @@ internal static class Program
 
             Console.WriteLine();
             Console.WriteLine($"已选择：{summaryLabel}");
-            if (entry.Selection is not null)
-                Console.WriteLine($"命中组件：{string.Join("、", record.ComponentIds ?? new List<string>())}");
+            Console.WriteLine($"命中组件：{string.Join("、", record.ComponentIds ?? new List<string>())}");
             Console.WriteLine("将释放以下文件：");
             foreach (var file in files)
                 Console.WriteLine($"  - {file.Output}");
@@ -168,23 +154,37 @@ internal static class Program
         }
     }
 
-    // 入口结果：Selection 非空走组合内核；否则走 Legacy 的经典 Profile 路径
-    private sealed record EntryOutcome(
-        Selection? Selection,
-        ProfileSelection? Legacy,
+    // 入口结果：全部入口（问答 / 检测推荐 / 经典大类）都产出 Selection 走组合内核
+    internal sealed record EntryOutcome(
+        Selection Selection,
         string Mode,
         Dictionary<string, string> Answers,
         Dictionary<string, string> AnswerSources);
 
-    private static EntryOutcome? LegacyOutcome(ProfileSelection selection)
+    // 经典大类选择的组合口径转换：选中 Profile 经其兼容样例反查维度选择（装载校验保证
+    // 每个 Profile 恰好一个样例），问答来源整体标记为 classic，配方与渲染走组合路径
+    internal static EntryOutcome? ClassicOutcome(Manifest manifest, Profile profile)
     {
-        return new EntryOutcome(null, selection, selection.Mode, selection.Answers, selection.AnswerSources);
+        var caseItem = manifest.CompatibilityCases.FirstOrDefault(item =>
+            item.Profile.Equals(profile.Id, StringComparison.OrdinalIgnoreCase));
+        if (caseItem is null)
+        {
+            // 装载期守卫已保证每个 Profile 都有样例；此处兜底避免静默走错路径
+            Console.WriteLine($"Profile {profile.Id} 未注册兼容样例，无法走组合路径，请改用问答选择。");
+            return null;
+        }
+
+        var answers = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal);
+        var sources = answers.Keys
+            .ToDictionary(key => key, _ => "classic", StringComparer.Ordinal);
+        return SelectionOutcome(
+            new Selection { Dimensions = answers }, "classic", answers, sources);
     }
 
-    private static EntryOutcome? SelectionOutcome(
+    private static EntryOutcome SelectionOutcome(
         Selection selection, string mode, Dictionary<string, string> answers, Dictionary<string, string> sources)
     {
-        return new EntryOutcome(selection, null, mode, answers, sources);
+        return new EntryOutcome(selection, mode, answers, sources);
     }
 
     // Skills 导入勾选结果：技能与目标都是多选；SkipKeys 是「<targetId>/<skillId>」的跳过集合（保留本地同名技能）；
@@ -368,7 +368,7 @@ internal static class Program
                 if (choice == 0)
                     return RunSelectionWizard(manifest, ui, "wizard");
                 if (choice == 1)
-                    return wizard.SelectProfile(manifest) is { } legacyPick ? LegacyOutcome(legacyPick) : null;
+                    return wizard.SelectProfile(manifest) is { } legacyPick ? ClassicOutcome(manifest, legacyPick) : null;
             }
         }
 
@@ -409,45 +409,8 @@ internal static class Program
             if (choice == 1)
                 return RunSelectionWizard(manifest, ui, "wizard");
             if (choice == 2)
-                return wizard.SelectProfile(manifest) is { } classicPick ? LegacyOutcome(classicPick) : null;
+                return wizard.SelectProfile(manifest) is { } classicPick ? ClassicOutcome(manifest, classicPick) : null;
         }
-    }
-
-    // Q5 能力开关：只列出可用能力（不可用能力隐藏）；
-    // ai-capability 的启用由向导 AI 问答这一唯一事实来源决定，这里仅展示不调整
-    private static HashSet<string> ChooseFeatures(Manifest manifest, IConsoleUi ui, Profile profile)
-    {
-        var defaults = FeatureSelection.Defaults(manifest, profile);
-        var aiFeature = manifest.Features
-            .FirstOrDefault(feature => feature.Id.Equals("ai-capability", StringComparison.OrdinalIgnoreCase));
-        if (aiFeature is not null && defaults.Contains(aiFeature.Id))
-            ui.Line($"AI 能力：已启用（{aiFeature.Desc}）；是否启用由 AI 问答决定，此处不调整");
-
-        // 能力选择只覆盖 doc / infra / design-system 等可开关能力；AI 保持向导回答的状态
-        var toggleable = FeatureSelection.Available(manifest, profile)
-            .Where(feature => !feature.Id.Equals("ai-capability", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        var final = toggleable.Count == 0
-            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            : ui.ChooseMany(
-                    "选择本次生成的能力：",
-                    toggleable.Select(feature => new UiChoice(feature.Label, feature.Desc)).ToList(),
-                    toggleable
-                        .Select((feature, index) => (feature, index))
-                        .Where(pair => defaults.Contains(pair.feature.Id))
-                        .Select(pair => pair.index)
-                        .ToList())
-                .Select(index => toggleable[index].Id)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        // 用勾选结果覆盖可开关能力的默认值，AI 能力保留向导回答的状态，再按可用性归一化
-        foreach (var id in defaults)
-        {
-            if (id.Equals("ai-capability", StringComparison.OrdinalIgnoreCase))
-                final.Add(id);
-        }
-
-        return FeatureSelection.Normalize(manifest, profile, final);
     }
 
     // Q5 能力开关（组合路径）：可用性由 CompositionPlan 的文件贡献与 design-system 来源推导，
@@ -488,7 +451,7 @@ internal static class Program
 
     // 组件问答主循环：检测补答与全新问答共用；已确认（detected）维度保留且不再提问，
     // 唯一取值自动推导（来源 derived），0 返回上一步，第一问返回交还入口菜单
-    private static EntryOutcome? RunSelectionWizard(
+    internal static EntryOutcome? RunSelectionWizard(
         Manifest manifest, IConsoleUi ui, string mode, Dictionary<string, string>? seeds = null)
     {
         var engine = new SelectionEngine(manifest);
@@ -584,7 +547,7 @@ internal static class Program
         if (choice == 1)
             return RunSelectionWizard(manifest, ui, "wizard");
         var legacy = new ConsoleWizard(ui).SelectProfile(manifest);
-        return legacy is null ? null : LegacyOutcome(legacy);
+        return legacy is null ? null : ClassicOutcome(manifest, legacy);
     }
 
     // 组合路径的展示标签：唯一映射兼容样例时用其 Profile 名称，否则列组件
