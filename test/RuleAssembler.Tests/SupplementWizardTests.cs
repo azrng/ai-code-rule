@@ -148,9 +148,9 @@ public sealed class SupplementWizardTests : IDisposable
         // 部分 DetectionResult 不要求存在可反查的 Profile ID
         var detection = DetectElectronWithoutRenderer();
 
-        Assert.Null(detection.LegacyProfileId);
-        Assert.Null(detection.LegacyProfileLabel);
-        Assert.Empty(detection.BuildLegacyAnswers());
+        Assert.Null(detection.SampleProfileId);
+        Assert.Null(detection.SampleLabel);
+        Assert.Empty(detection.BuildSampleAnswers());
         Assert.Equal(2, detection.Candidates.Count);
     }
 

@@ -34,7 +34,7 @@ public sealed class ComboRegressionTests : IDisposable
     private CompositionPlan PlanOf(DetectionResult result)
     {
         Assert.True(result.Converged);
-        return PlanFor(result.LegacyProfileId!);
+        return PlanFor(result.SampleProfileId!);
     }
 
     // 按样例 ID 解析组合（检测收敛、经典入口、配方重放同口径）
@@ -84,7 +84,7 @@ public sealed class ComboRegressionTests : IDisposable
         // 单项目 .NET + React 同时匹配 AI 与非 AI 两个样例，
         // ai 维度无证据 → 部分结果交由补答，不得隐式二选一
         Assert.False(result.Converged);
-        Assert.Null(result.LegacyProfileId);
+        Assert.Null(result.SampleProfileId);
         Assert.Contains("ai-capability", result.Unconfirmed);
         Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNetSingle");
         Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "reactLinkdotNet-ai");
@@ -113,7 +113,7 @@ public sealed class ComboRegressionTests : IDisposable
         });
 
         Assert.True(result.Converged);
-        Assert.Equal("dotnet-layered", result.LegacyProfileId);
+        Assert.Equal("dotnet-layered", result.SampleProfileId);
         Assert.Equal("layered", result.Confirmed["arch-style"]);
         var plan = PlanOf(result);
         var files = _renderer.Plan(_manifest, plan, FeatureSelection.Defaults(_manifest, plan));
@@ -138,7 +138,7 @@ public sealed class ComboRegressionTests : IDisposable
         });
 
         Assert.True(result.Converged);
-        Assert.Equal("reactWailsExe", result.LegacyProfileId);
+        Assert.Equal("reactWailsExe", result.SampleProfileId);
         Assert.Equal("react", result.Confirmed["frontend"]);
         Assert.Equal("wails", result.Confirmed["shell"]);
         var plan = PlanOf(result);
@@ -163,7 +163,7 @@ public sealed class ComboRegressionTests : IDisposable
         });
 
         Assert.True(result.Converged);
-        Assert.Equal("reactElectronDotNet", result.LegacyProfileId);
+        Assert.Equal("reactElectronDotNet", result.SampleProfileId);
         var plan = PlanOf(result);
 
         // 能力开关回归：取消文档与设计系统后仅剩核心 + 基础设施，契约仍一致
@@ -191,7 +191,7 @@ public sealed class ComboRegressionTests : IDisposable
         });
 
         Assert.True(result.Converged);
-        Assert.Equal("reactElectron", result.LegacyProfileId);
+        Assert.Equal("reactElectron", result.SampleProfileId);
         Assert.Equal("none", result.Confirmed["backend"]);
         var plan = PlanOf(result);
 
@@ -215,7 +215,7 @@ public sealed class ComboRegressionTests : IDisposable
         });
 
         Assert.True(result.Converged);
-        Assert.Equal("vueElectron", result.LegacyProfileId);
+        Assert.Equal("vueElectron", result.SampleProfileId);
         var plan = PlanOf(result);
         AssertContractPasses(plan, "vueElectron");
     }
@@ -230,7 +230,7 @@ public sealed class ComboRegressionTests : IDisposable
         });
 
         Assert.True(result.Converged);
-        Assert.Equal("staticHtml", result.LegacyProfileId);
+        Assert.Equal("staticHtml", result.SampleProfileId);
         var plan = PlanOf(result);
         var files = _renderer.Plan(_manifest, plan, FeatureSelection.Defaults(_manifest, plan));
         Assert.Equal(8, files.Count);
@@ -244,7 +244,7 @@ public sealed class ComboRegressionTests : IDisposable
             File.WriteAllText(Path.Combine(root, "requirements.txt"), "fastapi==0.110.0\nuvicorn\n"));
 
         Assert.True(result.Converged);
-        Assert.Equal("python", result.LegacyProfileId);
+        Assert.Equal("python", result.SampleProfileId);
         Assert.Equal("python", result.Confirmed["backend"]);
         var plan = PlanOf(result);
         var files = _renderer.Plan(_manifest, plan, FeatureSelection.Defaults(_manifest, plan));

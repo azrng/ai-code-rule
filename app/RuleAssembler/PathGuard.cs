@@ -32,7 +32,8 @@ internal static class PathGuard
         }
     }
 
-    public static bool IsSafeProfileId(string id)
+    // 兼容样例 ID 的安全校验：必须是安全的单级目录名（样例 ID 直接用作 emit 子目录名）
+    public static bool IsSafeCaseId(string id)
     {
         if (string.IsNullOrWhiteSpace(id)
             || id != id.Trim()

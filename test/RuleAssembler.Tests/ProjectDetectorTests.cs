@@ -29,7 +29,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("reactWailsExe", result!.LegacyProfileId);
+        Assert.Equal("reactWailsExe", result!.SampleProfileId);
         Assert.Contains(result.Reasons, reason => reason.Contains("wails.json"));
     }
 
@@ -52,8 +52,8 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         // 3 个 csproj 的 Web 工程按分层收敛；arch-style 证据在检测阶段即确认
-        Assert.Equal("reactLinkdotNet", result!.LegacyProfileId);
-        Assert.Equal("layered", result.BuildLegacyAnswers()["arch-style"]);
+        Assert.Equal("reactLinkdotNet", result!.SampleProfileId);
+        Assert.Equal("layered", result.BuildSampleAnswers()["arch-style"]);
     }
 
     [Fact]
@@ -90,9 +90,9 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.NotNull(result);
         // 前端工程 + Python 后端工程：web+python 组合此前无法收敛，现直接命中分离组合；
         // 回答组合的 arch-style 取兼容样例口径（single），与组件问答一致
-        Assert.Equal("reactLinkPython", result!.LegacyProfileId);
-        Assert.Equal("python", result.BuildLegacyAnswers()["backend"]);
-        Assert.Equal("single", result.BuildLegacyAnswers()["arch-style"]);
+        Assert.Equal("reactLinkPython", result!.SampleProfileId);
+        Assert.Equal("python", result.BuildSampleAnswers()["backend"]);
+        Assert.Equal("single", result.BuildSampleAnswers()["arch-style"]);
     }
 
     [Fact]
@@ -107,8 +107,8 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         // Nuxt 工程：nuxt.config / 依赖直接给出 web + vue + node 证据，收敛到 Nuxt 全栈
-        Assert.Equal("nuxtFullstack", result!.LegacyProfileId);
-        Assert.Equal("node", result.BuildLegacyAnswers()["backend"]);
+        Assert.Equal("nuxtFullstack", result!.SampleProfileId);
+        Assert.Equal("node", result.BuildSampleAnswers()["backend"]);
     }
 
     [Fact]
@@ -123,9 +123,9 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("reactTauriExe", result!.LegacyProfileId);
+        Assert.Equal("reactTauriExe", result!.SampleProfileId);
         // Tauri 壳即 Rust 后端证据，回答组合必须带 backend=rust 才能重放回同一组合
-        Assert.Equal("rust", result.BuildLegacyAnswers()["backend"]);
+        Assert.Equal("rust", result.BuildSampleAnswers()["backend"]);
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("vueTauri", result!.LegacyProfileId);
+        Assert.Equal("vueTauri", result!.SampleProfileId);
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("wpfExe", result!.LegacyProfileId);
+        Assert.Equal("wpfExe", result!.SampleProfileId);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("python", result!.LegacyProfileId);
+        Assert.Equal("python", result!.SampleProfileId);
     }
 
     [Fact]
@@ -184,9 +184,9 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("reactElectronDotNet", result!.LegacyProfileId);
+        Assert.Equal("reactElectronDotNet", result!.SampleProfileId);
         // 配方回答必须带上渲染层框架，保证按配方可还原到同一变体
-        Assert.Equal("react", result.BuildLegacyAnswers()["frontend"]);
+        Assert.Equal("react", result.BuildSampleAnswers()["frontend"]);
     }
 
     [Fact]
@@ -206,8 +206,8 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("vueElectronDotNet", result!.LegacyProfileId);
-        Assert.Equal("vue", result.BuildLegacyAnswers()["frontend"]);
+        Assert.Equal("vueElectronDotNet", result!.SampleProfileId);
+        Assert.Equal("vue", result.BuildSampleAnswers()["frontend"]);
     }
 
     [Fact]
@@ -229,7 +229,7 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         Assert.False(result!.Converged);
-        Assert.Null(result.LegacyProfileId);
+        Assert.Null(result.SampleProfileId);
         Assert.Contains("frontend", result.Unconfirmed);
         Assert.Equal("desktop", result.Confirmed["form"]);
         Assert.Equal("electron", result.Confirmed["shell"]);
@@ -280,7 +280,7 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         Assert.True(result!.Converged);
-        Assert.Equal("reactElectron", result.LegacyProfileId);
+        Assert.Equal("reactElectron", result.SampleProfileId);
         Assert.Equal("none", result.Confirmed["backend"]);
         Assert.Contains(result.Reasons, reason => reason.Contains("主进程"));
     }
@@ -298,9 +298,9 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         Assert.True(result!.Converged);
-        Assert.Equal("vueElectron", result.LegacyProfileId);
+        Assert.Equal("vueElectron", result.SampleProfileId);
         Assert.Equal("none", result.Confirmed["backend"]);
-        Assert.Equal("vue", result.BuildLegacyAnswers()["frontend"]);
+        Assert.Equal("vue", result.BuildSampleAnswers()["frontend"]);
     }
 
     [Fact]
@@ -317,7 +317,7 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         Assert.False(result!.Converged);
-        Assert.Null(result.LegacyProfileId);
+        Assert.Null(result.SampleProfileId);
         Assert.Contains("frontend", result.Unconfirmed);
         Assert.Equal("desktop", result.Confirmed["form"]);
         Assert.Equal("electron", result.Confirmed["shell"]);
@@ -351,7 +351,7 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         Assert.True(result!.Converged);
-        Assert.Equal("avaloniaExe", result.LegacyProfileId);
+        Assert.Equal("avaloniaExe", result.SampleProfileId);
         Assert.Equal("desktop", result.Confirmed["form"]);
         Assert.Equal("avalonia", result.Confirmed["frontend"]);
         Assert.DoesNotContain(result.Notes, note => note.Contains("证据冲突"));
@@ -374,7 +374,7 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         Assert.True(result!.Converged);
-        Assert.Equal("wpfExe", result.LegacyProfileId);
+        Assert.Equal("wpfExe", result.SampleProfileId);
         Assert.DoesNotContain(result.Notes, note => note.Contains("证据冲突"));
     }
 
@@ -399,10 +399,10 @@ public sealed class ProjectDetectorTests : IDisposable
 
         Assert.NotNull(result);
         Assert.True(result!.Converged);
-        Assert.Equal("wpfExe", result.LegacyProfileId);
+        Assert.Equal("wpfExe", result.SampleProfileId);
         Assert.Equal("desktop", result.Confirmed["form"]);
         Assert.Equal("wpf", result.Confirmed["frontend"]);
         var caseItem = _manifest.CompatibilityCases.Single(item => item.Profile == "wpfExe");
-        Assert.Equal(caseItem.Label, result.LegacyProfileLabel);
+        Assert.Equal(caseItem.Label, result.SampleLabel);
     }
 }

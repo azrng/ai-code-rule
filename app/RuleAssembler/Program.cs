@@ -195,10 +195,10 @@ internal static class Program
 
             if (result.Converged)
             {
-                Console.WriteLine($"推荐组合：{result.LegacyProfileLabel}（{result.LegacyProfileId}）");
+                Console.WriteLine($"推荐组合：{result.SampleLabel}（{result.SampleProfileId}）");
                 Console.WriteLine("回答组合：" + string.Join(
                     "，",
-                    result.BuildLegacyAnswers().Select(pair => $"{pair.Key}={pair.Value}")));
+                    result.BuildSampleAnswers().Select(pair => $"{pair.Key}={pair.Value}")));
                 return 0;
             }
 

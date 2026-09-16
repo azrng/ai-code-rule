@@ -130,7 +130,7 @@ internal sealed class RecipeReplayer
     {
         var dimensions = recipe.Selection is { Count: > 0 }
             ? recipe.Selection
-            : FromLegacyProfile(recipe);
+            : FromLegacyRecipe(recipe);
         var selection = new Selection
         {
             Dimensions = new Dictionary<string, string>(dimensions, StringComparer.Ordinal)
@@ -180,7 +180,7 @@ internal sealed class RecipeReplayer
     }
 
     // 旧配方兼容：早期记录只有 profile_id，经兼容样例反查完整维度组合
-    private Dictionary<string, string> FromLegacyProfile(RecipeRecord recipe)
+    private Dictionary<string, string> FromLegacyRecipe(RecipeRecord recipe)
     {
         if (string.IsNullOrWhiteSpace(recipe.ProfileId))
             throw new InvalidOperationException("配方缺少 selection 与 profile_id，无法重建组合选择。");

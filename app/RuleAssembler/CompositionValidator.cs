@@ -85,7 +85,7 @@ internal static class CompositionValidator
         {
             if (string.IsNullOrWhiteSpace(item.Profile))
                 errors.Add("compatibilityCases 的 profile ID 不能为空");
-            else if (!PathGuard.IsSafeProfileId(item.Profile))
+            else if (!PathGuard.IsSafeCaseId(item.Profile))
                 errors.Add($"compatibilityCases {item.Profile} ID 必须是安全的单级目录名");
 
             if (string.IsNullOrWhiteSpace(item.Label))

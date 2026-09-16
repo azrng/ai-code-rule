@@ -41,7 +41,7 @@ internal static class InteractiveFlow
                     new List<UiChoice>
                     {
                         new("问答选择（推荐）", "回答项目形态、前后端技术栈等几个问题"),
-                        new("经典选择（兼容）", "技术大类 → Profile")
+                        new("经典选择（兼容）", "技术大类 → 组合")
                     });
                 if (choice is null)
                     return null;
@@ -61,8 +61,8 @@ internal static class InteractiveFlow
         if (!detection.Converged)
             return OfferSupplement(manifest, ui, detection);
 
-        var profileLabel = detection.LegacyProfileLabel;
-        ui.Line($"推荐组合：{profileLabel}");
+        var sampleLabel = detection.SampleLabel;
+        ui.Line($"推荐组合：{sampleLabel}");
 
         while (true)
         {
@@ -73,14 +73,14 @@ internal static class InteractiveFlow
                 {
                     new("使用推荐组合", "随后可选择能力开关并确认生成"),
                     new("问答选择（重新回答）", ""),
-                    new("经典选择（兼容）", "技术大类 → Profile")
+                    new("经典选择（兼容）", "技术大类 → 组合")
                 });
             if (choice is null)
                 return null;
             if (choice == 0)
             {
-                // 收敛的检测证据直接映射为 Selection：取推荐 Profile 的全部具体 trait
-                var answers = detection.BuildLegacyAnswers();
+                // 收敛的检测证据直接映射为 Selection：取推荐样例的全部维度取值
+                var answers = detection.BuildSampleAnswers();
                 var selection = new Selection { Dimensions = new Dictionary<string, string>(answers, StringComparer.Ordinal) };
                 return SelectionOutcome(
                     selection, "detected", answers,
@@ -217,7 +217,7 @@ internal static class InteractiveFlow
             {
                 new("补答确认（保留已确认结果，只回答缺失项）", ""),
                 new("问答选择（重新回答）", ""),
-                new("经典选择（兼容）", "技术大类 → Profile")
+                new("经典选择（兼容）", "技术大类 → 组合")
             });
         if (choice is null)
             return null;

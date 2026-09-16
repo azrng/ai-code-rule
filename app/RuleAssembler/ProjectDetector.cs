@@ -12,7 +12,7 @@ internal sealed record DetectionCandidate(
     string Label);
 
 // 检测结果：既可能是收敛到唯一组合的完整结果，也可能是带待确认维度的部分结果。
-// 部分结果不伪造完整推荐；Legacy* 成员仅在候选唯一时给出，供旧「推荐组合」路径迁移兼容
+// 部分结果不伪造完整推荐；Sample* 成员仅在候选唯一（收敛）时给出
 internal sealed record DetectionResult(
     Dictionary<string, string> Confirmed,
     List<string> Unconfirmed,
@@ -22,13 +22,13 @@ internal sealed record DetectionResult(
 {
     public bool Converged => Candidates.Count == 1;
 
-    // 迁移期兼容：旧路径需要的唯一候选与其完整回答组合
-    public string? LegacyProfileId => Converged ? Candidates[0].SampleProfileId : null;
+    // 收敛候选对应的兼容样例 ID 与标签
+    public string? SampleProfileId => Converged ? Candidates[0].SampleProfileId : null;
 
-    public string? LegacyProfileLabel => Converged ? Candidates[0].Label : null;
+    public string? SampleLabel => Converged ? Candidates[0].Label : null;
 
     // 完整回答组合取候选样例的全部维度选择，保证按配方能还原到同一组合
-    public Dictionary<string, string> BuildLegacyAnswers()
+    public Dictionary<string, string> BuildSampleAnswers()
     {
         if (!Converged)
             return new Dictionary<string, string>(StringComparer.Ordinal);
