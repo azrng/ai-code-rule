@@ -48,7 +48,7 @@ internal static class InteractiveFlow
                 if (choice == 0)
                     return RunSelectionWizard(manifest, ui, "wizard");
                 if (choice == 1)
-                    return wizard.SelectCase(manifest) is { } legacyPick ? ClassicOutcome(legacyPick) : null;
+                    return wizard.SelectCase(manifest) is { } casePick ? ClassicOutcome(casePick) : null;
             }
         }
 

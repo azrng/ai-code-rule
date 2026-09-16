@@ -7,31 +7,31 @@
 1. **检测优先**：`ProjectDetector` 浅层扫描目标目录（深度 ≤2，跳过 node_modules/bin/obj 等），把 sln/csproj、package.json 依赖、wails.json、go.mod、src-tauri、pubspec、fastapi 依赖等信号映射为维度证据。证据按维度归并：同维度唯一才确认，冲突维度留待人工；候选 = 与已确认维度相容的兼容样例（`compatibilityCases` 是组件口径事实来源，样例未携带的维度视为通配）。候选唯一时给出推荐组合与判断依据；证据不足时输出部分结果（已确认维度、待确认维度、候选组合），不伪造推荐。
 2. **问答决策树与补答（P2 阶段 3 起走组合内核）**：问答由 `SelectionEngine` 驱动——候选是 manifest 的 `components` 而非 Profile 列表，问题顺序沿用 `wizard.steps`（项目形态 → 前端/界面 → 桌面壳 → 后端 → 细分项）。只提问「存续组件之间仍有分歧」的维度：唯一取值自动推导（配方来源 `derived`），选项经可行性剪枝（先过钳制约束，再做结构锚定校验——已回答的非 absent 维度必须仍被存续组件表达，兼容样例不参与剪枝，新组件接入后其组合即可经问答到达）。输入 0 可返回上一步。检测推荐与补答同样产出 `Selection` 走 `CompositionPlanner` 组合路径。
 3. **经典选择**：技术大类 → 兼容样例的浏览式兜底入口（样例携带 label / desc / family 展示元数据）；选中样例的维度选择直接进入组合内核渲染与配方。
-4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 问答（Profile 选择）这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
+4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 维度的问答选择这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
 5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。
-6. **收尾**：所有路径共用「列出实际生成文件 → 汇总确认 → 生成」；写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode / profile / 回答组合 / `answer_sources` 回答来源 / `features` 能力开关 / 版本 / 文件清单），并确保目标项目 `.gitignore` 忽略该记录、生成器本体（`use-ai-rule*` 通配，覆盖 exe、无扩展名与带 RID 后缀的副本）、规则效果反馈记录（`.ai-rule-feedback.md`，本地产物不随项目提交）与 AI 工具本地目录（`.zcode/` 等七项，见 `GitignoreTemplates.AiToolEntries`）；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
+6. **收尾**：所有路径共用「列出实际生成文件 → 汇总确认 → 生成」；写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode / `profile_id` / `selection` 维度选择 / `component_ids` 命中组件 / `answer_sources` 回答来源 / `features` 能力开关 / skills / 版本 / 文件清单），并确保目标项目 `.gitignore` 忽略该记录、生成器本体（`use-ai-rule*` 通配，覆盖 exe、无扩展名与带 RID 后缀的副本）、规则效果反馈记录（`.ai-rule-feedback.md`，本地产物不随项目提交）与 AI 工具本地目录（`.zcode/` 等七项，见 `GitignoreTemplates.AiToolEntries`）；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
 
 ## 设计
 
-`fragments/` 是唯一维护源，生成器把公共模块、Profile 根变量和 Profile 专属规则组合成目标文件：
+`fragments/` 是唯一维护源，生成器按维度组合把公共模块、组件根变量与组件规则片段拼装成目标文件：
 
 ```text
 fragments/
 ├── root/AGENTS.md         # 公共根骨架，含变量槽
 ├── pointers/              # 公共入口指针
 ├── shared/                # 跨架构共享小节，供 include 指令引用
-├── arch/<id>/             # 当前 Profile 的专属规则片段
-├── manifest.json          # 模块、家族、Profile、wizard（维度空间）和输出配方
+├── arch/<id>/             # 当前架构的专属规则片段
+├── manifest.json          # 模块、家族、组件、约束、兼容样例、wizard（维度空间）和输出配方
 └── ...                    # design-system 等能力片段
 ```
 
-公共能力通过 `modules` 复用。例如 `core` 提供根入口、`collaboration-AGENTS.md` 和指针；需求澄清、任务、交付、回退等协作流程只在命中场景读取。`ai-capability` 提供 .NET 后端口径的 `ai-AGENTS.md`，`ai-capability-frontend` 提供浏览器侧口径的 `ai-AGENTS.md`（托管网关 / 代理、密钥不下发前端、流式处理）。现有技术栈专属文件按复用价值逐步组件化：`reactLinkdotNet-ai` 已拆为 Web 壳、React 前端、单项目 .NET 后端与 AI capability/module，其他未完成拆分的组合暂保留 Profile 组件；新增组合优先使用模块，不再复制整套 Profile。
+公共能力通过 `modules` 复用。例如 `core` 提供根入口、`collaboration-AGENTS.md` 和指针；需求澄清、任务、交付、回退等协作流程只在命中场景读取。`ai-capability` 提供 .NET 后端口径的 `ai-AGENTS.md`，`ai-capability-frontend` 提供浏览器侧口径的 `ai-AGENTS.md`（托管网关 / 代理、密钥不下发前端、流式处理）。现有技术栈专属文件按复用价值逐步组件化：`reactLinkdotNet-ai` 已拆为 Web 壳、React 前端、单项目 .NET 后端与 AI capability/module，族组合走「骨架 + 槽位 + 前端/后端组件」，未拆分的组合以单一组件整体承载；新增组合优先使用模块与组件，不再整目录复制。
 
 `wizard.steps` 是维度空间的唯一事实来源（组件 `when`、约束与兼容样例引用的维度都必须在此声明，并配 `options` 取值文案），`compatibilityCases` 是维度组合的唯一事实来源：项目检测、组件问答、经典入口与配方重放全部按兼容样例收敛，样例携带 label / desc / family 展示元数据（装载校验拦截 ID 重复与元数据缺失），否则 `--check` 会失败。`profiles` 节点与旧 Profile 渲染路径已于 2026-09-16 整体退役（schema_version 3），样例是组合空间的唯一注册表。
 
-子规则支持 `sources` 数组（B 档骨架继承）：多个源按序拼接为一个输出文件，与 `source` 互斥，front matter 只能出现在首个源。跨 Profile 共享的整文件骨架放 `shared/skeletons/<族>/`，Profile 专属差异保留在各自 `arch/<id>/`；新增同族 Profile 时优先引用现有骨架，只写真正的差异文件。已收敛骨架：wails 族（reactWailsExe / vueWailsExe 的 backend/doc/infra 引用 `shared/skeletons/wails/`）、electron 族（backend/doc/infra 按 electron-dotnet / electron 两口径，frontend 与 design-system 经内容收敛为 `frontend-react-AGENTS.md` / `frontend-vue-AGENTS.md` / `design-system-react.yaml` / `design-system-vue.yaml` 四份骨架，backend 味道差异经 `{{slot:}}` 槽位注入）、web-dotnet 与 desktop-xaml（见 manifest）。
+子规则支持 `sources` 数组（B 档骨架继承）：多个源按序拼接为一个输出文件，与 `source` 互斥，front matter 只能出现在首个源。跨组合共享的整文件骨架放 `shared/skeletons/<族>/`，架构专属差异保留在各自 `arch/<id>/`；新增同族组合时优先引用现有骨架，只写真正的差异文件。已收敛骨架：wails 族（reactWailsExe / vueWailsExe 的 backend/doc/infra 引用 `shared/skeletons/wails/`）、electron 族（backend/doc/infra 按 electron-dotnet / electron 两口径，frontend 与 design-system 经内容收敛为 `frontend-react-AGENTS.md` / `frontend-vue-AGENTS.md` / `design-system-react.yaml` / `design-system-vue.yaml` 四份骨架，backend 味道差异经 `{{slot:}}` 槽位注入）、web-dotnet 与 desktop-xaml（见 manifest）。
 
-子规则正文同样支持槽位：`Subrule.slots`（文件级）与组合路径的 `CompositionPlan.Slots`（组件并集）、旧路径的 `Profile.slots` 提供取值，渲染期替换、残留占位即报错。
+子规则正文同样支持槽位：`Subrule.slots`（文件级）与 `CompositionPlan.Slots`（组件并集）提供取值，渲染期替换、残留占位即报错。
 
 子规则内部的共性小节通过 include 指令复用：片段中独占一行的 `<!-- include: shared/xxx.md -->`（路径相对 `fragments/`）会在生成时被展开为对应共享小节的内容，支持嵌套引用并做循环检测。当前 `shared/` 维护「提交前最小回归」「无法执行测试时」「外部依赖与数据」「主动建议规则」等小节，按 backend / frontend / ui / application / infra 等子规则类型分目录归档；只有逐字节相同或纯措辞漂移的小节才收敛进共享，含技术栈实质差异的版本保留在各架构片段本地。
 
@@ -60,7 +60,7 @@ manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组
 
 ### 新增模块清单
 
-新增一个前端、后端、桌面壳或能力模块时，必须同时完成：规则源放入明确的 shared / skeleton / component / capability 位置；manifest 增加选项（wizard steps / options）、输出声明（含 feature 归属）与可用约束，并注册兼容样例；项目检测增加证据映射（无法检测时保留未确认状态，不补默认组合）；增加至少一个检测/问答测试与一个生成结果回归样例；更新规则版本、README 和现有主题 rulelog；检查根导航、文件清单、输出声明与合并方式的一致性。禁止为一个新组合复制现有 Profile 全目录，禁止在 `Program` / `ProjectDetector` / `RuleRenderer` 中新增技术栈 ID 专属分支作为长期方案。
+新增一个前端、后端、桌面壳或能力模块时，必须同时完成：规则源放入明确的 shared / skeleton / component / capability 位置；manifest 增加选项（wizard steps / options）、输出声明（含 feature 归属）与可用约束，并注册兼容样例；项目检测增加证据映射（无法检测时保留未确认状态，不补默认组合）；增加至少一个检测/问答测试与一个生成结果回归样例；更新规则版本、README 和现有主题 rulelog；检查根导航、文件清单、输出声明与合并方式的一致性。禁止为一个新组合整目录复制现有组件，禁止在 `Program` / `ProjectDetector` / `RuleRenderer` 中新增技术栈 ID 专属分支作为长期方案。
 
 ## 构建
 
@@ -75,7 +75,7 @@ manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组
 ```text
 1. 把 use-ai-rule.exe 拷贝到目标项目根目录
 2. 双击启动（自动检测并给出推荐组合与判断依据；证据不足时展示待确认维度与候选，补答后继续）
-3. 选「使用推荐组合」，或改走问答决策树 / 经典大类 → Profile
+3. 选「使用推荐组合」，或改走问答决策树 / 经典大类 → 组合
 4. Q5 能力开关：按需勾选文档 / 基础设施 / 设计系统等能力（默认 = 当前组合）
 5. 确认文件清单后自动释放，并写入 .ai-rule-profile.json 配方记录
 ```
@@ -85,9 +85,9 @@ manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组
 维护和 CI 可以使用只读校验与批量预览：
 
 ```powershell
-# 只校验 manifest、片段、全部 Profile、输出契约一致性、兼容样例（每 Profile 恰好一个）、
+# 只校验 manifest、片段、全部兼容样例的输出契约一致性（声明 vs 产物，含重复标题扫描）、
 # 组件问答决策树（每条交互路径结构完备可解析，映射兼容样例时唯一，全部样例可达）
-# 与组合内核兼容样例（组合路径 vs 旧 Profile 逐字节等价），不写入文件
+# 与内置技能（SKILL.md 齐全且 ID 无冲突），不写入文件
 dotnet run --project app/RuleAssembler/RuleAssembler.csproj -- --check
 
 # 只做项目检测，打印推荐组合与依据；证据不足时打印已确认 / 待确认维度与候选，不写入文件
