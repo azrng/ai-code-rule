@@ -91,11 +91,23 @@ internal sealed class CompositionConstraint
     public Dictionary<string, string> Forbid { get; set; } = new(StringComparer.Ordinal);
 }
 
-// 兼容样例：声明旧 Profile 与组合维度的等价关系，供 --check 与回归测试逐字节比对
+// 兼容样例：一条经校验的维度组合 + 展示元数据（label / desc / family）。
+// profiles 节点退役后，样例同时是经典入口、检测器展示与配方三件套的事实来源
 internal sealed class CompatibilityCase
 {
+    // 样例标识（沿用旧 Profile ID，emit 目录名与旧配方 profile_id 的延续口径）
     [JsonPropertyName("profile")]
     public string Profile { get; set; } = "";
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = "";
+
+    [JsonPropertyName("desc")]
+    public string Desc { get; set; } = "";
+
+    // 所属技术大类（families 节点的 id）：经典入口分组与 gitignore 模板键的来源
+    [JsonPropertyName("family")]
+    public string Family { get; set; } = "";
 
     [JsonPropertyName("selection")]
     public Dictionary<string, string> Selection { get; set; } = new(StringComparer.Ordinal);

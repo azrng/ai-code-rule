@@ -74,34 +74,36 @@ internal static class CompositionValidator
         }
     }
 
-    // 兼容样例校验：引用的 Profile 必须存在，且每个 Profile 恰好注册一个样例——
-    // 检测候选、经典入口与配方重放都按样例收敛，缺样例的 Profile 组合不可达
+    // 兼容样例校验：样例是组合空间的唯一注册表（profiles 节点已退役）——ID 唯一且安全、
+    // 展示元数据（label / family）完整且合法、维度取值可表达；检测候选、经典入口与配方重放都按样例收敛
     internal static void ValidateCompatibilityCases(Manifest manifest, ICollection<string> errors)
     {
-        var profileIds = manifest.Profiles
-            .Select(profile => profile.Id)
+        var familyIds = manifest.Families
+            .Select(family => family.Id)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var item in manifest.CompatibilityCases)
         {
-            if (string.IsNullOrWhiteSpace(item.Profile) || !profileIds.Contains(item.Profile))
-            {
-                errors.Add($"compatibilityCases 引用了不存在的 Profile：{item.Profile}");
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(item.Profile))
+                errors.Add("compatibilityCases 的 profile ID 不能为空");
+            else if (!PathGuard.IsSafeProfileId(item.Profile))
+                errors.Add($"compatibilityCases {item.Profile} ID 必须是安全的单级目录名");
+
+            if (string.IsNullOrWhiteSpace(item.Label))
+                errors.Add($"compatibilityCases {item.Profile} 缺少 label");
+
+            if (!familyIds.Contains(item.Family))
+                errors.Add($"compatibilityCases {item.Profile} 引用了不存在的 family：{item.Family}");
 
             ValidateDimensionPairs(manifest, $"compatibilityCases {item.Profile} selection", item.Selection, errors);
         }
 
-        var casesByProfile = manifest.CompatibilityCases
+        var duplicateProfiles = manifest.CompatibilityCases
             .GroupBy(item => item.Profile, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.Count());
-        foreach (var profile in manifest.Profiles)
-        {
-            if (!casesByProfile.TryGetValue(profile.Id, out var count))
-                errors.Add($"Profile {profile.Id} 缺少兼容样例：检测与组件问答按样例收敛，该组合将不可达");
-            else if (count > 1)
-                errors.Add($"Profile {profile.Id} 声明了多个兼容样例");
-        }
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+        foreach (var id in duplicateProfiles)
+            errors.Add($"compatibilityCases 样例 ID 重复：{id}");
     }
 
     // 向导结构校验：steps 定义维度空间（无重复、问题文案齐全），options 的每个维度

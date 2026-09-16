@@ -9,8 +9,8 @@ internal sealed class RecipeRecorder
 {
     public const string RecordFileName = GitignoreTemplates.RecipeEntry;
 
-    // 组合内核路径的配方：额外记录维度选择与命中组件；唯一映射到兼容样例时回填 profile 三件套，
-    // 供旧读者与升级流程继续按 Profile 语义消费
+    // 组合内核路径的配方：额外记录维度选择与命中组件；唯一映射到兼容样例时回填 profile 三件套
+    // （id / label / family 均来自样例携带的展示元数据），供旧读者与升级流程继续按 Profile 语义消费
     public static RecipeRecord BuildComposition(
         Manifest manifest,
         Selection selection,
@@ -21,18 +21,15 @@ internal sealed class RecipeRecorder
         IEnumerable<string> features,
         IReadOnlyList<PlannedFile> files)
     {
-        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
-        var profile = matches.Count == 1
-            ? manifest.Profiles.FirstOrDefault(item => item.Id.Equals(matches[0], StringComparison.OrdinalIgnoreCase))
-            : null;
+        var caseItem = MatchSingleCase(manifest, selection);
         return new RecipeRecord
         {
             ManifestVersion = manifest.Vars.Version,
             GeneratedAt = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm:sszzz"),
             Mode = mode,
-            ProfileId = profile?.Id ?? "",
-            ProfileLabel = profile?.Label ?? "",
-            Family = profile?.Family ?? "",
+            ProfileId = caseItem?.Profile ?? "",
+            ProfileLabel = caseItem?.Label ?? "",
+            Family = caseItem?.Family ?? "",
             Selection = new Dictionary<string, string>(selection.Dimensions, StringComparer.Ordinal),
             ComponentIds = componentIds.ToList(),
             Answers = new Dictionary<string, string>(answers, StringComparer.Ordinal),
@@ -90,14 +87,11 @@ internal sealed class RecipeRecorder
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
-    // 组合路径的 gitignore 模板键：唯一映射到兼容样例时沿用其 Profile 口径，否则退到 minimal
+    // 组合路径的 gitignore 模板键：唯一映射到兼容样例时沿用其 family 口径，否则退到 minimal
     public static string StackKeyForComposition(Manifest manifest, CompositionPlan plan)
     {
-        var matches = SelectionEngine.MatchCompatibilityCases(manifest, plan.Selection);
-        var profile = matches.Count == 1
-            ? manifest.Profiles.FirstOrDefault(item => item.Id.Equals(matches[0], StringComparison.OrdinalIgnoreCase))
-            : null;
-        return profile is not null ? StackKeyFor(profile) : "minimal";
+        var caseItem = MatchSingleCase(manifest, plan.Selection);
+        return caseItem is not null ? StackKeyFor(caseItem.Family, caseItem.Profile) : "minimal";
     }
 
     public void Write(string rootDirectory, RecipeRecord record)
@@ -139,12 +133,22 @@ internal sealed class RecipeRecorder
         return "已创建 .gitignore（含技术栈默认忽略规则、AI rule 本地产物与 AI 工具目录）";
     }
 
-    // 家族 / Profile → gitignore 模板键
-    public static string StackKeyFor(Profile profile)
+    // 选择唯一映射到兼容样例时返回该样例，否则 null
+    private static CompatibilityCase? MatchSingleCase(Manifest manifest, Selection selection)
     {
-        if (profile.Id == "flutterMobile")
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        return matches.Count == 1
+            ? manifest.CompatibilityCases.FirstOrDefault(item =>
+                item.Profile.Equals(matches[0], StringComparison.OrdinalIgnoreCase))
+            : null;
+    }
+
+    // 样例（family / id）→ gitignore 模板键
+    public static string StackKeyFor(string family, string profileId)
+    {
+        if (profileId == "flutterMobile")
             return "flutter";
-        return profile.Family switch
+        return family switch
         {
             "dotnet-backend" => "dotnet",
             "python-backend" => "python",

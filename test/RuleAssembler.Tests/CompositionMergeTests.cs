@@ -167,26 +167,6 @@ public sealed class CompositionMergeTests
     }
 
     [Fact]
-    public void 经典Profile路径也按同一规则合并append输出()
-    {
-        var manifest = LoadManifest();
-        var profile = manifest.Profiles.Single(item => item.Id == "generalProject");
-        profile.Subrules.Add(new Subrule
-        {
-            Source = "shared/frontend/testing.md",
-            Output = "frontend-AGENTS.md",
-            Merge = OutputDeclaration.MergeAppend
-        });
-
-        var renderer = new RuleRenderer(new ResourceStore());
-        var files = renderer.Plan(manifest, profile);
-        var frontend = files.Single(file => file.Output == "frontend-AGENTS.md").Content;
-
-        Assert.Contains("MSW（仅在需要模拟外部请求时使用）", frontend);
-        Assert.Empty(new RootConsistencyValidator().Validate(manifest, renderer, profile));
-    }
-
-    [Fact]
     public void append贡献携带frontMatter时拒绝渲染()
     {
         var manifest = LoadManifest();

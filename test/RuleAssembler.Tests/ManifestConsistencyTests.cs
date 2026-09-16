@@ -1,27 +1,16 @@
 namespace RuleAssembler.Tests;
 
-// 兼容样例完整性守卫：检测候选、经典入口与配方重放都按样例收敛，
-// 每个 Profile 必须恰好注册一个样例，缺失或多注册都在装载期拦截
+// 兼容样例完整性守卫：样例是组合空间的唯一注册表（profiles 节点已退役），
+// 展示元数据与 ID 唯一性在装载期拦截
 public sealed class ManifestConsistencyTests
 {
     [Fact]
-    public void RealManifest_EveryProfileHasExactlyOneCase()
+    public void RealManifest_AllCasesAreWellFormed()
     {
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var errors = new List<string>();
         CompositionValidator.ValidateCompatibilityCases(manifest, errors);
         Assert.Empty(errors);
-    }
-
-    [Fact]
-    public void MissingCase_IsRejected()
-    {
-        var manifest = new ManifestLoader(new ResourceStore()).Load();
-        manifest.CompatibilityCases.RemoveAll(item => item.Profile.Equals("wpfExe", StringComparison.OrdinalIgnoreCase));
-
-        var errors = new List<string>();
-        CompositionValidator.ValidateCompatibilityCases(manifest, errors);
-        Assert.Contains(errors, error => error.Contains("缺少兼容样例", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -37,6 +26,6 @@ public sealed class ManifestConsistencyTests
 
         var errors = new List<string>();
         CompositionValidator.ValidateCompatibilityCases(manifest, errors);
-        Assert.Contains(errors, error => error.Contains("多个兼容样例", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("样例 ID 重复", StringComparison.Ordinal));
     }
 }

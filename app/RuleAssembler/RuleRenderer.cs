@@ -22,42 +22,6 @@ internal sealed class RuleRenderer
         _expander = new FragmentExpander(resources);
     }
 
-    public List<PlannedFile> Plan(Manifest manifest, Profile profile)
-    {
-        // 兼容路径：默认能力集 = Profile 当前组合（与 1.39.0 基线一致）
-        return Plan(manifest, profile, FeatureSelection.Defaults(manifest, profile));
-    }
-
-    // 按 Q5 能力开关渲染：被关闭能力的输出与根导航条目整体移除
-    public List<PlannedFile> Plan(Manifest manifest, Profile profile, IReadOnlySet<string> features)
-    {
-        var modules = ResolveModules(manifest, profile);
-        var rootModule = RequireRootModule(manifest, profile.Id, modules);
-        var rootTemplate = ReadRequired(rootModule.RootSource);
-
-        // 兼容路径与组合路径共用同一渲染核心，保证两条路径的产物结构与顺序完全一致
-        var files = modules
-            .SelectMany(module => module.Files.Select(file => new FileContribution
-            {
-                OwnerId = module.Id,
-                File = file
-            }))
-            .Concat(profile.Subrules.Select(file => new FileContribution
-            {
-                OwnerId = profile.Id,
-                File = file
-            }))
-            .ToList();
-        var pointers = modules
-            .SelectMany(module => module.Pointers)
-            .Concat(profile.Pointers)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        var designSystemSource = profile.DesignSystem ? ManifestLoader.GetDesignSystemSource(profile) : "";
-        return RenderCore(manifest, profile.Id, rootTemplate, profile.Root, features, files, pointers, designSystemSource, profile.Slots);
-    }
-
-    // 组合内核路径：根变量与文件列表已在 CompositionPlan 中解析完成，这里只做能力过滤与渲染
     public List<PlannedFile> Plan(Manifest manifest, CompositionPlan plan, IReadOnlySet<string> features)
     {
         var ownerId = "组合(" + string.Join("+", plan.ComponentIds) + ")";
@@ -311,12 +275,6 @@ internal sealed class RuleRenderer
         string Merge,
         string OwnerId,
         string Content);
-
-    private List<ModuleDefinition> ResolveModules(Manifest manifest, Profile profile)
-    {
-        var moduleIds = profile.ModuleIds.Count > 0 ? profile.ModuleIds : new List<string> { "core" };
-        return ResolveModulesByIds(manifest, $"Profile {profile.Id}", moduleIds);
-    }
 
     private static List<ModuleDefinition> ResolveModulesByIds(
         Manifest manifest, string ownerId, IReadOnlyList<string> moduleIds)

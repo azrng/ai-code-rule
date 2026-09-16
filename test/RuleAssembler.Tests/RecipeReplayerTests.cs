@@ -32,14 +32,13 @@ public sealed class RecipeReplayerTests : IDisposable
     private (RecipeRecord Record, string Json) BuildRecipe(string profileId, IReadOnlySet<string>? features = null)
     {
         var caseItem = _manifest.CompatibilityCases.First(item => item.Profile == profileId);
-        var profile = _manifest.Profiles.First(item => item.Id == profileId);
         var selection = new Selection
         {
             Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
         };
         var plan = new CompositionPlanner(_manifest).Plan(selection);
         var effectiveFeatures = features ?? FeatureSelection.Defaults(_manifest, plan);
-        var files = _renderer.Plan(_manifest, profile, effectiveFeatures);
+        var files = _renderer.Plan(_manifest, plan, effectiveFeatures);
         var record = RecipeRecorder.BuildComposition(
             _manifest, selection, plan.ComponentIds, "wizard",
             new Dictionary<string, string>(), new Dictionary<string, string>(), effectiveFeatures, files);
@@ -51,15 +50,26 @@ public sealed class RecipeReplayerTests : IDisposable
         return (record, json);
     }
 
+    // 按样例解析组合并渲染（与 BuildRecipe 同口径，供重放结果比对）
+    private List<PlannedFile> RenderCase(string profileId, IReadOnlySet<string>? features = null)
+    {
+        var caseItem = _manifest.CompatibilityCases.First(item => item.Profile == profileId);
+        var plan = new CompositionPlanner(_manifest).Plan(new Selection
+        {
+            Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
+        });
+        return _renderer.Plan(_manifest, plan, features ?? FeatureSelection.Defaults(_manifest, plan));
+    }
+
     [Fact]
-    public void 新配方重放_产物与旧Profile默认渲染逐字节一致()
+    public void 新配方重放_产物与组合渲染逐字节一致()
     {
         var (record, json) = BuildRecipe("vueWailsExe");
         var result = _replayer.Replay(json, _tempDir);
 
-        var legacyFiles = _renderer.Plan(_manifest, _manifest.Profiles.First(item => item.Id == "vueWailsExe"));
-        Assert.Equal(legacyFiles.Count, result.Files.Count);
-        foreach (var (expected, actual) in legacyFiles.Zip(result.Files))
+        var expectedFiles = RenderCase("vueWailsExe");
+        Assert.Equal(expectedFiles.Count, result.Files.Count);
+        foreach (var (expected, actual) in expectedFiles.Zip(result.Files))
         {
             Assert.Equal(expected.Output, actual.Output);
             Assert.Equal(expected.Content, actual.Content);
@@ -86,8 +96,8 @@ public sealed class RecipeReplayerTests : IDisposable
             """;
         var result = _replayer.Replay(json, _tempDir);
 
-        var legacyFiles = _renderer.Plan(_manifest, _manifest.Profiles.First(item => item.Id == "reactOnly"));
-        Assert.Equal(legacyFiles.Select(file => file.Output), result.Files.Select(file => file.Output));
+        var expectedFiles = RenderCase("reactOnly");
+        Assert.Equal(expectedFiles.Select(file => file.Output), result.Files.Select(file => file.Output));
         Assert.Equal("reactOnly", result.Record.ProfileId);
         // 版本差异以提示说明，不阻断重放
         Assert.Contains(result.Notes, note => note.Contains("1.40.0"));
@@ -115,11 +125,8 @@ public sealed class RecipeReplayerTests : IDisposable
 
         Assert.DoesNotContain(result.Files, file => file.Output == "doc-AGENTS.md");
         Assert.DoesNotContain(result.Files, file => file.Output == "design-system.yaml");
-        var legacyFiles = _renderer.Plan(
-            _manifest,
-            _manifest.Profiles.First(item => item.Id == "reactElectron"),
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "infra" });
-        Assert.Equal(legacyFiles.Select(file => file.Output), result.Files.Select(file => file.Output));
+        var expectedFiles = RenderCase("reactElectron", new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "infra" });
+        Assert.Equal(expectedFiles.Select(file => file.Output), result.Files.Select(file => file.Output));
         // 配方中无 doc，根导航也不得引用
         var root = result.Files.First(file => file.Output == "AGENTS.md").Content;
         Assert.DoesNotContain("doc-AGENTS.md", root);

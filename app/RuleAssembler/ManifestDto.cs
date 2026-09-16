@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace RuleAssembler;
 
-// manifest.json 的反序列化模型：模块、家族、Profile、能力、向导维度空间与输出契约配置
+// manifest.json 的反序列化模型：模块、家族、能力、向导维度空间与组合事实（components / constraints / cases）
 internal sealed class Manifest
 {
     [JsonPropertyName("schema_version")]
@@ -19,9 +19,6 @@ internal sealed class Manifest
 
     [JsonPropertyName("families")]
     public List<Family> Families { get; set; } = new();
-
-    [JsonPropertyName("profiles")]
-    public List<Profile> Profiles { get; set; } = new();
 
     // 能力注册表：Q5 能力开关与输出声明的能力归属都引用这里的 ID
     [JsonPropertyName("features")]
@@ -147,48 +144,3 @@ internal sealed class ModuleDefinition
     public List<Subrule> Files { get; set; } = new();
 }
 
-internal sealed class Profile
-{
-    [JsonPropertyName("id")]
-    public string Id { get; set; } = "";
-
-    [JsonPropertyName("label")]
-    public string Label { get; set; } = "";
-
-    [JsonPropertyName("family")]
-    public string Family { get; set; } = "";
-
-    [JsonPropertyName("desc")]
-    public string Desc { get; set; } = "";
-
-    [JsonPropertyName("sourceRoot")]
-    public string SourceRoot { get; set; } = "";
-
-    [JsonPropertyName("moduleIds")]
-    public List<string> ModuleIds { get; set; } = new() { "core" };
-
-    [JsonPropertyName("root")]
-    public RootVariables Root { get; set; } = new();
-
-    [JsonPropertyName("subrules")]
-    public List<Subrule> Subrules { get; set; } = new();
-
-    // 兼容旧配方：当 Profile 没有模块指针时才使用这里的指针列表。
-    [JsonPropertyName("pointers")]
-    public List<string> Pointers { get; set; } = new();
-
-    [JsonPropertyName("designSystem")]
-    public bool DesignSystem { get; set; }
-
-    [JsonPropertyName("designSystemSource")]
-    public string DesignSystemSource { get; set; } = "";
-
-    // 显式输出声明：补充派生清单之外的条目（如把某文件标记为 referenced-existing），
-    // 与片段结构派生的声明合并后构成该 Profile 的完整输出契约
-    [JsonPropertyName("outputs")]
-    public List<OutputDeclaration> Outputs { get; set; } = new();
-
-    // Profile 级槽位：旧路径渲染骨架化子规则与 design-system 时提供取值（组合路径走组件并集）
-    [JsonPropertyName("slots")]
-    public Dictionary<string, string> Slots { get; set; } = new(StringComparer.Ordinal);
-}

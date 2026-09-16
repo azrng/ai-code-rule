@@ -68,9 +68,13 @@ public sealed class RuleRendererPlanTests
     {
         var resources = new ResourceStore();
         var manifest = new ManifestLoader(resources).Load();
-        var profile = Assert.Single(manifest.Profiles, item => item.Id == "reactTauriExe");
+        var caseItem = Assert.Single(manifest.CompatibilityCases, item => item.Profile == "reactTauriExe");
+        var plan = new CompositionPlanner(manifest).Plan(new Selection
+        {
+            Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
+        });
 
-        var files = new RuleRenderer(resources).Plan(manifest, profile);
+        var files = new RuleRenderer(resources).Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
 
         Assert.Equal(10, files.Count);
         Assert.All(files, file => Assert.DoesNotContain("<!-- include:", file.Content));

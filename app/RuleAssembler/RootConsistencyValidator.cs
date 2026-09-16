@@ -56,58 +56,6 @@ internal sealed class RootConsistencyValidator
         return CompareWithActual(sink, renderer.Plan(manifest, plan, features), $"组合 {label}", errors);
     }
 
-    // Profile 口径（旧路径，保留给 --check 等价比对期间的单测与排查）
-    public List<string> Validate(Manifest manifest, RuleRenderer renderer, Profile profile)
-    {
-        // 兼容路径：按默认能力集校验（与旧调用方行为一致）
-        return Validate(manifest, renderer, profile, FeatureSelection.Defaults(manifest, profile));
-    }
-
-    public List<string> Validate(Manifest manifest, RuleRenderer renderer, Profile profile, IReadOnlySet<string> features)
-    {
-        var errors = new List<string>();
-        var sink = new DeclarationSink(manifest, $"Profile {profile.Id}", features, errors);
-
-        // 根文件始终生成，归属核心（无 feature）
-        sink.AddGenerated("AGENTS.md", "", OutputDeclaration.MergeReplace);
-
-        var modules = ResolveModules(manifest, profile);
-        foreach (var module in modules)
-        {
-            foreach (var file in module.Files)
-                sink.AddGenerated(file.Output, file.Feature, file.Merge);
-        }
-
-        foreach (var file in profile.Subrules)
-            sink.AddGenerated(file.Output, file.Feature, file.Merge);
-
-        var pointers = modules
-            .SelectMany(module => module.Pointers)
-            .Concat(profile.Pointers)
-            .Distinct(StringComparer.OrdinalIgnoreCase);
-        foreach (var pointer in pointers)
-            sink.AddGenerated(pointer, "", OutputDeclaration.MergeReplace);
-
-        if (profile.DesignSystem && features.Contains(DesignSystemFeature))
-            sink.AddGenerated("design-system.yaml", DesignSystemFeature, OutputDeclaration.MergeReplace);
-
-        // 全局“引用现有文件”默认清单，作用于所有 Profile
-        foreach (var path in manifest.Outputs.ReferencedExisting)
-            sink.AddReferenced(path);
-
-        // Profile 显式声明：可补充 generated 或 referenced-existing 条目
-        foreach (var declaration in profile.Outputs)
-            sink.AddExplicit(declaration);
-
-        sink.ValidateConflicts();
-
-        // 声明本身非法时不再比对产物，避免错误噪音掩盖根因
-        if (errors.Count > 0)
-            return errors;
-
-        return CompareWithActual(sink, renderer.Plan(manifest, profile, features), $"Profile {profile.Id}", errors);
-    }
-
     private static List<string> CompareWithActual(
         DeclarationSink sink, List<PlannedFile> planned, string label, List<string> errors)
     {
@@ -134,21 +82,6 @@ internal sealed class RootConsistencyValidator
         }
 
         return errors;
-    }
-
-    private static List<ModuleDefinition> ResolveModules(Manifest manifest, Profile profile)
-    {
-        var modules = new List<ModuleDefinition>();
-        foreach (var id in profile.ModuleIds.Count > 0 ? profile.ModuleIds : new List<string> { "core" })
-        {
-            var module = manifest.Modules.FirstOrDefault(item =>
-                item.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-            // 模块缺失由 ManifestLoader 与 Plan 负责报错，这里跳过即可
-            if (module is not null)
-                modules.Add(module);
-        }
-
-        return modules;
     }
 
     private static List<ModuleDefinition> ResolveModulesByIds(Manifest manifest, List<string> moduleIds)

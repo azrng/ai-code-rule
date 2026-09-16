@@ -10,9 +10,10 @@ public sealed class UniversalConstraintTests
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var renderer = new RuleRenderer(new ResourceStore());
 
-        foreach (var profile in manifest.Profiles)
+        foreach (var caseItem in manifest.CompatibilityCases)
         {
-            var files = renderer.Plan(manifest, profile);
+            var plan = new CompositionPlanner(manifest).Plan(new Selection { Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal) });
+            var files = renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
             var root = Assert.Single(files, file => file.Output == "AGENTS.md");
             Assert.Contains(
                 "PowerShell 命令不接受 `&&`，禁止使用；需要连续执行时改为分步执行或使用 PowerShell 兼容写法。",
@@ -26,12 +27,13 @@ public sealed class UniversalConstraintTests
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var renderer = new RuleRenderer(new ResourceStore());
 
-        foreach (var profile in manifest.Profiles)
+        foreach (var caseItem in manifest.CompatibilityCases)
         {
-            var files = renderer.Plan(manifest, profile);
+            var plan = new CompositionPlanner(manifest).Plan(new Selection { Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal) });
+            var files = renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
             Assert.True(
                 files.Any(file => file.Content.Contains("统一使用中文，不使用纯英文注释")),
-                $"{profile.Id} 的生成产物缺少中文注释口径");
+                $"{caseItem.Profile} 的生成产物缺少中文注释口径");
         }
     }
 
@@ -41,9 +43,10 @@ public sealed class UniversalConstraintTests
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var renderer = new RuleRenderer(new ResourceStore());
 
-        foreach (var profile in manifest.Profiles)
+        foreach (var caseItem in manifest.CompatibilityCases)
         {
-            var files = renderer.Plan(manifest, profile);
+            var plan = new CompositionPlanner(manifest).Plan(new Selection { Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal) });
+            var files = renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
             var collaboration = Assert.Single(files, file => file.Output == "collaboration-AGENTS.md");
             Assert.Contains("需求澄清与计划关卡", collaboration.Content);
             Assert.Contains("每轮优先提出 1 至 3 个最关键问题", collaboration.Content);
@@ -56,9 +59,10 @@ public sealed class UniversalConstraintTests
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var renderer = new RuleRenderer(new ResourceStore());
 
-        foreach (var profile in manifest.Profiles)
+        foreach (var caseItem in manifest.CompatibilityCases)
         {
-            var files = renderer.Plan(manifest, profile);
+            var plan = new CompositionPlanner(manifest).Plan(new Selection { Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal) });
+            var files = renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
             var collaboration = Assert.Single(files, file => file.Output == "collaboration-AGENTS.md");
             Assert.Contains("坦率反馈与过程沟通", collaboration.Content);
             Assert.Contains("常规细节自行判断", collaboration.Content);
@@ -108,9 +112,10 @@ public sealed class UniversalConstraintTests
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var renderer = new RuleRenderer(new ResourceStore());
 
-        foreach (var profile in manifest.Profiles)
+        foreach (var caseItem in manifest.CompatibilityCases)
         {
-            var files = renderer.Plan(manifest, profile);
+            var plan = new CompositionPlanner(manifest).Plan(new Selection { Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal) });
+            var files = renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
             var collaboration = Assert.Single(files, file => file.Output == "collaboration-AGENTS.md");
             Assert.Contains("## 规则效果反馈", collaboration.Content);
             Assert.Contains(".ai-rule-feedback.md", collaboration.Content);

@@ -108,19 +108,12 @@ internal sealed class ProjectDetector
             notes.Add("已确认组合没有完全匹配的兼容样例，按整体最接近处理");
         }
 
-        // 展示顺序与 manifest Profile 顺序对齐，保持与旧 traits 过滤口径一致的候选列表
+        // 候选按 manifest 样例声明顺序展示；标签来自样例携带的展示元数据
         var candidates = matchedCases
-            .OrderBy(item => _manifest.Profiles.FindIndex(profile =>
-                profile.Id.Equals(item.Profile, StringComparison.OrdinalIgnoreCase)))
-            .Select(item =>
-            {
-                var profile = _manifest.Profiles.FirstOrDefault(profile =>
-                    profile.Id.Equals(item.Profile, StringComparison.OrdinalIgnoreCase));
-                return new DetectionCandidate(
-                    new Selection { Dimensions = new Dictionary<string, string>(item.Selection, StringComparer.Ordinal) },
-                    item.Profile,
-                    profile?.Label ?? DescribeSelection(item.Selection));
-            })
+            .Select(item => new DetectionCandidate(
+                new Selection { Dimensions = new Dictionary<string, string>(item.Selection, StringComparer.Ordinal) },
+                item.Profile,
+                string.IsNullOrWhiteSpace(item.Label) ? DescribeSelection(item.Selection) : item.Label))
             .ToList();
 
         var reasons = evidence

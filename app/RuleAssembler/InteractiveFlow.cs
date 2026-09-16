@@ -11,19 +11,10 @@ internal static class InteractiveFlow
         Dictionary<string, string> Answers,
         Dictionary<string, string> AnswerSources);
 
-    // 经典大类选择的组合口径转换：选中 Profile 经其兼容样例反查维度选择（装载校验保证
-    // 每个 Profile 恰好一个样例），问答来源整体标记为 classic，配方与渲染走组合路径
-    internal static EntryOutcome? ClassicOutcome(Manifest manifest, Profile profile)
+    // 经典大类选择的组合口径转换：选中样例的维度选择直接进入组合内核，
+    // 问答来源整体标记为 classic，配方与渲染走组合路径
+    internal static EntryOutcome ClassicOutcome(CompatibilityCase caseItem)
     {
-        var caseItem = manifest.CompatibilityCases.FirstOrDefault(item =>
-            item.Profile.Equals(profile.Id, StringComparison.OrdinalIgnoreCase));
-        if (caseItem is null)
-        {
-            // 装载期守卫已保证每个 Profile 都有样例；此处兜底避免静默走错路径
-            Console.WriteLine($"Profile {profile.Id} 未注册兼容样例，无法走组合路径，请改用问答选择。");
-            return null;
-        }
-
         var answers = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal);
         var sources = answers.Keys
             .ToDictionary(key => key, _ => "classic", StringComparer.Ordinal);
@@ -57,7 +48,7 @@ internal static class InteractiveFlow
                 if (choice == 0)
                     return RunSelectionWizard(manifest, ui, "wizard");
                 if (choice == 1)
-                    return wizard.SelectProfile(manifest) is { } legacyPick ? ClassicOutcome(manifest, legacyPick) : null;
+                    return wizard.SelectCase(manifest) is { } legacyPick ? ClassicOutcome(legacyPick) : null;
             }
         }
 
@@ -98,7 +89,7 @@ internal static class InteractiveFlow
             if (choice == 1)
                 return RunSelectionWizard(manifest, ui, "wizard");
             if (choice == 2)
-                return wizard.SelectProfile(manifest) is { } classicPick ? ClassicOutcome(manifest, classicPick) : null;
+                return wizard.SelectCase(manifest) is { } classicPick ? ClassicOutcome(classicPick) : null;
         }
     }
 
@@ -235,18 +226,19 @@ internal static class InteractiveFlow
             return RunSelectionWizard(manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
         if (choice == 1)
             return RunSelectionWizard(manifest, ui, "wizard");
-        var legacy = new ConsoleWizard(ui).SelectProfile(manifest);
-        return legacy is null ? null : ClassicOutcome(manifest, legacy);
+        var classic = new ConsoleWizard(ui).SelectCase(manifest);
+        return classic is null ? null : ClassicOutcome(classic);
     }
 
-    // 组合路径的展示标签：唯一映射兼容样例时用其 Profile 名称，否则列组件
+    // 组合路径的展示标签：唯一映射兼容样例时用样例名称，否则列组件
     internal static string DescribeCompositionLabel(Manifest manifest, CompositionPlan plan)
     {
         var matches = SelectionEngine.MatchCompatibilityCases(manifest, plan.Selection);
-        var profile = matches.Count == 1
-            ? manifest.Profiles.FirstOrDefault(item => item.Id.Equals(matches[0], StringComparison.OrdinalIgnoreCase))
+        var caseItem = matches.Count == 1
+            ? manifest.CompatibilityCases.FirstOrDefault(item =>
+                item.Profile.Equals(matches[0], StringComparison.OrdinalIgnoreCase))
             : null;
-        return profile is not null ? profile.Label : $"组件组合（{string.Join("、", plan.ComponentIds)}）";
+        return caseItem is not null ? caseItem.Label : $"组件组合（{string.Join("、", plan.ComponentIds)}）";
     }
 
     private static string DescribeTraitValue(Manifest manifest, string trait, string value)

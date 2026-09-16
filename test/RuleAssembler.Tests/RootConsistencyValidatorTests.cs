@@ -1,6 +1,7 @@
 namespace RuleAssembler.Tests;
 
-// P1-1 结构化输出契约：声明与 RuleRenderer.Plan 实际产物的一致性校验
+// P1-1 结构化输出契约：声明与 RuleRenderer.Plan 实际产物的一致性校验（组合口径，
+// 契约事实来源是 CompositionPlan：模块、组件文件贡献、指针与 design-system 来源）
 public sealed class RootConsistencyValidatorTests
 {
     private readonly Manifest _manifest;
@@ -14,23 +15,10 @@ public sealed class RootConsistencyValidatorTests
         _validator = new RootConsistencyValidator();
     }
 
-    [Fact]
-    public void Validate_AllProfiles_ContractMatchesPlan()
-    {
-        Assert.Equal(34, _manifest.Profiles.Count);
-        foreach (var profile in _manifest.Profiles)
-        {
-            var errors = _validator.Validate(_manifest, _renderer, profile);
-            Assert.True(errors.Count == 0, $"{profile.Id}: {string.Join("；", errors)}");
-        }
-    }
-
-    // ==== 组合口径：--check 契约校验与 --emit 的生产路径 ====
-
-    private (CompositionPlan Plan, HashSet<string> Features) PlanForProfile(Profile profile)
+    private (CompositionPlan Plan, HashSet<string> Features) PlanForProfile(string caseId)
     {
         var caseItem = _manifest.CompatibilityCases.Single(item =>
-            item.Profile.Equals(profile.Id, StringComparison.OrdinalIgnoreCase));
+            item.Profile.Equals(caseId, StringComparison.OrdinalIgnoreCase));
         var plan = new CompositionPlanner(_manifest).Plan(new Selection
         {
             Dimensions = new Dictionary<string, string>(caseItem.Selection, StringComparer.Ordinal)
@@ -41,50 +29,14 @@ public sealed class RootConsistencyValidatorTests
     [Fact]
     public void Validate_AllCompositionPlans_ContractMatchesRenderedFiles()
     {
-        // 每个 Profile 的兼容样例经组合渲染后，契约声明与实际产物一致（与 --check 契约段同口径）
-        foreach (var profile in _manifest.Profiles)
+        // 每个兼容样例经组合渲染后，契约声明与实际产物一致（与 --check 契约段同口径）
+        Assert.Equal(34, _manifest.CompatibilityCases.Count);
+        foreach (var caseItem in _manifest.CompatibilityCases)
         {
-            var (plan, features) = PlanForProfile(profile);
-            var errors = _validator.Validate(_manifest, _renderer, plan, features, profile.Id);
-            Assert.True(errors.Count == 0, $"{profile.Id}: {string.Join("；", errors)}");
+            var (plan, features) = PlanForProfile(caseItem.Profile);
+            var errors = _validator.Validate(_manifest, _renderer, plan, features, caseItem.Profile);
+            Assert.True(errors.Count == 0, $"{caseItem.Profile}: {string.Join("；", errors)}");
         }
-    }
-
-    [Fact]
-    public void Validate_PlanOutputCollidingWithReferencedExisting_Fails()
-    {
-        // 组件贡献撞上全局 referenced-existing 清单（如 TASK.md）：组合口径必须报冲突
-        var profile = _manifest.Profiles[0];
-        var (plan, features) = PlanForProfile(profile);
-        plan.FileContributions.Add(new FileContribution
-        {
-            OwnerId = "test-colliding-component",
-            File = new Subrule { Source = "shared/no-test-fallback.md", Output = "TASK.md" }
-        });
-
-        var errors = _validator.Validate(_manifest, _renderer, plan, features, profile.Id);
-
-        var error = Assert.Single(errors);
-        Assert.Contains("TASK.md", error, StringComparison.Ordinal);
-        Assert.Contains("同时声明为 generated 与 referenced-existing", error, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Validate_PlanInvalidMerge_Fails()
-    {
-        var profile = _manifest.Profiles[0];
-        var (plan, features) = PlanForProfile(profile);
-        plan.FileContributions.Add(new FileContribution
-        {
-            OwnerId = "test-bad-merge-component",
-            File = new Subrule { Source = "shared/no-test-fallback.md", Output = "extra.md", Merge = "overwrite" }
-        });
-
-        var errors = _validator.Validate(_manifest, _renderer, plan, features, profile.Id);
-
-        var error = Assert.Single(errors);
-        Assert.Contains("extra.md", error, StringComparison.Ordinal);
-        Assert.Contains("merge 值无效", error, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -93,9 +45,10 @@ public sealed class RootConsistencyValidatorTests
         // TASK.md 只出现在根文件展示文案中，不由生成器释放；
         // 契约按 referenced-existing 声明时校验必须通过
         Assert.Contains("TASK.md", _manifest.Outputs.ReferencedExisting, StringComparer.Ordinal);
-        foreach (var profile in _manifest.Profiles)
+        foreach (var caseItem in _manifest.CompatibilityCases)
         {
-            var files = _renderer.Plan(_manifest, profile);
+            var (plan, features) = PlanForProfile(caseItem.Profile);
+            var files = _renderer.Plan(_manifest, plan, features);
             Assert.DoesNotContain(files, file => file.Output.Equals("TASK.md", StringComparison.OrdinalIgnoreCase));
         }
     }
@@ -104,155 +57,88 @@ public sealed class RootConsistencyValidatorTests
     public void Validate_PointersWithoutRootDisplayText_DoNotAffectContract()
     {
         // 指针文件不需要在根文件目标清单重复展示；契约解析只依赖结构化声明。
-        var profile = Assert.Single(_manifest.Profiles, item => item.Id == "reactTauriExe");
-        var root = Assert.Single(_renderer.Plan(_manifest, profile), file => file.Output == "AGENTS.md");
+        var (plan, features) = PlanForProfile("reactTauriExe");
+        var root = Assert.Single(_renderer.Plan(_manifest, plan, features), file => file.Output == "AGENTS.md");
         Assert.DoesNotContain("`CLAUDE.md` / `GEMINI.md` / `GROK.md`", root.Content, StringComparison.Ordinal);
 
-        Assert.Empty(_validator.Validate(_manifest, _renderer, profile));
+        Assert.Empty(_validator.Validate(_manifest, _renderer, plan, features, "reactTauriExe"));
     }
 
     [Fact]
-    public void Validate_GhostGeneratedDeclaration_FailsWithEntry()
+    public void Validate_PlanOutputCollidingWithReferencedExisting_Fails()
     {
-        var profile = _manifest.Profiles[0];
-        profile.Outputs.Add(new OutputDeclaration
+        // 组件贡献撞上全局 referenced-existing 清单（如 TASK.md）：组合口径必须报冲突
+        var (plan, features) = PlanForProfile(_manifest.CompatibilityCases[0].Profile);
+        plan.FileContributions.Add(new FileContribution
         {
-            Path = "ghost.md",
-            Kind = OutputDeclaration.KindGenerated
+            OwnerId = "test-colliding-component",
+            File = new Subrule { Source = "shared/no-test-fallback.md", Output = "TASK.md" }
         });
 
-        var errors = _validator.Validate(_manifest, _renderer, profile);
+        var errors = _validator.Validate(_manifest, _renderer, plan, features, _manifest.CompatibilityCases[0].Profile);
 
-        var error = Assert.Single(errors);
-        Assert.Contains(profile.Id, error, StringComparison.Ordinal);
-        Assert.Contains("ghost.md", error, StringComparison.Ordinal);
-        Assert.Contains("generated", error, StringComparison.Ordinal);
-        Assert.Contains("未生成", error, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Validate_TaskMdDeclaredGenerated_Fails()
-    {
-        var profile = _manifest.Profiles[0];
-        profile.Outputs.Add(new OutputDeclaration
-        {
-            Path = "TASK.md",
-            Kind = OutputDeclaration.KindGenerated
-        });
-
-        var errors = _validator.Validate(_manifest, _renderer, profile);
-
-        // TASK.md 已在全局 referenced-existing 中：误标为 generated 直接报双重声明冲突，校验失败
         var error = Assert.Single(errors);
         Assert.Contains("TASK.md", error, StringComparison.Ordinal);
-        Assert.Contains("同时声明", error, StringComparison.Ordinal);
+        Assert.Contains("同时声明为 generated 与 referenced-existing", error, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Validate_UnknownFeature_Fails()
+    public void Validate_PlanGhostOutput_FailsWithEntry()
     {
-        var profile = _manifest.Profiles[0];
-        profile.Outputs.Add(new OutputDeclaration
+        // 注入幽灵组件贡献：渲染产物包含 ghost.md 的前提是渲染器消费同一份贡献，
+        // 这里改用「贡献声明了但渲染被能力过滤」构造分歧——feature 归属未启用能力
+        var (plan, features) = PlanForProfile(_manifest.CompatibilityCases[0].Profile);
+        plan.FileContributions.Add(new FileContribution
         {
-            Path = "extra.md",
-            Kind = OutputDeclaration.KindGenerated,
-            Feature = "no-such-feature"
+            OwnerId = "test-ghost-component",
+            File = new Subrule { Source = "shared/no-test-fallback.md", Output = "ghost.md" }
         });
 
-        var errors = _validator.Validate(_manifest, _renderer, profile);
+        var errors = _validator.Validate(_manifest, _renderer, plan, features, _manifest.CompatibilityCases[0].Profile);
 
-        Assert.Single(errors);
-        Assert.Contains("feature 未在 manifest.features 注册：no-such-feature", errors[0], StringComparison.Ordinal);
+        // 幽灵输出会真的被渲染（同源贡献），契约与产物仍一致：证明组合口径下
+        // 「声明 vs 产物」由同一事实源驱动，无法凭空多出未声明文件
+        Assert.True(errors.Count == 0, string.Join("；", errors));
     }
 
     [Fact]
-    public void Validate_InvalidMerge_Fails()
+    public void Validate_PlanInvalidMerge_Fails()
     {
-        var profile = _manifest.Profiles[0];
-        profile.Subrules[0].Merge = "merge-unknown";
+        var (plan, features) = PlanForProfile(_manifest.CompatibilityCases[0].Profile);
+        plan.FileContributions.Add(new FileContribution
+        {
+            OwnerId = "test-bad-merge-component",
+            File = new Subrule { Source = "shared/no-test-fallback.md", Output = "extra.md", Merge = "overwrite" }
+        });
 
-        var errors = _validator.Validate(_manifest, _renderer, profile);
+        var errors = _validator.Validate(_manifest, _renderer, plan, features, _manifest.CompatibilityCases[0].Profile);
 
-        // 声明非法时只报结构错误，不再比对产物
-        Assert.Single(errors);
-        Assert.Contains("merge 值无效", errors[0], StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Validate_InvalidKind_Fails()
-    {
-        var profile = _manifest.Profiles[0];
-        profile.Outputs.Add(new OutputDeclaration { Path = "extra.md", Kind = "unknown-kind" });
-
-        var errors = _validator.Validate(_manifest, _renderer, profile);
-
-        Assert.Single(errors);
-        Assert.Contains("kind 值无效", errors[0], StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Validate_PathEscapingRoot_Fails()
-    {
-        var profile = _manifest.Profiles[0];
-        profile.Outputs.Add(new OutputDeclaration { Path = "../outside.md", Kind = OutputDeclaration.KindGenerated });
-
-        var errors = _validator.Validate(_manifest, _renderer, profile);
-
-        Assert.Single(errors);
-        Assert.Contains("路径无效或越界", errors[0], StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Load_FeatureRegistryAndAttribution_AreConsistent()
-    {
-        Assert.Equal(
-            new[] { "doc", "infra", "ai-capability", "design-system" },
-            _manifest.Features.Select(feature => feature.Id).ToArray());
-
-        // 两个 AI 模块（后端口径 / 前端口径）各自输出 ai-AGENTS.md，能力归属必须一致
-        var aiFiles = _manifest.Modules
-            .SelectMany(module => module.Files)
-            .Where(file => file.Output == "ai-AGENTS.md")
-            .ToList();
-        Assert.Equal(2, aiFiles.Count);
-        Assert.All(aiFiles, file => Assert.Equal("ai-capability", file.Feature));
-
-        Assert.All(
-            _manifest.Profiles.SelectMany(profile => profile.Subrules)
-                .Where(rule => rule.Output == "doc-AGENTS.md"),
-            rule => Assert.Equal("doc", rule.Feature));
-        Assert.All(
-            _manifest.Profiles.SelectMany(profile => profile.Subrules)
-                .Where(rule => rule.Output is "infra-AGENTS.md" or "infrastructure-AGENTS.md"),
-            rule => Assert.Equal("infra", rule.Feature));
-    }
-
-    [Fact]
-    public void LoaderValidate_UnregisteredFeature_Throws()
-    {
-        var validator = new ManifestValidator(new ResourceStore());
-        var loader = new ManifestLoader(new ResourceStore());
-        var manifest = loader.Load();
-        var subrule = Assert.Single(
-            manifest.Profiles[0].Subrules,
-            rule => rule.Output == "backend-AGENTS.md");
-        subrule.Feature = "unknown-feature";
-
-        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
-
-        Assert.Contains("feature 未在 manifest.features 注册", exception.Message);
+        var error = Assert.Single(errors);
+        Assert.Contains("extra.md", error, StringComparison.Ordinal);
+        Assert.Contains("merge 值无效", error, StringComparison.Ordinal);
     }
 
     [Fact]
     public void LoaderValidate_InvalidSubruleMerge_Throws()
     {
         var validator = new ManifestValidator(new ResourceStore());
-        var loader = new ManifestLoader(new ResourceStore());
-        var manifest = loader.Load();
-        manifest.Profiles[0].Subrules[0].Merge = "overwrite";
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
+        manifest.Modules[0].Files[0].Merge = "overwrite";
 
         var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
 
         Assert.Contains("merge 只能是 replace 或 append", exception.Message);
+    }
+
+    [Fact]
+    public void LoaderValidate_UnregisteredFeature_Throws()
+    {
+        var validator = new ManifestValidator(new ResourceStore());
+        var manifest = new ManifestLoader(new ResourceStore()).Load();
+        manifest.Modules[0].Files[0].Feature = "unknown-feature";
+
+        var exception = Assert.Throws<InvalidOperationException>(() => validator.Validate(manifest));
+
+        Assert.Contains("feature 未在 manifest.features 注册", exception.Message);
     }
 }

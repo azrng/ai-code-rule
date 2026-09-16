@@ -387,11 +387,10 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
-    public void Detect_WorksWithoutProfiles_CandidatesComeFromCompatibilityCases()
+    public void Detect_CandidatesComeFromCompatibilityCases_WithCaseLabels()
     {
-        // 组件口径解耦验证：清空 profiles 后检测仍按兼容样例收敛，
-        // 证明候选来源不再依赖 Profile traits（标签退化为维度描述兜底）
-        _manifest.Profiles.Clear();
+        // 组件口径：候选来源是兼容样例（结构上不再存在 Profile traits），
+        // 标签取自样例携带的展示元数据
         File.WriteAllText(
             Path.Combine(_root, "Demo.csproj"),
             "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><UseWPF>true</UseWPF></PropertyGroup></Project>");
@@ -403,6 +402,7 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Equal("wpfExe", result.LegacyProfileId);
         Assert.Equal("desktop", result.Confirmed["form"]);
         Assert.Equal("wpf", result.Confirmed["frontend"]);
-        Assert.Contains("form=desktop", result.LegacyProfileLabel, StringComparison.Ordinal);
+        var caseItem = _manifest.CompatibilityCases.Single(item => item.Profile == "wpfExe");
+        Assert.Equal(caseItem.Label, result.LegacyProfileLabel);
     }
 }

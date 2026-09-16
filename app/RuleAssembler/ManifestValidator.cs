@@ -2,8 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace RuleAssembler;
 
-// manifest 结构校验（旧 Profile / 模块 / family 域 + 共享低层规则）：
-// schema 与 ID 唯一性、模块与 Profile 的资源引用、根变量能力引用、输出声明与合并冲突；
+// manifest 结构校验（schema / 模块 / family 域 + 共享低层规则）：
+// schema 与 ID 唯一性、模块的资源引用、根变量能力引用；
 // 维度空间 / 组件 / 约束 / 兼容样例域委托给 CompositionValidator
 internal sealed class ManifestValidator
 {
@@ -21,8 +21,8 @@ internal sealed class ManifestValidator
     {
         var errors = new List<string>();
 
-        if (manifest.SchemaVersion != 2)
-            errors.Add($"schema_version 必须为 2，当前为 {manifest.SchemaVersion}");
+        if (manifest.SchemaVersion != 3)
+            errors.Add($"schema_version 必须为 3，当前为 {manifest.SchemaVersion}");
         if (string.IsNullOrWhiteSpace(manifest.Vars.Version))
             errors.Add("vars.version 不能为空");
         if (string.IsNullOrWhiteSpace(manifest.Vars.LastUpdated))
@@ -33,7 +33,6 @@ internal sealed class ManifestValidator
 
         ValidateUniqueIds(manifest.Families.Select(f => f.Id), "family", errors);
         ValidateUniqueIds(manifest.Modules.Select(m => m.Id), "module", errors);
-        ValidateUniqueIds(manifest.Profiles.Select(p => p.Id), "Profile", errors);
         ValidateUniqueIds(manifest.Features.Select(f => f.Id), "feature", errors);
 
         var featureIds = manifest.Features
@@ -52,9 +51,6 @@ internal sealed class ManifestValidator
         foreach (var path in manifest.Outputs.ReferencedExisting)
             ValidateResourcePath(path, $"outputs.referenced-existing 条目 {path}", errors);
 
-        var familyIds = manifest.Families
-            .Select(f => f.Id)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var moduleMap = manifest.Modules
             .Where(m => !string.IsNullOrWhiteSpace(m.Id))
             .GroupBy(m => m.Id, StringComparer.OrdinalIgnoreCase)
@@ -63,8 +59,6 @@ internal sealed class ManifestValidator
         // 根变量条目的能力引用必须已注册，防止导航过滤因拼写错误静默失效
         foreach (var family in manifest.Families)
             ValidateRootVariables(family.RootDefaults, $"family {family.Id} rootDefaults", featureIds, errors);
-        foreach (var profile in manifest.Profiles)
-            ValidateRootVariables(profile.Root, $"Profile {profile.Id} root", featureIds, errors);
 
         if (!moduleMap.Values.Any(m => !string.IsNullOrWhiteSpace(m.RootSource)))
             errors.Add("至少需要一个提供 rootSource 的公共模块");
@@ -83,50 +77,6 @@ internal sealed class ManifestValidator
                 ValidateRuleFile(file, $"module {module.Id}", errors);
                 ValidateOutputMetadata(file.Feature, file.Merge, $"module {module.Id} file {file.Output}", featureIds, errors);
             }
-        }
-
-        foreach (var profile in manifest.Profiles)
-        {
-            if (string.IsNullOrWhiteSpace(profile.Id))
-                errors.Add("Profile ID 不能为空");
-            else if (!PathGuard.IsSafeProfileId(profile.Id))
-                errors.Add($"Profile {profile.Id} ID 必须是安全的单级目录名");
-
-            if (!familyIds.Contains(profile.Family))
-                errors.Add($"Profile {profile.Id} 引用了不存在的 family：{profile.Family}");
-
-            foreach (var moduleId in profile.ModuleIds)
-            {
-                if (!moduleMap.ContainsKey(moduleId))
-                    errors.Add($"Profile {profile.Id} 引用了不存在的 module：{moduleId}");
-            }
-
-            ValidateResourcePath(profile.SourceRoot, $"Profile {profile.Id} sourceRoot", errors, allowEmpty: true);
-            ValidateResourcePath(profile.DesignSystemSource, $"Profile {profile.Id} designSystemSource", errors, allowEmpty: true);
-
-            foreach (var file in profile.Subrules)
-            {
-                ValidateRuleFile(file, $"Profile {profile.Id}", errors);
-                ValidateOutputMetadata(file.Feature, file.Merge, $"Profile {profile.Id} file {file.Output}", featureIds, errors);
-            }
-            foreach (var slot in profile.Slots.Keys)
-            {
-                if (string.IsNullOrWhiteSpace(slot) || !SlotNamePattern.IsMatch(slot))
-                    errors.Add($"Profile {profile.Id} 的槽位名非法：{slot}");
-            }
-            ValidateUniqueOutputs(profile.Pointers, $"Profile {profile.Id} pointer", errors);
-            foreach (var pointer in profile.Pointers)
-                ValidateRequiredResource($"pointers/{pointer}", $"Profile {profile.Id} pointer", errors);
-
-            ValidateProfileOutputDeclarations(profile, featureIds, errors);
-
-            if (profile.DesignSystem)
-            {
-                var source = ManifestLoader.GetDesignSystemSource(profile);
-                ValidateRequiredResource(source, $"Profile {profile.Id} design-system", errors);
-            }
-
-            ValidateProfileOutputConflicts(profile, moduleMap, errors);
         }
 
         CompositionValidator.ValidateWizard(manifest, errors);
@@ -199,28 +149,6 @@ internal sealed class ManifestValidator
             errors.Add($"{field} 的 merge 只能是 replace 或 append，当前为 {merge}");
     }
 
-    // Profile 显式输出声明的结构校验；与派生清单的交叉一致性由 RootConsistencyValidator 负责
-    private void ValidateProfileOutputDeclarations(
-        Profile profile,
-        IReadOnlySet<string> featureIds,
-        ICollection<string> errors)
-    {
-        foreach (var declaration in profile.Outputs)
-        {
-            var field = $"Profile {profile.Id} outputs[{declaration.Path}]";
-            ValidateResourcePath(declaration.Path, field, errors);
-            if (declaration.Kind != OutputDeclaration.KindGenerated
-                && declaration.Kind != OutputDeclaration.KindReferencedExisting)
-                errors.Add($"{field} 的 kind 只能是 generated 或 referenced-existing，当前为 {declaration.Kind}");
-            ValidateOutputMetadata(declaration.Feature, declaration.Merge, field, featureIds, errors);
-        }
-
-        ValidateUniqueOutputs(
-            profile.Outputs.Select(declaration => declaration.Path),
-            $"Profile {profile.Id} outputs",
-            errors);
-    }
-
     internal void ValidateRequiredResource(string path, string field, ICollection<string> errors)
     {
         ValidateResourcePath(path, field, errors);
@@ -283,61 +211,6 @@ internal sealed class ManifestValidator
 
         if (!PathGuard.TryNormalizeRelative(path, out _))
             errors.Add($"{field} 不能包含绝对路径或 ..：{path}");
-    }
-
-    private static void ValidateProfileOutputConflicts(
-        Profile profile,
-        IReadOnlyDictionary<string, ModuleDefinition> moduleMap,
-        ICollection<string> errors)
-    {
-        var outputs = new List<(string Path, string Merge)>
-        {
-            ("AGENTS.md", OutputDeclaration.MergeReplace)
-        };
-        var moduleIds = profile.ModuleIds.Count > 0
-            ? profile.ModuleIds
-            : new List<string> { "core" };
-        var modules = moduleIds
-            .Where(moduleMap.ContainsKey)
-            .Select(id => moduleMap[id])
-            .ToList();
-
-        outputs.AddRange(modules
-            .SelectMany(module => module.Files)
-            .Select(file => (file.Output, file.Merge)));
-        outputs.AddRange(profile.Subrules.Select(file => (file.Output, file.Merge)));
-        outputs.AddRange(modules
-            .SelectMany(module => module.Pointers)
-            .Concat(profile.Pointers)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(pointer => (pointer, OutputDeclaration.MergeReplace)));
-
-        if (profile.DesignSystem)
-            outputs.Add(("design-system.yaml", OutputDeclaration.MergeReplace));
-
-        ValidateOutputMergeConflicts(outputs, $"Profile {profile.Id}", errors);
-    }
-
-    private static void ValidateOutputMergeConflicts(
-        IEnumerable<(string Path, string Merge)> declarations,
-        string kind,
-        ICollection<string> errors)
-    {
-        var groups = declarations
-            .Where(item => !string.IsNullOrWhiteSpace(item.Path))
-            .GroupBy(item => PathGuard.TryNormalizeRelative(item.Path, out var canonical)
-                ? canonical
-                : item.Path.Trim().Replace('\\', '/'), StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in groups)
-        {
-            var replaceCount = group.Count(item => item.Merge == OutputDeclaration.MergeReplace);
-            if (replaceCount > 1)
-                errors.Add($"{kind} 输出重复：{group.Key} 存在多个 replace 提供者");
-            else if (replaceCount == 0
-                && group.Any(item => item.Merge == OutputDeclaration.MergeAppend))
-                errors.Add($"{kind} 输出重复：{group.Key} 只有 append，缺少 replace 基底");
-        }
     }
 
     private static void ValidateUniqueOutputs(IEnumerable<string> outputs, string kind, ICollection<string> errors)

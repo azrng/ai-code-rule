@@ -155,16 +155,11 @@ public sealed class RecipeRecorderTests : IDisposable
     [Fact]
     public void StackKeyFor_MapsFamiliesToTemplates()
     {
-        var hybrid = new Profile { Id = "reactWailsExe", Family = "hybrid-app" };
-        var flutter = new Profile { Id = "flutterMobile", Family = "mobile" };
-        var pythonProfile = new Profile { Id = "python", Family = "python-backend" };
-        var fullstack = new Profile { Id = "reactLinkdotNet-ai", Family = "web-fullstack" };
-
-        Assert.Equal("hybrid", RecipeRecorder.StackKeyFor(hybrid));
-        Assert.Equal("flutter", RecipeRecorder.StackKeyFor(flutter));
-        Assert.Equal("python", RecipeRecorder.StackKeyFor(pythonProfile));
+        Assert.Equal("hybrid", RecipeRecorder.StackKeyFor("hybrid-app", "reactWailsExe"));
+        Assert.Equal("flutter", RecipeRecorder.StackKeyFor("mobile", "flutterMobile"));
+        Assert.Equal("python", RecipeRecorder.StackKeyFor("python-backend", "python"));
         // Web 前后端分离同时包含 .NET 后端，不能只给 Node 模板
-        Assert.Equal("webstack", RecipeRecorder.StackKeyFor(fullstack));
+        Assert.Equal("webstack", RecipeRecorder.StackKeyFor("web-fullstack", "reactLinkdotNet-ai"));
         var template = GitignoreTemplates.Get("webstack");
         Assert.Contains("node_modules/", template);
         Assert.Contains("[Bb]in/", template);
