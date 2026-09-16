@@ -39,6 +39,21 @@ internal sealed class CompositionPlanner
                 + string.Join("、", missing.Select(pair => $"{pair.Key}（组件 {pair.Value}）")));
         }
 
+        // 结构完备性守卫：组件集非空，且已回答的非标记维度取值都被至少一个选中组件的 when 锚定——
+        // 未锚定的正向取值意味着没有任何组件表达该选择（如 Electron 壳配 general 前端），属于尚未接入的组合
+        if (selected.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"组合 {DescribeSelection(selection)} 没有命中任何组件，该维度组合尚未接入");
+        }
+
+        var unpinned = UnpinnedDimensions(_manifest, selection.Dimensions, selected);
+        if (unpinned.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"组合 {DescribeSelection(selection)} 的以下维度取值未被任何选中组件表达：{string.Join("、", unpinned)}");
+        }
+
         var ordered = selected
             .OrderBy(component => Array.IndexOf(KindOrder, component.Kind))
             .ThenBy(component => _manifest.Components.FindIndex(item => item.Id == component.Id))
@@ -126,7 +141,7 @@ internal sealed class CompositionPlanner
     }
 
     // 问答期可行性判定：forbid 立即生效；require 只对已回答维度生效（未回答维度由后续问答收敛），
-    // 供 SelectionEngine 在样例剪枝之前先按钳制关系拒绝死组合
+    // 供 SelectionEngine 在结构锚定校验之前先按钳制关系拒绝死组合
     internal static bool SatisfiesConstraints(Manifest manifest, Selection selection)
     {
         foreach (var constraint in manifest.Constraints)
@@ -145,6 +160,29 @@ internal sealed class CompositionPlanner
         }
 
         return true;
+    }
+
+    // 维度取值是否为「不适用」标记（wizard step 的 absent，如 frontend/backend 的 none、arch-style 的 single）：
+    // 标记取值允许没有组件消费；正向取值必须被锚定才是可生成组合
+    internal static bool IsAbsentValue(Manifest manifest, string trait, string value)
+    {
+        var step = manifest.Wizard.Steps.FirstOrDefault(item => item.Trait == trait);
+        return step is not null && step.Absent.Length > 0 && step.Absent == value;
+    }
+
+    // 结构锚定校验：返回未被任何组件 when 锚定的非标记维度取值（form=desktop 之类）；
+    // 空列表表示组合结构完备。组件集为空时由调用方单独报错
+    internal static List<string> UnpinnedDimensions(
+        Manifest manifest,
+        Dictionary<string, string> dimensions,
+        IEnumerable<ComponentDefinition> components)
+    {
+        return dimensions
+            .Where(pair => !IsAbsentValue(manifest, pair.Key, pair.Value))
+            .Where(pair => !components.Any(component =>
+                component.When.TryGetValue(pair.Key, out var value) && value == pair.Value))
+            .Select(pair => $"{pair.Key}={pair.Value}")
+            .ToList();
     }
 
     // 组件解析：全命中 -> 选中；部分命中（有命中且引用了缺失维度）-> 记录待确认维度；

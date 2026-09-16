@@ -233,6 +233,11 @@ internal sealed class WizardStep
     // 检测无证据时的默认倾向值（如分层 vs 单层默认单层）
     [JsonPropertyName("detect-default")]
     public string DetectDefault { get; set; } = "";
+
+    // 该维度的「不适用」标记值（如 frontend/backend 的 none、arch-style 的 single）：
+    // 结构完备性校验只要求非标记取值被选中组件的 when 锚定，标记取值允许无组件消费
+    [JsonPropertyName("absent")]
+    public string Absent { get; set; } = "";
 }
 
 internal sealed class WizardOption

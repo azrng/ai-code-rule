@@ -452,6 +452,11 @@ internal sealed class ManifestLoader
                 && (!wizard.Options.TryGetValue(step.Trait, out var defaults)
                     || !defaults.ContainsKey(step.DetectDefault)))
                 errors.Add($"wizard step {step.Trait} 的 detect-default 不在 options 中：{step.DetectDefault}");
+
+            if (!string.IsNullOrWhiteSpace(step.Absent)
+                && (!wizard.Options.TryGetValue(step.Trait, out var absentOptions)
+                    || !absentOptions.ContainsKey(step.Absent)))
+                errors.Add($"wizard step {step.Trait} 的 absent 不在 options 中：{step.Absent}");
         }
 
         foreach (var trait in wizard.Options.Keys)

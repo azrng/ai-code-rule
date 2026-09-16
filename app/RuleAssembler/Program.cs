@@ -711,7 +711,8 @@ internal static class Program
 
             Console.WriteLine($"决策树校验通过：全部 Profile 可达且无歧义路径。");
 
-            // 组件问答决策树仿真：每条交互可达路径必须可解析且唯一映射兼容样例，全部样例可达
+            // 组件问答决策树仿真：每条交互可达路径必须结构完备可解析（约束 + 组件锚定），
+            // 映射兼容样例时必须唯一（无样例映射的样例外组合合法），全部样例可达
             var selectionErrors = new SelectionEngine(manifest).SimulateAll(new CompositionPlanner(manifest));
             if (selectionErrors.Count > 0)
             {

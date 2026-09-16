@@ -62,8 +62,8 @@ internal sealed class SelectionEngine
 
     // 下一问：先自动推导存续组件取值唯一的维度（写入 selection 并记录到 derivedLog），
     // 再返回第一个仍有分歧维度的问题；返回 null 表示选择已完备，可交 CompositionPlanner 解析。
-    // 选项经可行性剪枝：取值后至少仍存在一个兼容样例，保证交互路径不会走进死组合
-    // （与旧引擎「选项从 Profile 推导所以永不变死」的保证对齐）
+    // 选项经可行性剪枝：取值后不违反钳制约束、已回答的非标记维度仍被存续组件锚定，
+    // 保证交互路径不会走进死组合（与旧引擎「选项从 Profile 推导所以永不变死」的保证对齐）
     public SelectionQuestion? NextQuestion(Selection selection, List<(string Trait, string Value)>? derivedLog = null)
     {
         while (true)
@@ -98,9 +98,9 @@ internal sealed class SelectionEngine
         }
     }
 
-    // 可行性判断：先按钳制约束拒绝（壳/形态/前端的硬关系不依赖样例清单），
-    // 再把候选取值并入选择，要求仍至少有一个兼容样例在共有维度上不冲突。
-    // 兼容样例是当前全部可生成组合的清单，样例剪枝等价于旧引擎按 Profile 候选过滤选项
+    // 可行性判断：先按钳制约束拒绝（壳/形态/前端的硬关系），再按结构锚定校验——
+    // 已回答的非标记维度必须仍被存续组件锚定，保证沿路选择最终能解析为结构完备的组合。
+    // 兼容样例不再参与剪枝：新组件接入后其组合即可达，样例只作等价回归与展示锚点
     private bool IsViable(Selection selection, string trait, string value)
     {
         var candidate = new Dictionary<string, string>(selection.Dimensions, StringComparer.Ordinal)
@@ -110,7 +110,10 @@ internal sealed class SelectionEngine
         var candidateSelection = new Selection { Dimensions = candidate };
         if (!CompositionPlanner.SatisfiesConstraints(_manifest, candidateSelection))
             return false;
-        return MatchCompatibilityCases(_manifest, candidateSelection).Count > 0;
+        var live = Live(candidate);
+        if (live.Count == 0)
+            return false;
+        return CompositionPlanner.UnpinnedDimensions(_manifest, candidate, live).Count == 0;
     }
 
     private SelectionQuestion BuildQuestion(Selection selection, string trait, List<string> values)
@@ -144,7 +147,9 @@ internal sealed class SelectionEngine
     }
 
     // 组件决策树全路径仿真：每条交互可达路径（用户只会在存续组件提供的取值中选择）都必须
-    // 收敛到可解析的组合，且恰好映射一个兼容样例；全部样例必须可达。
+    // 收敛到结构完备的可解析组合（Plan 守卫：约束满足、组件非空、非标记维度锚定），
+    // 映射兼容样例时必须唯一（歧义即错误）；无样例映射的「样例外组合」合法——
+    // 新组件接入后即可达，等价回归只锚定已注册样例；全部样例必须可达。
     // 用于 --check 与单元测试，防止组件/约束调整后出现死组合、歧义或不可达配方。
     // 空存续集的分支在交互上不可达（用户拿不到不存在的选项），直接剪枝。
     public List<string> SimulateAll(CompositionPlanner planner)
@@ -162,15 +167,15 @@ internal sealed class SelectionEngine
             var question = NextQuestion(selection, derived);
             if (question is null)
             {
-                // 叶子：组合必须可解析，且恰好映射一个兼容样例
+                // 叶子：组合必须结构完备且可解析，映射兼容样例时恰好一个
                 try
                 {
                     var plan = planner.Plan(selection);
                     var matches = MatchCompatibilityCases(_manifest, selection);
+                    if (matches.Count > 1)
+                        errors.Add($"组合 {Describe(selection)} 映射到 {matches.Count} 个兼容样例（{string.Join("、", matches)}）");
                     if (matches.Count == 1)
                         reachableCases.Add(matches[0]);
-                    else
-                        errors.Add($"组合 {Describe(selection)} 映射到 {matches.Count} 个兼容样例（{string.Join("、", matches)}）");
                     if (plan.Warnings.Count > 0)
                         errors.Add($"组合 {Describe(selection)} 存在未消费槽位告警：{string.Join("；", plan.Warnings)}");
                 }

@@ -4569,6 +4569,7 @@
       {
         "trait": "frontend",
         "question": "前端 / 界面用什么技术？",
+        "absent": "none",
         "applies-when-trait": "form",
         "applies-when-values": [
           "web",
@@ -4579,6 +4580,7 @@
       {
         "trait": "shell",
         "question": "桌面壳方案用哪个？",
+        "absent": "none",
         "applies-when-trait": "form",
         "applies-when-values": [
           "desktop"
@@ -4587,6 +4589,7 @@
       {
         "trait": "backend",
         "question": "后端（服务端）用什么技术栈？",
+        "absent": "none",
         "applies-when-trait": "form",
         "applies-when-values": [
           "backend-only",
@@ -4597,16 +4600,19 @@
       {
         "trait": "arch-style",
         "question": "后端架构风格？",
+        "absent": "single",
         "detect-default": "single"
       },
       {
         "trait": "blazor-flavor",
         "question": "Blazor 用哪种形态？",
+        "absent": "none",
         "detect-default": "traditional"
       },
       {
         "trait": "ai-capability",
         "question": "是否需要 AI Agent 能力模块？",
+        "absent": "no",
         "detect-default": "no"
       }
     ],
@@ -8221,6 +8227,30 @@
       "when": {
         "shell": "electron"
       },
+      "forbid": {
+        "frontend": "none"
+      }
+    },
+    {
+      "when": {
+        "shell": "tauri"
+      },
+      "forbid": {
+        "frontend": "none"
+      }
+    },
+    {
+      "when": {
+        "shell": "wails"
+      },
+      "forbid": {
+        "frontend": "none"
+      }
+    },
+    {
+      "when": {
+        "shell": "electron"
+      },
       "require": {
         "form": "desktop"
       }
@@ -8374,6 +8404,14 @@
       "require": {
         "form": "static",
         "backend": "none"
+      }
+    },
+    {
+      "when": {
+        "frontend": "blazor"
+      },
+      "forbid": {
+        "blazor-flavor": "none"
       }
     },
     {
