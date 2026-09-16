@@ -54,7 +54,7 @@ internal sealed class ScriptedConsoleUi : IConsoleUi
 }
 
 // P1-2 检测补答（组件路径）：部分检测结果保留已确认维度，只对未收敛维度补答。
-// 生产补答入口是 Program.RunSelectionWizard(seeds=detection.Confirmed)，测试直接驱动它
+// 生产补答入口是 InteractiveFlow.RunSelectionWizard(seeds=detection.Confirmed)，测试直接驱动它
 public sealed class SupplementWizardTests : IDisposable
 {
     private readonly string _root;
@@ -98,7 +98,7 @@ public sealed class SupplementWizardTests : IDisposable
 
         // frontend 问题的选项从存续组件推导：React / Vue 各一，按 label 序 React 在前，选 1 = Vue
         var ui = new ScriptedConsoleUi(1);
-        var outcome = Program.RunSelectionWizard(
+        var outcome = InteractiveFlow.RunSelectionWizard(
             _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
         Assert.NotNull(outcome);
@@ -122,7 +122,7 @@ public sealed class SupplementWizardTests : IDisposable
         var detection = DetectElectronWithoutRenderer();
 
         var ui = new ScriptedConsoleUi(1);
-        _ = Program.RunSelectionWizard(
+        _ = InteractiveFlow.RunSelectionWizard(
             _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
         // 整个补答只提问 frontend 一问，form/backend/shell 不重复提问
@@ -136,7 +136,7 @@ public sealed class SupplementWizardTests : IDisposable
         var detection = DetectElectronWithoutRenderer();
 
         var ui = new ScriptedConsoleUi((int?)null);
-        var outcome = Program.RunSelectionWizard(
+        var outcome = InteractiveFlow.RunSelectionWizard(
             _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
         Assert.Null(outcome);
@@ -160,7 +160,7 @@ public sealed class SupplementWizardTests : IDisposable
         // 补答完成的选择必须能被组合内核解析为 Electron + Vue + .NET 组件集
         var detection = DetectElectronWithoutRenderer();
         var ui = new ScriptedConsoleUi(1);
-        var outcome = Program.RunSelectionWizard(
+        var outcome = InteractiveFlow.RunSelectionWizard(
             _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
         Assert.NotNull(outcome);

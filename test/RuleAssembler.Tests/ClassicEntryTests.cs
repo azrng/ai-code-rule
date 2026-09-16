@@ -10,7 +10,7 @@ public sealed class ClassicEntryTests
         var manifest = new ManifestLoader(new ResourceStore()).Load();
         var profile = manifest.Profiles.Single(item => item.Id == "wpfExe");
 
-        var outcome = Program.ClassicOutcome(manifest, profile);
+        var outcome = InteractiveFlow.ClassicOutcome(manifest, profile);
 
         Assert.NotNull(outcome);
         var caseSelection = manifest.CompatibilityCases
