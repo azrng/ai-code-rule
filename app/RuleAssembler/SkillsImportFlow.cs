@@ -24,7 +24,7 @@ internal static class SkillsImportFlow
             "跳过，不导入",
             new List<UiChoice>
             {
-                new("选择 Skills 并导入", $"{skills.Count} 个内置技能，可选导入到 Codex / ZCode / Claude Code")
+                new("选择 Skills 并导入", $"{skills.Count} 个内置技能，可选导入到 Codex / ZCode / Claude Code / pi")
             });
         if (entry is null)
             return null;

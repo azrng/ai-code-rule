@@ -1,7 +1,7 @@
 namespace RuleAssembler;
 
 // Skills 导入目标（项目级目录约定，按用户本地习惯）：
-// Codex 读取 .codex/skills，ZCode 读取 .zcode/skills，Claude Code 读取 .claude/skills
+// Codex 读取 .codex/skills，ZCode 读取 .zcode/skills，Claude Code 读取 .claude/skills，pi 读取 .pi/skills
 internal sealed record SkillTarget(string Id, string Label, string RelativeRoot);
 
 internal static class SkillTargets
@@ -10,7 +10,8 @@ internal static class SkillTargets
     {
         new SkillTarget("codex", "Codex", ".codex/skills"),
         new SkillTarget("zcode", "ZCode", ".zcode/skills"),
-        new SkillTarget("claude", "Claude Code", ".claude/skills")
+        new SkillTarget("claude", "Claude Code", ".claude/skills"),
+        new SkillTarget("pi", "pi", ".pi/skills")
     };
 
     public static SkillTarget? Find(string id)

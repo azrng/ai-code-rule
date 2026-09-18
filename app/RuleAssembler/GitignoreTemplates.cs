@@ -17,8 +17,8 @@ internal static class GitignoreTemplates
 
     public static readonly string[] GeneratorEntries = { RecipeEntry, ExeEntry, FeedbackEntry };
 
-    // AI 工具本地目录：ZCode / Claude Code / Codex / Cursor 等的会话状态、本地缓存与导入副本，属本地产物不提交。
-    // 口径与规则源仓库自身 .gitignore 的「ai忽略文件」块一致；其中 .claude / .codex / .zcode 也是技能导入目标，
+    // AI 工具本地目录：ZCode / Claude Code / Codex / pi / Cursor 等的会话状态、本地缓存与导入副本，属本地产物不提交。
+    // 口径与规则源仓库自身 .gitignore 的「ai忽略文件」块一致；其中 .claude / .codex / .zcode / .pi 也是技能导入目标，
     // 默认忽略后技能不再随项目提交，需要共享技能的项目自行取反（如 !.claude/skills/）
     public static readonly string[] AiToolEntries =
     {
@@ -26,6 +26,7 @@ internal static class GitignoreTemplates
         ".claude/",
         ".dotnet/",
         ".codex/",
+        ".pi/",
         ".cursor/",
         ".codegraph/",
         ".learnings/"

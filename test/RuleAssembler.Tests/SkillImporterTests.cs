@@ -2,7 +2,7 @@ using System.Text;
 
 namespace RuleAssembler.Tests;
 
-// SkillImporter 落盘行为回归：三目标（codex → .codex/skills、zcode、claude）目录约定、
+// SkillImporter 落盘行为回归：四目标（codex → .codex/skills、zcode、claude、pi → .pi/skills）目录约定、
 // 字节级原样拷贝、同名冲突检测（以 SKILL.md 为准）、同名技能先删后写（消除残留）、
 // 无 SKILL.md 目录并入不删除、skipKeys 跳过语义（保留本地版本）
 public sealed class SkillImporterTests : IDisposable
@@ -145,5 +145,6 @@ public sealed class SkillImporterTests : IDisposable
     {
         Assert.Null(SkillTargets.Find("cursor"));
         Assert.Equal(".codex/skills", SkillTargets.Find("Codex")!.RelativeRoot);
+        Assert.Equal(".pi/skills", SkillTargets.Find("pi")!.RelativeRoot);
     }
 }
