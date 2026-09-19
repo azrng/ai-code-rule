@@ -349,6 +349,7 @@ docs/
 # ai忽略文件
 .claude
 .codex
+.pi
 .dotnet
 .dotnet-cli
 .codegraph
