@@ -96,6 +96,48 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_BlazorWebAppComponentLayout_ConvergesToWebAppFlavor()
+    {
+        // .NET 8+ Blazor Web App 模板：csproj 深度 2（src/<项目>）、razor 在 <项目>/Components 下。
+        // 深度 2 扫不到 razor 时不再误判为纯 API 后端，Components 结构直接确认 webapp 形态
+        Directory.CreateDirectory(Path.Combine(_root, "src", "Demo.Web", "Components", "Pages"));
+        File.WriteAllText(
+            Path.Combine(_root, "src", "Demo.Web", "Demo.Web.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>");
+        File.WriteAllText(Path.Combine(_root, "src", "Demo.Web", "Components", "App.razor"), "<App />");
+        File.WriteAllText(
+            Path.Combine(_root, "src", "Demo.Web", "Components", "Pages", "Home.razor"), "<h1>Home</h1>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("dotnetBlazorWebApp", result!.SampleProfileId);
+        Assert.Equal("blazor", result.BuildSampleAnswers()["frontend"]);
+        Assert.Equal("webapp", result.BuildSampleAnswers()["blazor-flavor"]);
+    }
+
+    [Fact]
+    public void Detect_BlazorTraditionalPagesLayout_StaysUnconfirmedForFlavor()
+    {
+        // 传统 Blazor Server：razor 在项目根 / Pages 下，无 Components 结构特征，
+        // flavor 证据不足时保持待确认，候选同时含传统与 Web App 两个样例
+        Directory.CreateDirectory(Path.Combine(_root, "src", "Demo.Web", "Pages"));
+        File.WriteAllText(
+            Path.Combine(_root, "src", "Demo.Web", "Demo.Web.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>");
+        File.WriteAllText(Path.Combine(_root, "src", "Demo.Web", "Pages", "Home.razor"), "<h1>Home</h1>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.False(result!.Converged);
+        Assert.Equal("blazor", result.Confirmed["frontend"]);
+        Assert.Contains("blazor-flavor", result.Unconfirmed);
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazor");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazorWebApp");
+    }
+
+    [Fact]
     public void Detect_NuxtProject_RecommendsNuxtFullstack()
     {
         File.WriteAllText(

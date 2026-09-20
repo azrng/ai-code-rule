@@ -326,7 +326,11 @@ internal sealed class ProjectDetector
                     evidence.Add(new("frontend", "blazor", isBlazorSource ? "csproj 使用 Blazor SDK" : "发现 .razor 组件文件"));
                     if (content.Contains("WebAssembly", StringComparison.OrdinalIgnoreCase))
                         evidence.Add(new("blazor-flavor", "webapp", "csproj 引用 Blazor WebAssembly"));
-                    // 传统 / Web App 之争证据不足时交给 wizard step 的 detect-default（traditional）
+                    // Components/ 目录下存在 .razor 文件是 .NET 8+ Blazor Web App 模板强特征，
+                    // 与传统 Server 的 Pages 结构区分；证据不足时仍交给补答确认
+                    if (signals.RazorUnderComponents)
+                        evidence.Add(new("blazor-flavor", "webapp", "Components/ 目录下发现 .razor 组件（Blazor Web App 结构）"));
+                    // 传统 / Web App 之争证据不足时交给补答确认（detect-default 已随旧引擎退役）
                     continue;
                 case DotnetProjectKind.WebService:
                     if (uiFormDefined)
@@ -460,7 +464,11 @@ internal sealed class ProjectDetector
             }
         }
 
-        signals.HasRazorFiles = EnumerateShallow(root, new[] { "*.razor" }, 2).Any();
+        signals.HasRazorFiles = EnumerateShallow(root, new[] { "*.razor" }, 3).Any();
+        // Razor 文件常藏在 Components/Pages 等更深目录（如 src/<项目>/Components），
+        // 按 *.razor 浅扫探不到；这里专门找名为 Components 的目录（≤3 层），
+        // 其子树下存在 .razor 即视为 Blazor Web App 模板结构
+        signals.RazorUnderComponents = HasRazorUnderComponentsDirectory(root, 3);
         signals.HasRootHtml = Directory
             .EnumerateFiles(root, "*.html", SearchOption.TopDirectoryOnly)
             .Any();
@@ -470,6 +478,55 @@ internal sealed class ProjectDetector
             && !signals.HasPackageJson
             && !signals.HasSln;
         return signals;
+    }
+
+    // 找名为 Components 的目录（深度 ≤maxDepth，跳过 bin/obj 等），其子树存在 .razor 即命中。
+    // .NET 8+ Blazor Web App 模板把组件收在 <项目>/Components 下，传统 Server 则在根 / Pages
+    private static bool HasRazorUnderComponentsDirectory(string root, int maxDepth)
+    {
+        var stack = new Stack<(string Dir, int Depth)>();
+        stack.Push((root, 0));
+        while (stack.Count > 0)
+        {
+            var (dir, depth) = stack.Pop();
+            string[] subDirs = Array.Empty<string>();
+            try
+            {
+                subDirs = Directory.GetDirectories(dir);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            foreach (var sub in subDirs)
+            {
+                var name = Path.GetFileName(sub);
+                if (SkipDirectories.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    continue;
+                if (name.Equals("Components", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        if (Directory.EnumerateFiles(sub, "*.razor", SearchOption.AllDirectories).Any())
+                            return true;
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        // 读不动的目录跳过，不影响整体检测
+                    }
+
+                    continue;
+                }
+
+                if (depth + 1 < maxDepth)
+                    stack.Push((sub, depth + 1));
+            }
+        }
+
+        return false;
     }
 
     private static void ParsePackageJson(string directory, ScanSignals signals)
@@ -593,6 +650,9 @@ internal sealed class ScanSignals
     public bool HasRequirementsTxt;
     public bool HasSln;
     public bool HasRazorFiles;
+
+    // Components/ 目录（深度 ≤3）下存在 .razor 文件：Blazor Web App 模板结构特征
+    public bool RazorUnderComponents;
     public bool HasRootHtml;
     public bool HasRootHtmlOnly;
     public bool ReactInPackageJson;
