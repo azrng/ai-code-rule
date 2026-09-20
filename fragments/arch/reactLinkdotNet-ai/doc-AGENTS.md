@@ -114,6 +114,8 @@ Agent 产品的前端不能只是一个聊天框。设计 Agent 交互时，必�
 - 模型对接方式、Agent 职责、工具 / Skills 清单、Prompt 关键约束
 - 流式事件结构或对外接口约定
 
+文档同步是命中上述清单的任务的完成前置条件：置 `DONE` 前先比对本次改动，命中则在同一任务内更新文档，不得跨任务事后补录；AI 相关变化同步 `ai-AGENTS.md` 对应小节。
+
 优先更新已有文档，不新增重复说明。
 
 <!-- include: shared/doc/contract-lifecycle.md -->
