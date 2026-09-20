@@ -57,6 +57,24 @@ internal static class Program
         var wizard = new ConsoleWizard(ui);
         var planner = new CompositionPlanner(manifest);
 
+        // 顶层模式选择：常用路径仍是生成规则文件；已有自维护规则的项目可只拿内置 Skills
+        var mode = ui.Choose(
+            "请选择要执行的操作：",
+            "取消",
+            new List<UiChoice>
+            {
+                new("生成规则文件（含可选 Skills 导入）", "检测 / 问答选择组合并释放 AGENTS.md 等规则文件"),
+                new("仅导入 Skills", "不生成规则文件，只把内置 Skills 导入到 Codex / ZCode / Claude Code / pi")
+            });
+        if (mode is null)
+        {
+            Console.WriteLine("已取消。");
+            return 0;
+        }
+
+        if (mode == 1)
+            return ImportSkillsOnly(ui, skillsStore);
+
         while (true)
         {
             var entry = InteractiveFlow.OfferEntry(manifest, wizard, ui);
@@ -152,6 +170,29 @@ internal static class Program
             Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
             return 0;
         }
+    }
+
+    // 仅导入 Skills：不生成规则文件、不写配方记录（配方是组合口径，空组合会让 --upgrade / --recipe
+    // 尝试渲染规则文件，违背只要技能的意图）；更新技能重新运行导入即可（同名技能先删后写）。
+    // gitignore 按 minimal 处理：仅导入模式不知道技术栈，取最保守模板；已存在时幂等追加 AI 工具目录忽略
+    private static int ImportSkillsOnly(IConsoleUi ui, SkillsStore skillsStore)
+    {
+        var skillImport = SkillsImportFlow.OfferSkillsImport(ui, skillsStore, confirmEntry: false);
+        if (skillImport is null)
+        {
+            Console.WriteLine("未导入任何 Skills。");
+            return 0;
+        }
+
+        Console.WriteLine($"导入 Skills 到 {Environment.CurrentDirectory}：");
+        var skillWritten = new SkillImporter().Import(
+            Environment.CurrentDirectory, skillImport.Targets, skillImport.Skills, skillsStore, skillImport.SkipKeys);
+        var gitignoreMessage = new RecipeRecorder().EnsureGitignored(Environment.CurrentDirectory, "minimal");
+
+        Console.WriteLine($"完成：已导入 Skills {skillWritten} 个文件" +
+            "（仅导入模式不生成规则文件、不写配方记录，更新技能时重新运行导入即可，同名技能先删后写）");
+        Console.WriteLine(gitignoreMessage);
+        return 0;
     }
 
     private static IConsoleUi CreateUi()
@@ -382,7 +423,7 @@ internal static class Program
             || args[0].Equals("-h", StringComparison.OrdinalIgnoreCase)))
         {
             Console.WriteLine(Banner);
-            Console.WriteLine("直接双击或不带参数运行：自动检测当前项目给出推荐，也可进入问答选择并释放规则。");
+            Console.WriteLine("直接双击或不带参数运行：先选模式——生成规则文件（自动检测推荐 / 问答选择），或仅导入 Skills（不生成规则文件、不写配方记录）。");
             Console.WriteLine("规则文件落盘后可选择把内置 Skills 导入到 Codex（.codex/skills）/ ZCode（.zcode/skills）/ Claude Code（.claude/skills）/ pi（.pi/skills），追加导入、同名技能可覆盖或跳过；--recipe / --upgrade 按配方同步已记录的 Skills。");
             Console.WriteLine("--check：只校验 manifest、片段、全部兼容样例的输出契约一致性、问答决策树、组件问答决策树与内置技能，不写入文件。");
             Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合；证据不足时打印待确认维度与候选组合，不写入文件。");
