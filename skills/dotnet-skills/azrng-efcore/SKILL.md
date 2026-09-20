@@ -113,7 +113,7 @@ public class UserService
 await using var scope = await _unitOfWork.BeginTransactionScopeAsync();
 try {
     await _orderRep.AddAsync(order);
-    await _itemRep.AddRangeAsync(items);
+    await _itemRep.AddAsync(items);   // 批量新增即 AddAsync 集合重载（无 AddRangeAsync）
     await scope.CommitAsync();
 } catch { await scope.RollbackAsync(); throw; }
 ```
@@ -200,7 +200,7 @@ builder.Services.AddSqlMigrationService("default", config =>
 
 - **选 provider**：按目标数据库选包，注入方式几乎一致（仅连接串与可选 builder 委托不同）。对照表见 references/providers.md。
 - **DbContext 怎么扫描配置类**：继承普通 `DbContext`，在 `OnModelCreating` 里 `modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `{Entity}Etc.cs` 配置类；再 `modelBuilder.HasDefaultSchema(...)` 设默认 schema。
-- **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤（包不自动全局过滤）。
+- **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤，或在实体配置中统一 `HasQueryFilter`（包不自动全局过滤）。
 - **遇到 PostgreSQL 时间报错**：先看 references/postgres-time-pitfall.md —— 这是本系列包最常见的崩溃根因，三层（模型/赋值/DDL）必须一致。
 
 ## 关键陷阱（高频）

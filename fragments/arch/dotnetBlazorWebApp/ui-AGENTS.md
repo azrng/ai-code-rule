@@ -72,6 +72,7 @@ dependencies: [agents-root]
 
 - 每个组件必须明确代码实际执行在服务器、浏览器，还是可能在两端执行。
 - Interactive Server 的 scoped 服务通常随 Circuit 存活；不得把它误认为单次 HTTP 请求作用域，也不得在 Singleton 中持有用户 Circuit 状态。
+- Static SSR 下同一请求的布局与页面会并发执行初始化；跨注入方共享的 Scoped 服务若内部持有单一 DbContext 等非线程安全资源，将触发并发访问异常。此类服务必须保证数据访问并发安全：注册为 Transient（`ITransientDependency`）、内部以实例级 `SemaphoreSlim` 串行化，或每次解析创建新的 DbContext。
 - Interactive WebAssembly 的 scoped 服务在客户端应用生命周期内表现为客户端作用域；不得据此承载服务器可信状态。
 - Auto 或可双端执行的组件只可注入双方均能解析的抽象。服务器专属依赖应留在服务器边界，客户端通过受保护接口访问。
 - 从服务器边界传向交互式客户端的参数和持久化状态必须可序列化，使用稳定、最小化的数据契约，不传递服务实例、委托、数据库实体跟踪对象或其他服务器对象图。
