@@ -11,6 +11,18 @@ internal static class InteractiveFlow
         Dictionary<string, string> Answers,
         Dictionary<string, string> AnswerSources);
 
+    // 向导/入口流结果：BackToEntry 表示用户在第一问按「0 返回上一步」交还入口菜单，
+    // 由 OfferEntry 的入口循环重新展示检测与入口选项；Outcome=null 且 BackToEntry=false
+    // 才是真正的「取消」，由入口菜单的 0 项触发并结束生成器
+    internal sealed record EntryFlowResult(EntryOutcome? Outcome, bool BackToEntry)
+    {
+        public static EntryFlowResult Done(EntryOutcome outcome) => new(outcome, false);
+
+        public static EntryFlowResult Cancel() => new(null, false);
+
+        public static EntryFlowResult Back() => new(null, true);
+    }
+
     // 经典大类选择的组合口径转换：选中样例的维度选择直接进入组合内核，
     // 问答来源整体标记为 classic，配方与渲染走组合路径
     internal static EntryOutcome ClassicOutcome(CompatibilityCase caseItem)
@@ -30,10 +42,12 @@ internal static class InteractiveFlow
 
     internal static EntryOutcome? OfferEntry(Manifest manifest, ConsoleWizard wizard, IConsoleUi ui)
     {
-        var detection = TryDetect(manifest, Environment.CurrentDirectory);
-        if (detection is null)
+        // 入口循环：向导第一问按「0 返回上一步」交还到这里，重跑检测、重新展示入口菜单；
+        // 各入口菜单自身的 0 项保持「取消」语义，是结束生成器的唯一出口
+        while (true)
         {
-            while (true)
+            var detection = TryDetect(manifest, Environment.CurrentDirectory);
+            if (detection is null)
             {
                 var choice = ui.Choose(
                     "请选择确定规则组合的方式：",
@@ -46,27 +60,39 @@ internal static class InteractiveFlow
                 if (choice is null)
                     return null;
                 if (choice == 0)
-                    return RunSelectionWizard(manifest, ui, "wizard");
-                if (choice == 1)
-                    return wizard.SelectCase(manifest) is { } casePick ? ClassicOutcome(casePick) : null;
+                {
+                    var wizardResult = RunSelectionWizard(manifest, ui, "wizard");
+                    if (wizardResult.BackToEntry)
+                    {
+                        ui.Line("已返回入口选择。");
+                        continue;
+                    }
+                    return wizardResult.Outcome;
+                }
+                return wizard.SelectCase(manifest) is { } casePick ? ClassicOutcome(casePick) : null;
             }
-        }
 
-        ui.Head("已检测当前目录，判断依据：");
-        ui.Bullets(detection.Reasons.Take(4));
-        ui.Bullets(detection.Notes.Take(2));
-        ui.Line("");
+            ui.Head("已检测当前目录，判断依据：");
+            ui.Bullets(detection.Reasons.Take(4));
+            ui.Bullets(detection.Notes.Take(2));
+            ui.Line("");
 
-        // 部分检测结果：证据不足以锁定唯一组合，不伪造推荐，进入补答流程
-        if (!detection.Converged)
-            return OfferSupplement(manifest, ui, detection);
+            // 部分检测结果：证据不足以锁定唯一组合，不伪造推荐，进入补答流程
+            if (!detection.Converged)
+            {
+                var supplement = OfferSupplement(manifest, wizard, ui, detection);
+                if (supplement.BackToEntry)
+                {
+                    ui.Line("已返回入口选择。");
+                    continue;
+                }
+                return supplement.Outcome;
+            }
 
-        var sampleLabel = detection.SampleLabel;
-        ui.Line($"推荐组合：{sampleLabel}");
+            var sampleLabel = detection.SampleLabel;
+            ui.Line($"推荐组合：{sampleLabel}");
 
-        while (true)
-        {
-            var choice = ui.Choose(
+            var confirm = ui.Choose(
                 "请确认：",
                 "取消",
                 new List<UiChoice>
@@ -75,9 +101,9 @@ internal static class InteractiveFlow
                     new("问答选择（重新回答）", ""),
                     new("经典选择（兼容）", "技术大类 → 组合")
                 });
-            if (choice is null)
+            if (confirm is null)
                 return null;
-            if (choice == 0)
+            if (confirm == 0)
             {
                 // 收敛的检测证据直接映射为 Selection：取推荐样例的全部维度取值
                 var answers = detection.BuildSampleAnswers();
@@ -86,10 +112,17 @@ internal static class InteractiveFlow
                     selection, "detected", answers,
                     answers.Keys.ToDictionary(key => key, _ => "detected", StringComparer.Ordinal));
             }
-            if (choice == 1)
-                return RunSelectionWizard(manifest, ui, "wizard");
-            if (choice == 2)
-                return wizard.SelectCase(manifest) is { } classicPick ? ClassicOutcome(classicPick) : null;
+            if (confirm == 1)
+            {
+                var wizardResult = RunSelectionWizard(manifest, ui, "wizard");
+                if (wizardResult.BackToEntry)
+                {
+                    ui.Line("已返回入口选择。");
+                    continue;
+                }
+                return wizardResult.Outcome;
+            }
+            return wizard.SelectCase(manifest) is { } classicPick ? ClassicOutcome(classicPick) : null;
         }
     }
 
@@ -130,8 +163,9 @@ internal static class InteractiveFlow
     }
 
     // 组件问答主循环：检测补答与全新问答共用；已确认（detected）维度保留且不再提问，
-    // 唯一取值自动推导（来源 derived），0 返回上一步，第一问返回交还入口菜单
-    internal static EntryOutcome? RunSelectionWizard(
+    // 唯一取值自动推导（来源 derived）；0 在非第一问回退一步，第一问交还入口菜单
+    // （不再直接取消生成器），入口菜单的「取消」才是唯一退出出口
+    internal static EntryFlowResult RunSelectionWizard(
         Manifest manifest, IConsoleUi ui, string mode, Dictionary<string, string>? seeds = null)
     {
         var engine = new SelectionEngine(manifest);
@@ -158,7 +192,7 @@ internal static class InteractiveFlow
 
             if (question is null)
             {
-                return SelectionOutcome(selection, mode, answers, sources);
+                return EntryFlowResult.Done(SelectionOutcome(selection, mode, answers, sources));
             }
 
             var dimsBefore = new Dictionary<string, string>(selection.Dimensions, StringComparer.Ordinal);
@@ -170,8 +204,9 @@ internal static class InteractiveFlow
                 question.Options.Select(option => new UiChoice(option.Label, option.Desc)).ToList());
             if (choice is null)
             {
+                // 第一问没有更上一步：交还入口菜单重新选择，而不是直接取消整个生成器
                 if (history.Count == 0)
-                    return null;
+                    return EntryFlowResult.Back();
                 (var dims, answers, sources) = history[^1];
                 history.RemoveAt(history.Count - 1);
                 selection.Dimensions = dims;
@@ -187,8 +222,9 @@ internal static class InteractiveFlow
     }
 
     // 检测部分结果的补答入口（组合路径）：展示已确认维度与候选组合，
-    // 已确认维度作为种子带入组件问答，只回答仍有分歧的维度
-    private static EntryOutcome? OfferSupplement(Manifest manifest, IConsoleUi ui, DetectionResult detection)
+    // 已确认维度作为种子带入组件问答，只回答仍有分歧的维度；
+    // 补答向导第一问的「返回上一步」透传为 BackToEntry，交还入口循环
+    private static EntryFlowResult OfferSupplement(Manifest manifest, ConsoleWizard wizard, IConsoleUi ui, DetectionResult detection)
     {
         var questionByTrait = manifest.Wizard.Steps
             .GroupBy(step => step.Trait, StringComparer.Ordinal)
@@ -220,14 +256,14 @@ internal static class InteractiveFlow
                 new("经典选择（兼容）", "技术大类 → 组合")
             });
         if (choice is null)
-            return null;
+            return EntryFlowResult.Cancel();
 
         if (choice == 0)
             return RunSelectionWizard(manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
         if (choice == 1)
             return RunSelectionWizard(manifest, ui, "wizard");
-        var classic = new ConsoleWizard(ui).SelectCase(manifest);
-        return classic is null ? null : ClassicOutcome(classic);
+        var classic = wizard.SelectCase(manifest);
+        return classic is null ? EntryFlowResult.Cancel() : EntryFlowResult.Done(ClassicOutcome(classic));
     }
 
     // 组合路径的展示标签：唯一映射兼容样例时用样例名称，否则列组件

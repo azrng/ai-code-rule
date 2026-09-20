@@ -98,11 +98,12 @@ public sealed class SupplementWizardTests : IDisposable
 
         // frontend 问题的选项从存续组件推导：React / Vue 各一，按 label 序 React 在前，选 1 = Vue
         var ui = new ScriptedConsoleUi(1);
-        var outcome = InteractiveFlow.RunSelectionWizard(
+        var result = InteractiveFlow.RunSelectionWizard(
             _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
-        Assert.NotNull(outcome);
-        Assert.Equal("vue", outcome!.Selection.Dimensions["frontend"]);
+        Assert.True(result.Outcome is not null);
+        var outcome = result.Outcome!;
+        Assert.Equal("vue", outcome.Selection.Dimensions["frontend"]);
         // 补答完成的配方保留 mode=detected
         Assert.Equal("detected", outcome.Mode);
         Assert.Equal("vue", outcome.Answers["frontend"]);
@@ -131,15 +132,32 @@ public sealed class SupplementWizardTests : IDisposable
     }
 
     [Fact]
-    public void Supplement_CancelAtFirstQuestion_ReturnsNull()
+    public void Supplement_CancelAtFirstQuestion_ReturnsBackToEntry()
     {
         var detection = DetectElectronWithoutRenderer();
 
         var ui = new ScriptedConsoleUi((int?)null);
-        var outcome = InteractiveFlow.RunSelectionWizard(
+        var result = InteractiveFlow.RunSelectionWizard(
             _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
-        Assert.Null(outcome);
+        // 第一问按 0：交还入口菜单而不是取消生成器
+        Assert.True(result.BackToEntry);
+        Assert.Null(result.Outcome);
+    }
+
+    [Fact]
+    public void Wizard_BackAfterAnswer_UndoThenBackToEntry()
+    {
+        // 全新问答：form=web 后 frontend 仍有分歧，构造「答一步 → 回退 → 再回退」路径
+        var ui = new ScriptedConsoleUi(1, (int?)null, (int?)null);
+        var result = InteractiveFlow.RunSelectionWizard(_manifest, ui, "wizard");
+
+        // 第二次按 0 时已无更上一步：交还入口菜单而不是取消生成器
+        Assert.True(result.BackToEntry);
+        Assert.Null(result.Outcome);
+        // 流程：form → frontend → 回退回 form → 再按 0 交还入口
+        Assert.Equal(2, ui.Titles.Count(t => t.Contains("项目形态", StringComparison.Ordinal)));
+        Assert.Single(ui.Titles, t => t.Contains("前端", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -160,11 +178,11 @@ public sealed class SupplementWizardTests : IDisposable
         // 补答完成的选择必须能被组合内核解析为 Electron + Vue + .NET 组件集
         var detection = DetectElectronWithoutRenderer();
         var ui = new ScriptedConsoleUi(1);
-        var outcome = InteractiveFlow.RunSelectionWizard(
+        var result = InteractiveFlow.RunSelectionWizard(
             _manifest, ui, "detected", new Dictionary<string, string>(detection.Confirmed, StringComparer.Ordinal));
 
-        Assert.NotNull(outcome);
-        var plan = new CompositionPlanner(_manifest).Plan(outcome!.Selection);
+        Assert.True(result.Outcome is not null);
+        var plan = new CompositionPlanner(_manifest).Plan(result.Outcome!.Selection);
         Assert.Contains(plan.ComponentIds, id => id == "electron-desktop-shell");
         Assert.Contains(plan.ComponentIds, id => id == "electron-frontend-vue-dotnet");
         Assert.Contains(plan.ComponentIds, id => id == "electron-backend-dotnet");
