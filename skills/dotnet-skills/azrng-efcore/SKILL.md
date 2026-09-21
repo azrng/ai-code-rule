@@ -200,8 +200,9 @@ builder.Services.AddSqlMigrationService("default", config =>
 
 - **选 provider**：按目标数据库选包，注入方式几乎一致（仅连接串与可选 builder 委托不同）。对照表见 references/providers.md。
 - **DbContext 怎么扫描配置类**：继承普通 `DbContext`，在 `OnModelCreating` 里 `modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `{Entity}Etc.cs` 配置类；再 `modelBuilder.HasDefaultSchema(...)` 设默认 schema。
+- **新增实体三件套**：实体类 + DbContext 的 `DbSet<{实体名}>` + `{实体名}Etc.cs` 配置类，三处同步缺一不可——只登记 DbSet 不建 Etc 时 EF 模型缺失，运行期才暴露；表名以 Etc 的 `ToTable` 为准，迁移 SQL 表名保持一致。
 - **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤，或在实体配置中统一 `HasQueryFilter`（包不自动全局过滤）。
-- **遇到 PostgreSQL 时间报错**：先看 references/postgres-time-pitfall.md —— 这是本系列包最常见的崩溃根因，三层（模型/赋值/DDL）必须一致。
+- **PostgreSQL 时间列（新项目强制前置）**：首次写库前必须先完成时间列三层一致——模型 `IsUnTimeZoneDateTime()`、赋值 `DateTime.Now.ToUnspecifiedDateTime()`、DDL `timestamp without time zone`——再写任何读写代码；这是本系列包最常见的崩溃根因，细则见 references/postgres-time-pitfall.md。
 
 ## 关键陷阱（高频）
 

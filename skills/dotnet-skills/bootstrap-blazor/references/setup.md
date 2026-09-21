@@ -72,3 +72,18 @@ services.AddBootstrapBlazorHtml2PdfService();
     </CascadingAuthenticationState>
 </BootstrapBlazorRoot>
 ```
+
+## 5. Blazor Web App（混合渲染模式）的根组件位置
+
+Blazor Web App 中 Static SSR 布局与交互式页面混排时，`Routes.razor` / 布局级的全局 `<BootstrapBlazorRoot>` 无法为交互式页面渲染弹层，Swal / Toast 会静默不渲染。此时不要把 Root 上移到布局，而是在每个使用弹层能力的交互式页面自身包裹：
+
+```razor
+@page "/audit-list"
+@rendermode InteractiveServer
+
+<BootstrapBlazorRoot>
+    @* 页面内容（含 Toast / Swal / Dialog 调用）*@
+</BootstrapBlazorRoot>
+```
+
+传统 Blazor Server（全站交互式）仍用第 4 节的 `Routes.razor` 全局包裹。

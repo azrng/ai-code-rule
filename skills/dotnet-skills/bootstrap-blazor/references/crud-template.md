@@ -56,9 +56,11 @@ services.AddScoped<IEntityService, EntityService>();
        ShowExtendEditButton="false" ShowExtendDeleteButton="false"
        OnQueryAsync="@OnQueryAsync"
        CustomerSearchModel="@SearchModel">
-    <!-- 列定义 -->
-    <TableColumn @bind-Field="@context.Name" Text="名称"/>
-    <TableColumn @bind-Field="@context.CreateTime" Text="创建时间" FormatString="yyyy-MM-dd HH:mm:ss"/>
+    <!-- 列定义：TableColumn 必须包在 TableColumns 内，直接放在 Table 下不生效 -->
+    <TableColumns>
+        <TableColumn @bind-Field="@context.Name" Text="名称"/>
+        <TableColumn @bind-Field="@context.CreateTime" Text="创建时间" FormatString="yyyy-MM-dd HH:mm:ss"/>
+    </TableColumns>
     <RowButtonTemplate>
         <TableCellButton Size="Size.ExtraSmall" Color="Color.Success" Icon="fas fa-edit"
                          Text="编辑" OnClick="() => OnShowEditModal(context)"/>

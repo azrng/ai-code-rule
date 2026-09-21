@@ -181,6 +181,7 @@ Controllers → Application → Domain ← Infrastructure
 - 分页列表查询使用 `GetPageRequest` + `ToPageListAsync` + `GetQueryPageResult<T>`，不手写 `CountAsync()` + `Skip().Take()`。
 - 软删除统一使用实体基类的 `Deleted` 字段；包不自动做全局过滤，默认在查询中显式过滤 `!x.Deleted`，或在实体配置类中统一配置查询过滤器。
 - DbContext 与 EF Core 实体配置类（`{实体名}Etc.cs`）放 `Infrastructure/Data/`，DbContext 通过 `ApplyConfigurationsFromAssembly` 扫描应用配置。
+- 新增实体必须三处同步：实体类、DbContext 的 `DbSet<{实体名}>`、`Infrastructure/Data/{实体名}Etc.cs` 配置类；表名以配置类的 `ToTable` 为准，迁移 SQL 的表名必须与之一致——只登记 DbSet 不建配置类时 EF 模型缺失，运行期才暴露。
 
 <!-- include: shared/backend/response-format.md -->
 

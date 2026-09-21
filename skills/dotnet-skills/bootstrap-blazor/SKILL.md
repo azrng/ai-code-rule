@@ -7,6 +7,8 @@ description: "BootstrapBlazor 组件库开发指南。.NET Blazor 项目中使�
 
 BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中使用 BootstrapBlazor 组件库的最佳实践、代码模板和常见模式。
 
+> 版本锚定：本技能示例基于 BootstrapBlazor 10.10.x 编译验证；组件 API 随版本演进，遇到与示例不符的编译错误时以官方文档（https://www.blazor.zone/ ）为准。
+
 **适用场景**：
 - 使用 BootstrapBlazor 构建 Blazor Server 应用
 - 企业级 RBAC/后台管理系统开发
@@ -43,6 +45,9 @@ BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中�
 - 表格自定义行按钮不显示：`ShowExtendButtons="true"` 且关闭内置编辑/删除按钮，再用 `RowButtonTemplate`（`table.md`）
 - 菜单点击 404、子路由侧边栏收起、顶级菜单高亮异常：见 `layout-menu.md` 菜单章节
 - `NavLinkMatch` 只有 `All` 与 `Prefix`，没有 `Exact`（`layout-menu.md`）
+- 不存在 `BootstrapInputFormItem` / `RadioListFormItem` / `DateTimePickerFormItem` 类表单包装组件：表单项 = `ValidateForm` + 输入组件直接组合，标签用 `DisplayText`（`forms.md`）
+- `TableColumn` 必须包在 `<TableColumns>` 内，直接放在 `Table` 下不生效；嵌套模板的上下文显式改名（`Context="..."`）避免多层默认 `context` 同名冲突（`table.md`）
+- `Select` 泛型参数是 `TValue`（不是 `Table` 的 `TItem`），通常由 `@bind-Value` 推断、无需显式声明（`forms.md`）
 
 ## 参考资源
 

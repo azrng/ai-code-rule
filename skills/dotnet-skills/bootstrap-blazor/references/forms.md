@@ -16,6 +16,8 @@
 </ValidateForm>
 ```
 
+**注意**：组件库中不存在 `BootstrapInputFormItem` / `RadioListFormItem` / `DateTimePickerFormItem` 类表单包装组件；表单项 = `ValidateForm` + 各输入组件直接组合，标签由输入组件的 `DisplayText` 提供。
+
 **手动验证模式**（需要自定义验证逻辑时）：
 ```csharp
 private async Task OnManualSubmit()
@@ -99,6 +101,8 @@ DepartmentOptions = departments.Select(x => new SelectedItem(x.Id, x.Name)).ToLi
         @bind-Value="@Model.MenuType" DisplayText="菜单类型"
         PlaceHolder="请选择" ShowLabel="true"/>
 ```
+
+**泛型参数**：`Select` 的类型参数是 `TValue`，与 `@bind-Value` 绑定属性类型一致，通常由绑定自动推断、无需显式声明；不要照抄 `Table` 的 `TItem`（写成 `TItem="string"` 会编译报错）。`bool` / `bool?` / 枚举 / `int?` / `Guid` 绑定均内置支持，`SelectOption` 的 `Value` 用字符串表示即可。
 
 ## 3.4 复选框列表
 

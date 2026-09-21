@@ -122,6 +122,7 @@ dependencies: [agents-root]
 ## 组件与状态规则
 
 - 优先复用 `Components/` 下已有组件，只在有明确复用价值时新增共享组件。
+- 使用 BootstrapBlazor Toast / Swal / Dialog 等弹层能力的交互式页面，必须在本页面自身用 `<BootstrapBlazorRoot>` 包裹页面内容，不得把 Root 上移到布局：Static SSR 布局中的 Root 无法为交互式页面渲染弹层，Swal / Toast 会静默不渲染。
 - 组件参数保持简单、可序列化和稳定，跨渲染模式边界时避免传递渲染片段、委托或服务器对象。
 - 服务层封装业务逻辑，组件只负责展示、输入协调和调用编排。
 - 共享状态必须标注所属位置和生命周期：单次请求、Circuit、浏览器应用、持久化服务端或跨设备状态。

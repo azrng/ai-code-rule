@@ -154,6 +154,7 @@ src/
 - 多步原子写操作优先使用 `IUnitOfWork` 事务，不直接操作 `IDbContextTransaction`。
 - 软删除统一使用实体基类的 `Deleted` 字段；包不自动做全局过滤，默认在查询中显式过滤 `!x.Deleted`，或在实体配置类中统一配置查询过滤器。
 - EF Core 实体配置类（`{实体名}Etc.cs`）在此层定义，DbContext 通过 `ApplyConfigurationsFromAssembly` 扫描应用。
+- 新增实体必须三处同步：实体类、DbContext 的 `DbSet<{实体名}>`、`{实体名}Etc.cs` 配置类；表名以配置类的 `ToTable` 为准，迁移 SQL 的表名必须与之一致——只登记 DbSet 不建配置类时 EF 模型缺失，运行期才暴露。
 - 数据库迁移脚本位置与规则见 `数据库迁移规则`。
 
 ### Adapter（适配器层）规则
