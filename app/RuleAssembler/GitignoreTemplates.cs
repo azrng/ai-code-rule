@@ -3,7 +3,7 @@ namespace RuleAssembler;
 // 目标项目缺失 .gitignore 时按技术栈生成默认忽略规则。
 // 内容精选自 github/gitignore 标准模板（C# 参考仓库内 daily-examples 版本，Python 等参考 mcp_server 版本），
 // 每份保持精简，只覆盖构建产物、本地环境与编辑器目录，末尾统一带 AI rule 忽略块（配方记录、生成器本体、
-// 规则效果反馈记录与 AI 工具本地目录）。
+// 规则效果反馈记录、AI 工具目录与本地调试产物）。
 internal static class GitignoreTemplates
 {
     public const string RecipeEntry = ".ai-rule-profile.json";
@@ -32,11 +32,20 @@ internal static class GitignoreTemplates
         ".learnings/"
     };
 
-    // EnsureGitignored 对已存在 .gitignore 的追加清单：生成器本地产物 + AI 工具目录，与默认模板块同源
-    public static readonly string[] AllGitignoreEntries = GeneratorEntries.Concat(AiToolEntries).ToArray();
+    // 执行生成器时需要忽略的本地调试产物与敏感配置，避免被提交到目标项目
+    public static readonly string[] LocalDevelopmentEntries =
+    {
+        ".artifacts/",
+        "artifacts/",
+        ".env"
+    };
+
+    // EnsureGitignored 对已存在 .gitignore 的追加清单：生成器本地产物、AI 工具目录与本地调试产物
+    public static readonly string[] AllGitignoreEntries =
+        GeneratorEntries.Concat(AiToolEntries).Concat(LocalDevelopmentEntries).ToArray();
 
     public const string GeneratorComment =
-        "# AI rule 本地产物与 AI 工具目录（use-ai-rule 生成：配方记录、生成器本体、规则效果反馈与 AI 工具本地目录，勿提交）\n";
+        "# AI rule 本地产物、AI 工具目录与本地调试文件（use-ai-rule 生成，勿提交）\n";
 
     public static readonly string GeneratorBlock =
         GeneratorComment + string.Join("\n", AllGitignoreEntries) + "\n";
@@ -72,7 +81,6 @@ internal static class GitignoreTemplates
         "*.suo\n" +
         "*.binlog\n" +
         "TestResults/\n" +
-        "artifacts/\n" +
         "publish/\n" +
         "*.pubxml.user\n" +
         ".idea/\n" +

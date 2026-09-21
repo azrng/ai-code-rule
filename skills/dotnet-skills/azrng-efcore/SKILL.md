@@ -189,22 +189,25 @@ using Azrng.SqlMigration;
 using Npgsql;
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-var migrationSqlPath = Path.Combine(builder.Environment.ContentRootPath, "MigrationSql");
+var migrationSqlPath = Path.Combine(
+    builder.Environment.ContentRootPath,
+    "wwwroot",
+    "MigrationSql");
 
 builder.Services.AddSqlMigrationService("default", config =>
 {
     config.Schema = "public";                  // 数据库 schema
     config.VersionPrefix = string.Empty;       // SQL 文件版本前缀（默认 "version"）
-    config.SqlRootPath = migrationSqlPath;     // SQL 脚本目录（Service/MigrationSql）
+    config.SqlRootPath = migrationSqlPath;     // SQL 脚本目录（Service/wwwroot/MigrationSql）
     config.ConnectionBuilder = _ => new NpgsqlConnection(connectionString);
 }).AddAutoMigration();                         // ← 启动时自动跑未应用的脚本
 ```
 
 `ConnectionBuilder` 的真实类型是 `Func<IServiceProvider, IDbConnection>`；使用 PostgreSQL 时，Service 项目应直接引用 `Npgsql`，并通过 `sp => new NpgsqlConnection(connectionString)` 创建连接。
 
-**SQL 脚本约定**：放 `Service/MigrationSql/`，推荐使用纯版本文件名 `1.0.0.sql`、`1.1.0.txt`；如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号并跳过脚本。
+**SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，推荐使用纯版本文件名 `1.0.0.sql`、`1.1.0.txt`；如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号并跳过脚本。
 
-> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。
+> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
 

@@ -1,6 +1,6 @@
 ---
 name: onion-architecture
-description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, and the cross-cutting AppService conventions — global result-packing and paged queries. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration, wiring DI/middleware in Program.cs, or placing business logic vs data-access vs DTOs. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询."
+description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, and the cross-cutting AppService conventions — global result-packing and paged queries. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration, wiring DI/middleware through Service Startup, or placing business logic vs data-access vs DTOs. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询."
 ---
 
 # 洋葱架构（Onion / Clean Architecture）分层指南
@@ -38,11 +38,45 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | **Domain** | 领域实现层 | IDomain, Adapter, EntityFramework | 领域服务实现（`{X}DomainService`）：封装可复用公共领域操作，可注入 IBaseRepository 写库；纯 CRUD 可空 |
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
-| **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（DI 装配 + 中间件管道）、配置 |
+| **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（宿主生命周期）、`Startup/Startup.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ HttpClient 实现（`Adapter/Service/`、`Adapter/HttpWebClient/`），屏蔽 HTTP/SDK 细节（可选） |
 | **Storage** | 存储适配 | Core、IDomain | 文件/对象存储实现（可选）；存储接口放 `IDomain` 或真正通用时放 `Core` |
 
 > **接口/实现结对**：`I*` 项目只有抽象，对应无前缀项目是实现。`IApplication`/`Application`、`IDomain`/`Domain` 总是成对出现。控制器永远只依赖 `I*AppService`，不依赖实现。
+
+## 解决方案与目录结构
+
+解决方案文件放在仓库根目录，使用相对路径引用 `src/` 下的业务项目；测试项目统一放在根目录 `test/` 下。不要把 `.slnx` 放进某个业务项目目录，也不要把测试项目混入 `src/`。
+
+```text
+YourProject/
+├── YourProject.slnx
+├── src/
+│   ├── YourProject.Core/
+│   ├── YourProject.IDomain/
+│   ├── YourProject.IApplication/
+│   ├── YourProject.Domain/
+│   ├── YourProject.Application/
+│   ├── YourProject.EntityFramework/
+│   ├── YourProject.Service/
+│   └── ...
+└── test/
+    └── YourProject.Tests/
+```
+
+`.slnx` 至少按 `/src/` 与 `/test/` 划分解决方案目录；没有测试项目时可以先保留空的 `/test/` 节点：
+
+```xml
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/YourProject.Core/YourProject.Core.csproj" />
+    <Project Path="src/YourProject.Service/YourProject.Service.csproj" />
+  </Folder>
+  <Folder Name="/test/" />
+</Solution>
+```
+
+新增测试项目时，物理路径使用 `test/YourProject.Tests/YourProject.Tests.csproj`，并在 `/test/` 节点下以相对路径引用。
 
 ## 核心规则（AI 必读）
 
@@ -54,7 +88,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
 
-## 全局返回包装（三件套 + Program.cs 装配）
+## 全局返回包装（三件套 + Startup 装配）
 
 这是本架构的**统一对外结果契约**：所有 action 返回值最终都是 `{ isSuccess, isFailure, code, message, data, errors }` 形态的 `ResultModel`，但**业务代码不手动包装**——靠框架三件套自动完成。没有数据或没有错误时，`data` / `errors` 仍可能以空值或空数组输出，按实际序列化配置为准。
 
@@ -86,28 +120,90 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 
 > `AddMvcResultPackFilter` 的忽略前缀按 URI 路径匹配，传值应以 `/` 开头，例如 `/swagger`。传入 `swagger` 可能不影响启动，但在首个结果过滤请求时才抛参数异常。
 
-### Program.cs 装配（标准模板，三件套都在这里）
+### Startup 装配（标准模板，三件套都在这里）
+
+Service 项目使用 `Startup/Startup.cs` 承担依赖注入和中间件管道装配。`Program.cs` 只负责创建 WebApplicationBuilder、调用 Startup、构建应用并运行宿主，不堆积业务服务注册或中间件细节。
 
 ```csharp
-var builder = WebApplication.CreateBuilder(args);
+// Program.cs
+using DotNetEnv;
 
-builder.Services.AddControllers();
-// ① 成功路径包装（"/swagger" 等前缀不包装）
-builder.Services.AddMvcResultPackFilter("/swagger");
-// ② 模型校验失败统一结果
-builder.Services.AddMvcModelVerifyFilter();
-// ... AddEntityFramework / RegisterBusinessServices / 认证 等 ...
+// 本地开发敏感配置走仓库根目录 .env（gitignore 排除）。注入为进程环境变量后由默认配置链读取，
+// 不覆盖已存在的环境变量（NoClobber）；生产/容器无 .env 时不加载任何值
+Env.NoClobber().TraversePath().Load();
+
+var builder = WebApplication.CreateBuilder(args);
+var startup = new Startup(builder.Configuration, builder.Environment);
+
+startup.RegisterServices(builder.Services);
 
 var app = builder.Build();
-
-// ③ 全局异常中间件：必须放在管道最外层（最早），才能兜住后续所有中间件/控制器抛出的异常
-app.UseGlobalException();
-
-app.UseCors();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
+startup.SetupMiddlewares(app);
 app.Run();
+```
+
+`DotNetEnv` 是 Service 项目的可选开发依赖，包引用为：
+
+```xml
+<PackageReference Include="DotNetEnv" />
+```
+
+将 `.env` 放在仓库根目录并加入根 `.gitignore`；可以提交不含敏感值的 `.env.example`。加载必须发生在 `WebApplication.CreateBuilder(args)` 之前，不能放到 `Startup.RegisterServices` 之后，否则默认配置链可能已经完成构建。
+
+```csharp
+// Startup/Startup.cs
+public sealed class Startup
+{
+    private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _environment;
+
+    public Startup(IConfiguration configuration, IWebHostEnvironment environment)
+    {
+        _configuration = configuration;
+        _environment = environment;
+    }
+
+    public void RegisterServices(IServiceCollection services)
+    {
+        services.AddControllers();
+
+        // 成功路径包装（Swagger 等前缀不包装）
+        services.AddMvcResultPackFilter("/swagger");
+        // 模型校验失败统一结果
+        services.AddMvcModelVerifyFilter();
+
+        services.AddEntityFramework<AppDbContext>(options =>
+        {
+            options.ConnectionString = _configuration.GetConnectionString("DefaultConnection")!;
+        });
+        services.RegisterBusinessServices("YourProject.*.dll");
+
+        var migrationSqlPath = Path.Combine(
+            _environment.ContentRootPath,
+            "wwwroot",
+            "MigrationSql");
+        services.AddSqlMigrationService("default", options =>
+        {
+            options.VersionPrefix = string.Empty;
+            options.SqlRootPath = migrationSqlPath;
+            options.ConnectionBuilder = _ =>
+                new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")!);
+        }).AddAutoMigration();
+    }
+
+    public void SetupMiddlewares(WebApplication app)
+    {
+        // 必须放在管道最外层，才能兜住后续中间件和控制器抛出的异常
+        app.UseGlobalException();
+
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+        app.UseCors();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
+    }
+}
 ```
 
 > **最常见的坑**：只注册了 `AddMvcResultPackFilter` 却忘了 `app.UseGlobalException()`——此时 AppService 抛 `ParameterException` 无人接住，业务失败会返回 HTTP 500，前端拿不到统一失败结构。三件套必须齐备。
@@ -168,6 +264,7 @@ public async Task<OrderDto> GetAsync(long id)
 {
     var order = await _repository.EntitiesNoTacking.FirstOrDefaultAsync(x => x.Id == id);
     NotFoundException.ThrowIfNull(order, "订单不存在");   // 资源不存在 → 404
+    order = order!;                                        // 包未标注流分析时显式恢复非空
     return new OrderDto { /* 实体→DTO 映射 */ };
 }
 
@@ -333,10 +430,10 @@ public Task<MaterialDto> Upload(IFormFile file)
 2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，构造函数 `SetCreator("system")`。
 3. **EntityFramework/ProductEtc.cs** — 配置类继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤。
 4. **IApplication/Product/IProductAppService.cs** — 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）。
-5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。
+5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。`ThrowIfNull` 后如编译器仍无法完成可空流分析，显式写 `entity = entity!` 再访问实体。
 6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发。无需手写 `AddScoped`（扫描注册自动完成）。
 
-> 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/MigrationSql/` 增版本脚本（详见 azrng-efcore skill）。
+> 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/wwwroot/MigrationSql/` 增版本脚本（详见 azrng-efcore skill）。
 
 ## 命名约定
 
@@ -358,9 +455,9 @@ public Task<MaterialDto> Upload(IFormFile file)
 - **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
 - **控制器能不能调多个 AppService？** 可以，但要警惕——若一个请求要协调多个服务完成一个事务，说明该把编排逻辑下沉到一个 AppService（用 `IUnitOfWork` 包事务），控制器只调这一个。
 
-## 依赖注入与中间件装配（Program.cs）
+## 依赖注入与中间件装配（Startup）
 
-AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。完整 Program.cs 装配代码（含三件套）见上方「全局返回包装 → Program.cs 装配」。
+AppService 用**约定式自动扫描注册**：实现类实现 `Azrng.Core.DependencyInjection.IScopedDependency`（或 `ITransientDependency`/`ISingletonDependency`），再调一次 `RegisterBusinessServices` 扫描程序集，按生命周期接口自动注册。将所有服务注册放入 `Startup.RegisterServices(IServiceCollection)`，将所有中间件放入 `Startup.SetupMiddlewares(WebApplication)`；完整模板见上方「全局返回包装 → Startup 装配」。
 
 ```csharp
 builder.Services.AddEntityFramework<AppDbContext>(o =>
@@ -382,7 +479,7 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 ```
 
 > 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
-> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、对应的 `Common.EFCore.*` provider 包（如 `Common.EFCore.PostgresSql`）、按需 `Azrng.SqlMigration`（SQL 迁移）/ `Azrng.Swashbuckle`（Swagger）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）。如果代码直接写 `new NpgsqlConnection(...)`，Service 还应显式引用 `Npgsql`；不要依赖 provider 的传递引用。
+> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、对应的 `Common.EFCore.*` provider 包（如 `Common.EFCore.PostgresSql`）、按需 `Azrng.SqlMigration`（SQL 迁移）/ `Azrng.Swashbuckle`（Swagger）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）/ `DotNetEnv`（仅本地 `.env` 开发配置）。如果代码直接写 `new NpgsqlConnection(...)`，Service 还应显式引用 `Npgsql`；不要依赖 provider 的传递引用。
 
 ## 常见反模式（最易踩）
 

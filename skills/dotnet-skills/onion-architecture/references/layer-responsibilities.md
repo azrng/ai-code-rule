@@ -1,10 +1,44 @@
 # 分层职责详解与代码示例
 
 ## 目录
-1. 各层职责对照
-2. 跨层数据流（一个请求的完整旅程）
-3. 各层完整代码示例
-4. .csproj 依赖关系
+1. 解决方案结构
+2. 各层职责对照
+3. 跨层数据流（一个请求的完整旅程）
+4. 各层完整代码示例
+5. .csproj 依赖关系
+
+---
+
+## 0. 解决方案结构
+
+`.slnx` 放在仓库根目录，业务项目放在 `src/`，测试项目放在 `test/`。解决方案使用相对路径引用项目，并按 `/src/`、`/test/` 两个目录节点组织；没有测试项目时保留空的 `/test/` 节点即可。
+
+```text
+YourProject/
+├── YourProject.slnx
+├── src/
+│   ├── YourProject.Core/
+│   ├── YourProject.IDomain/
+│   ├── YourProject.IApplication/
+│   ├── YourProject.Domain/
+│   ├── YourProject.Application/
+│   ├── YourProject.EntityFramework/
+│   └── YourProject.Service/
+└── test/
+    └── YourProject.Tests/
+```
+
+```xml
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/YourProject.Core/YourProject.Core.csproj" />
+    <Project Path="src/YourProject.Service/YourProject.Service.csproj" />
+  </Folder>
+  <Folder Name="/test/" />
+</Solution>
+```
+
+新增测试项目时，项目路径必须位于 `test/` 下，并加入 `.slnx` 的 `/test/` 节点；不要把测试项目放回 `src/`。
 
 ---
 
@@ -165,6 +199,7 @@ public class ProductAppService : IScopedDependency, IProductAppService
     {
         var product = await _productRepository.EntitiesNoTacking.FirstOrDefaultAsync(p => p.Id == id);
         NotFoundException.ThrowIfNull(product, "商品不存在");   // 资源不存在 → 由异常中间件映射成 404
+        product = product!;                                    // 包未标注流分析时显式恢复非空
         return new ProductDto { Id = product.Id, Name = product.Name, Price = product.Price, Status = product.Status };
     }
 
@@ -230,7 +265,7 @@ await _repo.UpdateAsync(entity, submit: true);
 
 AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：成功 `return dto;`、资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`、参数/业务校验失败 `throw new ParameterException(msg)`（也可是 `LogicBusinessException`）、无权限 `throw new ForbiddenException(msg)`。
 
-> 业务异常 → 结果映射表、三件套装配、`IResultModel<T>` 迁移期说明见 `SKILL.md → 全局返回包装`。这套要工作，**异常中间件 `app.UseGlobalException()` 必须在 Program.cs 管道最外层装配**，否则抛出的异常会变成裸 500。
+> 业务异常 → 结果映射表、三件套装配、`IResultModel<T>` 迁移期说明见 `SKILL.md → 全局返回包装`。这套要工作，**异常中间件 `app.UseGlobalException()` 必须在 `Startup.SetupMiddlewares` 管道最外层装配**，否则抛出的异常会变成裸 500。
 
 需要多步原子写时用 `IUnitOfWork.CommitTransactionAsync`（自动开/提交/回滚事务，传入业务委托）：
 ```csharp
@@ -379,7 +414,7 @@ public class AppDbContext : DbContext
 ```
 
 ### Service（入口/组装层）
-**放**：`Controllers`、`Program.cs`（DI 装配 + 中间件管道）、`appsettings`、迁移 SQL 脚本、安全/过滤器。
+**放**：`Controllers`、`Program.cs`（宿主生命周期）、`Startup/Startup.cs`（DI 装配 + 中间件管道）、`appsettings`、`wwwroot/index.html`、`wwwroot/MigrationSql/`、安全/过滤器。
 **不放**：EF 查询、业务校验、`IBaseRepository` 注入。
 **依赖**：Application、EntityFramework、Storage。Service 是组合根，负责注册存储实现、数据库、迁移、Swagger 和中间件。
 
@@ -415,11 +450,87 @@ public class ProductController(IProductAppService productAppService) : Controlle
 }
 ```
 
-Program.cs 装配（全局包装三件套 + 异常中间件 + 自动注册）见 `SKILL.md → 全局返回包装 → Program.cs 装配` 与 `SKILL.md → 依赖注入与中间件装配`。
+### Program.cs 与 Startup/Startup.cs 分工
+
+`Program.cs` 只保留宿主生命周期代码；所有 DI 注册放在 `Startup.RegisterServices(IServiceCollection)`，所有中间件和端点管道放在 `Startup.SetupMiddlewares(WebApplication)`。这样新增数据库、认证、Swagger 或中间件时不会持续膨胀宿主入口。
+
+```csharp
+// Service/Program.cs
+using DotNetEnv;
+
+// 本地开发敏感配置走仓库根目录 .env（gitignore 排除）。注入为进程环境变量后由默认配置链读取，
+// 不覆盖已存在的环境变量（NoClobber）；生产/容器无 .env 时不加载任何值
+Env.NoClobber().TraversePath().Load();
+
+var builder = WebApplication.CreateBuilder(args);
+var startup = new Startup(builder.Configuration, builder.Environment);
+
+startup.RegisterServices(builder.Services);
+
+var app = builder.Build();
+startup.SetupMiddlewares(app);
+app.Run();
+```
+
+`DotNetEnv` 是 Service 项目的可选开发依赖：
+
+```xml
+<PackageReference Include="DotNetEnv" />
+```
+
+将 `.env` 放在仓库根目录并加入根 `.gitignore`；可提交不含敏感值的 `.env.example`。加载必须发生在 `WebApplication.CreateBuilder(args)` 之前，不能放到 `Startup.RegisterServices` 之后，否则默认配置链可能已经完成构建。
+
+```csharp
+// Service/Startup/Startup.cs
+public sealed class Startup
+{
+    private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _environment;
+
+    public Startup(IConfiguration configuration, IWebHostEnvironment environment)
+    {
+        _configuration = configuration;
+        _environment = environment;
+    }
+
+    public void RegisterServices(IServiceCollection services)
+    {
+        services.AddControllers();
+        services.AddMvcResultPackFilter("/swagger");
+        services.AddMvcModelVerifyFilter();
+        services.RegisterBusinessServices("YourProject.*.dll");
+
+        var migrationSqlPath = Path.Combine(
+            _environment.ContentRootPath,
+            "wwwroot",
+            "MigrationSql");
+        services.AddSqlMigrationService("default", options =>
+        {
+            options.VersionPrefix = string.Empty;
+            options.SqlRootPath = migrationSqlPath;
+            options.ConnectionBuilder = _ =>
+                new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")!);
+        }).AddAutoMigration();
+    }
+
+    public void SetupMiddlewares(WebApplication app)
+    {
+        app.UseGlobalException();
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+        app.UseCors();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
+    }
+}
+```
+
+三件套装配细节见 `SKILL.md → 全局返回包装 → Startup 装配` 与 `SKILL.md → 依赖注入与中间件装配`。
 
 > 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/isFailure/code/message/data/errors）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
 
-Service 中如需提供 `wwwroot/index.html` 联调页，在 `MapControllers()` 前调用 `app.UseDefaultFiles()` 和 `app.UseStaticFiles()`。文件下载 action 返回 `FileResult` 时包装过滤器会自动跳过；如果返回其它原始 `IActionResult`，可使用 `Azrng.AspNetCore.Core.Filter.NoWrapperAttribute`。
+Service 中如需提供 `wwwroot/index.html` 联调页，在 `MapControllers()` 前调用 `app.UseDefaultFiles()` 和 `app.UseStaticFiles()`。SQL 迁移脚本放在 `Service/wwwroot/MigrationSql/`，代码通过 `ContentRootPath` 组合出绝对路径。文件下载 action 返回 `FileResult` 时包装过滤器会自动跳过；如果返回其它原始 `IActionResult`，可使用 `Azrng.AspNetCore.Core.Filter.NoWrapperAttribute`。
 
 ---
 
@@ -493,6 +604,6 @@ Storage           → Core, IDomain                          ← 可选
 | 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，无 IResultModel） |
 | 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `NotFoundException.ThrowIfNull`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
 | 6 | `Service/Controllers/OrderController.cs` | Service | 瘦控制器，一行转发 `Task<T>`（不写 `Ok()`） |
-| 7 | `Service/Program.cs` | Service | 已有 `RegisterBusinessServices("App.*.dll")` + `AddMvcResultPackFilter` + `AddMvcModelVerifyFilter` + `app.UseGlobalException()`，实现 `IScopedDependency` 即自动注册，无需改 |
+| 7 | `Service/Program.cs` + `Service/Startup/Startup.cs` | Service | `Program.cs` 只保留宿主生命周期；`Startup.RegisterServices` 放 `RegisterBusinessServices`、结果过滤器等 DI 注册，`Startup.SetupMiddlewares` 放 `app.UseGlobalException()` 等管道配置 |
 
-新增实体在 DbContext 加 `DbSet` + 写 `{Entity}Etc.cs` 配置类，`ApplyConfigurationsFromAssembly` 自动扫描。若用 SQL 脚本迁移，装 `Azrng.SqlMigration` 包 + 加 `Service/MigrationSql/x.x.x.sql`（详见 azrng-efcore「SQL 脚本迁移」）。
+新增实体在 DbContext 加 `DbSet` + 写 `{Entity}Etc.cs` 配置类，`ApplyConfigurationsFromAssembly` 自动扫描。若用 SQL 脚本迁移，装 `Azrng.SqlMigration` 包 + 加 `Service/wwwroot/MigrationSql/x.x.x.sql`（详见 azrng-efcore「SQL 脚本迁移」）。

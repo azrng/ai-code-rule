@@ -83,7 +83,7 @@ src/
 | 自定义仓储接口（仅复杂查询需要时，位置与判定规则见 `EntityFramework（数据访问层）规则`） | `IDomain/{业务域}/` | `I{实体名}Repository.cs` |
 | EF Core 实体配置 | `EntityFramework/` | `{实体名}Etc.cs`（继承 Azrng 配置基类） |
 | DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
-| 数据库迁移脚本 | `Service/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
+| 数据库迁移脚本 | `Service/wwwroot/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
 | 外部服务调用 / 第三方封装 | `Adapter/{业务域}/` | `{名称}Adapter.cs` |
 | 通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
 | 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
@@ -120,6 +120,7 @@ src/
 - 通过构造函数注入 IApplication 层的服务接口。
 - Controller action 直接返回 `Task<T>` 并一行转发 AppService；不写 `Ok()`，不手动构造 `ResultModel`，统一包装由全局过滤器与异常中间件完成（见 `统一响应格式`）。
 - DI 注册、中间件配置、Swagger 配置等都在此层完成。
+- `Service` 项目按需引用 `DotNetEnv`，用于本地开发时加载仓库根目录 `.env`；`Program.cs` 在 `WebApplication.CreateBuilder(args)` 之前调用 `Env.NoClobber().TraversePath().Load()`，再进入 `Startup` 装配。`.env` 必须加入根 `.gitignore`，敏感值不得提交，`.env.example` 只保留键名或非敏感示例值。
 - 禁止在 Controller、AppService、DomainService、Repository、Entity、DTO 等 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
 
 ### IApplication（应用接口层）规则

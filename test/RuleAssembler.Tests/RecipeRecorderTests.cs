@@ -99,6 +99,10 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Contains(".zcode/", content);
         Assert.Contains(".claude/", content);
         Assert.Contains(".learnings/", content);
+        Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.Trim() == "artifacts/"));
+        Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.Trim() == ".env"));
         Assert.Contains("node_modules/", content);
         Assert.Contains("已创建", message);
     }
@@ -118,6 +122,12 @@ public sealed class RecipeRecorderTests : IDisposable
         // 追加路径同样补齐 AI 工具本地目录
         Assert.Contains(".claude/", content);
         Assert.Contains(".cursor/", content);
+        // 生成器执行后的本地产物与敏感配置不得进入版本库
+        Assert.Contains(".artifacts/", content);
+        Assert.Contains(".codegraph/", content);
+        Assert.Contains(".learnings/", content);
+        Assert.Contains("artifacts/", content);
+        Assert.Contains(".env", content);
         Assert.DoesNotContain("node_modules/", content);
     }
 
