@@ -122,6 +122,26 @@ public sealed class RecipeReplayerTests : IDisposable
     }
 
     [Fact]
+    public void Electron设计系统技术栈不匹配_保留且告警()
+    {
+        // Electron 共享设计系统也必须携带技术栈锚点，避免切换组合时静默保留旧基线
+        File.WriteAllText(
+            Path.Combine(_tempDir, "design-system.yaml"),
+            "# 设计系统唯一事实来源\n"
+            + "# 技术栈：React + TypeScript + Tailwind CSS + Radix UI Primitive + Electron\n"
+            + "meta:\n  status: \"已定制\"\n");
+        var (_, json) = BuildRecipe("vueElectron");
+
+        var result = _replayer.Replay(json, _tempDir);
+
+        Assert.DoesNotContain(result.Files, file => file.Output == "design-system.yaml");
+        Assert.Contains(result.Notes, note =>
+            note.Contains("React + TypeScript + Tailwind CSS + Radix UI Primitive + Electron", StringComparison.Ordinal)
+            && note.Contains("Vue 3 + TypeScript + Element Plus + ECharts + Pinia + Electron", StringComparison.Ordinal)
+            && note.Contains("不一致", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void 组件集合与当前manifest不一致时报错_不静默生成()
     {
         var (_, json) = BuildRecipe("reactLinkdotNet");
