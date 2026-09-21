@@ -113,10 +113,17 @@ internal static class Program
             if (files.Any(file => file.Output.Equals("design-system.yaml", StringComparison.OrdinalIgnoreCase))
                 && DesignSystemGuard.ShouldPreserve(Environment.CurrentDirectory))
             {
+                // 保留前比对技术栈锚点：本地文件疑似旧组合基线时告警提示重置，不静默保留
+                var baselineContent = files
+                    .First(file => file.Output.Equals("design-system.yaml", StringComparison.OrdinalIgnoreCase))
+                    .Content;
+                var stackWarning = DesignSystemGuard.GetTechStackMismatchWarning(Environment.CurrentDirectory, baselineContent);
                 files = files
                     .Where(file => !file.Output.Equals("design-system.yaml", StringComparison.OrdinalIgnoreCase))
                     .ToList();
                 Console.WriteLine("检测到已定制的 design-system.yaml：保留本地版本，本次不覆盖（如需重置基线，删除该文件后再生成）");
+                if (stackWarning is not null)
+                    Console.WriteLine(stackWarning);
             }
 
             Console.WriteLine();

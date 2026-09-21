@@ -104,6 +104,24 @@ public sealed class RecipeReplayerTests : IDisposable
     }
 
     [Fact]
+    public void 本地已定制设计系统技术栈不匹配_保留且告警()
+    {
+        // 实测踩坑场景：项目从 React 组合切到 Blazor 组合后，本地留存的旧技术栈基线不得被静默保留
+        File.WriteAllText(
+            Path.Combine(_tempDir, "design-system.yaml"),
+            "# 设计系统唯一事实来源\n# 技术栈：React + TypeScript + Ant Design 5 + ECharts + Zustand\nmeta:\n  status: \"已定制\"\n");
+        var (_, json) = BuildRecipe("dotnetBlazorWebApp");
+
+        var result = _replayer.Replay(json, _tempDir);
+
+        Assert.DoesNotContain(result.Files, file => file.Output == "design-system.yaml");
+        Assert.Contains(result.Notes, note =>
+            note.Contains("React + TypeScript + Ant Design 5", StringComparison.Ordinal)
+            && note.Contains("Blazor Server + BootstrapBlazor", StringComparison.Ordinal)
+            && note.Contains("不一致", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void 组件集合与当前manifest不一致时报错_不静默生成()
     {
         var (_, json) = BuildRecipe("reactLinkdotNet");
