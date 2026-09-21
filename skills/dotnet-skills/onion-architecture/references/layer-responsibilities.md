@@ -199,8 +199,8 @@ public class ProductAppService : IScopedDependency, IProductAppService
     {
         var product = await _productRepository.EntitiesNoTacking.FirstOrDefaultAsync(p => p.Id == id);
         NotFoundException.ThrowIfNull(product, "商品不存在");   // 资源不存在 → 由异常中间件映射成 404
-        product = product!;                                    // 包未标注流分析时显式恢复非空
-        return new ProductDto { Id = product.Id, Name = product.Name, Price = product.Price, Status = product.Status };
+        var requiredProduct = product!;                        // 包未标注流分析时在使用处显式断言非空
+        return new ProductDto { Id = requiredProduct.Id, Name = requiredProduct.Name, Price = requiredProduct.Price, Status = requiredProduct.Status };
     }
 
     public async Task<long> CreateAsync(CreateProductRequest request)
@@ -414,7 +414,7 @@ public class AppDbContext : DbContext
 ```
 
 ### Service（入口/组装层）
-**放**：`Controllers`、`Program.cs`（宿主生命周期）、`Startup/Startup.cs`（DI 装配 + 中间件管道）、`appsettings`、`wwwroot/index.html`、`wwwroot/MigrationSql/`、安全/过滤器。
+**放**：`Controllers`、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、`appsettings`、`wwwroot/index.html`、`wwwroot/MigrationSql/`、安全/过滤器。
 **不放**：EF 查询、业务校验、`IBaseRepository` 注入。
 **依赖**：Application、EntityFramework、Storage。Service 是组合根，负责注册存储实现、数据库、迁移、Swagger 和中间件。
 
@@ -450,7 +450,43 @@ public class ProductController(IProductAppService productAppService) : Controlle
 }
 ```
 
-### Program.cs 与 Startup/Startup.cs 分工
+### 默认健康检查控制器
+
+Service 项目默认提供 `HealthController`，供容器编排、负载均衡和运维探针使用。`alive` 只表示进程仍能响应，`ready` 表示服务已完成启动；如果 `ready` 还需要核对数据库或其它依赖，应在该端点中接入对应检查，不要让 `alive` 依赖外部服务。两个探针必须使用 `[NoWrapper]` 返回裸 JSON，避免被全局结果包装器改写。
+
+```csharp
+using Azrng.Core.Extension;
+using Azrng.AspNetCore.Core.Filter;
+using Microsoft.AspNetCore.Mvc;
+
+namespace YourProject.Service.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class HealthController : ControllerBase
+{
+    [HttpGet("alive")]
+    [NoWrapper]
+    public IActionResult Alive() => Ok(new { status = "ok" });
+
+    [HttpGet("ready")]
+    [NoWrapper]
+    public IActionResult Ready() => Ok(new { status = "ok" });
+
+    /// <summary>
+    /// 服务器当前时间，用于链路排查时核对时区
+    /// </summary>
+    [HttpGet("gettime")]
+    public DateTime GetTime()
+    {
+        return DateTime.Now;
+    }
+}
+```
+
+`gettime` 用于链路排查时核对服务器时区，不要在该端点中额外转换为 UTC 或调用其它时间归一化扩展。
+
+### Program.cs 与 Startup.cs 分工
 
 `Program.cs` 只保留宿主生命周期代码；所有 DI 注册放在 `Startup.RegisterServices(IServiceCollection)`，所有中间件和端点管道放在 `Startup.SetupMiddlewares(WebApplication)`。这样新增数据库、认证、Swagger 或中间件时不会持续膨胀宿主入口。
 
@@ -481,7 +517,7 @@ app.Run();
 将 `.env` 放在仓库根目录并加入根 `.gitignore`；可提交不含敏感值的 `.env.example`。加载必须发生在 `WebApplication.CreateBuilder(args)` 之前，不能放到 `Startup.RegisterServices` 之后，否则默认配置链可能已经完成构建。
 
 ```csharp
-// Service/Startup/Startup.cs
+// Service/Startup.cs
 public sealed class Startup
 {
     private readonly IConfiguration _configuration;
@@ -604,6 +640,6 @@ Storage           → Core, IDomain                          ← 可选
 | 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，无 IResultModel） |
 | 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `NotFoundException.ThrowIfNull`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
 | 6 | `Service/Controllers/OrderController.cs` | Service | 瘦控制器，一行转发 `Task<T>`（不写 `Ok()`） |
-| 7 | `Service/Program.cs` + `Service/Startup/Startup.cs` | Service | `Program.cs` 只保留宿主生命周期；`Startup.RegisterServices` 放 `RegisterBusinessServices`、结果过滤器等 DI 注册，`Startup.SetupMiddlewares` 放 `app.UseGlobalException()` 等管道配置 |
+| 7 | `Service/Program.cs` + `Service/Startup.cs` | Service | `Program.cs` 只保留宿主生命周期；`Startup.RegisterServices` 放 `RegisterBusinessServices`、结果过滤器等 DI 注册，`Startup.SetupMiddlewares` 放 `app.UseGlobalException()` 等管道配置 |
 
 新增实体在 DbContext 加 `DbSet` + 写 `{Entity}Etc.cs` 配置类，`ApplyConfigurationsFromAssembly` 自动扫描。若用 SQL 脚本迁移，装 `Azrng.SqlMigration` 包 + 加 `Service/wwwroot/MigrationSql/x.x.x.sql`（详见 azrng-efcore「SQL 脚本迁移」）。

@@ -48,15 +48,13 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
     config.Schema = "public";             // PostgreSQL schema；其它库可留空
-    config.WorkId = 1;                    // 分布式 Id 生成机器号
-    config.IsSnakeCaseNaming = true;      // 是否蛇形命名（默认 true）
     config.UseOldUpdateColumn = false;    // 是否用旧字段名 creator/modifyer/modify_time
 });
 // 多数场景到此即可，注入 IUnitOfWork 直接用。多 DbContext 时才追加：
 // .AddUnitOfWork<AppDbContext>();
 ```
 
-> PostgreSQL provider 的配置参数类型是 `Azrng.EFCore.EfCoreConnectOption`，定义在基础包 `Common.EFCore`，不是 `Azrng.EFCore.PostgresSql`。`AddEntityFramework<TDbContext>` 扩展方法位于 `Microsoft.Extensions.DependencyInjection`。该注册过程会按 `WorkId` 初始化 `IdHelper`；使用实体基类或直接调用 `IdHelper.GetLongId()` 时，通常不需要再单独调用 `AddIdHelper`。
+> PostgreSQL provider 的配置参数类型是 `Azrng.EFCore.EfCoreConnectOption`，定义在基础包 `Common.EFCore`，不是 `Azrng.EFCore.PostgresSql`。`AddEntityFramework<TDbContext>` 扩展方法位于 `Microsoft.Extensions.DependencyInjection`。`WorkId` 默认使用包内置的节点号策略，`IsSnakeCaseNaming` 默认是 `true`；除非已经明确设计节点号或命名策略，否则不要显式覆盖这两个默认值。该注册过程会按最终的 `WorkId` 初始化 `IdHelper`，使用实体基类或直接调用 `IdHelper.GetLongId()` 时，通常不需要再单独调用 `AddIdHelper`。
 
 > 自定义 DbContext 时重写 `OnModelCreating`，调 `ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `*Etc` 配置类；加 `HasDefaultSchema(...)` 设默认 schema。详见 references/entities-and-context.md。
 

@@ -38,7 +38,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | **Domain** | 领域实现层 | IDomain, Adapter, EntityFramework | 领域服务实现（`{X}DomainService`）：封装可复用公共领域操作，可注入 IBaseRepository 写库；纯 CRUD 可空 |
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
-| **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（宿主生命周期）、`Startup/Startup.cs`（DI 装配 + 中间件管道）、配置 |
+| **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ HttpClient 实现（`Adapter/Service/`、`Adapter/HttpWebClient/`），屏蔽 HTTP/SDK 细节（可选） |
 | **Storage** | 存储适配 | Core、IDomain | 文件/对象存储实现（可选）；存储接口放 `IDomain` 或真正通用时放 `Core` |
 
@@ -122,7 +122,7 @@ YourProject/
 
 ### Startup 装配（标准模板，三件套都在这里）
 
-Service 项目使用 `Startup/Startup.cs` 承担依赖注入和中间件管道装配。`Program.cs` 只负责创建 WebApplicationBuilder、调用 Startup、构建应用并运行宿主，不堆积业务服务注册或中间件细节。
+Service 项目使用与 `Program.cs` 平级的 `Startup.cs` 承担依赖注入和中间件管道装配。`Program.cs` 只负责创建 WebApplicationBuilder、调用 Startup、构建应用并运行宿主，不堆积业务服务注册或中间件细节。
 
 ```csharp
 // Program.cs
@@ -151,7 +151,7 @@ app.Run();
 将 `.env` 放在仓库根目录并加入根 `.gitignore`；可以提交不含敏感值的 `.env.example`。加载必须发生在 `WebApplication.CreateBuilder(args)` 之前，不能放到 `Startup.RegisterServices` 之后，否则默认配置链可能已经完成构建。
 
 ```csharp
-// Startup/Startup.cs
+// Service/Startup.cs
 public sealed class Startup
 {
     private readonly IConfiguration _configuration;
@@ -231,6 +231,42 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 ```
 
+### 默认健康检查控制器
+
+Service 项目默认提供 `HealthController`，供容器编排、负载均衡和运维探针使用。`alive` 只表示进程仍能响应，`ready` 表示服务已完成启动；如果 `ready` 还需要核对数据库或其它依赖，应在该端点中接入对应检查，不要让 `alive` 依赖外部服务。两个探针必须使用 `[NoWrapper]` 返回裸 JSON，避免被全局结果包装器改写。
+
+```csharp
+using Azrng.Core.Extension;
+using Azrng.AspNetCore.Core.Filter;
+using Microsoft.AspNetCore.Mvc;
+
+namespace YourProject.Service.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class HealthController : ControllerBase
+{
+    [HttpGet("alive")]
+    [NoWrapper]
+    public IActionResult Alive() => Ok(new { status = "ok" });
+
+    [HttpGet("ready")]
+    [NoWrapper]
+    public IActionResult Ready() => Ok(new { status = "ok" });
+
+    /// <summary>
+    /// 服务器当前时间，用于链路排查时核对时区
+    /// </summary>
+    [HttpGet("gettime")]
+    public DateTime GetTime()
+    {
+        return DateTime.Now;
+    }
+}
+```
+
+`gettime` 用于链路排查时核对服务器时区，不要在该端点中额外转换为 UTC 或调用其它时间归一化扩展。
+
 ### 文件下载与原始响应
 
 `NoWrapperAttribute` 位于 `Azrng.AspNetCore.Core.Filter`。包装过滤器本身会自动跳过 `FileResult`，因此 `return File(...)` 通常不需要 `[NoWrapper]`；如果 action 返回的是其它原始 `IActionResult`，可以显式加 `[NoWrapper]` 作为保护。
@@ -264,8 +300,8 @@ public async Task<OrderDto> GetAsync(long id)
 {
     var order = await _repository.EntitiesNoTacking.FirstOrDefaultAsync(x => x.Id == id);
     NotFoundException.ThrowIfNull(order, "订单不存在");   // 资源不存在 → 404
-    order = order!;                                        // 包未标注流分析时显式恢复非空
-    return new OrderDto { /* 实体→DTO 映射 */ };
+    var requiredOrder = order!;                         // 包未标注流分析时在使用处显式断言非空
+    return new OrderDto { /* 使用 requiredOrder 完成实体→DTO 映射 */ };
 }
 
 public async Task<long> CreateAsync(CreateOrderRequest req)
@@ -430,7 +466,7 @@ public Task<MaterialDto> Upload(IFormFile file)
 2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，构造函数 `SetCreator("system")`。
 3. **EntityFramework/ProductEtc.cs** — 配置类继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤。
 4. **IApplication/Product/IProductAppService.cs** — 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）。
-5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。`ThrowIfNull` 后如编译器仍无法完成可空流分析，显式写 `entity = entity!` 再访问实体。
+5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。由于包版本未必为 `ThrowIfNull` 标注 `[NotNull]`，调用后不要写 `entity = entity!`（会触发 CS1717）；在后续使用处通过 `var requiredEntity = entity!` 或成员访问处的 `entity!` 消除可空警告。
 6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发。无需手写 `AddScoped`（扫描注册自动完成）。
 
 > 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/wwwroot/MigrationSql/` 增版本脚本（详见 azrng-efcore skill）。

@@ -41,7 +41,6 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
     config.Schema = "public";
-    config.WorkId = 1;
 });
 ```
 
@@ -50,7 +49,6 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
-    config.WorkId = 1;
 });
 // 内部已调用 ServerVersion.AutoDetect(connectionString)
 ```
@@ -60,7 +58,6 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = "Data Source=app.db";
-    config.WorkId = 1;
 });
 ```
 
@@ -69,13 +66,12 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
-    config.WorkId = 1;
 });
 ```
 
 ### InMemory（测试）
 ```csharp
-builder.Services.AddEntityFramework<AppDbContext>("test-db", workId: 1);
+builder.Services.AddEntityFramework<AppDbContext>("test-db");
 ```
 
 ## 各注册了什么
@@ -88,7 +84,7 @@ builder.Services.AddEntityFramework<AppDbContext>("test-db", workId: 1);
 
 需要 `IUnitOfWork<TDbContext>` 时追加 `.AddUnitOfWork<TDbContext>()`（来自 `Azrng.EFCore` 基础包）。
 
-> 非内存 provider 的 `AddEntityFramework<TDbContext>` 会根据 `config.WorkId` 内部初始化 `IdHelper`。只有独立于 EF 注册的 Console 或工具程序，才需要额外调用基础包提供的 `AddIdHelper(workId)`。
+> 非内存 provider 的 `AddEntityFramework<TDbContext>` 默认使用 `EfCoreConnectOption` 的节点号和蛇形命名策略，并据最终的 `config.WorkId` 内部初始化 `IdHelper`。不要在普通注册示例中把 `WorkId` 固定为 `1`；只有已经明确节点号分配策略时才显式设置。只有独立于 EF 注册的 Console 或工具程序，才需要额外调用基础包提供的 `AddIdHelper(workId)`。
 
 ## 各 provider 的 DbTypeId（影响时间列类型）
 

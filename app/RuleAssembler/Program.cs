@@ -64,6 +64,7 @@ internal static class Program
             new List<UiChoice>
             {
                 new("生成规则文件（含可选 Skills 导入）", "检测 / 问答选择组合并释放 AGENTS.md 等规则文件"),
+                new("检测当前目录组合（仅查看）", "只检测项目技术栈并展示推荐或待确认组合，不写入文件"),
                 new("仅导入 Skills", "不生成规则文件，只把内置 Skills 导入到 Codex / ZCode / Claude Code / pi")
             });
         if (mode is null)
@@ -73,6 +74,9 @@ internal static class Program
         }
 
         if (mode == 1)
+            return DetectInteractive(manifest, ui, Environment.CurrentDirectory);
+
+        if (mode == 2)
             return ImportSkillsOnly(ui, skillsStore);
 
         while (true)
@@ -202,6 +206,41 @@ internal static class Program
         return 0;
     }
 
+    // 启动菜单中的只读检测：与 --detect 共用同一输出逻辑，避免交互入口和命令行入口口径漂移
+    private static int DetectInteractive(Manifest manifest, IConsoleUi ui, string directory)
+    {
+        var result = new ProjectDetector(manifest).Detect(directory);
+        if (result is null)
+        {
+            ui.Line($"未能在 {directory} 识别出已接入的技术栈。");
+            return 1;
+        }
+
+        ui.Head("已检测当前目录，判断依据：");
+        ui.Bullets(result.Reasons);
+        ui.Bullets(result.Notes);
+        ui.Line("");
+
+        if (result.Converged)
+        {
+            ui.Line($"推荐组合：{result.SampleLabel}（{result.SampleProfileId}）");
+            ui.Line("回答组合：" + string.Join(
+                "，",
+                result.BuildSampleAnswers().Select(pair => $"{pair.Key}={pair.Value}")));
+            return 0;
+        }
+
+        ui.Line("检测未收敛，以下维度已确认：" + string.Join(
+            "，",
+            result.Confirmed.Select(pair => $"{pair.Key}={pair.Value}")));
+        foreach (var trait in result.Unconfirmed)
+            ui.Line($"待确认维度：{trait}");
+        ui.Line("候选组合：");
+        foreach (var candidate in result.Candidates)
+            ui.Line($"  - {candidate.Label}（{candidate.SampleProfileId}）");
+        return 0;
+    }
+
     private static IConsoleUi CreateUi()
     {
         if (Console.IsInputRedirected)
@@ -228,38 +267,7 @@ internal static class Program
         if (args.Length is 1 or 2 && args[0].Equals("--detect", StringComparison.OrdinalIgnoreCase))
         {
             var dir = args.Length == 2 ? args[1] : Environment.CurrentDirectory;
-            var result = new ProjectDetector(manifest).Detect(dir);
-            if (result is null)
-            {
-                Console.WriteLine($"未能在 {dir} 识别出已接入的技术栈。");
-                return 1;
-            }
-
-            Console.WriteLine($"判断依据：");
-            foreach (var reason in result.Reasons)
-                Console.WriteLine($"  - {reason}");
-            foreach (var note in result.Notes)
-                Console.WriteLine($"  - {note}");
-
-            if (result.Converged)
-            {
-                Console.WriteLine($"推荐组合：{result.SampleLabel}（{result.SampleProfileId}）");
-                Console.WriteLine("回答组合：" + string.Join(
-                    "，",
-                    result.BuildSampleAnswers().Select(pair => $"{pair.Key}={pair.Value}")));
-                return 0;
-            }
-
-            // 部分有效但未收敛：打印待确认维度与候选，不伪造完整推荐
-            Console.WriteLine("检测未收敛，以下维度已确认：" + string.Join(
-                "，",
-                result.Confirmed.Select(pair => $"{pair.Key}={pair.Value}")));
-            foreach (var trait in result.Unconfirmed)
-                Console.WriteLine($"待确认维度：{trait}");
-            Console.WriteLine("候选组合：");
-            foreach (var candidate in result.Candidates)
-                Console.WriteLine($"  - {candidate.Label}（{candidate.SampleProfileId}）");
-            return 0;
+            return DetectInteractive(manifest, new PlainConsoleUi(), dir);
         }
 
         // 按配方升级已有规则：--upgrade [目录] [--force]。
@@ -430,7 +438,7 @@ internal static class Program
             || args[0].Equals("-h", StringComparison.OrdinalIgnoreCase)))
         {
             Console.WriteLine(Banner);
-            Console.WriteLine("直接双击或不带参数运行：先选模式——生成规则文件（自动检测推荐 / 问答选择），或仅导入 Skills（不生成规则文件、不写配方记录）。");
+            Console.WriteLine("直接双击或不带参数运行：先选模式——生成规则文件（自动检测推荐 / 问答选择）、检测当前目录组合，或仅导入 Skills。");
             Console.WriteLine("规则文件落盘后可选择把内置 Skills 导入到 Codex（.codex/skills）/ ZCode（.zcode/skills）/ Claude Code（.claude/skills）/ pi（.pi/skills），追加导入、同名技能可覆盖或跳过；--recipe / --upgrade 按配方同步已记录的 Skills。");
             Console.WriteLine("--check：只校验 manifest、片段、全部兼容样例的输出契约一致性、问答决策树、组件问答决策树与内置技能，不写入文件。");
             Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合；证据不足时打印待确认维度与候选组合，不写入文件。");

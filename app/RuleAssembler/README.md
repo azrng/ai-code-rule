@@ -8,7 +8,7 @@
 2. **问答决策树与补答（P2 阶段 3 起走组合内核）**：问答由 `SelectionEngine` 驱动——候选是 manifest 的 `components` 而非 Profile 列表，问题顺序沿用 `wizard.steps`（项目形态 → 前端/界面 → 桌面壳 → 后端 → 细分项）。只提问「存续组件之间仍有分歧」的维度：唯一取值自动推导（配方来源 `derived`），选项经可行性剪枝（先过钳制约束，再做结构锚定校验——已回答的非 absent 维度必须仍被存续组件表达，兼容样例不参与剪枝，新组件接入后其组合即可经问答到达）。输入 0 可返回上一步。检测推荐与补答同样产出 `Selection` 走 `CompositionPlanner` 组合路径。
 3. **经典选择**：技术大类 → 兼容样例的浏览式兜底入口（样例携带 label / desc / family 展示元数据）；选中样例的维度选择直接进入组合内核渲染与配方。
 4. **Q5 能力开关**：组合确定后统一出现，只列出当前组合可用的能力（doc / infra / design-system / ai-capability，默认勾选 = 当前组合；不可用能力隐藏）。`ai-capability` 的启用由 AI 维度的问答选择这一唯一事实来源决定，Q5 只展示不调整。关闭能力会同步移除对应输出文件与根导航引用（含 reading-order 编号重排与根模板行级条件）。
-5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；`--check` / `--emit` / `--detect` 始终纯文本输出。
+5. **交互层**：`IConsoleUi` 两个实现——`SpectreConsoleUi`（交互终端，方向键 + 回车）与 `PlainConsoleUi`（编号输入，stdin 重定向的管道/CI 场景自动使用）。实现选择集中在 `Program.RunInteractive` 入口一处；启动菜单提供规则生成、Skills 导入和只读组合检测；`--check` / `--emit` / `--detect` 始终纯文本输出。
 6. **收尾**：所有路径共用「列出实际生成文件 → 汇总确认 → 生成」；写入成功后 `RecipeRecorder` 在目标项目生成 `.ai-rule-profile.json` 配方记录（mode / `profile_id` / `selection` 维度选择 / `component_ids` 命中组件 / `answer_sources` 回答来源 / `features` 能力开关 / skills / 版本 / 文件清单），并确保目标项目 `.gitignore` 忽略该记录、生成器本体（`use-ai-rule*` 通配，覆盖 exe、无扩展名与带 RID 后缀的副本）、规则效果反馈记录（`.ai-rule-feedback.md`，本地产物不随项目提交）与 AI 工具本地目录（`.zcode/` 等七项，见 `GitignoreTemplates.AiToolEntries`）；没有 `.gitignore` 时按所选技术栈创建默认模板（精选自 github/gitignore 标准内容）。
 
 ## 设计

@@ -37,6 +37,7 @@ Load the smallest set of references that fits the task. Do not load every refere
 - Prefer built-in DI, options/configuration, logging, ProblemDetails, OpenAPI, health checks, rate limiting, output caching, and Identity before adding third-party infrastructure.
 - Keep feature slices cohesive so the page, component, endpoint, controller, validation, service, data access, and tests are easy to trace.
 - Respect the existing app model. Do not rewrite Razor Pages to MVC or controllers to Minimal APIs without a clear reason.
+- For controller-based service templates, include the default liveness/readiness and time-check endpoints described in the API reference; adapt the raw-response attribute to the result-wrapper library in use.
 
 ## Reference Guide
 
