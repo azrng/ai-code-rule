@@ -38,9 +38,9 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | **Domain** | 领域实现层 | IDomain, Adapter, EntityFramework | 领域服务实现（`{X}DomainService`）：封装可复用公共领域操作，可注入 IBaseRepository 写库；纯 CRUD 可空 |
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
-| **Service** | 入口/组装层 | Application, Storage | `Controllers`、`Program.cs`（DI 装配 + 中间件管道）、配置 |
+| **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ HttpClient 实现（`Adapter/Service/`、`Adapter/HttpWebClient/`），屏蔽 HTTP/SDK 细节（可选） |
-| **Storage** | 存储适配 | Core | 文件/对象存储封装（可选） |
+| **Storage** | 存储适配 | Core、IDomain | 文件/对象存储实现（可选）；存储接口放 `IDomain` 或真正通用时放 `Core` |
 
 > **接口/实现结对**：`I*` 项目只有抽象，对应无前缀项目是实现。`IApplication`/`Application`、`IDomain`/`Domain` 总是成对出现。控制器永远只依赖 `I*AppService`，不依赖实现。
 
@@ -56,7 +56,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 
 ## 全局返回包装（三件套 + Program.cs 装配）
 
-这是本架构的**统一对外结果契约**：所有 action 返回值最终都是 `{ isSuccess, code, message, data }` 形态的 `ResultModel`，但**业务代码不手动包装**——靠框架三件套自动完成。
+这是本架构的**统一对外结果契约**：所有 action 返回值最终都是 `{ isSuccess, isFailure, code, message, data, errors }` 形态的 `ResultModel`，但**业务代码不手动包装**——靠框架三件套自动完成。没有数据或没有错误时，`data` / `errors` 仍可能以空值或空数组输出，按实际序列化配置为准。
 
 ### 三件套（来自 `Azrng.AspNetCore.Core`，缺一不可）
 
@@ -75,11 +75,16 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | 参数错误 / 业务校验失败 | `throw new ParameterException(msg)` | 400 | `"400"` |
 | 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"400"` |
 | 资源不存在（按 id 查不到） | `NotFoundException.ThrowIfNull(entity, "记录不存在")` | 404 | `"404"` |
-| 无权限 / 鉴权失败 | `throw new ForbiddenException(msg)` | 401 | `"401"` |
+| 未认证（未登录或凭证无效） | `throw new UnauthorizedException(msg)` | 401 | `"401"` |
+| 已认证但无权限 | `throw new ForbiddenException(msg)` | 403 | `"403"` |
 | 服务器内部错误 | `throw new InternalServerException(msg)` | 500 | `"500"` |
 | 其他未处理异常 | （任何 `Exception`） | 500 | `"500"` |
 
-> 默认按真实 HTTP 状态码返回（400/404/401/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
+> 默认按真实 HTTP 状态码返回（400/401/403/404/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
+
+> 当前 `CustomExceptionMiddleware` 对 `ForbiddenException` 写入 HTTP 403 和结果码 `403`；部分 `Azrng.Core` 版本的 `ForbiddenException.ErrorCode` 构造值仍是 `401`，这是包内历史兼容问题，不应据此把“已认证但无权限”文档化为 401。
+
+> `AddMvcResultPackFilter` 的忽略前缀按 URI 路径匹配，传值应以 `/` 开头，例如 `/swagger`。传入 `swagger` 可能不影响启动，但在首个结果过滤请求时才抛参数异常。
 
 ### Program.cs 装配（标准模板，三件套都在这里）
 
@@ -106,6 +111,46 @@ app.Run();
 ```
 
 > **最常见的坑**：只注册了 `AddMvcResultPackFilter` 却忘了 `app.UseGlobalException()`——此时 AppService 抛 `ParameterException` 无人接住，业务失败会返回 HTTP 500，前端拿不到统一失败结构。三件套必须齐备。
+
+### Swagger 与静态文件装配
+
+当前 `Azrng.Swashbuckle` 的 `UseDefaultSwagger` 行为如下：`onlyDevelopmentEnabled: true` 时仅当 `ASPNETCORE_ENVIRONMENT` 为 `Development` 才注册 Swagger；传 `false`（默认值）时所有环境都注册。默认不传自定义 UI 配置时，UI 的 `RoutePrefix` 为空，即访问根路径 `/`；JSON 端点是 `/swagger/v1/swagger.json`。
+
+需要把 UI 放到 `/swagger` 时显式设置路由前缀：
+
+```csharp
+app.UseDefaultSwagger(
+    onlyDevelopmentEnabled: false,
+    action: options =>
+    {
+        options.RoutePrefix = "swagger";
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "App API v1");
+    });
+```
+
+生产环境不需要开放 Swagger 时使用 `onlyDevelopmentEnabled: true`，不要依赖约定中的 `SwaggerAPI` 路径。若项目提供 `wwwroot/index.html` 作为手工联调页，在 `MapControllers()` 前加入：
+
+```csharp
+app.UseDefaultFiles();
+app.UseStaticFiles();
+```
+
+### 文件下载与原始响应
+
+`NoWrapperAttribute` 位于 `Azrng.AspNetCore.Core.Filter`。包装过滤器本身会自动跳过 `FileResult`，因此 `return File(...)` 通常不需要 `[NoWrapper]`；如果 action 返回的是其它原始 `IActionResult`，可以显式加 `[NoWrapper]` 作为保护。
+
+```csharp
+using Azrng.AspNetCore.Core.Filter;
+using Microsoft.AspNetCore.Mvc;
+
+[HttpGet("download/{id:long}")]
+[NoWrapper]
+public async Task<IActionResult> Download(long id)
+{
+    var (originalName, content) = await _materialAppService.DownloadAsync(id);
+    return File(content, "application/octet-stream", originalName);
+}
+```
 
 ### AppService / 控制器写法（全局包装模式）
 
@@ -164,6 +209,15 @@ public Task<long> Create([FromBody] CreateOrderRequest req) => _orderAppService.
 ### 标准写法（AppService）
 
 ```csharp
+using Azrng.Core.CommonDto;
+using Azrng.Core.DependencyInjection;
+using Azrng.Core.Extension;
+using Azrng.Core.Requests;
+using Azrng.Core.Results;
+using Azrng.EFCore;
+using Azrng.EFCore.Extensions;
+using Microsoft.EntityFrameworkCore;
+
 // 1) 请求类继承 GetPageRequest，只声明业务筛选字段（PageIndex/PageSize 由基类提供）
 public class EmployeeListRequest : GetPageRequest
 {
@@ -187,6 +241,8 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 }
 ```
 
+> `ToPageListAsync` 实际返回 `Task<List<T>>`，不是分页结果对象；必须再用 `new GetQueryPageResult<T>(list, new GetQueryPageResult(request, total))` 或四参数构造函数组装分页结果。完整 using 为 `Azrng.Core.CommonDto`、`Azrng.Core.Extension`、`Azrng.Core.Requests`、`Azrng.Core.Results`、`Azrng.EFCore.Extensions`。
+
 > `RefAsync<T>` 有到 `T` 的隐式转换，所以 `new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。
 > 返回的 `GetQueryPageResult<Dto>` 经全局包装过滤器自动包成 `ResultModel<GetQueryPageResult<EmployeeDto>>(success)`，前端拿到 `{ isSuccess, data: { rows:[...], pageInfo:{ pageIndex, pageSize, total, totalPage } } }`。
 > 分页/条件扩展 API 的完整签名（`PagedBy`、`WhereIfNotNull<T,F>`、`WhereAny` 等）见 azrng-efcore skill「分页/条件查询扩展」。
@@ -208,6 +264,32 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 - DomainService 返回领域对象（Entity/Bo），**不碰 HTTP 与 DTO 映射**（那是 AppService 的活）；同样标 `IScopedDependency` 自动注册。
 
 > 完整代码示例（接口/实现/AppService 调用三方结对）见 `references/layer-responsibilities.md → Domain 层`。
+
+## 文件上传与外部存储
+
+应用层和领域契约层不接受 `IFormFile`、`HttpContext` 等 ASP.NET 类型。文件上传时，在 Core 定义只包含业务数据的 Command（例如 `FileName`、`Size`、`Stream`），由 Controller 把 `IFormFile` 适配后再调用 AppService。
+
+存储接口放在 `IDomain`（例如 `IDomain/Storage/IMaterialStorage.cs`），本地磁盘或对象存储实现放在 `Storage` 项目。`Storage` 可以依赖 `Core + IDomain`，Service 组合根负责注册实现；Application 只依赖 `IDomain` 中的接口。
+
+```csharp
+// 文件：Core/Models/MaterialUploadCommand.cs
+public class MaterialUploadCommand
+{
+    public string FileName { get; set; } = string.Empty;
+    public long Size { get; set; }
+    public Stream Content { get; set; } = Stream.Null;
+}
+
+// 文件：Service/Controllers/MaterialController.cs
+[HttpPost("upload")]
+public Task<MaterialDto> Upload(IFormFile file)
+    => _materialAppService.UploadAsync(new MaterialUploadCommand
+    {
+        FileName = file.FileName,
+        Size = file.Length,
+        Content = file.OpenReadStream()
+    });
+```
 
 > **判断门槛**：操作只被**一个 AppService 用、不会复用**时，直接写在那个 AppService 里即可，不必提前抽 DomainService（避免过度设计）。复用真正出现、或领域规则变复杂时再下沉——`ISystemConfigDomainService` 就是后来被 5+ 个 AppService 共用才抽出来的。
 
@@ -300,7 +382,7 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 ```
 
 > 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
-> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、provider 包（如 `Npgsql.EntityFrameworkCore.PostgreSQL`，提供 `AddEntityFramework<TDbContext>`）、按需 `Azrng.SqlMigration`（SQL 迁移）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Swashbuckle.AspNetCore`（Swagger）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）。
+> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、对应的 `Common.EFCore.*` provider 包（如 `Common.EFCore.PostgresSql`）、按需 `Azrng.SqlMigration`（SQL 迁移）/ `Azrng.Swashbuckle`（Swagger）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）。如果代码直接写 `new NpgsqlConnection(...)`，Service 还应显式引用 `Npgsql`；不要依赖 provider 的传递引用。
 
 ## 常见反模式（最易踩）
 

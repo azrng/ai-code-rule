@@ -68,6 +68,25 @@ public class Product : IdentityOperatorStatusEntity   // Id + 审计 + 软删除
 }
 ```
 
+#### 外部存储契约
+
+文件或对象存储属于可替换的外部适配能力。面向业务的接口放在 `IDomain`（例如 `IDomain/Storage/IMaterialStorage.cs`），接口只表达保存、读取、删除等领域语义，不出现 `IFormFile`、`HttpContext` 或具体磁盘路径；本地磁盘、对象存储等实现放在 `Storage` 项目。
+
+```csharp
+// 文件：IDomain/Storage/IMaterialStorage.cs
+namespace App.IDomain.Storage;
+
+public interface IMaterialStorage
+{
+    string GenerateStorageName(string extension);
+    Task<string> SaveAsync(string storageName, Stream content);
+    Task<Stream?> OpenReadAsync(string storageName);
+    Task DeleteAsync(string storageName);
+}
+```
+
+`Storage.csproj` 依赖 `Core + IDomain`，Service 组合根注册 `IMaterialStorage` 的具体实现；Application 只依赖 `IDomain` 中的接口。
+
 ### IApplication（应用契约层）
 **放**：`I*AppService` 接口，方法签名用 Core 的 DTO。是控制器唯一依赖的契约。
 **不放**：实现、仓储、实体直接暴露（接口参数/返回一律 DTO）。
@@ -165,6 +184,32 @@ public class ProductAppService : IScopedDependency, IProductAppService
         await _productRepository.DeleteAsync(p => p.Id == id);   // 无返回值 → 过滤器包成 ResultModel(true,"成功")
     }
 }
+```
+
+#### 文件上传的 HTTP 适配
+
+Application 不接受 ASP.NET 的 `IFormFile`。在 Core 定义只包含业务数据的 Command，由 Controller 把 HTTP 文件对象转换后调用 AppService：
+
+```csharp
+// 文件：Core/Models/MaterialUploadCommand.cs
+namespace App.Core.Models;
+
+public class MaterialUploadCommand
+{
+    public string FileName { get; set; } = string.Empty;
+    public long Size { get; set; }
+    public Stream Content { get; set; } = Stream.Null;
+}
+
+// 文件：Service/Controllers/MaterialController.cs
+[HttpPost("upload")]
+public Task<MaterialDto> Upload(IFormFile file)
+    => _materialAppService.UploadAsync(new MaterialUploadCommand
+    {
+        FileName = file.FileName,
+        Size = file.Length,
+        Content = file.OpenReadStream()
+    });
 ```
 
 #### 读取追踪 vs 不追踪（`Entities` / `EntitiesNoTacking`）
@@ -336,7 +381,7 @@ public class AppDbContext : DbContext
 ### Service（入口/组装层）
 **放**：`Controllers`、`Program.cs`（DI 装配 + 中间件管道）、`appsettings`、迁移 SQL 脚本、安全/过滤器。
 **不放**：EF 查询、业务校验、`IBaseRepository` 注入。
-**依赖**：Application（+ Storage/EntityFramework 经传递可达）。
+**依赖**：Application、EntityFramework、Storage。Service 是组合根，负责注册存储实现、数据库、迁移、Swagger 和中间件。
 
 控制器（瘦）——**一行转发** AppService 返回值，不写 `Ok()`、不写 `ResultModel`（全局包装过滤器自动包装）：
 ```csharp
@@ -372,7 +417,9 @@ public class ProductController(IProductAppService productAppService) : Controlle
 
 Program.cs 装配（全局包装三件套 + 异常中间件 + 自动注册）见 `SKILL.md → 全局返回包装 → Program.cs 装配` 与 `SKILL.md → 依赖注入与中间件装配`。
 
-> 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/code/data）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
+> 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/isFailure/code/message/data/errors）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
+
+Service 中如需提供 `wwwroot/index.html` 联调页，在 `MapControllers()` 前调用 `app.UseDefaultFiles()` 和 `app.UseStaticFiles()`。文件下载 action 返回 `FileResult` 时包装过滤器会自动跳过；如果返回其它原始 `IActionResult`，可使用 `Azrng.AspNetCore.Core.Filter.NoWrapperAttribute`。
 
 ---
 
@@ -415,9 +462,9 @@ IApplication      → Core, IDomain
 Domain            → IDomain, EntityFramework, Adapter    ← 纯 CRUD 可空，有复用操作则建
 Application       → IApplication, Domain
 EntityFramework   → Core, IDomain
-Service           → Application, Storage
+Service           → Application, EntityFramework, Storage
 Adapter           → Core, IDomain                         ← 可选
-Storage           → Core                                   ← 可选
+Storage           → Core, IDomain                          ← 可选
 ```
 
 对应 `<ProjectReference>` 示例（Application.csproj，`App` 替换成实际解决方案名）：

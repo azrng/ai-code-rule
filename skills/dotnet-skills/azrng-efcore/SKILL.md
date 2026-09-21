@@ -56,6 +56,8 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 // .AddUnitOfWork<AppDbContext>();
 ```
 
+> PostgreSQL provider 的配置参数类型是 `Azrng.EFCore.EfCoreConnectOption`，定义在基础包 `Common.EFCore`，不是 `Azrng.EFCore.PostgresSql`。`AddEntityFramework<TDbContext>` 扩展方法位于 `Microsoft.Extensions.DependencyInjection`。该注册过程会按 `WorkId` 初始化 `IdHelper`；使用实体基类或直接调用 `IdHelper.GetLongId()` 时，通常不需要再单独调用 `AddIdHelper`。
+
 > 自定义 DbContext 时重写 `OnModelCreating`，调 `ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `*Etc` 配置类；加 `HasDefaultSchema(...)` 设默认 schema。详见 references/entities-and-context.md。
 
 ### 3. 定义实体
@@ -136,6 +138,12 @@ try {
 **分页**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）——一次完成 Count + Skip/Take：
 
 ```csharp
+using Azrng.Core.CommonDto;       // 分页总数引用
+using Azrng.Core.Extension;       // 条件查询扩展
+using Azrng.Core.Requests;        // 分页请求基类
+using Azrng.Core.Results;         // 分页结果模型
+using Azrng.EFCore.Extensions;    // 分页查询扩展
+
 // 推荐：传 GetPageRequest + RefAsync<int> 接收总数，内部一次 Count + 分页
 var total = new RefAsync<int>();
 var list = await query.ToPageListAsync(request, total);   // request: GetPageRequest
@@ -145,7 +153,7 @@ var page  = await query.ToPageListAsync(request);          // 不算 total
 var page2 = await query.ToPageListAsync(pageIndex, pageSize);
 ```
 
-> `ToPageListAsync` 来自 `Common.EFCore`（`Azrng.EFCore.Extensions`）；`PagedBy(GetPageRequest)` 只分页不算总数（来自 `Azrng.Core.Extension`），用于已单独算过总数的场景。
+> `ToPageListAsync` 来自 `Common.EFCore`（`Azrng.EFCore.Extensions`），返回 `Task<List<T>>`；`PagedBy(GetPageRequest)` 只分页不算总数（来自 `Azrng.Core.Extension`），用于已单独算过总数的场景。
 
 **分页结果模型**（`Azrng.Core.Results`，`using Azrng.Core.Results;`）——`GetQueryPageResult<T>`，含 `Rows`(List<T>) + `PageInfo`(PageIndex/PageSize/Total/TotalPage)：
 
@@ -192,7 +200,11 @@ builder.Services.AddSqlMigrationService("default", config =>
 }).AddAutoMigration();                         // ← 启动时自动跑未应用的脚本
 ```
 
-**SQL 脚本约定**：放 `Service/MigrationSql/`，文件名 = `VersionPrefix + 版本号 + 描述.sql`（如 `1.0.0_init.sql`、`1.1.0_add_user_phone.sql`），按版本号顺序执行。
+`ConnectionBuilder` 的真实类型是 `Func<IServiceProvider, IDbConnection>`；使用 PostgreSQL 时，Service 项目应直接引用 `Npgsql`，并通过 `sp => new NpgsqlConnection(connectionString)` 创建连接。
+
+**SQL 脚本约定**：放 `Service/MigrationSql/`，推荐使用纯版本文件名 `1.0.0.sql`、`1.1.0.txt`；如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号并跳过脚本。
+
+> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
 
@@ -212,3 +224,23 @@ builder.Services.AddSqlMigrationService("default", config =>
 3. DDL 层：迁移脚本列用 `timestamp without time zone`
 
 诊断与完整修复步骤见 references/postgres-time-pitfall.md。
+
+## 迁移脚本与 EF 模型核对
+
+手写 SQL 迁移脚本前，建议在临时 Console 或设计期工具中让 EF 输出当前模型的权威 DDL，再据此核对表名、蛇形列名、主键、默认值和 PostgreSQL 时间列类型：
+
+```csharp
+var ddl = dbContext.Database.GenerateCreateScript();
+await File.WriteAllTextAsync("ef-model.sql", ddl);
+```
+
+该脚本用于比对，不替代 `Azrng.SqlMigration` 的版本脚本。修改实体配置后重新生成并检查 `timestamp without time zone`、`snake_case` 等关键差异。
+
+## 包 API 核实流程
+
+当 NuGet 文档、技能示例和编译结果不一致时，按以下顺序核实，结论必须绑定具体包版本：
+
+1. 先查看锁定版本的包 XML 文档、README 和传递依赖，确认类型、命名空间和公开签名。
+2. 再建立最小可编译示例，优先用编译器确认泛型、委托和返回类型，不要只凭 IntelliSense 或旧代码猜测。
+3. 对运行时行为（路径、环境条件、静默跳过、结果过滤）补一个最小集成验证，并记录日志和实际响应。
+4. 只有源码和公开文档仍无法解释行为时，才使用反射或 IL 分析；不要把某一次反编译结果当成跨版本稳定契约。
