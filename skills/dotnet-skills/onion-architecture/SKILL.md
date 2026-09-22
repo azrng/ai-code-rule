@@ -253,15 +253,6 @@ public sealed class HealthController : ControllerBase
     [HttpGet("ready")]
     [NoWrapper]
     public IActionResult Ready() => Ok(new { status = "ok" });
-
-    /// <summary>
-    /// 服务器当前时间，用于链路排查时核对时区
-    /// </summary>
-    [HttpGet("gettime")]
-    public DateTime GetTime()
-    {
-        return DateTime.Now;
-    }
 }
 ```
 
