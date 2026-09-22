@@ -293,7 +293,7 @@ SKILL.md 只负责：
 自动推导（与 blazorSkills.md 的 CRUD 推导对齐）：
 
 ```text
-Core/Models：ProductDto / CreateRequest / UpdateRequest + 列表 Request 继承 GetPageRequest
+IApplication/Product/Dto：ProductDto / CreateRequest / UpdateRequest + 列表 Request 继承 GetPageRequest（单业务域 DTO 不放 Core/Models，Core 仅收跨业务域通用 DTO/枚举/常量）
         ↓
 IDomain/Entities：实体 + 标记接口注册的落点
         ↓

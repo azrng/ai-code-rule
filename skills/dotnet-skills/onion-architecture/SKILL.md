@@ -83,7 +83,7 @@ YourProject/
 1. **依赖单向向内**：外层引用内层，内层绝不引用外层。`Core` 不引用任何项目；`Service` 引用 `Application`（不直接引用 `IBaseRepository`）。
 2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 一行转发返回值。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验、不写 `Ok()`/`return ResultModel`**。
 3. **应用编排 vs 领域操作分层**：`AppService`（应用层）承担**用例编排**——接 DTO → 调领域服务/仓储/适配器 → 返回 DTO + 实体↔DTO 映射；**可复用的公共领域操作下沉到 DomainService**（领域层），如「发会话消息」「读系统配置」这类被多个 AppService 复用的操作。**AppService 和 DomainService 都可注入 `IBaseRepository<T>` / `IUnitOfWork` 做数据访问**（并非 AppService 独占）。判断：单一用例、不复用 → 直接写在 AppService；多 AppService 复用 / 稳定领域概念 → 抽 DomainService。详见「领域服务 DomainService」。
-4. **DTO 放 Core 或 IApplication**：通用业务 DTO/Request/Response 放 `Core/Models`，跨层共享（接口、实现、控制器都用）。不要在控制器内 inline 定义请求类。仅服务内部用、与某 AppService 强绑定的 DTO（如 `LoginResultDto`）可放 `IApplication/{Module}/`。
+4. **DTO 放 IApplication/{业务域}/Dto/**：应用层 DTO/Request/Response 放 `IApplication/{业务域}/Dto/`（如 `IApplication/Role/Dto/CreateRoleRequest.cs`），一类一文件。不要在控制器内 inline 定义请求类。**「通用」= 跨业务域/跨模块复用**（公共枚举、常量、跨域包装）才放 `Core/Models`——单业务域的 DTO 即使接口、实现、控制器三方都在用也放 IApplication（控制器注入 `I*AppService` 时本来就引用 IApplication，不产生新依赖）。注意：不是「跨层共享（三方都用）」就入 Core——跨层使用是应用层 DTO 的常态，按那个判据所有 DTO 都会命中 Core，`IApplication/{业务域}/Dto/` 规则将永远没有适用对象。领域服务/适配器接口签名用的业务对象 Bo 放 `IDomain/{业务域}/Bo/`（Adapter 的 Bo 在 `IDomain/Adapter/{模块}/`）。
 5. **实体在 IDomain、配置在 EntityFramework**：实体（继承 `IdentityOperatorStatusEntity`）放 `IDomain/Entities/`；EFCore 配置类（`{Entity}Etc.cs`，继承 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）放 **EntityFramework 层**，`Configure` 里设表名/列名/查询过滤；DbContext 用 `ApplyConfigurationsFromAssembly(当前程序集)` 扫描它们（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
@@ -400,12 +400,12 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 ## 文件上传与外部存储
 
-应用层和领域契约层不接受 `IFormFile`、`HttpContext` 等 ASP.NET 类型。文件上传时，在 Core 定义只包含业务数据的 Command（例如 `FileName`、`Size`、`Stream`），由 Controller 把 `IFormFile` 适配后再调用 AppService。
+应用层和领域契约层不接受 `IFormFile`、`HttpContext` 等 ASP.NET 类型。文件上传时，在 `IApplication/{业务域}/Dto/` 定义只包含业务数据的 Command（例如 `FileName`、`Size`、`Stream`；仅本业务域使用，不放 `Core/Models`），由 Controller 把 `IFormFile` 适配后再调用 AppService。
 
 存储接口放在 `IDomain`（例如 `IDomain/Storage/IMaterialStorage.cs`），本地磁盘或对象存储实现放在 `Storage` 项目。`Storage` 可以依赖 `Core + IDomain`，Service 组合根负责注册实现；Application 只依赖 `IDomain` 中的接口。
 
 ```csharp
-// 文件：Core/Models/MaterialUploadCommand.cs
+// 文件：IApplication/Material/Dto/MaterialUploadCommand.cs —— 仅 Material 业务域使用，非跨域通用，不放 Core/Models
 public class MaterialUploadCommand
 {
     public string FileName { get; set; } = string.Empty;
@@ -442,7 +442,8 @@ public Task<MaterialDto> Upload(IFormFile file)
 - **接口放 IDomain/Adapter/（不放 Core）**：这样 AppService/DomainService 只依赖 IDomain 就能用 Adapter，而 HttpClient/SDK 等**实现细节留在 Adapter 项目**，依赖方向正确（外层 Adapter 实现内层 IDomain 接口；IDomain 不依赖 Adapter）。`Adapter.csproj` 只引用 `IDomain`。
 - **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 IDomain；`Ho`（HTTP 传输对象）在 Adapter。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。
 - 实现（`{X}Adapter`、`XxxHttpClient`）都标 `IScopedDependency`，经 `RegisterBusinessServices` 自动注册；底层 HttpClient 还可配 `IHttpClientFactory` / 框架的 `AddHttpClientService`。
-- **`IHttpHelper` 来自 `Common.HttpClients` 包**：Adapter 项目（或 Core）安装 `dotnet add package Common.HttpClients`（参考项目用 v2.0.0，按需选版本）后即可注入 `IHttpHelper` 做统一 HTTP 调用（GetAsync/PostAsync 等）。
+- **`IHttpHelper` 来自 `Common.HttpClients` 包**：Adapter 项目（或 Core）安装 `dotnet add package Common.HttpClients`（参考项目用 v2.0.0，按需选版本）后即可注入 `IHttpHelper` 做统一 HTTP 调用（GetAsync/PostAsync 等）。**能力边界**：接口提供 Get/Post/Put/Delete/Patch/Form/Soap/Send/GetStreamAsync 全套方法，但**不暴露 HttpResponseMessage 响应头与状态码**（如 `GetStreamAsync` 仅返回 `Stream`，透传 `Content-Type` 拿不到）；非 2xx 行为二选一——`FailThrowException=true` 时抛原生 `HttpRequestException`（不走全局异常中间件的统一包装），`false` 时记日志后**静默返回 `Stream.Null`**，调用方难区分「远端失败」与「空内容」。
+- **外部 HTTP 调用统一走 `IHttpHelper`**，不并列第二选择：不为单次调用另写 HttpClient 封装，项目无任何外部调用时不引入包。`IHttpHelper` 能力不满足时（需透传响应头/Content-Type、按状态码映射业务异常对齐全局包装、客户端超时与重试策略），把二次封装收在 `IXxxHttpClient` 实现或 Adapter 内部（内部可用原生 `HttpClient`/`IHttpClientFactory` 作实现细节），对业务层仍只暴露领域语义接口——能力差异不外溢成业务层选型分歧。
 - **简单场景可只用一层**（领域适配器直接调通用 `IHttpHelper`），外部调用复杂、协议多变时才拆出 `IXxxHttpClient` 层。
 
 > 完整代码示例（接口/两层实现/AppService 调用）见 `references/layer-responsibilities.md → Adapter 层`。
@@ -462,7 +463,7 @@ public Task<MaterialDto> Upload(IFormFile file)
 
 以"商品(Product)管理"为例，自内向外依次落地（详版含每步完整代码见 `references/layer-responsibilities.md → 完整功能落点速查`）：
 
-1. **Core/Models/** — 公开契约类一类一个文件、文件名与类名一致：`ProductDto.cs`、`ProductListRequest.cs`（继承 `GetPageRequest`）、`CreateProductRequest.cs`、`UpdateProductRequest.cs`。
+1. **IApplication/Product/Dto/** — 应用层契约类一类一个文件、文件名与类名一致：`ProductDto.cs`、`ProductListRequest.cs`（继承 `GetPageRequest`）、`CreateProductRequest.cs`、`UpdateProductRequest.cs`。这些类只服务 Product 业务域，即使接口/实现/控制器三方共用也不放 Core（`Core/Models` 仅收跨业务域通用 DTO/枚举/常量，判据见核心规则 4）。
 2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，构造函数 `SetCreator("system")`。
 3. **EntityFramework/ProductEtc.cs** — 配置类继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤。
 4. **IApplication/Product/IProductAppService.cs** — 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）。

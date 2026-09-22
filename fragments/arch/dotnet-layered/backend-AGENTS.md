@@ -85,7 +85,8 @@ src/
 | DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
 | 数据库迁移脚本 | `Service/wwwroot/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
 | 外部服务调用 / 第三方封装 | `Adapter/{业务域}/` | `{名称}Adapter.cs` |
-| 通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
+| 跨业务域通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
+| 领域业务对象 Bo（领域服务 / 适配器接口签名用） | `IDomain/{业务域}/Bo/`（Adapter 的 Bo 在 `IDomain/Adapter/{模块}/`） | `SendSessionMessageBo.cs` |
 | 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
 | Controller / 中间件 / DI 注册 | `Service/` | `{资源}Controller.cs` 等 |
 
@@ -159,7 +160,7 @@ src/
 - 数据库迁移脚本位置与规则见 `数据库迁移规则`。
 
 ### Adapter（适配器层）规则
-- 封装外部 HTTP 服务调用（通过 `Common.HttpClients`）。
+- 封装外部 HTTP 服务调用，统一通过 `Common.HttpClients`（`IHttpHelper`）完成，不为单次调用另写 HttpClient 封装；`IHttpHelper` 能力不满足（需响应头透传 / 状态码映射业务异常 / 客户端超时与策略）时在 Adapter 内二次封装（内部可用原生 `HttpClient`），能力边界见核心库清单。
 - 封装第三方 SDK 集成。
 - 提供统一的错误处理和重试机制。
 - 外部服务响应与内部模型转换在此层完成。
@@ -172,7 +173,7 @@ src/
 
 ### 代码组织规范
 - 一个文件只放一个主类型：实体、DTO、Request、Response、领域服务接口、仓储接口等公开契约类，默认一个类一个文件，文件名与类名一致。
-- DTO 目录组织：应用层 DTO 放 `IApplication/{业务域}/Dto/`，Request 与 Response 各自独立文件；通用 DTO 放 Core 层对应目录，不合并到 `Dtos.cs`。
+- DTO 目录组织：应用层 DTO 放 `IApplication/{业务域}/Dto/`，Request 与 Response 各自独立文件；跨业务域通用 DTO 放 Core 层对应目录，不合并到 `Dtos.cs`。**通用 = 被多个业务域复用**（公共枚举 / 常量 / 跨域包装）；单业务域的 DTO 即使接口、实现、控制器三方都在用也放 `IApplication/{业务域}/Dto/`——跨层使用是应用层 DTO 的常态，不构成放 Core 的判据。
 - 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
 - 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
 - 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；跨层把多个不相关类型塞进同一文件。

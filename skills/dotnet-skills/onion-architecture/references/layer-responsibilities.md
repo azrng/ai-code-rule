@@ -45,49 +45,23 @@ YourProject/
 ## 1. 各层职责对照
 
 ### Core（内核，零业务依赖）
-**放**：DTO、Request/Response、枚举、常量、通用结果类型。纯 POCO，不引用任何项目，不引用 EFCore/HttpContext 等基础设施。
-**不放**：实体、业务逻辑、数据访问、任何 `using` 基础设施包。
+**放**：**跨业务域复用**的 DTO、枚举、常量、通用结果类型（如公共枚举、跨域包装、分页基类衍生参数）。纯 POCO，不引用任何项目，不引用 EFCore/HttpContext 等基础设施。**单业务域的请求/响应 DTO 不放这里**——放 `IApplication/{业务域}/Dto/`（见下文）；「接口、实现、控制器都用」是应用层 DTO 的常态，不构成放 Core 的判据（判据详见 SKILL.md 核心规则 4）。
+**不放**：实体、业务逻辑、数据访问、单业务域 DTO、任何 `using` 基础设施包。
 **包引用**：仅 `Azrng.Core`（取 `GetPageRequest`/`ResultModel` 等）等基础类库。
 
 ```csharp
 namespace App.Core.Models;
 
-// Core/Models/ProductDto.cs
-public class ProductDto
+// Core/Models/OrderStatus.cs —— 被多个业务域引用的公共枚举才放 Core
+public enum OrderStatus
 {
-    public long Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-    public int Status { get; set; }
-    public DateTime CreateTime { get; set; }
+    Pending = 0,
+    Paid = 1,
+    Shipped = 2
 }
 ```
 
-公开契约类一类一个文件（文件名与类名一致），例如：
-
-```csharp
-// Core/Models/ProductListRequest.cs
-using Azrng.Core.Requests;   // GetPageRequest
-
-namespace App.Core.Models;
-
-// 分页请求：继承 GetPageRequest，免手写 PageIndex/PageSize 字段
-public class ProductListRequest : GetPageRequest
-{
-    public string? Name { get; set; }
-}
-```
-
-```csharp
-// Core/Models/CreateProductRequest.cs
-namespace App.Core.Models;
-
-public class CreateProductRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-}
-```
+公开契约类一类一个文件（文件名与类名一致）。单业务域的 DTO/Request/Response 落位示例见下方 IApplication 节。
 
 ### IDomain（领域契约层）
 **放**：实体（继承 `IdentityOperatorStatusEntity`）。**EFCore 配置类不在这层——放 EntityFramework 层**（见下）。
@@ -135,14 +109,53 @@ public interface IMaterialStorage
 `Storage.csproj` 依赖 `Core + IDomain`，Service 组合根注册 `IMaterialStorage` 的具体实现；Application 只依赖 `IDomain` 中的接口。
 
 ### IApplication（应用契约层）
-**放**：`I*AppService` 接口，方法签名用 Core 的 DTO。是控制器唯一依赖的契约。
+**放**：`I*AppService` 接口 + 本业务域的 DTO/Request/Response（`{业务域}/Dto/`，一类一文件）。是控制器唯一依赖的契约，接口签名只出现本业务域 DTO 或跨业务域通用 DTO。
 **不放**：实现、仓储、实体直接暴露（接口参数/返回一律 DTO）。
 **依赖**：Core、IDomain。
 **返回类型**：**全局包装模式**——方法返回 `Task<T>` / `Task<GetQueryPageResult<T>>`，**不出现 `IResultModel`**。
 
 ```csharp
+// 文件：IApplication/Product/Dto/ProductDto.cs —— 单业务域 DTO 放 IApplication，不放 Core/Models
+namespace App.IApplication.Product.Dto;
+
+public class ProductDto
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public int Status { get; set; }
+    public DateTime CreateTime { get; set; }
+}
+```
+
+```csharp
+// 文件：IApplication/Product/Dto/ProductListRequest.cs
+using Azrng.Core.Requests;   // GetPageRequest
+
+namespace App.IApplication.Product.Dto;
+
+// 分页请求：继承 GetPageRequest，免手写 PageIndex/PageSize 字段
+public class ProductListRequest : GetPageRequest
+{
+    public string? Name { get; set; }
+}
+```
+
+```csharp
+// 文件：IApplication/Product/Dto/CreateProductRequest.cs
+namespace App.IApplication.Product.Dto;
+
+public class CreateProductRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+```
+
+```csharp
+// 文件：IApplication/Product/IProductAppService.cs
 using Azrng.Core.Results;            // GetQueryPageResult<T>
-using App.Core.Models;
+using App.IApplication.Product.Dto;
 
 namespace App.IApplication.Product;
 
@@ -177,8 +190,8 @@ using Azrng.Core.Results;              // GetQueryPageResult
 using Azrng.EFCore;                    // IBaseRepository
 using Azrng.EFCore.Extensions;         // ToPageListAsync
 using Microsoft.EntityFrameworkCore;
-using App.Core.Models;
 using App.IApplication.Product;
+using App.IApplication.Product.Dto;
 using App.IDomain.Entities;
 
 namespace App.Application.Product;
@@ -236,11 +249,11 @@ public class ProductAppService : IScopedDependency, IProductAppService
 
 #### 文件上传的 HTTP 适配
 
-Application 不接受 ASP.NET 的 `IFormFile`。在 Core 定义只包含业务数据的 Command，由 Controller 把 HTTP 文件对象转换后调用 AppService：
+Application 不接受 ASP.NET 的 `IFormFile`。在 IApplication 业务域下定义只包含业务数据的 Command（`IApplication/Material/Dto/MaterialUploadCommand.cs`——仅 Material 业务域使用，非跨域通用，不放 Core/Models），由 Controller 把 HTTP 文件对象转换后调用 AppService：
 
 ```csharp
-// 文件：Core/Models/MaterialUploadCommand.cs
-namespace App.Core.Models;
+// 文件：IApplication/Material/Dto/MaterialUploadCommand.cs
+namespace App.IApplication.Material.Dto;
 
 public class MaterialUploadCommand
 {
@@ -300,6 +313,15 @@ await _unitOfWork.CommitTransactionAsync(async () =>
 **结对**：接口 `I{X}DomainService` 在 `IDomain/{Module}/`，实现 `{X}DomainService : IScopedDependency, I{X}DomainService` 在 `Domain/{Module}/`（与 AppService 的 IApplication/Application 结对方式一致）。**AppService 注入 `I{X}DomainService` 调用它**。
 
 ```csharp
+// 文件：IDomain/SessionManager/Bo/SendSessionMessageBo.cs —— DomainService 接口签名用的业务对象 Bo，统一放 IDomain/{模块}/Bo/（Adapter 的 Bo 例外，在 IDomain/Adapter/{模块}/）
+namespace App.IDomain.SessionManager.Bo;
+
+public class SendSessionMessageBo
+{
+    public string SessionName { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+}
+
 // IDomain/SessionManager/ISessionDomainService.cs —— 接口，返回领域对象（Entity/Bo），不出现 DTO
 public interface ISessionDomainService
 {
@@ -344,7 +366,7 @@ public class ConversationService : IConversationAppService
 **依赖**：IDomain（+ 第三方 SDK 包）。`Adapter.csproj` 只引用 `IDomain`。
 **结对 + 两层**（复杂外部调用推荐）：
 - 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Service/`，方法用 **Bo**（`IDomain/Adapter/{模块}/`）。
-- HTTP 客户端：接口 `IXxxHttpClient` 在 `Adapter/HttpWebClient/`，实现 `XxxHttpClient : IScopedDependency, IXxxHttpClient`，用 **Ho**（`Adapter/Ho/{模块}/`），注入 `IHttpHelper` / `IHttpClientFactory` 做真实 HTTP 调用。
+- HTTP 客户端：接口 `IXxxHttpClient` 在 `Adapter/HttpWebClient/`，实现 `XxxHttpClient : IScopedDependency, IXxxHttpClient`，用 **Ho**（`Adapter/Ho/{模块}/`），注入 `IHttpHelper` 做真实 HTTP 调用（统一走包内调用；需响应头/状态码语义时在实现内二次封装，见 SKILL.md「外部适配器 Adapter → 关键点」）。
 
 ```csharp
 // IDomain/Adapter/ISmsAdapter.cs —— 接口在 IDomain，用 Bo，不暴露 HttpClient
@@ -375,7 +397,7 @@ public class XxxAppService
 }
 ```
 
-> **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用领域适配器一层（直接调通用 `IHttpHelper`），复杂/协议多变时才拆出 `IXxxHttpClient` 层。
+> **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用领域适配器一层（直接调通用 `IHttpHelper`，前提是能接受其能力边界：不暴露响应头、非 2xx 抛原生异常或静默返回 `Stream.Null`）；需要响应头/状态码语义或客户端策略时，在 `IXxxHttpClient` 实现内二次封装（内部可用原生 `HttpClient`），不绕开包另起炉灶。
 
 ### EntityFramework（基础设施-数据）
 **放**：`DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移。
@@ -435,8 +457,8 @@ public class AppDbContext : DbContext
 ```csharp
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using App.Core.Models;
 using App.IApplication.Product;
+using App.IApplication.Product.Dto;
 
 namespace App.Service.Controllers;
 
@@ -638,7 +660,7 @@ Storage           → Core, IDomain                          ← 可选
 
 | 步骤 | 文件 | 层 | 内容 |
 |---|---|---|---|
-| 1 | `Core/Models/` | Core | 公开契约类一类一个文件：`OrderDto.cs`、`OrderListRequest.cs`（继承 `GetPageRequest`）、`CreateOrderRequest.cs` |
+| 1 | `IApplication/{业务域}/Dto/` | IApplication | 应用层契约类一类一个文件：`OrderDto.cs`、`OrderListRequest.cs`（继承 `GetPageRequest`）、`CreateOrderRequest.cs`；跨业务域通用 DTO/枚举/常量才放 `Core/Models`（判据见 SKILL.md 核心规则 4） |
 | 2 | `IDomain/Entities/Order.cs` | IDomain | 实体 + `SetCreator` |
 | 3 | `EntityFramework/OrderEtc.cs` | EntityFramework | EFCore 配置类（表名/列名/查询过滤） |
 | 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，无 IResultModel） |
