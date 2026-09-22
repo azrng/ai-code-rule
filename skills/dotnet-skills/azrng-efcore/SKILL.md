@@ -203,11 +203,17 @@ builder.Services.AddSqlMigrationService("default", config =>
 
 `ConnectionBuilder` 的真实类型是 `Func<IServiceProvider, IDbConnection>`；使用 PostgreSQL 时，Service 项目应直接引用 `Npgsql`，并通过 `sp => new NpgsqlConnection(connectionString)` 创建连接。
 
+> 迁移只能由 `.AddAutoMigration()` 注册的启动过滤器触发：包内执行服务（如 `ISqlMigrationService`）是 internal，不要手动从容器解析服务来触发迁移或单独执行脚本。
+
+> **执行时序与迁移后补数据**：迁移在 `RunAsync()` 内由启动过滤器执行——晚于 Program 顶层语句、早于 Kestrel 监听。迁移完成后要跑 C# 逻辑（种子数据、缓存预热等）时，用自定义 `IStartupFilter` 挂接：IStartupFilter 按注册的相反顺序执行（后注册者先执行），自定义过滤器须在 `.AddAutoMigration()` 之前注册才会后于迁移运行。
+
 **SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，推荐使用纯版本文件名 `1.0.0.sql`、`1.1.0.txt`；如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号并跳过脚本。
 
 > **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
+
+> **历史库中途接入**：为已在线的存量库补迁移脚本时，脚本可安全重放（幂等：`IF NOT EXISTS` / `ON CONFLICT` 等）的场景不需要 `IInitVersionSetter`——版本日志表首次执行自动创建，存量脚本从零顺序跑一遍即可；仅当存量脚本不可安全重放时，才用 `IInitVersionSetter` 预置初始版本、避免存量脚本重放。
 
 ## 决策指引（AI 必读）
 
