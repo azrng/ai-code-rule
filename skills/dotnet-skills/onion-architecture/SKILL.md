@@ -39,7 +39,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
 | **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、配置 |
-| **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ HttpClient 实现（`Adapter/Service/`、`Adapter/HttpWebClient/`），屏蔽 HTTP/SDK 细节（可选） |
+| **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ 适配实现（`Adapter/Services/`）+ 可选 HTTP 客户端包装（`Adapter/HttpClients/`），屏蔽 HTTP/SDK 细节（可选） |
 | **Storage** | 存储适配 | Core、IDomain | 文件/对象存储实现（可选）；存储接口放 `IDomain` 或真正通用时放 `Core` |
 
 > **接口/实现结对**：`I*` 项目只有抽象，对应无前缀项目是实现。`IApplication`/`Application`、`IDomain`/`Domain` 总是成对出现。控制器永远只依赖 `I*AppService`，不依赖实现。
@@ -83,7 +83,7 @@ YourProject/
 1. **依赖单向向内**：外层引用内层，内层绝不引用外层。`Core` 不引用任何项目；`Service` 引用 `Application`（不直接引用 `IBaseRepository`）。
 2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 一行转发返回值。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验、不写 `Ok()`/`return ResultModel`**。
 3. **应用编排 vs 领域操作分层**：`AppService`（应用层）承担**用例编排**——接 DTO → 调领域服务/仓储/适配器 → 返回 DTO + 实体↔DTO 映射；**可复用的公共领域操作下沉到 DomainService**（领域层），如「发会话消息」「读系统配置」这类被多个 AppService 复用的操作。**AppService 和 DomainService 都可注入 `IBaseRepository<T>` / `IUnitOfWork` 做数据访问**（并非 AppService 独占）。判断：单一用例、不复用 → 直接写在 AppService；多 AppService 复用 / 稳定领域概念 → 抽 DomainService。详见「领域服务 DomainService」。
-4. **DTO 放 IApplication/{业务域}/Dto/**：应用层 DTO/Request/Response 放 `IApplication/{业务域}/Dto/`（如 `IApplication/Role/Dto/CreateRoleRequest.cs`），一类一文件。不要在控制器内 inline 定义请求类。**「通用」= 跨业务域/跨模块复用**（公共枚举、常量、跨域包装）才放 `Core/Models`——单业务域的 DTO 即使接口、实现、控制器三方都在用也放 IApplication（控制器注入 `I*AppService` 时本来就引用 IApplication，不产生新依赖）。注意：不是「跨层共享（三方都用）」就入 Core——跨层使用是应用层 DTO 的常态，按那个判据所有 DTO 都会命中 Core，`IApplication/{业务域}/Dto/` 规则将永远没有适用对象。领域服务/适配器接口签名用的业务对象 Bo 放 `IDomain/{业务域}/Bo/`（Adapter 的 Bo 在 `IDomain/Adapter/{模块}/`）。
+4. **DTO 放 IApplication/{业务域}/Dto/**：应用层 DTO/Request/Response 放 `IApplication/{业务域}/Dto/`（如 `IApplication/Role/Dto/CreateRoleRequest.cs`），一类一文件。不要在控制器内 inline 定义请求类。**「通用」= 跨业务域/跨模块复用**（公共枚举、常量、跨域包装）才放 `Core/Models`——单业务域的 DTO 即使接口、实现、控制器三方都在用也放 IApplication（控制器注入 `I*AppService` 时本来就引用 IApplication，不产生新依赖）。注意：不是「跨层共享（三方都用）」就入 Core——跨层使用是应用层 DTO 的常态，按那个判据所有 DTO 都会命中 Core，`IApplication/{业务域}/Dto/` 规则将永远没有适用对象。领域服务/适配器接口签名用的业务对象 Bo 放 `IDomain/{业务域}/Bo/`；外部适配器接口签名用的 Bo 放 `IDomain/Adapter/Bo/{外部系统}/`。
 5. **实体在 IDomain、配置在 EntityFramework**：实体（继承 `IdentityOperatorStatusEntity`）放 `IDomain/Entities/`；EFCore 配置类（`{Entity}Etc.cs`，继承 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）放 **EntityFramework 层**，`Configure` 里设表名/列名/查询过滤；DbContext 用 `ApplyConfigurationsFromAssembly(当前程序集)` 扫描它们（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
@@ -434,17 +434,17 @@ public Task<MaterialDto> Upload(IFormFile file)
 
 | 层 | 接口位置 | 实现位置 | 数据对象 | 职责 |
 |---|---|---|---|---|
-| 领域适配器 `I{X}Adapter` | `IDomain/Adapter/` | `Adapter/Service/` | **Bo**（`IDomain/Adapter/{模块}/`） | 对外领域语义方法、Bo↔Ho 转换 |
-| HTTP 客户端 `IXxxHttpClient` | `Adapter/HttpWebClient/` | `Adapter/HttpWebClient/` | **Ho**（`Adapter/Ho/{模块}/`） | 真实 HTTP 调用（URL/token/序列化） |
+| 领域适配器 `I{X}Adapter` | `IDomain/Adapter/` | `Adapter/Services/` | **Bo**（`IDomain/Adapter/Bo/{外部系统}/`） | 对外领域语义方法、Bo↔Ho 转换 |
+| HTTP 客户端包装 `I{X}HttpClient` / `{X}HttpClient`（可选） | `Adapter/HttpClients/` | `Adapter/HttpClients/` | **Ho**（`Adapter/Ho/{外部系统}/`） | 注入 `IHttpHelper`，负责真实 HTTP 调用；简单场景可省略 |
 
 ### 关键点
 
-- **接口放 IDomain/Adapter/（不放 Core）**：这样 AppService/DomainService 只依赖 IDomain 就能用 Adapter，而 HttpClient/SDK 等**实现细节留在 Adapter 项目**，依赖方向正确（外层 Adapter 实现内层 IDomain 接口；IDomain 不依赖 Adapter）。`Adapter.csproj` 只引用 `IDomain`。
-- **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 IDomain；`Ho`（HTTP 传输对象）在 Adapter。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。
-- 实现（`{X}Adapter`、`XxxHttpClient`）都标 `IScopedDependency`，经 `RegisterBusinessServices` 自动注册；底层 HttpClient 还可配 `IHttpClientFactory` / 框架的 `AddHttpClientService`。
-- **`IHttpHelper` 来自 `Common.HttpClients` 包**：Adapter 项目（或 Core）安装 `dotnet add package Common.HttpClients`（参考项目用 v2.0.0，按需选版本）后即可注入 `IHttpHelper` 做统一 HTTP 调用（GetAsync/PostAsync 等）。**能力边界**：接口提供 Get/Post/Put/Delete/Patch/Form/Soap/Send/GetStreamAsync 全套方法，但**不暴露 HttpResponseMessage 响应头与状态码**（如 `GetStreamAsync` 仅返回 `Stream`，透传 `Content-Type` 拿不到）；非 2xx 行为二选一——`FailThrowException=true` 时抛原生 `HttpRequestException`（不走全局异常中间件的统一包装），`false` 时记日志后**静默返回 `Stream.Null`**，调用方难区分「远端失败」与「空内容」。
-- **外部 HTTP 调用统一走 `IHttpHelper`**，不并列第二选择：不为单次调用另写 HttpClient 封装，项目无任何外部调用时不引入包。`IHttpHelper` 能力不满足时（需透传响应头/Content-Type、按状态码映射业务异常对齐全局包装、客户端超时与重试策略），把二次封装收在 `IXxxHttpClient` 实现或 Adapter 内部（内部可用原生 `HttpClient`/`IHttpClientFactory` 作实现细节），对业务层仍只暴露领域语义接口——能力差异不外溢成业务层选型分歧。
-- **简单场景可只用一层**（领域适配器直接调通用 `IHttpHelper`），外部调用复杂、协议多变时才拆出 `IXxxHttpClient` 层。
+- **接口放 IDomain/Adapter/（不放 Core）**：这样 AppService/DomainService 只依赖 IDomain 就能用 Adapter，而 HttpClient/SDK 等**实现细节留在 Adapter 项目**，依赖方向正确（外层 Adapter 实现内层 IDomain 接口；IDomain 不依赖 Adapter）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部 HTTP 所需 NuGet 包按需引用在 Adapter。
+- **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 `IDomain/Adapter/Bo/{外部系统}/`；`Ho`（HTTP 传输对象）在 `Adapter/Ho/{外部系统}/`。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。
+- 适配实现（`{X}Adapter`）放 `Adapter/Services/`；需要独立隔离 HTTP 协议、便于替换或测试时，再在同一个 `Adapter/HttpClients/` 目录下增加 `I{X}HttpClient` 与 `{X}HttpClient`。具体实现默认注入 `IHttpHelper`，客户端策略在 Service 组合根配置。
+- **`IHttpHelper` 来自 `Common.HttpClients` 4.x**（当前核对 4.1.0，实际以目标项目锁定版本为准）：普通调用返回 `IHttpResult<T>`，需要失败即抛异常时调用 `EnsureSuccess()`；需要透传响应头时使用 `SendAsync`。
+- **选型标准**：默认使用 `IHttpHelper`；只有需要包未暴露的底层请求控制时，才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`。HTTP 细节不向业务层暴露。
+- **简单场景可只用一层**（`Adapter/Services/{X}Adapter.cs` 直接调通用 `IHttpHelper`）；外部调用复杂、协议多变或需要独立测试边界时，才在同一个 `Adapter/HttpClients/` 目录下拆出 `I{X}HttpClient` / `{X}HttpClient`。
 
 > 完整代码示例（接口/两层实现/AppService 调用）见 `references/layer-responsibilities.md → Adapter 层`。
 

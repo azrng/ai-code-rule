@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.45.0
-last_updated: 2026-09-03
+version: 1.47.0
+last_updated: 2026-09-22
 dependencies: [agents-root]
 ---
 
@@ -84,9 +84,9 @@ src/
 | EF Core 实体配置 | `EntityFramework/` | `{实体名}Etc.cs`（继承 Azrng 配置基类） |
 | DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
 | 数据库迁移脚本 | `Service/wwwroot/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
-| 外部服务调用 / 第三方封装 | `Adapter/{业务域}/` | `{名称}Adapter.cs` |
+| 外部服务调用 / 第三方封装 | `Adapter/Services/`；HTTP 客户端包装按需放 `Adapter/HttpClients/` | `{名称}Adapter.cs`、`I{名称}HttpClient.cs` / `{名称}HttpClient.cs` |
 | 跨业务域通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
-| 领域业务对象 Bo（领域服务 / 适配器接口签名用） | `IDomain/{业务域}/Bo/`（Adapter 的 Bo 在 `IDomain/Adapter/{模块}/`） | `SendSessionMessageBo.cs` |
+| 领域业务对象 Bo（领域服务 / 适配器接口签名用） | `IDomain/{业务域}/Bo/`；Adapter 的 Bo 在 `IDomain/Adapter/Bo/{外部系统}/` | `SendSessionMessageBo.cs` |
 | 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
 | Controller / 中间件 / DI 注册 | `Service/` | `{资源}Controller.cs` 等 |
 
@@ -160,7 +160,7 @@ src/
 - 数据库迁移脚本位置与规则见 `数据库迁移规则`。
 
 ### Adapter（适配器层）规则
-- 封装外部 HTTP 服务调用，统一通过 `Common.HttpClients`（`IHttpHelper`）完成，不为单次调用另写 HttpClient 封装；`IHttpHelper` 能力不满足（需响应头透传 / 状态码映射业务异常 / 客户端超时与策略）时在 Adapter 内二次封装（内部可用原生 `HttpClient`），能力边界见核心库清单。
+- 封装外部 HTTP 服务调用默认通过 `Common.HttpClients`（`IHttpHelper`）完成，不为单次调用重复封装 HttpClient；普通方法按 `IHttpResult<T>.IsSuccess` / `StatusCode` 处理，需要响应头时优先用 `IHttpHelper.SendAsync` 获取原始 `HttpResponseMessage`。命名客户端、超时、重试等优先通过 `AddHttpClientService` / `IHttpHelperFactory` 配置；只有需要包未暴露的底层控制（如 `ResponseHeadersRead` 或自定义 HttpClient 管道）时，才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`，能力边界见核心库清单。
 - 封装第三方 SDK 集成。
 - 提供统一的错误处理和重试机制。
 - 外部服务响应与内部模型转换在此层完成。

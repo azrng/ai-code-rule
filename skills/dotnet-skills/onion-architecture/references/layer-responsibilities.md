@@ -313,7 +313,7 @@ await _unitOfWork.CommitTransactionAsync(async () =>
 **结对**：接口 `I{X}DomainService` 在 `IDomain/{Module}/`，实现 `{X}DomainService : IScopedDependency, I{X}DomainService` 在 `Domain/{Module}/`（与 AppService 的 IApplication/Application 结对方式一致）。**AppService 注入 `I{X}DomainService` 调用它**。
 
 ```csharp
-// 文件：IDomain/SessionManager/Bo/SendSessionMessageBo.cs —— DomainService 接口签名用的业务对象 Bo，统一放 IDomain/{模块}/Bo/（Adapter 的 Bo 例外，在 IDomain/Adapter/{模块}/）
+// 文件：IDomain/SessionManager/Bo/SendSessionMessageBo.cs —— DomainService 接口签名用的业务对象 Bo，统一放 IDomain/{模块}/Bo/（Adapter 的 Bo 例外，在 IDomain/Adapter/Bo/{外部系统}/）
 namespace App.IDomain.SessionManager.Bo;
 
 public class SendSessionMessageBo
@@ -363,16 +363,16 @@ public class ConversationService : IConversationAppService
 ### Adapter（外部适配器层）
 **放**：外部系统调用的封装——`I{X}Adapter`（领域适配器）实现 + `IXxxHttpClient`（HTTP 客户端）实现。屏蔽第三方 API / 微服务 / SDK 的 HTTP/协议细节，对内暴露领域语义方法。
 **不放**：业务规则、用例编排（那是 AppService/DomainService 的活）；把 HttpClient/URL 直接暴露给业务层。
-**依赖**：IDomain（+ 第三方 SDK 包）。`Adapter.csproj` 只引用 `IDomain`。
+**依赖**：IDomain（+ `Common.HttpClients` 或其它第三方 SDK 包）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部能力所需 NuGet 包按需引用在 Adapter。
 **结对 + 两层**（复杂外部调用推荐）：
-- 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Service/`，方法用 **Bo**（`IDomain/Adapter/{模块}/`）。
-- HTTP 客户端：接口 `IXxxHttpClient` 在 `Adapter/HttpWebClient/`，实现 `XxxHttpClient : IScopedDependency, IXxxHttpClient`，用 **Ho**（`Adapter/Ho/{模块}/`），注入 `IHttpHelper` 做真实 HTTP 调用（统一走包内调用；需响应头/状态码语义时在实现内二次封装，见 SKILL.md「外部适配器 Adapter → 关键点」）。
+- 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Services/`，方法用 **Bo**（`IDomain/Adapter/Bo/{外部系统}/`）。
+- HTTP 客户端包装（复杂场景可选）：接口 `I{X}HttpClient` 与实现 `{X}HttpClient : IScopedDependency, I{X}HttpClient` 都在 `Adapter/HttpClients/`，用 **Ho**（`Adapter/Ho/{外部系统}/`），注入 `IHttpHelper` 做真实 HTTP 调用。普通方法返回 `IHttpResult<T>`；需要响应头时优先调用 `IHttpHelper.SendAsync` 获取原始 `HttpResponseMessage`，需要更底层的 `ResponseHeadersRead` 或自定义管道时才在实现内使用原生 `HttpClient` / `IHttpClientFactory`。
 
 ```csharp
 // IDomain/Adapter/ISmsAdapter.cs —— 接口在 IDomain，用 Bo，不暴露 HttpClient
 public interface ISmsAdapter { Task<bool> SendAsync(SendSmsBo bo); }
 
-// Adapter/Service/SmsAdapter.cs —— 实现：标 IScopedDependency，做 Bo→Ho 转换，调下层 HttpClient
+// Adapter/Services/SmsAdapter.cs —— 实现：标 IScopedDependency，做 Bo→Ho 转换，调下层 HttpClient
 public class SmsAdapter : IScopedDependency, ISmsAdapter
 {
     private readonly ISmsHttpClient _client;
@@ -381,13 +381,16 @@ public class SmsAdapter : IScopedDependency, ISmsAdapter
         => _client.SendAsync(new SendSmsRequestHo { Phone = bo.Phone, Content = bo.Content });
 }
 
-// Adapter/HttpWebClient/SmsHttpClient.cs —— 真实 HTTP 调用，输入/输出用 Ho
+// Adapter/HttpClients/SmsHttpClient.cs —— 真实 HTTP 调用，输入/输出用 Ho
 public class SmsHttpClient : IScopedDependency, ISmsHttpClient
 {
     private readonly IHttpHelper _httpHelper;
     public SmsHttpClient(IHttpHelper httpHelper) => _httpHelper = httpHelper;
-    public Task<bool> SendAsync(SendSmsRequestHo req)
-        => _httpHelper.PostAsync<bool>("https://sms.example.com/send", req);
+    public async Task<bool> SendAsync(SendSmsRequestHo req)
+    {
+        var result = await _httpHelper.PostAsync<bool>("https://sms.example.com/send", req);
+        return result.EnsureSuccess().Data is true;
+    }
 }
 
 // Application/XxxAppService.cs —— 业务层只依赖 IDomain 里的接口
@@ -397,7 +400,7 @@ public class XxxAppService
 }
 ```
 
-> **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用领域适配器一层（直接调通用 `IHttpHelper`，前提是能接受其能力边界：不暴露响应头、非 2xx 抛原生异常或静默返回 `Stream.Null`）；需要响应头/状态码语义或客户端策略时，在 `IXxxHttpClient` 实现内二次封装（内部可用原生 `HttpClient`），不绕开包另起炉灶。
+> **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用 `Adapter/Services/{X}Adapter.cs`，直接调通用 `IHttpHelper` 并按 `IHttpResult<T>.IsSuccess` / `StatusCode` 处理；外部调用复杂、协议多变或需要独立测试边界时，才在同一个 `Adapter/HttpClients/` 目录下拆出 `I{X}HttpClient` / `{X}HttpClient`。需要响应头时优先使用 `IHttpHelper.SendAsync`；只有需要 `ResponseHeadersRead` 等包未暴露的底层控制或自定义 HttpClient 管道时，才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`，不把 HTTP 细节带入业务层。
 
 ### EntityFramework（基础设施-数据）
 **放**：`DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移。
