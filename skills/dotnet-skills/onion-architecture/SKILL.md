@@ -108,7 +108,7 @@ YourProject/
 |---|---|---|---|
 | 参数错误 / 业务校验失败 | `throw new ParameterException(msg)` | 400 | `"400"` |
 | 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"400"` |
-| 资源不存在（按 id 查不到） | `NotFoundException.ThrowIfNull(entity, "记录不存在")` | 404 | `"404"` |
+| 资源不存在（按 id 查不到） | `if (entity is null) throw new NotFoundException("记录不存在")` | 404 | `"404"` |
 | 未认证（未登录或凭证无效） | `throw new UnauthorizedException(msg)` | 401 | `"401"` |
 | 已认证但无权限 | `throw new ForbiddenException(msg)` | 403 | `"403"` |
 | 服务器内部错误 | `throw new InternalServerException(msg)` | 500 | `"500"` |
@@ -178,6 +178,9 @@ public sealed class Startup
         });
         services.RegisterBusinessServices("YourProject.*.dll");
 
+        // CORS：默认放开任意来源（仅开发联调，开箱即用）；生产按需改 AddCorsByOrigins 读配置白名单
+        services.AddAnyCors();
+
         var migrationSqlPath = Path.Combine(
             _environment.ContentRootPath,
             "wwwroot",
@@ -198,7 +201,7 @@ public sealed class Startup
 
         app.UseDefaultFiles();
         app.UseStaticFiles();
-        app.UseCors();
+        app.UseCorsPolicy();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
@@ -207,6 +210,15 @@ public sealed class Startup
 ```
 
 > **最常见的坑**：只注册了 `AddMvcResultPackFilter` 却忘了 `app.UseGlobalException()`——此时 AppService 抛 `ParameterException` 无人接住，业务失败会返回 HTTP 500，前端拿不到统一失败结构。三件套必须齐备。
+
+### CORS 跨域装配
+
+CORS 优先用 `Azrng.AspNetCore.Core` 内置扩展，不要手写原生 `AddCors`/`AddPolicy`（特殊策略需求除外）：
+
+- **注册（模板默认）**：`services.AddAnyCors()`——`AllowAnyOrigin`，开箱即用，**仅限开发环境**，上线前必须改掉。
+- **生产按需改**：`services.AddCorsByOrigins(string[] allowedOrigins)`——来源白名单走配置（`appsettings.json` 的 `Cors:AllowedOrigins` 节，生产用环境变量 `Cors__AllowedOrigins__N` 覆盖）；空列表 / 含空白项启动即抛 `ArgumentException`，防漏配；`allowCredentials: true` 仅 SignalR / 携带凭证场景。
+- **管道**：`app.UseCorsPolicy()`（默认策略名 `DefaultCors`，两种注册方式通用），放在异常处理 / Swagger / 静态文件之后、`UseAuthentication` / `UseAuthorization` / `MapControllers` 之前。
+- **禁忌**：未注册 CORS 服务就写 `app.UseCors()`，首个跨域请求直接 500；`AddAnyCors` 不得用于生产；`allowCredentials: true` 不得与 `AllowAnyOrigin` 组合。纯后端 / 无跨域需求的项目整体删掉注册与中间件两行，不是必装项。
 
 ### Swagger 与静态文件装配
 
@@ -236,7 +248,6 @@ app.UseStaticFiles();
 Service 项目默认提供 `HealthController`，供容器编排、负载均衡和运维探针使用。`alive` 只表示进程仍能响应，`ready` 表示服务已完成启动；如果 `ready` 还需要核对数据库或其它依赖，应在该端点中接入对应检查，不要让 `alive` 依赖外部服务。两个探针必须使用 `[NoWrapper]` 返回裸 JSON，避免被全局结果包装器改写。
 
 ```csharp
-using Azrng.Core.Extension;
 using Azrng.AspNetCore.Core.Filter;
 using Microsoft.AspNetCore.Mvc;
 
@@ -255,8 +266,6 @@ public sealed class HealthController : ControllerBase
     public IActionResult Ready() => Ok(new { status = "ok" });
 }
 ```
-
-`gettime` 用于链路排查时核对服务器时区，不要在该端点中额外转换为 UTC 或调用其它时间归一化扩展。
 
 ### 文件下载与原始响应
 
@@ -290,9 +299,9 @@ public interface IOrderAppService
 public async Task<OrderDto> GetAsync(long id)
 {
     var order = await _repository.EntitiesNoTacking.FirstOrDefaultAsync(x => x.Id == id);
-    NotFoundException.ThrowIfNull(order, "订单不存在");   // 资源不存在 → 404
-    var requiredOrder = order!;                         // 包未标注流分析时在使用处显式断言非空
-    return new OrderDto { /* 使用 requiredOrder 完成实体→DTO 映射 */ };
+    if (order is null)                                  // 资源不存在 → 404；is null 检查原生收窄可空流分析
+        throw new NotFoundException("订单不存在");
+    return new OrderDto { /* 直接使用 order 完成实体→DTO 映射，无需断言 */ };
 }
 
 public async Task<long> CreateAsync(CreateOrderRequest req)
@@ -453,11 +462,11 @@ public Task<MaterialDto> Upload(IFormFile file)
 
 以"商品(Product)管理"为例，自内向外依次落地（详版含每步完整代码见 `references/layer-responsibilities.md → 完整功能落点速查`）：
 
-1. **Core/Models/ProductDto.cs** — `ProductDto` / `CreateProductRequest` / `UpdateProductRequest`；列表 Request 继承 `GetPageRequest`。
+1. **Core/Models/** — 公开契约类一类一个文件、文件名与类名一致：`ProductDto.cs`、`ProductListRequest.cs`（继承 `GetPageRequest`）、`CreateProductRequest.cs`、`UpdateProductRequest.cs`。
 2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，构造函数 `SetCreator("system")`。
 3. **EntityFramework/ProductEtc.cs** — 配置类继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤。
 4. **IApplication/Product/IProductAppService.cs** — 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）。
-5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `NotFoundException.ThrowIfNull`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。由于包版本未必为 `ThrowIfNull` 标注 `[NotNull]`，调用后不要写 `entity = entity!`（会触发 CS1717）；在后续使用处通过 `var requiredEntity = entity!` 或成员访问处的 `entity!` 消除可空警告。
+5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `if (entity is null) throw new NotFoundException(msg)`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。`is null` 检查会被编译器原生流分析收窄，后续代码直接使用实体；不要写 `entity = entity!` 自赋值（CS1717）和 `var required = entity!` 中间变量（侵入方法体、可读性差），也不要依赖 `NotFoundException.ThrowIfNull`（包未标注 `[NotNull]`，不产生流分析收窄；若坚持使用，只能在成员访问处补 `entity!.Xxx` 断言）。
 6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发。无需手写 `AddScoped`（扫描注册自动完成）。
 
 > 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/wwwroot/MigrationSql/` 增版本脚本（详见 azrng-efcore skill）。
@@ -516,6 +525,7 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 | 列表查询手写 `CountAsync()` + `Skip().Take()` + 自定义 `{List,Total}` 类 | 用分页四件套（`ToPageListAsync` + `GetQueryPageResult<T>`） |
 | 实体直接作为 API 返回值 | AppService 映射成 Core 的 DTO 再返回；实体只在 AppService↔DbContext 间流动 |
 | 新功能不建接口直接写实现类 | 先 `I*AppService` 接口，控制器依赖接口 |
+| 管道写 `app.UseCors()` 但未注册 CORS 服务 | 先 `AddCorsByOrigins`（白名单）/ `AddAnyCors`（仅开发）注册，再 `app.UseCorsPolicy()` |
 
 > 遇到存量项目未遵循上述约定（如用 Newtonsoft、自研 ResultFilter、`QueryableWhereIf`），按现有代码风格走、不强行改写可工作代码；新增功能才按本指南。
 

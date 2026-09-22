@@ -54,6 +54,7 @@ On ASP.NET Core 10, Identity metrics are available for observing auth-related be
 
 - Use antiforgery protection for cookie-based interactive apps and form posts
 - Do not confuse CORS with authentication or authorization
+- Register the CORS policy before adding the CORS middleware: in Azrng-based solutions prefer the package extensions `AddCorsByOrigins(allowedOrigins)` (config whitelist, production) or `AddAnyCors()` (dev only) plus `app.UseCorsPolicy()`; `UseCors` without a registered policy fails cross-origin requests at runtime
 - Avoid permissive `AllowAnyOrigin` plus credentials combinations
 - Treat browser-side state as untrusted
 

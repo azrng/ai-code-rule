@@ -50,10 +50,9 @@ YourProject/
 **包引用**：仅 `Azrng.Core`（取 `GetPageRequest`/`ResultModel` 等）等基础类库。
 
 ```csharp
-using Azrng.Core.Requests;   // GetPageRequest
-
 namespace App.Core.Models;
 
+// Core/Models/ProductDto.cs
 public class ProductDto
 {
     public long Id { get; set; }
@@ -62,12 +61,26 @@ public class ProductDto
     public int Status { get; set; }
     public DateTime CreateTime { get; set; }
 }
+```
+
+公开契约类一类一个文件（文件名与类名一致），例如：
+
+```csharp
+// Core/Models/ProductListRequest.cs
+using Azrng.Core.Requests;   // GetPageRequest
+
+namespace App.Core.Models;
 
 // 分页请求：继承 GetPageRequest，免手写 PageIndex/PageSize 字段
 public class ProductListRequest : GetPageRequest
 {
     public string? Name { get; set; }
 }
+```
+
+```csharp
+// Core/Models/CreateProductRequest.cs
+namespace App.Core.Models;
 
 public class CreateProductRequest
 {
@@ -153,7 +166,7 @@ public interface IProductAppService
   - `Azrng.AspNetCore.Authentication.JwtBearer` — 登录/鉴权 AppService 注入 `IBearerAuthService` 生成 token
   - `Azrng.DistributeLock.Core` — 并发控制 AppService 注入 `ILockProvider`
 
-**核心约定（全局包装模式）**：成功直接 `return` 业务对象；**业务校验/规则失败 `throw new ParameterException(msg)`**；资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`。**不要手写 `ResultModel.Success/Error`**（那是历史写法）。
+**核心约定（全局包装模式）**：成功直接 `return` 业务对象；**业务校验/规则失败 `throw new ParameterException(msg)`**；资源不存在 `if (entity is null) throw new NotFoundException("...")`。**不要手写 `ResultModel.Success/Error`**（那是历史写法）。
 
 ```csharp
 using Azrng.Core.CommonDto;            // RefAsync
@@ -198,9 +211,9 @@ public class ProductAppService : IScopedDependency, IProductAppService
     public async Task<ProductDto> GetAsync(long id)
     {
         var product = await _productRepository.EntitiesNoTacking.FirstOrDefaultAsync(p => p.Id == id);
-        NotFoundException.ThrowIfNull(product, "商品不存在");   // 资源不存在 → 由异常中间件映射成 404
-        var requiredProduct = product!;                        // 包未标注流分析时在使用处显式断言非空
-        return new ProductDto { Id = requiredProduct.Id, Name = requiredProduct.Name, Price = requiredProduct.Price, Status = requiredProduct.Status };
+        if (product is null)                          // 资源不存在 → 由异常中间件映射成 404；is null 检查原生收窄可空流分析
+            throw new NotFoundException("商品不存在");
+        return new ProductDto { Id = product.Id, Name = product.Name, Price = product.Price, Status = product.Status };
     }
 
     public async Task<long> CreateAsync(CreateProductRequest request)
@@ -263,7 +276,7 @@ await _repo.UpdateAsync(entity, submit: true);
 
 #### 返回值与错误处理（全局包装模式）
 
-AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：成功 `return dto;`、资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`、参数/业务校验失败 `throw new ParameterException(msg)`（也可是 `LogicBusinessException`）、无权限 `throw new ForbiddenException(msg)`。
+AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：成功 `return dto;`、资源不存在 `if (entity is null) throw new NotFoundException("...")`（is null 检查原生收窄流分析，后续直接用实体，不要 `entity!` 断言或中间变量）、参数/业务校验失败 `throw new ParameterException(msg)`（也可是 `LogicBusinessException`）、无权限 `throw new ForbiddenException(msg)`。
 
 > 业务异常 → 结果映射表、三件套装配、`IResultModel<T>` 迁移期说明见 `SKILL.md → 全局返回包装`。这套要工作，**异常中间件 `app.UseGlobalException()` 必须在 `Startup.SetupMiddlewares` 管道最外层装配**，否则抛出的异常会变成裸 500。
 
@@ -455,7 +468,6 @@ public class ProductController(IProductAppService productAppService) : Controlle
 Service 项目默认提供 `HealthController`，供容器编排、负载均衡和运维探针使用。`alive` 只表示进程仍能响应，`ready` 表示服务已完成启动；如果 `ready` 还需要核对数据库或其它依赖，应在该端点中接入对应检查，不要让 `alive` 依赖外部服务。两个探针必须使用 `[NoWrapper]` 返回裸 JSON，避免被全局结果包装器改写。
 
 ```csharp
-using Azrng.Core.Extension;
 using Azrng.AspNetCore.Core.Filter;
 using Microsoft.AspNetCore.Mvc;
 
@@ -474,8 +486,6 @@ public sealed class HealthController : ControllerBase
     public IActionResult Ready() => Ok(new { status = "ok" });
 }
 ```
-
-`gettime` 用于链路排查时核对服务器时区，不要在该端点中额外转换为 UTC 或调用其它时间归一化扩展。
 
 ### Program.cs 与 Startup.cs 分工
 
@@ -527,6 +537,9 @@ public sealed class Startup
         services.AddMvcModelVerifyFilter();
         services.RegisterBusinessServices("YourProject.*.dll");
 
+        // CORS：默认放开任意来源（仅开发联调，开箱即用）；生产按需改 AddCorsByOrigins 读配置白名单
+        services.AddAnyCors();
+
         var migrationSqlPath = Path.Combine(
             _environment.ContentRootPath,
             "wwwroot",
@@ -545,7 +558,7 @@ public sealed class Startup
         app.UseGlobalException();
         app.UseDefaultFiles();
         app.UseStaticFiles();
-        app.UseCors();
+        app.UseCorsPolicy();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
@@ -625,11 +638,11 @@ Storage           → Core, IDomain                          ← 可选
 
 | 步骤 | 文件 | 层 | 内容 |
 |---|---|---|---|
-| 1 | `Core/Models/OrderDto.cs` | Core | `OrderDto`/`CreateOrderRequest`；列表 Request 继承 `GetPageRequest` |
+| 1 | `Core/Models/` | Core | 公开契约类一类一个文件：`OrderDto.cs`、`OrderListRequest.cs`（继承 `GetPageRequest`）、`CreateOrderRequest.cs` |
 | 2 | `IDomain/Entities/Order.cs` | IDomain | 实体 + `SetCreator` |
 | 3 | `EntityFramework/OrderEtc.cs` | EntityFramework | EFCore 配置类（表名/列名/查询过滤） |
 | 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，无 IResultModel） |
-| 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `NotFoundException.ThrowIfNull`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
+| 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `if (entity is null) throw NotFoundException`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
 | 6 | `Service/Controllers/OrderController.cs` | Service | 瘦控制器，一行转发 `Task<T>`（不写 `Ok()`） |
 | 7 | `Service/Program.cs` + `Service/Startup.cs` | Service | `Program.cs` 只保留宿主生命周期；`Startup.RegisterServices` 放 `RegisterBusinessServices`、结果过滤器等 DI 注册，`Startup.SetupMiddlewares` 放 `app.UseGlobalException()` 等管道配置 |
 

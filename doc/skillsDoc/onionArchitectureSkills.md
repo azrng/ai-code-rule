@@ -128,7 +128,7 @@
 * `UseRequestIdMiddleware()`：请求 id 传播
 * `UseShowAllServices()` / `UseShowAllServicesMiddleware()`：服务清单端点（开发环境调试用）
 * `UseRequestBodyRepetitionRead()`：请求体可重复读
-* `UseCorsPolicy(policyName = "DefaultCors")` 与 CORS 注册家族：`AddAnyCors`（任意来源，仅开发环境）、`AddCorsByOrigins`、`AddCorsPolicy`
+* `UseCorsPolicy(policyName = "DefaultCors")` 与 CORS 注册家族：`AddAnyCors`（任意来源，仅开发环境）、`AddCorsByOrigins`；`AddCorsPolicy` 已在 1.5.0 移除，高级场景直接用框架原生 `AddCors`/`AddPolicy`
 * `HttpContextExtensions` / `HttpContextManager` / `ServiceProviderHelper` / `AppSettings`（`Helper/`）
 * 上述能力哪些值得进 skill、哪些一句话带过，按「洋葱解决方案常用程度」判断：审计日志与 RequestId 是常用横切，候选补齐；ShowAllServices 等调试能力一句话即可
 
@@ -300,7 +300,7 @@ IDomain/Entities：实体 + 标记接口注册的落点
 EntityFramework：Etc 配置类（细节走 azrng-efcore skill）
         ↓
 IApplication / Application：IXxxAppService 接口 + 实现标 IScopedDependency
-    成功 return Task<T>；失败 throw ParameterException / NotFoundException.ThrowIfNull
+    成功 return Task<T>；失败 throw ParameterException / if (entity is null) throw NotFoundException（is null 原生收窄流分析，不要 ThrowIfNull 后中间变量/断言）
     列表：WhereIfNotNullOrWhiteSpace → ToPageListAsync → GetQueryPageResult<T>
         ↓
 Service/Controllers：一行转发，不写 Ok() / 不写 ResultModel
@@ -365,7 +365,7 @@ Onion Architecture Skill Gap Report
 2. **`AddDefaultControllers` 一站式注册未覆盖**：`CommonMvcConfig` 三开关（`EnabledCustomerResultPack` / `EnabledModelVerify` 默认 true、`UseHttpStateCode` 默认 true）+ 自动 `SuppressModelStateInvalidFilter`；`APIStudy/Startup.cs` 即此用法。与分开注册两个 `AddMvc*Filter` 的关系与取舍需写清
 3. **审计日志中间件未覆盖**：`UseAutoAuditLog` 两个重载（`ignoreFilterRoutes` / `Action<AuditLogOptions>`）、`AuditLogOptions` 配置项、`ILoggerService` 自定义落日志
 4. **RequestId 等横切中间件未覆盖**：`UseRequestIdMiddleware`、`UseRequestBodyRepetitionRead`；`UseShowAllServices` 调试能力一句话即可
-5. **CORS 家族未覆盖**：`AddAnyCors`（仅开发环境）/ `AddCorsByOrigins` / `AddCorsPolicy` / `UseCorsPolicy`
+5. **CORS 家族未覆盖**：`AddAnyCors`（仅开发环境）/ `AddCorsByOrigins` / `UseCorsPolicy`（`AddCorsPolicy` 已在 1.5.0 移除，勿再引用）
 6. **校验特性未覆盖**：`CollectionNotEmptyAttribute`、`MinValueAttribute`（配合 `ModelVerifyFilter` 的统一错误结构）
 7. **`LongToStringConverter` 未覆盖**：long→string 防 JS 精度丢失，与 JSON 序列化配置的关系
 8. **`RegisterBusinessServices` 细节不足**：两个重载（匹配模式 / 显式 Assembly[]）、`ignoreNameSpace` 逗号分隔参数、默认忽略 `Microsoft.` / `System.`、`[RequiresUnreferencedCode]` AOT 警告
@@ -389,7 +389,7 @@ Skill 优化完成后，用它完成以下测试（可基于 nuget-packages 仓�
 
 ### Test 1
 
-最小接入：`AddMvcResultPackFilter("/swagger")` + `AddMvcModelVerifyFilter` + `UseGlobalException` + 一个 action 分别覆盖：成功返 DTO（自动包装）、`throw new ParameterException`（400 失败结构）、`NotFoundException.ThrowIfNull`（404）。
+最小接入：`AddMvcResultPackFilter("/swagger")` + `AddMvcModelVerifyFilter` + `UseGlobalException` + 一个 action 分别覆盖：成功返 DTO（自动包装）、`throw new ParameterException`（400 失败结构）、`if (entity is null) throw new NotFoundException`（404）。
 
 ### Test 2
 

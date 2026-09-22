@@ -94,8 +94,6 @@ public sealed class HealthController : ControllerBase
 }
 ```
 
-`gettime` is a deployment diagnostic for checking the server timezone. Do not convert it to UTC or pass it through another date normalization helper. In an API without a result wrapper, omit `[NoWrapper]` because there is no wrapper to bypass.
-
 ## Browser-Facing Notes
 
 - Be careful with cookie-authenticated API endpoints and CORS
