@@ -1,6 +1,6 @@
 ---
 rule_id: backend-agents
-version: 1.47.0
+version: 1.48.0
 last_updated: 2026-09-22
 dependencies: [agents-root]
 ---
@@ -160,7 +160,7 @@ src/
 - 数据库迁移脚本位置与规则见 `数据库迁移规则`。
 
 ### Adapter（适配器层）规则
-- 封装外部 HTTP 服务调用默认通过 `Common.HttpClients`（`IHttpHelper`）完成，不为单次调用重复封装 HttpClient；普通方法按 `IHttpResult<T>.IsSuccess` / `StatusCode` 处理，需要响应头时优先用 `IHttpHelper.SendAsync` 获取原始 `HttpResponseMessage`。命名客户端、超时、重试等优先通过 `AddHttpClientService` / `IHttpHelperFactory` 配置；只有需要包未暴露的底层控制（如 `ResponseHeadersRead` 或自定义 HttpClient 管道）时，才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`，能力边界见核心库清单。
+- 封装外部 HTTP 服务调用默认通过 `Common.HttpClients`（`IHttpHelper`）完成，库选型与能力边界见核心库清单。
 - 封装第三方 SDK 集成。
 - 提供统一的错误处理和重试机制。
 - 外部服务响应与内部模型转换在此层完成。

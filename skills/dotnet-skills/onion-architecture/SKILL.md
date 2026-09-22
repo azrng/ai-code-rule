@@ -142,13 +142,7 @@ startup.SetupMiddlewares(app);
 app.Run();
 ```
 
-`DotNetEnv` 是 Service 项目的可选开发依赖，包引用为：
-
-```xml
-<PackageReference Include="DotNetEnv" />
-```
-
-将 `.env` 放在仓库根目录并加入根 `.gitignore`；可以提交不含敏感值的 `.env.example`。加载必须发生在 `WebApplication.CreateBuilder(args)` 之前，不能放到 `Startup.RegisterServices` 之后，否则默认配置链可能已经完成构建。
+`DotNetEnv` 是 Service 项目的可选开发依赖；`.env` 的放置、`.gitignore` 约定与「加载必须发生在 `CreateBuilder` 之前」的时序细则见 `references/layer-responsibilities.md → Program.cs 与 Startup.cs 分工`。
 
 ```csharp
 // Service/Startup.cs
@@ -441,14 +435,11 @@ public Task<MaterialDto> Upload(IFormFile file)
 
 - **接口放 IDomain/Adapter/（不放 Core）**：这样 AppService/DomainService 只依赖 IDomain 就能用 Adapter，而 HttpClient/SDK 等**实现细节留在 Adapter 项目**，依赖方向正确（外层 Adapter 实现内层 IDomain 接口；IDomain 不依赖 Adapter）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部 HTTP 所需 NuGet 包按需引用在 Adapter。
 - **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 `IDomain/Adapter/Bo/{外部系统}/`；`Ho`（HTTP 传输对象）在 `Adapter/Ho/{外部系统}/`。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。
-- 适配实现（`{X}Adapter`）放 `Adapter/Services/`；需要独立隔离 HTTP 协议、便于替换或测试时，再在同一个 `Adapter/HttpClients/` 目录下增加 `I{X}HttpClient` 与 `{X}HttpClient`。具体实现默认注入 `IHttpHelper`，客户端策略在 Service 组合根配置。
-- **`IHttpHelper` 来自 `Common.HttpClients` 4.x**（当前核对 4.1.0，实际以目标项目锁定版本为准）：普通调用返回 `IHttpResult<T>`，需要失败即抛异常时调用 `EnsureSuccess()`；需要透传响应头时使用 `SendAsync`。
-- **选型标准**：默认使用 `IHttpHelper`；只有需要包未暴露的底层请求控制时，才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`。HTTP 细节不向业务层暴露。
-- **简单场景可只用一层**（`Adapter/Services/{X}Adapter.cs` 直接调通用 `IHttpHelper`）；外部调用复杂、协议多变或需要独立测试边界时，才在同一个 `Adapter/HttpClients/` 目录下拆出 `I{X}HttpClient` / `{X}HttpClient`。
+- **HTTP 默认走 `IHttpHelper`**（`Common.HttpClients`）：不为单次调用包装 HttpClient，命名客户端、超时、重试等客户端策略在 Service 组合根配置（`AddHttpClientService` / `IHttpHelperFactory`）；只有需要包未暴露的底层控制时才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`，HTTP 细节不向业务层暴露。
 
-> 完整代码示例（接口/两层实现/AppService 调用）见 `references/layer-responsibilities.md → Adapter 层`。
+> 完整代码示例与 `IHttpHelper` 用法细则（`IHttpResult` 处理、`SendAsync`、版本核对）见 `references/layer-responsibilities.md → Adapter 层`。
 
-> **判断门槛**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（接口 `I{X}Adapter` 在 IDomain，实现+HttpClient 在 Adapter），业务层只依赖接口。
+> **判断门槛**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（接口 `I{X}Adapter` 在 IDomain，实现+HttpClient 在 Adapter），业务层只依赖接口。简单外部调用可只用 `Adapter/Services/{X}Adapter.cs` 一层，复杂或需要独立测试边界时再拆 `Adapter/HttpClients/`。
 
 ## JSON 序列化（IJsonSerializer）
 

@@ -363,7 +363,7 @@ public class ConversationService : IConversationAppService
 ### Adapter（外部适配器层）
 **放**：外部系统调用的封装——`I{X}Adapter`（领域适配器）实现 + `IXxxHttpClient`（HTTP 客户端）实现。屏蔽第三方 API / 微服务 / SDK 的 HTTP/协议细节，对内暴露领域语义方法。
 **不放**：业务规则、用例编排（那是 AppService/DomainService 的活）；把 HttpClient/URL 直接暴露给业务层。
-**依赖**：IDomain（+ `Common.HttpClients` 或其它第三方 SDK 包）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部能力所需 NuGet 包按需引用在 Adapter。
+**依赖**：IDomain（+ `Common.HttpClients`——`IHttpHelper` 当前核对 4.1.0，实际以目标项目锁定版本为准——或其它第三方 SDK 包）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部能力所需 NuGet 包按需引用在 Adapter。
 **结对 + 两层**（复杂外部调用推荐）：
 - 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Services/`，方法用 **Bo**（`IDomain/Adapter/Bo/{外部系统}/`）。
 - HTTP 客户端包装（复杂场景可选）：接口 `I{X}HttpClient` 与实现 `{X}HttpClient : IScopedDependency, I{X}HttpClient` 都在 `Adapter/HttpClients/`，用 **Ho**（`Adapter/Ho/{外部系统}/`），注入 `IHttpHelper` 做真实 HTTP 调用。普通方法返回 `IHttpResult<T>`；需要响应头时优先调用 `IHttpHelper.SendAsync` 获取原始 `HttpResponseMessage`，需要更底层的 `ResponseHeadersRead` 或自定义管道时才在实现内使用原生 `HttpClient` / `IHttpClientFactory`。
