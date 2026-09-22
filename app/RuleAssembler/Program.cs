@@ -9,11 +9,12 @@ internal static class Program
 
     private static int Main(string[] args)
     {
-        Console.OutputEncoding = Encoding.UTF8;
-        Console.InputEncoding = Encoding.UTF8;
-
         try
         {
+            // 编码设置纳入兜底：个别宿主没有标准输入句柄时 setter 会抛，裸崩不如走友好错误处理
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+
             var resources = new ResourceStore();
             var manifest = new ManifestLoader(resources).Load();
 
@@ -278,11 +279,20 @@ internal static class Program
             var force = args.Contains("--force", StringComparer.Ordinal);
             var dirArg = args.Skip(1).FirstOrDefault(arg => !arg.Equals("--force", StringComparison.Ordinal));
             var targetDirectory = dirArg is null ? Environment.CurrentDirectory : Path.GetFullPath(dirArg);
+
+            // 除 --force 与目录外不接受其他参数：拼错的开关被静默吞掉会让用户误以为已启用覆盖
+            var extras = args.Skip(1)
+                .Where(arg => !arg.Equals("--force", StringComparison.Ordinal)
+                    && !string.Equals(arg, dirArg, StringComparison.Ordinal))
+                .ToList();
+            if (extras.Count > 0)
+                throw new ArgumentException(
+                    $"--upgrade 存在无法识别的参数：{string.Join(" ", extras)}（用法：--upgrade [目录] [--force]）",
+                    nameof(args));
             var recipePath = Path.Combine(targetDirectory, RecipeRecorder.RecordFileName);
             if (!File.Exists(recipePath))
                 throw new IOException($"未找到配方记录 {recipePath}：升级需要此前由生成器写入的配方文件，首次生成请直接运行生成器或使用 --recipe。");
 
-            Console.WriteLine($"use-ai-rule {manifest.Vars.Version}（{manifest.Vars.LastUpdated}）");
             var replayer = new RecipeReplayer(manifest, new RuleRenderer(resources));
             var plan = replayer.PlanUpgrade(File.ReadAllText(recipePath), targetDirectory);
             var replay = plan.Replay;
@@ -412,6 +422,16 @@ internal static class Program
                     throw new ArgumentException($"--plan 参数必须是 维度=取值 形式：{arg}", nameof(args));
                 dimensions[arg[..separator]] = arg[(separator + 1)..];
             }
+
+            // 先点名未知维度名：直接放行会被结构锚定校验拦下，但报错会甩锅给不相干的维度
+            var knownTraits = manifest.Wizard.Steps.Select(step => step.Trait).ToList();
+            var unknownTraits = dimensions.Keys
+                .Where(key => !knownTraits.Contains(key, StringComparer.Ordinal))
+                .ToList();
+            if (unknownTraits.Count > 0)
+                throw new ArgumentException(
+                    $"--plan 未知维度名：{string.Join("、", unknownTraits)}（有效维度：{string.Join("、", knownTraits)}）",
+                    nameof(args));
 
             var selection = new Selection { Dimensions = dimensions };
             var engine = new SelectionEngine(manifest);
