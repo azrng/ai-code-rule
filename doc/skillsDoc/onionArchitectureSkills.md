@@ -142,10 +142,10 @@
 
 洋葱解决方案引入缓存 / 定时任务 / 分布式锁 / 认证授权时用的周边包。skill 中只在 Service.csproj 包清单与「该不该新建项目」决策处补一张一句话速查表，声明详细 API 不在本 skill、待各自成专项 skill：
 
-| 包 | 用途 | 注册入口（2026-08 源码核实） |
+| 包 | 用途 | 注册入口（Authorization.Default 已按 2026-09-24 源码复核至 2.0.0-beta2，其余 2026-08 源码核实） |
 |---|---|---|
 | Azrng.AspNetCore.Authentication.JwtBearer | JWT 认证 | `AddJwtBearerAuthentication` |
-| Azrng.AspNetCore.Authorization.Default | 基于权限的授权 | `AddMyAuthorization<TPermissionService>` / `AddPathBasedAuthorization<TPermissionService>` |
+| Azrng.AspNetCore.Authorization.Default | 基于权限的授权 | `AddPermissionAuthorization<TPermissionEvaluator>`（2.0.0-beta2 破坏性重构：旧 `AddMyAuthorization` / `AddPathBasedAuthorization` 已移除，改 `IPermissionEvaluator` + `PermissionContext` + `AuthorizationDecision`，匿名用原生 `[AllowAnonymous]`） |
 | Azrng.AspNetCore.Job.Quartz | 定时任务 | `AddQuartzService` |
 | Azrng.DistributeLock.Redis | 分布式锁（Redis 实现，抽象在 `Azrng.DistributeLock.Core`） | `AddRedisLockProvider` |
 | Common.Cache.Redis | Redis 缓存 | `AddRedisCacheService` / `AddRedisCacheStore` |

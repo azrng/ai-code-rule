@@ -363,10 +363,11 @@ public class ConversationService : IConversationAppService
 ### Adapter（外部适配器层）
 **放**：外部系统调用的封装——`I{X}Adapter`（领域适配器）实现 + `IXxxHttpClient`（HTTP 客户端）实现。屏蔽第三方 API / 微服务 / SDK 的 HTTP/协议细节，对内暴露领域语义方法。
 **不放**：业务规则、用例编排（那是 AppService/DomainService 的活）；把 HttpClient/URL 直接暴露给业务层。
-**依赖**：IDomain（+ `Common.HttpClients`——`IHttpHelper` 当前核对 4.1.0，实际以目标项目锁定版本为准——或其它第三方 SDK 包）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部能力所需 NuGet 包按需引用在 Adapter。
+**依赖**：IDomain（+ `Common.HttpClients`——`IHttpHelper` 当前核对 4.2.0，实际以目标项目锁定版本为准——或其它第三方 SDK 包）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部能力所需 NuGet 包按需引用在 Adapter。
 **结对 + 两层**（复杂外部调用推荐）：
 - 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Services/`，方法用 **Bo**（`IDomain/Adapter/Bo/{外部系统}/`）。
 - HTTP 客户端包装（复杂场景可选）：接口 `I{X}HttpClient` 与实现 `{X}HttpClient : IScopedDependency, I{X}HttpClient` 都在 `Adapter/HttpClients/`，用 **Ho**（`Adapter/Ho/{外部系统}/`），注入 `IHttpHelper` 做真实 HTTP 调用。普通方法返回 `IHttpResult<T>`；需要响应头时优先调用 `IHttpHelper.SendAsync` 获取原始 `HttpResponseMessage`，需要更底层的 `ResponseHeadersRead` 或自定义管道时才在实现内使用原生 `HttpClient` / `IHttpClientFactory`。
+- **非幂等端点关闭重试**：`IHttpHelper` 默认自动重试 5xx / 408 / 超时（`MaxRetryAttempts=3`）。token 换发、委托授权、扣款等重试会放大请求的调用，必须在调用点传 `HttpSendOptions { EnableRetry = false }`（4.2.0+）单独关闭，不影响同一客户端上的幂等调用；锁定 4.1.x 的项目只能为该服务单独注册命名客户端并配 `MaxRetryAttempts = 0`。大响应体分页拉取优先 `GetStreamAsync` / `PostStreamAsync`（4.2.0+）流式读取，不整体缓冲进内存；OAuth token 端点等标准表单用 `PostFormUrlEncodedAsync`（4.2.0+，Content-Type 一目了然）。
 
 ```csharp
 // IDomain/Adapter/ISmsAdapter.cs —— 接口在 IDomain，用 Bo，不暴露 HttpClient
