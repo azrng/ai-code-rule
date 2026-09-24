@@ -27,7 +27,7 @@ public async Task<DialogResult> ShowDialogAsync<TView>(object dataContext, strin
 }
 ```
 
-- `OverlayDialogOptions` 关键成员：`Title`、`Buttons`（None/OK/OKCancel/YesNo/YesNoCancel，仅 Standard 模式生效）、`IsCloseButtonVisible`（仅 Custom 模式生效）、`CanLightDismiss`、`CanDragMove`、`CanResize`、`StyleClass`、`TopLevelHashCode`。
+- `OverlayDialogOptions` 关键成员：`Title`、`Buttons`（None/OK/OKCancel/YesNo/YesNoCancel，仅 Standard 模式生效）、`IsCloseButtonVisible`（Standard / Custom overlay 都生效；不要再使用已过时的 `ShowCloseButton`）、`CanLightDismiss`、`CanDragMove`、`CanResize`、`StyleClass`、`TopLevelHashCode`。
 - 返回 `Task<DialogResult>`（None/OK/Cancel/Yes/No）。**带自定义负载的结果用 `ShowCustomAsync<TResult>`**：内部 `args.Result is T` 命中才返回该值，否则 default。
 
 ## 关闭契约：IDialogContext（核心）
@@ -46,6 +46,7 @@ public interface IDialogContext
 - chrome 右上角关闭钮（以及 `DialogControlBase.CanClose` 附加属性标记的元素）→ `Close()` → `RequestClose(null)` → `DialogResult.None`。
 - **DataContext 未实现 IDialogContext** 时，chrome 关闭按 `Buttons` 枚举折算结果（如 OKCancel → Cancel）。
 - 订阅时机：弹层控件 DataContext 一变即订阅（`OverlayFeedbackElement.OnDataContextChange`），关闭后不退订——同一 VM 实例反复开关安全（旧控件的 ShowAsync 处理器在首次关闭已移除，不存在重复 SetResult）。
+- 调用层应保留 `showCloseButton` / `IsCloseButtonVisible` 的显式开关，并为服务封装补一条调用层回归断言；不要只测内容 VM 的关闭命令，否则右上角关闭钮可能在封装层丢失。
 
 ## 高频坑
 
@@ -84,8 +85,13 @@ if (冲突) { 暂存待执行请求; _ = AwaitConfirmAndExecuteAsync(); return; 
 - `CanResize = true` 时模板附加 `DialogResizer` 拖拽边。
 - 卡片背景 / 圆角 / 阴影由主题 token（`DialogBackground` / `DialogCornerRadius` / `DialogBoxShadow`）提供，**业务卡片样式应收敛为纯尺寸**（Width / MaxHeight），否则出现双层卡片。
 
+## 既有宿主与标签页生命周期
+
+- 已有 `Grid` + `ContentControl` + `IsVisible` 绑定 + 惰性实例化的弹框宿主，且宿主已经承担项目 / 标签页导航与生命周期时，新增同类弹框优先复用既有宿主、导航和生命周期，不要为单个弹框并行引入第二套 Overlay。
+- 弹框内容绑定标签页或项目 ViewModel 时，切换或关闭所属标签页必须同步取消 / 关闭挂起弹框并释放订阅，不能留下仍可提交的旧标签页弹框；至少回归“打开弹框后切换标签页”和“打开弹框后关闭标签页”两条路径。
+
 ## 从「VM 布尔标志 + 手写遮罩」迁移的既定套路
 
-- 手写宿主（Grid 叠 ContentControl + IsVisible 绑定 + 惰性实例化 + 遮罩/标题/主次按钮样式）整体删除；弹窗生命周期改命令式：打开命令 → 预填草稿 → `await ShowDialogAsync(...)` → 按结果恢复状态；关闭/取消命令只负责 `RequestClose`。
+- 确认迁移到 Ursa 后，才删除手写宿主（Grid 叠 ContentControl + IsVisible 绑定 + 惰性实例化 + 遮罩/标题/主次按钮样式）；弹窗生命周期改命令式：打开命令 → 预填草稿 → `await ShowDialogAsync(...)` → 按结果恢复状态；关闭/取消命令只负责 `RequestClose`。
 - 纯确认弹窗（删除 / 覆盖确认）：独立上下文 VM，Confirm/Cancel 只 raise RequestClose，业务在 await 之后编排。
 - 单测：注入 Fake `IDialogService`（记录 ViewType/DataContext/Title + OnShow 钩子断言「弹窗展示时刻」的中间态 + 可编程 NextResult 默认 OK）；宿主缺失时流程自动走「弹窗即开即关」路径，取消分支照样可断言。注意 OnShow 钩子能拿到中间态，而 await 之后的断言只能看到流程结束态（确认成功会清掉 Pending 之类状态）。

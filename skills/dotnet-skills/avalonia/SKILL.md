@@ -56,7 +56,7 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 ## 决策入口
 
-- **选弹层**：按钮附带小菜单 → `Button.Flyout`；右键菜单 → `ContextMenu`；菜单项列表 → `MenuFlyout`；模态对话框 → Ursa `OverlayDialogHost`（装配、IDialogContext 关闭契约、叠加弹窗与迁移套路见 references/ursa-overlays.md）。注意：Transient 弹层在窗口失活时的首击会「打开即被光熄灭关闭」（references/windows-flyouts-popups.md）。
+- **选弹层**：按钮附带小菜单 → `Button.Flyout`；右键菜单 → `ContextMenu`；菜单项列表 → `MenuFlyout`；项目已有弹框宿主、导航或标签页生命周期时，新增同类弹框先复用既有结构；没有可复用宿主或需要统一模态结果 / 关闭契约时再用 Ursa `OverlayDialogHost`（装配、IDialogContext 关闭契约、叠加弹窗与迁移边界见 references/ursa-overlays.md）。注意：Transient 弹层在窗口失活时的首击会「打开即被光熄灭关闭」（references/windows-flyouts-popups.md）。
 - **选窗口基座**：需要标题栏内容 / 托管最小化-最大化-关闭按钮 → `u:UrsaWindow`（`TitleBarContent` / `LeftContent` / `RightContent` 槽位 + 托管 CaptionButton，见 references/windows-flyouts-popups.md「窗口装饰」节）；不用 Ursa 才走 `WindowDecorations="None"` + `BeginMoveDrag` 手工方案。
 - **选列表控件**：只读展示 → `ItemsControl`；可选中 → `ListBox`；大数据量 → 必须配 `VirtualizingStackPanel`（默认 ItemsPanel **不虚拟化**）。
 - **选绑定写法**：同 DataContext 内普通路径绑定；跨层级取值 `$parent[Window].((vm:X)DataContext)`；模板内先设 `x:DataType`。
