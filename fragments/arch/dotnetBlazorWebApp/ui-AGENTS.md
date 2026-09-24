@@ -90,6 +90,7 @@ dependencies: [agents-root]
 - 预渲染期间浏览器 DOM 和 JS 运行时尚不可用。JS interop、尺寸测量、焦点和客户端存储访问必须延后到组件完成交互式渲染后执行。
 - 只有在预渲染无法安全支持且用户体验收益明确时才关闭预渲染，并记录首屏、闪烁、SEO 和加载状态影响。
 - 组件必须为预渲染、交互启动、数据未到达和恢复失败提供确定的 loading、empty、error 与 no-permission 状态。
+- 改写 `Response.StatusCode` 的副作用必须在异步取数完成后执行（`OnInitializedAsync` 内判定），不得放在首次渲染即执行的标记分支或 `OnInitialized` 中：Static SSR 下含 `await` 的生命周期会先执行一次数据未到的同步首渲染，渲染期判定会把正常页面先误写成错误状态码，数据到达后的重渲染无法纠正已写定的状态码；不涉及异步取数的路由 NotFound 兜底不受此限。
 
 ---
 

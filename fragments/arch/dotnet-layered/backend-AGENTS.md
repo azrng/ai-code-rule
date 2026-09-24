@@ -31,6 +31,8 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/pg-time-convention.md -->
 
+<!-- include: shared/backend/time-contract-rules.md -->
+
 ---
 
 <!-- include: shared/backend/advisory.md -->
@@ -211,6 +213,7 @@ src/
 - 接口已注释时，实现方法不重复注释，也不加 `/// <inheritdoc />`；只有实现类自有的、接口未定义的方法才需要补注释。
 - 默认不写 `<remarks>`：实现类、实现方法上的 `<remarks>` 多为实现细节，按“不写实现细节”原则省略。
   - 例外：Controller action 需要向调用方暴露事件格式、鉴权要求、分页约定等对外契约信息时，可保留精简后的 `<remarks>`，但不写内部实现说明。
+- 涉及时间字段的 DTO / 接口注释必须写明转换责任方：入参是本地墙钟还是 UTC、由哪一层完成转换（如“本地墙钟（服务层统一转换）”），而不是只标存储单位。
 - 优先补行内注释的位置：涉及权限、状态流转、事务、缓存、幂等或降级的复杂业务分支，说明“为什么这样做”——包括 fail fast 的原因、为什么跳过某类脏数据、为什么保留某一层结构（如月份层、品种层）。
 - 不要补的注释：普通属性的 get / set、简单 `if` / `return`、“返回结果”这类复述代码的低价值注释。
 - 注释统一使用中文，不使用纯英文注释；不在注释里泄露密钥、token、连接串或真实生产地址。

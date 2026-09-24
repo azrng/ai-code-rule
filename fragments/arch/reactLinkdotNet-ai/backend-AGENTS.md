@@ -170,6 +170,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - 应用启动时自动执行迁移（可选配置）；默认 SQLite 需注意文件锁与并发限制，生产场景再评估是否切 PostgreSQL
 
 <!-- include: shared/backend/comment-rules.md -->
+
+<!-- include: shared/backend/time-contract-rules.md -->
 - 行内注释的关注点额外包括模型调用风险与降级；注释与 XML 注释中不得泄露模型密钥、Base URL 或真实生产地址
 
 <!-- include: shared/application/anti-patterns.md -->

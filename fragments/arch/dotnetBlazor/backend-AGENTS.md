@@ -141,6 +141,8 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/comment-rules.md -->
 
+<!-- include: shared/backend/time-contract-rules.md -->
+
 <!-- include: shared/application/anti-patterns.md -->
 
 <!-- include: shared/application/maintainability-check.md -->
