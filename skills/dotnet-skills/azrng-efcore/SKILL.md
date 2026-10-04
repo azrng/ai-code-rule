@@ -17,7 +17,7 @@ description: "Guide for using the Azrng Common.EFCore family of NuGet packages t
 | MySQL | `Common.EFCore.MySQL` | `Azrng.EFCore.MySQL` | Pomelo |
 | SQLite | `Common.EFCore.SQLite` | `Azrng.EFCore.SQLite` | Microsoft.Data.Sqlite |
 | SQLServer | `Common.EFCore.SQLServer` | `Azrng.EFCore.SQLServer` | Microsoft.Data.SqlClient |
-| 内存库(测试) | `Common.EFCore.InMemory` | `Azrng.EFCore.InMemory` | EFCore.InMemory |
+| 内存库(测试) | `Common.EFCore.InMemory` | `Azrng.EFCore.InMemory` | EFCore.InMemory（不支持事务，见 repository-and-unitofwork.md） |
 
 > 包名注意：实际 NuGet 包 id 是 `Common.EFCore.PostgresSql`（非 PostgreSQL），按上表原样引用。
 
@@ -118,7 +118,7 @@ try {
 } catch { await scope.RollbackAsync(); throw; }
 ```
 
-三种事务方式对比见 references/repository-and-unitofwork.md。
+三种事务方式对比见 references/repository-and-unitofwork.md。**InMemory provider 不支持任何一种事务入口**（测试环境替身/换库方案见同文件「InMemory provider 不支持事务」）。
 
 ## 分页与条件查询扩展（常用）
 

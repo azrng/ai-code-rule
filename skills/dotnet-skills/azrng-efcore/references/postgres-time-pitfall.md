@@ -61,7 +61,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
     base.OnModelCreating(modelBuilder);
     const string t = "timestamp without time zone";
     foreach (var et in modelBuilder.Model.GetEntityTypes())
-        foreach (var p in et.GetProperties().Where(p => p.ClrType == typeof(DateTime)))
+        foreach (var p in et.GetProperties().Where(p => p.ClrType == typeof(DateTime) || p.ClrType == typeof(DateTime?)))   // 可空列必须同时匹配，漏掉 DateTime? 会留在 timestamptz
             p.SetColumnType(t);   // 等价 IsUnTimeZoneDateTime（该扩展只接受 PropertyBuilder<T>）
 }
 ```

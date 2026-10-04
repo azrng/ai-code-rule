@@ -107,7 +107,7 @@ YourProject/
 | 业务场景 | 抛什么（`Azrng.Core.Exceptions`） | HTTP 状态码 | ErrorCode |
 |---|---|---|---|
 | 参数错误 / 业务校验失败 | `throw new ParameterException(msg)` | 400 | `"400"` |
-| 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"400"` |
+| 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"500"`（见下） |
 | 资源不存在（按 id 查不到） | `if (entity is null) throw new NotFoundException("记录不存在")` | 404 | `"404"` |
 | 未认证（未登录或凭证无效） | `throw new UnauthorizedException(msg)` | 401 | `"401"` |
 | 已认证但无权限 | `throw new ForbiddenException(msg)` | 403 | `"403"` |
@@ -115,6 +115,8 @@ YourProject/
 | 其他未处理异常 | （任何 `Exception`） | 500 | `"500"` |
 
 > 默认按真实 HTTP 状态码返回（400/401/403/404/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
+
+> **`LogicBusinessException` 的结果码版本差异**（Azrng.Core 1.20.0 实测）：中间件把它映射为 HTTP 400，但 `ResultModel.code` 取自异常的 `ErrorCode`；`LogicBusinessException(string message)` 构造走 `BaseException(string)`，`ErrorCode` 为 `"500"`，只有无参构造才是 `"400"`。因此需要 code 与 HTTP 400 一致时优先用 `ParameterException(msg)`；用 `LogicBusinessException` 时前端按 `isSuccess=false` 判错，不要依赖 code。
 
 > 当前 `CustomExceptionMiddleware` 对 `ForbiddenException` 写入 HTTP 403 和结果码 `403`；部分 `Azrng.Core` 版本的 `ForbiddenException.ErrorCode` 构造值仍是 `401`，这是包内历史兼容问题，不应据此把“已认证但无权限”文档化为 401。
 
@@ -446,7 +448,19 @@ public Task<MaterialDto> Upload(IFormFile file)
 需要 JSON 序列化时，统一注入 `IJsonSerializer`（`Azrng.Core.IJsonSerializer`），**不要在各处直接用 `JsonSerializer`/`JsonConvert`**——底层切换 STJ↔Newtonsoft 只改一处。API：`ToJson<T>(obj)`、`ToObject<T>(json)`、`Clone<T>(obj)`（深拷贝）、`ToList<T>(json)`。
 
 - 实现 + 注册：`Azrng.Core.Json`（System.Text.Json 实现 `SysTextJsonSerializer`，推荐、AOT 友好）或 `Azrng.Core.NewtonsoftJson`（`NewtonsoftJsonSerializer`，兼容旧代码）。Service 项目装实现包后 `builder.Services.ConfigureDefaultJson();`（`using Azrng.Core.Json;`）注册。
-- 默认配置（`DefaultJsonSerializerOptions`）：驼峰命名、不转义中文（`UnsafeRelaxedJsonEscaping`）、内置 Enum/DateTime/Long→String 等转换器。
+- 默认配置（`DefaultJsonSerializerOptions`）：驼峰命名、不转义中文（`UnsafeRelaxedJsonEscaping`）、忽略循环引用。
+- **HTTP 响应的 long→string 需单独配置**：`ConfigureDefaultJson` 只注册 `IJsonSerializer` 及其 options，**不碰 MVC 的 `AddJsonOptions`**，控制器的 JSON 响应序列化由 MVC 自己的 `JsonOptions` 决定。雪花 long 主键超出 JS `2^53` 精度，前端拿数字 id 会精度丢失——需要在 HTTP 响应中 long→string 时，必须在 MVC 层自行注册：
+
+```csharp
+// Service/Startup.cs 的 RegisterServices：为 MVC 响应启用 long→string，防前端精度丢失
+// 包内置转换器在 Azrng.Core.Json.JsonConverters 命名空间（using Azrng.Core.Json.JsonConverters;）
+services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new LongToStringConverter());
+});
+```
+
+也可在 Service/Filters/LongToStringJsonConverter.cs 自定义转换器（入口层横切关注，不入侵业务层）：`JsonConverter<long>`，Write 时 `value.ToString(CultureInfo.InvariantCulture)`，Read 时 `long.Parse`。若还要覆盖 `long?` / `IEnumerable<long>` 等形态，用 `JsonConverterFactory` 按请求类型分发。
 
 > 业务层依赖 `IJsonSerializer` 接口；切换底层只改 Service 项目装的实现包 + 注册，不波及业务。
 
@@ -473,6 +487,8 @@ public Task<MaterialDto> Upload(IFormFile file)
 | 实体 | 单数 `{Entity}` | IDomain/Entities |
 | 配置类 | `{Entity}Etc` | EntityFramework |
 | DbContext | `{Solution}DbContext` | EntityFramework |
+
+> **实体名与模块命名空间同名时必须消歧**：AppService 实现放 `HotelManagement.Application.User` 这类模块命名空间后，同文件内裸引用实体 `User` 会被解析为命名空间（CS0118）。消歧任选其一：① `using UserEntity = HotelManagement.IDomain.Entities.User;` 别名后用 `UserEntity`；② 模块名复数化（`Application.Users`），实体保持单数。推荐②，一劳永逸。
 
 ## 何时该拆/不该拆（决策速查）
 

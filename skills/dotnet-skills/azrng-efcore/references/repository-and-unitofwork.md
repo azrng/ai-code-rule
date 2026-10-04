@@ -118,6 +118,16 @@ try {
 
 > 方式 1/2 内部不自动 SaveChanges，业务侧要 `AddAsync(..., submit:false)` 后调 `_unitOfWork.SaveChangesAsync()`，或各 Add 传 `submit:true`。
 
+### InMemory provider 不支持事务（测试环境必读）
+
+`BeginTransactionScopeAsync` / `CommitTransactionAsync` / `GetDatabase().BeginTransactionAsync()` 三种方式内部都走 `RelationalDatabaseFacadeExtensions`（关系型 facade）。测试项目用 `Common.EFCore.InMemory` 跑集成测试时，任何一种事务入口都会直接抛 `InvalidOperationException`（非关系型 provider 不支持事务），且 `ConfigureWarnings(x => x.Ignore(TransactionIgnoredWarning))` **只压告警、不解决 facade 抛错**（该告警配置针对的是 SaveChanges 时的事务忽略提示，不是 BeginTransaction 本身）。
+
+应对（按优先级）：
+
+1. **测试替身降级**：用 `DispatchProxy` 把 `ITransactionScope` 相关调用降级为无操作，业务代码保持真实事务写法。要点：拦截 `IUnitOfWork.BeginTransactionScopeAsync` 返回无操作 scope（`CommitAsync`/`RollbackAsync`/`DisposeAsync` 全部空转），业务层无需感知测试环境；
+2. **换真实库**：Testcontainers / 本地 PostgreSQL 验证真实事务语义（含回滚隔离性），事务行为本身就是被测内容时必选；
+3. 若测试必须保留 InMemory 且要验证多表写入顺序，只能把用例拆成单表断言（放弃跨表原子性验证）。
+
 ## 5. 原生 SQL（IUnitOfWork）
 
 | 方法 | 说明 |
