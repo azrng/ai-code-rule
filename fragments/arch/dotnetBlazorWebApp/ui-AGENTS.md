@@ -90,7 +90,9 @@ dependencies: [agents-root]
 - 预渲染期间浏览器 DOM 和 JS 运行时尚不可用。JS interop、尺寸测量、焦点和客户端存储访问必须延后到组件完成交互式渲染后执行。
 - 只有在预渲染无法安全支持且用户体验收益明确时才关闭预渲染，并记录首屏、闪烁、SEO 和加载状态影响。
 - 组件必须为预渲染、交互启动、数据未到达和恢复失败提供确定的 loading、empty、error 与 no-permission 状态。
-- 改写 `Response.StatusCode` 的副作用必须在异步取数完成后执行（`OnInitializedAsync` 内判定），不得放在首次渲染即执行的标记分支或 `OnInitialized` 中：Static SSR 下含 `await` 的生命周期会先执行一次数据未到的同步首渲染，渲染期判定会把正常页面先误写成错误状态码，数据到达后的重渲染无法纠正已写定的状态码；不涉及异步取数的路由 NotFound 兜底不受此限。
+- 组件内 404 必须走框架 NotFound 机制（.NET 10+）：`Router.NotFoundPage` 参数指向带路由的 NotFound 页 + 组件内 `NavigationManager.NotFound()`；`Router` 的 `<NotFound>` render fragment 已废弃。禁止在组件内手动 `Response.StatusCode = 404`——Static SSR 下无论设置时序如何，框架对非 NotFound 流量的最终 404 会丢弃响应体（返回空 body 裸 404；401/402/403 等其他状态码不受影响）。
+- 非 404 状态码（401/402/403 等）仍可手动改写 `Response.StatusCode`，但副作用必须在异步取数完成后执行（`OnInitializedAsync` 内判定），不得放在首次渲染即执行的标记分支或 `OnInitialized` 中：Static SSR 下含 `await` 的生命周期会先执行一次数据未到的同步首渲染，渲染期判定会把正常页面先误写成错误状态码，数据到达后的重渲染无法纠正已写定的状态码。
+- 地址栏请求无任何 `@page` 匹配的裸 404（不进入任何组件）由 `UseStatusCodePagesWithReExecute` 重新执行专用 404 端点承接，不要试图用组件内逻辑处理。
 
 ---
 

@@ -55,6 +55,8 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 ```
 
 > PostgreSQL provider 的配置参数类型是 `Azrng.EFCore.EfCoreConnectOption`，定义在基础包 `Common.EFCore`，不是 `Azrng.EFCore.PostgresSql`。`AddEntityFramework<TDbContext>` 扩展方法位于 `Microsoft.Extensions.DependencyInjection`。`WorkId` 默认使用包内置的节点号策略，`IsSnakeCaseNaming` 默认是 `true`；除非已经明确设计节点号或命名策略，否则不要显式覆盖这两个默认值。该注册过程会按最终的 `WorkId` 初始化 `IdHelper`，使用实体基类或直接调用 `IdHelper.GetLongId()` 时，通常不需要再单独调用 `AddIdHelper`。
+>
+> **该注册还携带两个隐藏副作用（1.7.x 源码核实），脱离它单独构建 DbContext 模型会失真**：①写入全局静态 `EfCoreGlobalConfig.SetConfig(DatabaseType.PostgresSql, ...)`——包配置基类里的 `IsUnTimeZoneDateTime(DbType == PostgresSql)` 靠它才真正生效，跳过注册时基类不配时间类型（详见 references/postgres-time-pitfall.md 场景 1 的路径条件）；②`IsSnakeCaseNaming = true` 时在 options 管道挂 `UseSnakeCaseNamingConvention`——蛇形列名仅存在于经注册构建的模型，临时工程核对 DDL 必须复刻同一管道（见「迁移脚本与 EF 模型核对」）。
 
 > 自定义 DbContext 时重写 `OnModelCreating`，调 `ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `*Etc` 配置类；加 `HasDefaultSchema(...)` 设默认 schema。详见 references/entities-and-context.md。
 
@@ -207,7 +209,7 @@ builder.Services.AddSqlMigrationService("default", config =>
 
 > **执行时序与迁移后补数据**：迁移在 `RunAsync()` 内由启动过滤器执行——晚于 Program 顶层语句、早于 Kestrel 监听。迁移完成后要跑 C# 逻辑（种子数据、缓存预热等）时，用自定义 `IStartupFilter` 挂接：IStartupFilter 按注册的相反顺序执行（后注册者先执行），自定义过滤器须在 `.AddAutoMigration()` 之前注册才会后于迁移运行。
 
-**SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，推荐使用纯版本文件名 `1.0.0.sql`、`1.1.0.txt`；如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号并跳过脚本。
+**SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，**文件名必须是三段式（四段式）数字版本**：`1.0.0.sql`、`1.1.0.txt`（或 `1.0.0.1.sql`），升级按数字递增（如 `1.0.0` → `1.0.1`）。版本号解析器（0.5.0 实测）只接受以 `.` 分隔的三段或四段数字：`1.sql`、`1.0.sql` 等段数不足的文件名会解析失败——该失败被记为错误日志（`获取版本号异常...不支持的版本格式`）并返回版本 0，脚本被静默跳过，应用正常启动但表没建。如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号。
 
 > **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。
 
@@ -241,7 +243,35 @@ var ddl = dbContext.Database.GenerateCreateScript();
 await File.WriteAllTextAsync("ef-model.sql", ddl);
 ```
 
+**临时工程必须复刻应用的注册管道，否则 DDL 会失真**（1.7.x 实测，两大失真源）：
+
+- **时间列**：包配置基类（如 `EntityTypeConfigurationIdentityOperatorStatus`）里的 `IsUnTimeZoneDateTime(isPgsql: EfCoreGlobalConfig.DbType == PostgresSql)` 是**条件 no-op**——`DbType` 是全局静态，只在 provider 包 `AddEntityFramework<T>` 注册时写入。临时工程若手工 `new DbContextOptionsBuilder().UseNpgsql(...)`，`DbType` 默认 0（MySql）→ 基类不配时间类型 → 审计字段全部输出 `timestamptz`，与运行期实际模型不一致。
+- **命名**：`IsSnakeCaseNaming` 默认 `true` 的蛇形命名是 `AddEntityFramework` 在 options 管道里挂的 `UseSnakeCaseNamingConvention`，手工建 options 时不会生效 → DDL 输出引号 PascalCase（`"Id"`），与运行期查询生成的 `id` 不一致。
+
+两种复刻方式任选：
+
+```csharp
+// 方式 A（推荐）：复用注册扩展，从容器解析——与运行期完全同源
+var services = new ServiceCollection();
+services.AddEntityFramework<AppDbContext>(config =>
+{
+    config.ConnectionString = "Host=...;Database=...";   // 仅为注册，不真连库
+    config.Schema = "public";
+});
+var dbContext = services.BuildServiceProvider().GetRequiredService<AppDbContext>();
+var ddl = dbContext.Database.GenerateCreateScript();
+
+// 方式 B：手工 options 时必须显式补齐两个包内置行为
+EfCoreGlobalConfig.SetConfig(DatabaseType.PostgresSql, useOldUpdateColumn: false, schema: "public");
+optionsBuilder.UseNpgsql(connectionString)
+    .UseSnakeCaseNamingConvention();   // EFCore.NamingConventions，默认配置下开启
+```
+
+> 方式 B 中 `SetConfig` 与 `UseSnakeCaseNamingConvention` 均为公开 API，但默认值（命名开启、旧字段名关闭）需与真实注入配置逐项对齐；配置不一致时优先方式 A。
+
 该脚本用于比对，不替代 `Azrng.SqlMigration` 的版本脚本。修改实体配置后重新生成并检查 `timestamp without time zone`、`snake_case` 等关键差异。
+
+> **命名与 DDL 一致性自检**：默认 `IsSnakeCaseNaming = true` 时，运行期查询按蛇形列名（`u.id`）生成 SQL，手写迁移 DDL 必须同样蛇形（`id bigint`），两边禁止混用（蛇形模型 + PascalCase DDL → 运行期 42703 undefined column）。核对清单：① 用上述同源方式生成模型 DDL；② 逐列比对迁移脚本与模型 DDL 的列名/类型；③ 迁移脚本不改模型推断出的类型与命名，只补默认值、注释、索引等 DDL 细节。
 
 ## 包 API 核实流程
 
