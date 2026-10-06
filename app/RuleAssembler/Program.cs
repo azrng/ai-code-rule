@@ -80,6 +80,28 @@ internal static class Program
         if (mode == 2)
             return ImportSkillsOnly(ui, skillsStore);
 
+        // 交互模式同样尊重已有配方：当前目录存在 .ai-rule-profile.json 时优先提供按配方重放，
+        // 避免第二次使用仍走目录检测误判（嵌套子目录检测不到特征文件时尤其明显）
+        var recipePath = Path.Combine(Environment.CurrentDirectory, RecipeRecorder.RecordFileName);
+        if (File.Exists(recipePath))
+        {
+            var replayChoice = ui.Choose(
+                $"检测到已有配方记录 {RecipeRecorder.RecordFileName}（上次生成的选择留档）：",
+                "取消",
+                new List<UiChoice>
+                {
+                    new("按配方重放（推荐）", "沿用上次选择的组合与能力升级规则，可识别本地修改"),
+                    new("重新选择组合", "忽略配方，重新检测 / 问答选择后生成（会覆盖配方）")
+                });
+            if (replayChoice is null)
+            {
+                Console.WriteLine("已取消。");
+                return 0;
+            }
+            if (replayChoice == 0)
+                return RunUpgrade(manifest, resources, skillsStore, Environment.CurrentDirectory, force: false, interactive: true);
+        }
+
         while (true)
         {
             var entry = InteractiveFlow.OfferEntry(manifest, wizard, ui);
@@ -182,6 +204,77 @@ internal static class Program
             Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
             return 0;
         }
+    }
+
+    // 配方升级共享实现：--upgrade 命令行与交互模式「按配方重放」周同一口径，
+    // 避免两条入口各自演化导致行为漂移；interactive=true 时写入前再确认一次
+    private static int RunUpgrade(
+        Manifest manifest, ResourceStore resources, SkillsStore skillsStore,
+        string targetDirectory, bool force, bool interactive)
+    {
+        var recipePath = Path.Combine(targetDirectory, RecipeRecorder.RecordFileName);
+        var replayer = new RecipeReplayer(manifest, new RuleRenderer(resources));
+        var plan = replayer.PlanUpgrade(File.ReadAllText(recipePath), targetDirectory);
+        var replay = plan.Replay;
+
+        foreach (var note in replay.Notes)
+            Console.WriteLine(note);
+        Console.WriteLine($"命中组件：{string.Join("、", replay.Plan.ComponentIds)}");
+
+        if (plan.ModifiedFiles.Count > 0 && plan.HashDetectable)
+        {
+            Console.WriteLine($"检测到 {plan.ModifiedFiles.Count} 个本地修改过的文件：");
+            foreach (var file in plan.ModifiedFiles)
+                Console.WriteLine($"  - {file}" + (plan.SkippedFiles.Contains(file, StringComparer.OrdinalIgnoreCase) ? "（保留本地版本）" : ""));
+            if (!force)
+                Console.WriteLine("默认保留本地修改；确认全部覆盖请追加 --force 重新运行。");
+        }
+        else if (plan.HashDetectable)
+        {
+            Console.WriteLine("未检测到本地修改过的文件。");
+        }
+        else
+        {
+            Console.WriteLine("配方未记录内容哈希（早期版本生成），无法识别本地修改，将按配方直接重放覆盖。");
+        }
+
+        if (force && plan.ModifiedFiles.Count > 0)
+        {
+            // --force：被保留的修改文件重新纳入写入集合，配方按全新写入重算哈希
+            plan = new RecipeReplayer.UpgradePlan(
+                replay, plan.ModifiedFiles, new List<string>(), replay.Files, plan.HashDetectable, replay.Record);
+        }
+
+        Console.WriteLine($"将写入 {plan.FilesToWrite.Count} 个文件到 {targetDirectory}" +
+                          (plan.SkippedFiles.Count > 0 ? $"（跳过本地修改的 {plan.SkippedFiles.Count} 个）" : "") + "：");
+        foreach (var file in plan.FilesToWrite)
+            Console.WriteLine($"  - {file.Output}");
+
+        if (interactive)
+        {
+            var confirm = new PlainConsoleUi().Choose(
+                $"确认写入 {plan.FilesToWrite.Count} 个文件到 {targetDirectory}？",
+                "取消",
+                new List<UiChoice> { new("开始升级", "按配方重放并保留本地修改文件") });
+            if (confirm is null)
+            {
+                Console.WriteLine("已取消。");
+                return 0;
+            }
+        }
+
+        var written = new OutputWriter().WriteFiles(targetDirectory, plan.FilesToWrite);
+        var skillWritten = SkillsImportFlow.ImportRecordedSkills(targetDirectory, plan.Record, skillsStore);
+        var recorder = new RecipeRecorder();
+        recorder.Write(targetDirectory, plan.Record);
+        var gitignoreMessage = recorder.EnsureGitignored(
+            targetDirectory,
+            RecipeRecorder.StackKeyForComposition(manifest, replay.Plan));
+
+        Console.WriteLine($"完成：已升级 {written} 个文件（规则版本 {manifest.Vars.Version}）" +
+            (skillWritten > 0 ? $"，另同步 Skills {skillWritten} 个文件" : ""));
+        Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
+        return 0;
     }
 
     // 仅导入 Skills：不生成规则文件、不写配方记录（配方是组合口径，空组合会让 --upgrade / --recipe
@@ -289,59 +382,10 @@ internal static class Program
                 throw new ArgumentException(
                     $"--upgrade 存在无法识别的参数：{string.Join(" ", extras)}（用法：--upgrade [目录] [--force]）",
                     nameof(args));
-            var recipePath = Path.Combine(targetDirectory, RecipeRecorder.RecordFileName);
-            if (!File.Exists(recipePath))
-                throw new IOException($"未找到配方记录 {recipePath}：升级需要此前由生成器写入的配方文件，首次生成请直接运行生成器或使用 --recipe。");
-
-            var replayer = new RecipeReplayer(manifest, new RuleRenderer(resources));
-            var plan = replayer.PlanUpgrade(File.ReadAllText(recipePath), targetDirectory);
-            var replay = plan.Replay;
-
-            foreach (var note in replay.Notes)
-                Console.WriteLine(note);
-            Console.WriteLine($"命中组件：{string.Join("、", replay.Plan.ComponentIds)}");
-
-            if (plan.ModifiedFiles.Count > 0 && plan.HashDetectable)
-            {
-                Console.WriteLine($"检测到 {plan.ModifiedFiles.Count} 个本地修改过的文件：");
-                foreach (var file in plan.ModifiedFiles)
-                    Console.WriteLine($"  - {file}" + (plan.SkippedFiles.Contains(file, StringComparer.OrdinalIgnoreCase) ? "（保留本地版本）" : ""));
-                if (!force)
-                    Console.WriteLine("默认保留本地修改；确认全部覆盖请追加 --force 重新运行。");
-            }
-            else if (plan.HashDetectable)
-            {
-                Console.WriteLine("未检测到本地修改过的文件。");
-            }
-            else
-            {
-                Console.WriteLine("配方未记录内容哈希（早期版本生成），无法识别本地修改，将按配方直接重放覆盖。");
-            }
-
-            if (force && plan.ModifiedFiles.Count > 0)
-            {
-                // --force：被保留的修改文件重新纳入写入集合，配方按全新写入重算哈希
-                plan = new RecipeReplayer.UpgradePlan(
-                    replay, plan.ModifiedFiles, new List<string>(), replay.Files, plan.HashDetectable, replay.Record);
-            }
-
-            Console.WriteLine($"将写入 {plan.FilesToWrite.Count} 个文件到 {targetDirectory}" +
-                              (plan.SkippedFiles.Count > 0 ? $"（跳过本地修改的 {plan.SkippedFiles.Count} 个）" : "") + "：");
-            foreach (var file in plan.FilesToWrite)
-                Console.WriteLine($"  - {file.Output}");
-
-            var written = new OutputWriter().WriteFiles(targetDirectory, plan.FilesToWrite);
-            var skillWritten = SkillsImportFlow.ImportRecordedSkills(targetDirectory, plan.Record, skillsStore);
-            var recorder = new RecipeRecorder();
-            recorder.Write(targetDirectory, plan.Record);
-            var gitignoreMessage = recorder.EnsureGitignored(
-                targetDirectory,
-                RecipeRecorder.StackKeyForComposition(manifest, replay.Plan));
-
-            Console.WriteLine($"完成：已升级 {written} 个文件（规则版本 {manifest.Vars.Version}）" +
-                (skillWritten > 0 ? $"，另同步 Skills {skillWritten} 个文件" : ""));
-            Console.WriteLine($"已写入配方记录 {RecipeRecorder.RecordFileName}（{gitignoreMessage}）");
-            return 0;
+            var recipeUpgradePath = Path.Combine(targetDirectory, RecipeRecorder.RecordFileName);
+            if (!File.Exists(recipeUpgradePath))
+                throw new IOException($"未找到配方记录 {recipeUpgradePath}：升级需要此前由生成器写入的配方文件，首次生成请直接运行生成器或使用 --recipe。");
+            return RunUpgrade(manifest, resources, skillsStore, targetDirectory, force, interactive: false);
         }
 
         if (args.Length is 2 or 3 && args[0].Equals("--recipe", StringComparison.OrdinalIgnoreCase))
@@ -458,7 +502,7 @@ internal static class Program
             || args[0].Equals("-h", StringComparison.OrdinalIgnoreCase)))
         {
             Console.WriteLine(Banner);
-            Console.WriteLine("直接双击或不带参数运行：先选模式——生成规则文件（自动检测推荐 / 问答选择）、检测当前目录组合，或仅导入 Skills。");
+            Console.WriteLine("直接双击或不带参数运行：先选模式——生成规则文件（自动检测推荐 / 问答选择）、检测当前目录组合，或仅导入 Skills；已存在配方记录时优先生成「按配方重放」入口。");
             Console.WriteLine("规则文件落盘后可选择把内置 Skills 导入到 Codex（.codex/skills）/ ZCode（.zcode/skills）/ Claude Code（.claude/skills）/ pi（.pi/skills），追加导入、同名技能可覆盖或跳过；--recipe / --upgrade 按配方同步已记录的 Skills。");
             Console.WriteLine("--check：只校验 manifest、片段、全部兼容样例的输出契约一致性、问答决策树、组件问答决策树与内置技能，不写入文件。");
             Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合；证据不足时打印待确认维度与候选组合，不写入文件。");

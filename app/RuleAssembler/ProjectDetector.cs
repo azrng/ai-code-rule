@@ -445,10 +445,12 @@ internal sealed class ProjectDetector
 
         ParsePythonDeps(root, signals);
 
-        foreach (var file in EnumerateShallow(root, new[] { "*.sln", "*.slnx" }, 2))
+        foreach (var file in EnumerateShallow(root, new[] { "*.sln", "*.slnx" }, 3))
             signals.HasSln = true;
 
-        foreach (var file in EnumerateShallow(root, new[] { "*.csproj" }, 2))
+        // csproj 深度取 4：常见解决方案布局（<方案>/<src>/<项目>/<项目>.csproj，如 CinemaHub/src/CinemaHub.Web）
+        // 项目文件在深度 3，多仓子项目（根/<子项目>/src/...）更深一层；目录只降文件读，不影响双击启动的瞬时性
+        foreach (var file in EnumerateShallow(root, new[] { "*.csproj" }, 4))
         {
             signals.CsprojCount++;
             if (signals.CsprojContents.Count < 20)
@@ -464,11 +466,11 @@ internal sealed class ProjectDetector
             }
         }
 
-        signals.HasRazorFiles = EnumerateShallow(root, new[] { "*.razor" }, 3).Any();
+        signals.HasRazorFiles = EnumerateShallow(root, new[] { "*.razor" }, 4).Any();
         // Razor 文件常藏在 Components/Pages 等更深目录（如 src/<项目>/Components），
         // 按 *.razor 浅扫探不到；这里专门找名为 Components 的目录（≤3 层），
         // 其子树下存在 .razor 即视为 Blazor Web App 模板结构
-        signals.RazorUnderComponents = HasRazorUnderComponentsDirectory(root, 3);
+        signals.RazorUnderComponents = HasRazorUnderComponentsDirectory(root, 4);
         signals.HasRootHtml = Directory
             .EnumerateFiles(root, "*.html", SearchOption.TopDirectoryOnly)
             .Any();

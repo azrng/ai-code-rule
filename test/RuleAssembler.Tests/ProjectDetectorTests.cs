@@ -447,4 +447,27 @@ public sealed class ProjectDetectorTests : IDisposable
         var caseItem = _manifest.CompatibilityCases.Single(item => item.Profile == "wpfExe");
         Assert.Equal(caseItem.Label, result.SampleLabel);
     }
+
+    [Fact]
+    public void Detect_DeepNestedSolution_FindsCsprojBeyondDepthTwo()
+    {
+        // 嵌套解决方案布局（<方案>/<src>/<项目>/<项目>.csproj 在深度 3）：
+        // 检测扫描深度不足时 csproj 探不到，首次与二次使用都会误判（ConvertToMoney 实测反馈）
+        Directory.CreateDirectory(Path.Combine(_root, "CinemaHub", "src", "CinemaHub.Web", "Components"));
+        File.WriteAllText(
+            Path.Combine(_root, "CinemaHub", "CinemaHub.slnx"),
+            "<Solution></Solution>");
+        File.WriteAllText(
+            Path.Combine(_root, "CinemaHub", "src", "CinemaHub.Web", "CinemaHub.Web.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>");
+        File.WriteAllText(
+            Path.Combine(_root, "CinemaHub", "src", "CinemaHub.Web", "Components", "App.razor"),
+            "<div></div>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.True(result!.Converged);
+        Assert.Equal("dotnetBlazorWebApp", result.SampleProfileId);
+    }
 }
