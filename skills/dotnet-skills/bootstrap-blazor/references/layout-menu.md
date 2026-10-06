@@ -1,5 +1,7 @@
 # Layout 布局组件
 
+后台整体的信息架构、页面层级、视觉密度与响应式约定见 `admin-shell-patterns.md`；本文专注 BootstrapBlazor Layout / Menu / Tab 的组件结构与行为。
+
 ```razor
 <Layout ShowGotoTop="true" ShowCollapseBar="true" ShowFooter="true"
         IsPage="true" IsFullSide="true" IsFixedHeader="true" IsFixedFooter="false"
@@ -90,4 +92,3 @@ protected override async Task OnInitializedAsync()
 @attribute [TabItemOption(Text = "页面标题", Closable = false)]
 @attribute [Authorize]
 ```
-

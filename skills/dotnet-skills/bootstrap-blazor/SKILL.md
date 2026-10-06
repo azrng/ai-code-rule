@@ -32,11 +32,14 @@ BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中�
 | 表单：ValidateForm 验证、输入组件、Select、CheckboxList | `references/forms.md` |
 | TreeView 权限/菜单树、Toast 通知 | `references/treeview-toast.md` |
 | Layout 布局、侧边栏菜单构建、Tab 标签页（含菜单展开陷阱） | `references/layout-menu.md` |
+| 后台管理端统一布局、页面层级、密度与响应式模式 | `references/admin-shell-patterns.md` |
+| 用户、角色与权限管理（RBAC） | `references/user-role-management.md` |
+| 管理操作审计日志：记录、查询与敏感信息处理 | `references/audit-log-management.md` |
 | Card/Badge/Drawer/Alert 等小组件、CSS 隔离 | `references/misc-components.md` |
 | 新建完整 CRUD 页面的标准步骤与模板 | `references/crud-template.md` |
 | 组件行为异常排查 | `references/troubleshooting.md` |
 
-典型组合：标准 CRUD 页面按 `table.md` → `modal.md` → `forms.md` → `crud-template.md` 顺序查阅；RBAC 管理端再加 `layout-menu.md` 与 `treeview-toast.md`。
+典型组合：标准 CRUD 页面按 `admin-shell-patterns.md` → `table.md` → `modal.md` → `forms.md` → `crud-template.md` 顺序查阅；RBAC 管理端再加 `layout-menu.md`、`treeview-toast.md` 与 `user-role-management.md`；需要追踪管理变更时查阅 `audit-log-management.md`。
 
 ## 高频陷阱速览
 
