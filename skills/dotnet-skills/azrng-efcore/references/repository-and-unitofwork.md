@@ -46,7 +46,7 @@ var q = _repo.Entities.Where(x => x.IsValid).OrderByDescending(x => x.CreateTime
 | `DeleteAsync(entities, submit=false)` | 批量删除 |
 | `DeleteAsync(predicate)` | 按条件删除（查后删，自动保存） |
 
-> `submit` 默认 false：不立即保存，用于工作单元内多操作后统一提交。独立操作记得传 `submit: true`。
+> `submit` 默认 false：该仓储调用不立即执行 `SaveChanges`。工作单元内多步写入需显式调用 `_unitOfWork.SaveChangesAsync()`；独立操作可传 `submit: true` 立即保存。
 
 ```csharp
 await _repo.AddAsync(user, submit: true);              // 立即落库
@@ -90,6 +90,7 @@ await _unitOfWork.CommitTransactionAsync(async () =>
 {
     await _orderRep.AddAsync(order);
     await _itemRep.AddAsync(item);
+    await _unitOfWork.SaveChangesAsync();
 });   // 异常自动回滚并抛出
 ```
 
@@ -100,6 +101,7 @@ try
 {
     await _orderRep.AddAsync(order);
     await _itemRep.AddAsync(item);
+    await _unitOfWork.SaveChangesAsync();
     await scope.CommitAsync();
 }
 catch { await scope.RollbackAsync(); throw; }
@@ -116,7 +118,7 @@ try {
 } catch { await tran.RollbackAsync(); throw; }
 ```
 
-> 方式 1/2 内部不自动 SaveChanges，业务侧要 `AddAsync(..., submit:false)` 后调 `_unitOfWork.SaveChangesAsync()`，或各 Add 传 `submit:true`。
+> 方式 1/2 的事务提交不会自动调用 `SaveChanges`。无论仓储写操作使用默认 `submit:false` 还是显式 `submit:false`，都必须在事务提交前调用 `_unitOfWork.SaveChangesAsync()`；也可在写操作传 `submit:true`，使变更在事务内立即保存。仅调用事务的 `CommitAsync()` 会提交数据库事务，不会落库未保存的变更。
 
 ### InMemory provider 不支持事务（测试环境必读）
 

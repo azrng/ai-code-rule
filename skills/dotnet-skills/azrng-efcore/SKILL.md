@@ -29,11 +29,13 @@ description: "Guide for using the Azrng Common.EFCore family of NuGet packages t
 
 ```xml
 <!-- EntityFrameworkal 项目 -->
-<PackageReference Include="Common.EFCore" Version="1.7.0" />
-<PackageReference Include="Common.EFCore.PostgresSql" Version="1.7.0" />
+<PackageReference Include="Common.EFCore" Version="1.7.1" />
+<PackageReference Include="Common.EFCore.PostgresSql" Version="1.7.2" />
 <!-- IDomain 项目（仅实体） -->
-<PackageReference Include="Common.EFCore" Version="1.7.0" />
+<PackageReference Include="Common.EFCore" Version="1.7.1" />
 ```
+
+> 以上版本是当前核实基线：`Common.EFCore` 1.7.1、PostgreSQL provider `Common.EFCore.PostgresSql` 1.7.2。其他 provider 按项目锁定版本核实 API 与行为。
 
 ### 2. 注入（Program.cs）
 
@@ -105,7 +107,7 @@ public class UserService
 }
 ```
 
-> `AddAsync/UpdateAsync/DeleteAsync(entity, submit)` 第二参 `submit=false` 时不立即保存，配合工作单元统一提交。完整 API（查询/分页/批量更新/原生 SQL）见 references/repository-and-unitofwork.md。
+> `AddAsync/UpdateAsync/DeleteAsync(entity, submit)` 的 `submit=false` 只表示该仓储调用不立即执行 `SaveChanges`。需要统一保存时，必须显式调用 `_unitOfWork.SaveChangesAsync()`；事务作用域的 `CommitAsync()` 只提交数据库事务，不会替代保存。完整 API（查询/分页/批量更新/原生 SQL）见 references/repository-and-unitofwork.md。
 
 ### 5. 事务（注入 IUnitOfWork）
 
@@ -116,9 +118,12 @@ await using var scope = await _unitOfWork.BeginTransactionScopeAsync();
 try {
     await _orderRep.AddAsync(order);
     await _itemRep.AddAsync(items);   // 批量新增即 AddAsync 集合重载（无 AddRangeAsync）
+    await _unitOfWork.SaveChangesAsync();
     await scope.CommitAsync();
 } catch { await scope.RollbackAsync(); throw; }
 ```
+
+`CommitAsync()` 只提交数据库事务，不会触发 `SaveChanges`；事务中的变更必须先显式调用 `_unitOfWork.SaveChangesAsync()`，再提交事务。
 
 三种事务方式对比见 references/repository-and-unitofwork.md。**InMemory provider 不支持任何一种事务入口**（测试环境替身/换库方案见同文件「InMemory provider 不支持事务」）。
 
