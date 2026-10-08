@@ -37,9 +37,8 @@ internal static class DesignSystemGuard
         return false;
     }
 
-    // 技术栈不匹配告警：本地文件与本次基线的技术栈锚点（头部「# 技术栈：」注释）不一致时提示用户，
-    // 典型场景是旧组合的基线（如 React）被保留后项目已切到新组合（如 Blazor）。
-    // 只告警不覆盖——已定制文件仍是产品资产；任一侧读不出锚点时返回 null，避免误报。
+    // 技术栈描述不一致提示：锚点是自由文本，差异可能来自命名、版本或架构，不能仅凭文本推断章节不适用。
+    // 只提示用户核对，不覆盖已定制文件；任一侧读不出锚点时返回 null，避免误报。
     public static string? GetTechStackMismatchWarning(string directory, string baselineContent)
     {
         var path = Path.Combine(directory, FileName);
@@ -61,9 +60,9 @@ internal static class DesignSystemGuard
         if (local is null || baseline is null || local.Equals(baseline, StringComparison.Ordinal))
             return null;
 
-        return "警告：本地 design-system.yaml 的技术栈（" + local + "）与本次组合基线（" + baseline
-            + "）不一致，本地文件疑似旧组合基线，其框架专属章节对当前项目不适用；"
-            + "确认本地定制内容无需保留后，删除该文件再重新生成可切换到当前技术栈基线。";
+        return "警告：本地 design-system.yaml 的技术栈描述（" + local + "）与本次组合基线（" + baseline
+            + "）不同，请核对本地文件中的框架专属章节是否仍适用于当前项目；"
+            + "确认本地定制内容无需保留且要改用本次基线后，删除该文件再重新生成。";
     }
 
     // 锚点形如「# 技术栈：React + TypeScript + ...」，取冒号后的整行值；锚点固定在文件头部，前 20 行足够
