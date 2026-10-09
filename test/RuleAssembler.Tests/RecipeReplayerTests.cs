@@ -118,7 +118,8 @@ public sealed class RecipeReplayerTests : IDisposable
         Assert.Contains(result.Notes, note =>
             note.Contains("React + TypeScript + Ant Design 5", StringComparison.Ordinal)
             && note.Contains("Blazor Server + BootstrapBlazor", StringComparison.Ordinal)
-            && note.Contains("不一致", StringComparison.Ordinal));
+            && note.Contains("技术栈描述", StringComparison.Ordinal)
+            && note.Contains("不同，请核对", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -138,7 +139,8 @@ public sealed class RecipeReplayerTests : IDisposable
         Assert.Contains(result.Notes, note =>
             note.Contains("React + TypeScript + Tailwind CSS + Radix UI Primitive + Electron", StringComparison.Ordinal)
             && note.Contains("Vue 3 + TypeScript + Element Plus + ECharts + Pinia + Electron", StringComparison.Ordinal)
-            && note.Contains("不一致", StringComparison.Ordinal));
+            && note.Contains("技术栈描述", StringComparison.Ordinal)
+            && note.Contains("不同，请核对", StringComparison.Ordinal));
     }
 
     [Fact]
