@@ -1,7 +1,7 @@
 ---
 rule_id: ui-agents
-version: 1.64.0
-last_updated: 2026-09-13
+version: 1.65.0
+last_updated: 2026-10-10
 dependencies: [agents-root]
 ---
 
@@ -34,7 +34,7 @@ dependencies: [agents-root]
 ---
 
 <!-- include: shared/ui/advisory.md -->
-- 设计体系基线：Avalonia 样式资源（Semi.Avalonia 主题等）
+- 设计体系基线：Avalonia 样式资源（Fluent 主题）；工作区技能或仓库既有项目采用 Semi.Avalonia 等主题库时，按上方「技术选择原则」对齐既有栈并在设计文档记录所选主题
 ---
 
 ## 推荐目录结构

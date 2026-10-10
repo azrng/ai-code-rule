@@ -1,7 +1,7 @@
 ---
 rule_id: backend-agents
-version: 1.45.0
-last_updated: 2026-09-03
+version: 1.46.0
+last_updated: 2026-10-10
 dependencies: [agents-root]
 ---
 
@@ -25,7 +25,7 @@ dependencies: [agents-root]
 
 ### Runtime
 - Electron（主进程拉起并管理子进程）
-- .NET 8/9 控制台程序，**自包含部署（self-contained）**，目标机无需预装 .NET Runtime
+- .NET 控制台程序，目标版本按官方支持策略核实后落定（新项目取核实当日仍受支持的最新 LTS），文档写明具体版本号与核实日期，禁止写「当前 LTS」这类会过期的表述；**自包含部署（self-contained）**，目标机无需预装 .NET Runtime
 - 默认**不**使用 NativeAOT（自包含已满足体积与启动需求；AOT 有反射 / 动态代码限制，仅在确有需要并评估兼容性后再启用）
 - 异步使用 `Task` / `async-await` 与 `System.Threading.Channels`
 - 序列化使用 `System.Text.Json`
