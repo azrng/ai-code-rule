@@ -28,6 +28,10 @@
 </Drawer>
 ```
 
+**编程式关闭**：没有公开的 `Close()` 方法（`Close` 是 `JSInvokable`，供 ESC/遮罩点击回调）。父组件把 `IsOpen` 置 `false` 后，组件在 `OnAfterRenderAsync` 调 JS `execute(id,false)` 关闭。注意两点：
+- 保存成功后建议「先刷列表再收抽屉 + 显式 `StateHasChanged()`」，刷新异常不拖累关闭，也防电路内丢渲染；
+- 关闭动画依赖 `requestAnimationFrame`（320ms 帧循环移除根元素 `.show`），rAF 节流环境（后台标签页/webview/自动化受控页面）根类残留导致"关不掉"，详见 `troubleshooting.md`。
+
 ## 7.4 Alert 警告
 ```razor
 <Alert Color="Color.Info">信息提示</Alert>

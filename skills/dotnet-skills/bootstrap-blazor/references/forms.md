@@ -18,6 +18,10 @@
 
 **注意**：组件库中不存在 `BootstrapInputFormItem` / `RadioListFormItem` / `DateTimePickerFormItem` 类表单包装组件；表单项 = `ValidateForm` + 各输入组件直接组合，标签由输入组件的 `DisplayText` 提供。
 
+**必须绑定模型属性，不可绑 `@code` 裸字段**：ValidateForm 内的输入组件绑裸字段时，BB 校验组件反射 `MemberInfo` 为 null 抛 `ArgumentNullException('element')`；单字段小表单也建一个模型类承载。
+
+**自动化测试提交表单**：`ButtonType.Submit` + `IsAsync` 的提交按钮不吃页内 JS 合成 `click()`，等价路径是对表单调 `form.requestSubmit()`；JS 填值需原生 value setter + `input` + `change` 双事件（详见 `troubleshooting.md`）。
+
 **手动验证模式**（需要自定义验证逻辑时）：
 ```csharp
 private async Task OnManualSubmit()

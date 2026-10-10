@@ -51,6 +51,10 @@ BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中�
 - 不存在 `BootstrapInputFormItem` / `RadioListFormItem` / `DateTimePickerFormItem` 类表单包装组件：表单项 = `ValidateForm` + 输入组件直接组合，标签用 `DisplayText`（`forms.md`）
 - `TableColumn` 必须包在 `<TableColumns>` 内，直接放在 `Table` 下不生效；嵌套模板的上下文显式改名（`Context="..."`）避免多层默认 `context` 同名冲突（`table.md`）
 - `Select` 泛型参数是 `TValue`（不是 `Table` 的 `TItem`），通常由 `@bind-Value` 推断、无需显式声明（`forms.md`）
+- 同表两列禁绑同一字段：BB Table 按字段合并列导致后列被吞；计算列换绑未占用可写字段 + Template 展示（`troubleshooting.md`）
+- ValidateForm 内输入组件必须绑模型属性，绑 `@code` 裸字段抛 `ArgumentNullException('element')`（`forms.md`）
+- Drawer 编程式关闭（`IsOpen=false`）依赖 `requestAnimationFrame` 320ms 帧循环移除根元素 `.show`，rAF 节流环境（后台标签页/webview）抽屉"关不掉"；判断关闭查 `.drawer.show`（`troubleshooting.md`）
+- 自动化测试：Submit 按钮不吃合成 `click()`，用 `form.requestSubmit()`；JS 填值 = 原生 setter + `input` + `change` 双事件；弹窗第一个 `<input>` 可能是防伪隐藏域（`troubleshooting.md`）
 
 ## 参考资源
 
