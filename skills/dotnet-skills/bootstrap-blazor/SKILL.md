@@ -44,8 +44,11 @@ BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中�
 ## 高频陷阱速览
 
 - TreeView 选中状态丢失：数据模型须实现 `Equals`/`GetHashCode`，并用 `Key` 强制重建（`treeview-toast.md`）
-- 模态框数据不更新：`Show()` 内用 `InvokeAsync` + `StateHasChanged()`（`modal.md`）
-- 表格自定义行按钮不显示：`ShowExtendButtons="true"` 且关闭内置编辑/删除按钮，再用 `RowButtonTemplate`（`table.md`）
+- 模态框首开恒空/数据不更新：先加载数据再 `Show()` 时 body 按旧状态渲染，`Show()` 之后必须 `await InvokeAsync(StateHasChanged)`；Modal 内隐藏 Table 首渲染已用空参数查询并缓存，打开后必须显式 `table.QueryAsync()`（BB 10 无 `Refresh()`）（`modal.md`、`troubleshooting.md`）
+- 表格自定义行按钮不显示：操作列必须走 `RowButtonTemplate`（`ShowExtendButtons="true"` 且关闭内置编辑/删除按钮）；`TableColumn` Template 内直接放 `TableCellButton` 渲染为空（`table.md`）
+- Layout 不写 `<Side />` 片段时侧栏（含 `Menus` 菜单）整段不渲染且无任何警告，只传 `Menus` 参数无效（`layout-menu.md`）
+- `BootstrapInput` 没有 `Width` 参数（仅 `BootstrapInputGroupLabel` 有），写了经 `CaptureUnmatchedValues` 静默失效；宽度用栅格容器或 class 工具类（`forms.md`）
+- `Blazor.downloadFileFromStream` 是 .NET 8 模板的自定义示例函数，非框架内置；站点须自带 `wwwroot/js` 下载函数（`troubleshooting.md`）
 - 菜单点击 404、子路由侧边栏收起、顶级菜单高亮异常：见 `layout-menu.md` 菜单章节
 - `NavLinkMatch` 只有 `All` 与 `Prefix`，没有 `Exact`（`layout-menu.md`）
 - 不存在 `BootstrapInputFormItem` / `RadioListFormItem` / `DateTimePickerFormItem` 类表单包装组件：表单项 = `ValidateForm` + 输入组件直接组合，标签用 `DisplayText`（`forms.md`）

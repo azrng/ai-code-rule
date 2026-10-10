@@ -63,6 +63,7 @@ services.AddScoped<IEntityService, EntityService>();
         <TableColumn @bind-Field="@context.Name" Text="名称"/>
         <TableColumn @bind-Field="@context.CreateTime" Text="创建时间" FormatString="yyyy-MM-dd HH:mm:ss"/>
     </TableColumns>
+    <!-- 操作列必须走 RowButtonTemplate：TableCellButton 放 TableColumn Template 内渲染为空 -->
     <RowButtonTemplate>
         <TableCellButton Size="Size.ExtraSmall" Color="Color.Success" Icon="fas fa-edit"
                          Text="编辑" OnClick="() => OnShowEditModal(context)"/>

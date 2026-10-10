@@ -60,6 +60,8 @@ public partial class Add
             StateHasChanged();
             if (AddModal != null)
                 await AddModal.Show();
+            // Show 之后必须再渲染一次：先加载数据再 Show 时 body 可能仍按旧状态渲染
+            await InvokeAsync(StateHasChanged);
         });
     }
 
@@ -113,6 +115,8 @@ public partial class Add
 **要点**：
 - `Modal` 尺寸：`Size.Small`（简单确认）、`Size.Medium`（修改密码）、`Size.Large`（标准 CRUD）、`Size.ExtraLarge`（复杂表单如权限分配）
 - `InvokeAsync` 确保在 UI 线程执行，`StateHasChanged()` 强制重新渲染
+- Modal 内的 Table 在页面首渲染时（Modal 仍隐藏）已用当时（空）的参数完成 `OnQueryAsync` 并缓存结果，`Show()` 不会重查——症状是「数据明明有、弹窗永远空（或旧数据）」。打开弹窗后必须显式 `await table.QueryAsync()`（BB 10 无 `Refresh()` 方法）
+- Modal 内表单组件必须绑定模型属性，绑 `@code` 裸字段抛 `ArgumentNullException('element')`（见 `forms.md`）
 - `EventCallback<T>` 实现父子组件通信
 - 子组件暴露 `Show()`/`Hide()` 方法供父组件调用
 

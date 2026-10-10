@@ -48,6 +48,8 @@ var q = _repo.Entities.Where(x => x.IsValid).OrderByDescending(x => x.CreateTime
 
 > `submit` 默认 false：该仓储调用不立即执行 `SaveChanges`。工作单元内多步写入需显式调用 `_unitOfWork.SaveChangesAsync()`；独立操作可传 `submit: true` 立即保存。
 
+> **`DeleteAsync` 系列全部是物理删除**（`Remove` + SaveChanges），不是软删除。软删除场景（实体继承 `IdentityOperatorStatusEntity`）：① 实体无关联时 `SetDeleted("operator")` + `UpdateAsync(entity, submit: true)`；② Blazor 电路等长寿命 DbContext 下同一实体先建后删会触发 1:1 关系 fixup 异常，改用条件批量更新 `UpdateAsync(predicate, x => x.SetProperty(u => u.Deleted, true)...)`；③ 有外键子表的实体直接物理删除会因外键约束 500，先处理子表或改级联软删。
+
 ```csharp
 await _repo.AddAsync(user, submit: true);              // 立即落库
 await _repo.UpdateAsync(user, submit: true);

@@ -3,11 +3,15 @@
 ## TreeView 不显示选中状态
 确保数据模型实现了 `Equals` 和 `GetHashCode`，并使用 `Key` 属性强制重建。
 
-## 模态框数据不更新
-在 `Show()` 方法中使用 `InvokeAsync` + `StateHasChanged()` 确保在 UI 线程执行并强制渲染。
+## 模态框首开恒空 / 数据不更新
+两类根因，修复不同：
+1. **渲染时机**：先加载数据再 `Modal.Show()` 时，body 内组件（如 Select 的 Items）仍按旧状态渲染——首开恒空、二次打开才正常。`Show()` 之后必须 `await InvokeAsync(StateHasChanged)` 强制重渲染。
+2. **Modal 内 Table 查询缓存**：页面首渲染时隐藏 Modal 的 Table 已用当时（空）参数完成 `OnQueryAsync` 并缓存，之后 `Show()` 不重查。打开弹窗后必须显式 `await table.QueryAsync()`（BB 10 无 `Refresh()` 方法）。
 
 ## 表格自定义行按钮不显示
-必须设置 `ShowExtendButtons="true"` 且 `ShowExtendEditButton="false"` `ShowExtendDeleteButton="false"`，然后使用 `<RowButtonTemplate>`。
+两个位置要求：
+1. 必须设置 `ShowExtendButtons="true"` 且 `ShowExtendEditButton="false"` `ShowExtendDeleteButton="false"`，然后使用 `<RowButtonTemplate>`。
+2. `TableCellButton` 放在自定义 `TableColumn` 的 `<Template>` 内**渲染为空**（脱离内置扩展按钮上下文后不输出）——操作列不要用 `TableColumn` + `Template` 承载按钮，统一走 `RowButtonTemplate`。
 
 ## 菜单点击 404
 确保页面 `@page` 路由与菜单 `Component` 字段完全匹配（不带前导 `/`）。
@@ -29,6 +33,18 @@ Drawer 的关闭链路分两段：`IsOpen=false` 后 `OnAfterRenderAsync` 调 JS
 
 ## 表单值填充后 Blazor 模型未同步（自动化测试）
 JS 填充输入框必须三件套：`Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set` 原生赋值 + 派发 `input` + 派发 `change` 事件，缺一不可（真实键盘输入即 CUA type 最稳）。另注意弹窗内**第一个 `<input>` 可能是隐藏域**（防伪令牌），`querySelector("input")` 会选错目标，应按 `input.form-control` + placeholder 定位。
+
+## 列模板内取错当前行对象（静默，不报错）
+每层模板的 `context` 含义不同：`TableColumns` 的 `context` 是行对象，`TableColumn` 的 `<Template Context="...">` 是单元格上下文，`RowButtonTemplate` 的 `context` 又是行对象。列模板内需要当前行时必须用**本层模板显式声明的 Context 变量**，引用外层 `context` 拿到的是另一层对象——不必然编译报错，运行期静默展示错数据。多层嵌套时各层一律显式 `Context="..."` 改名。
+
+## Static SSR 表单提交 400（反伪造令牌重复）
+Static SSR 下 `EditForm` 会**自动携带反伪造令牌**，表单内再叠加 `<AntiforgeryToken />` 会重复提交同名字段：浏览器 POST 时两个 token 值被拼接，校验失败返回 400 "A valid antiforgery token was not provided"；而 curl 单字段请求可复现通过，极具迷惑性。`AntiforgeryToken` 只用于裸 `<form>` 元素，EditForm / ValidateForm 内禁止再放。
+
+## 电路内 Task.WhenAll 并发 EF 查询间歇性失败
+同一 Blazor 电路（Circuit）的 Scoped DbContext 被两个并发查询同时使用会抛并发访问异常——表现为 Toast「加载失败」且**间歇性**失败（取决于谁先完成）。页面/组件内多个数据加载禁止 `Task.WhenAll` 并行，顺序 `await`；确需并发时为每路查询创建独立作用域。
+
+## Blazor.downloadFileFromStream 不存在
+`Blazor.downloadFileFromStream` 是 .NET 8 项目模板里的**自定义示例函数**，不是框架内置 JS interop 能力。误用会抛 JSInterop 找不到函数的异常，且常被上层 catch 后 console 无痕迹。站点需在 `wwwroot/js` 自带下载函数（`Blazor.downloadFileFromStream` 同名复刻即可），再用 `IJSRuntime.InvokeAsync` 调用。
 
 ## 电路内异步回调改状态 UI 不更新
 Blazor Server 电路内，`Table.OnClickRowCallback` 等 BB 回调里改组件状态不会自动触发渲染，必须显式 `StateHasChanged()`；条件块内的子组件（如明细 Table）挂载后会自动首查，回调里不要再手动 `QueryAsync`（首拍引用可能为 null，且会与自动首查并发撞同一 scoped DbContext）。

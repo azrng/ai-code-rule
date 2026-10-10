@@ -22,6 +22,8 @@
 </Layout>
 ```
 
+**CRITICAL - `Menus` 依赖 `<Side>` 片段（源码行为，官方文档未写）**：Layout 源码 `@if (Side == null)` 分支只渲染 Header + Main——不写 `<Side />` 时侧栏整段跳过，`Menus` 参数随之失效且**无任何警告**。「只传 `Menus` 却没有菜单」不是 bug，是缺 `<Side />`：即使侧栏内容全部由 `Menus` 数据驱动，也必须显式声明 `<Side />`（可为空片段）。
+
 **菜单数据构建**：
 ```csharp
 private List<MenuItem> Menus { get; set; } = new();

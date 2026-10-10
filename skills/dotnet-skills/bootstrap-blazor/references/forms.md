@@ -41,6 +41,8 @@ private async Task OnManualSubmit()
 
 ## 3.2 输入组件一览
 
+**宽度控制**：`BootstrapInput` / `BootstrapInputNumber` / `Textarea` 等输入组件**没有 `Width` 参数**（BB 10.10.x 仅 `BootstrapInputGroupLabel` 有）；写了会经 `CaptureUnmatchedValues` 输出为无效 HTML attribute **静默失效**（表现为各筛选项各占一行）。宽度用栅格容器（`row g-3` + `col-*`）约束，或原生 input + class 工具类。
+
 **文本输入**：
 ```razor
 <BootstrapInput @bind-Value="@Model.UserName" DisplayText="用户名"
@@ -107,6 +109,8 @@ DepartmentOptions = departments.Select(x => new SelectedItem(x.Id, x.Name)).ToLi
 ```
 
 **泛型参数**：`Select` 的类型参数是 `TValue`，与 `@bind-Value` 绑定属性类型一致，通常由绑定自动推断、无需显式声明；不要照抄 `Table` 的 `TItem`（写成 `TItem="string"` 会编译报错）。`bool` / `bool?` / 枚举 / `int?` / `Guid` 绑定均内置支持，`SelectOption` 的 `Value` 用字符串表示即可。
+
+**可空标注**：`.razor` 标记内 `TValue="string?"` 等可空标注会写进非可空生成代码，触发 CS8669；字符串筛选下拉用「全部」占位项（`SelectOption Text="全部" Value=""`）+ 非可空绑定（空串表示全部）替代，不给组件泛型参数标可空。
 
 ## 3.4 复选框列表
 
