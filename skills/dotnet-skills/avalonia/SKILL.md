@@ -54,6 +54,20 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 **编译成功 ≠ 能启动**：样式附加期与动画解析异常发生在运行时。样式改动后必须实际启动冒烟。
 
+## Avalonia 11 → 12 平台 API 变化速查（源码核实）
+
+写平台 API 前先过这张表，命中即用右侧写法；表外差异仍按「上游源码按需查证」回源码核实，不猜。
+
+| 领域 | 11.x 习惯写法 | 12.x 真实 API（核实出处） |
+|---|---|---|
+| 占位文本 | `TextBox.Watermark` | `TextBox.PlaceholderText`（`Watermark` 标 `[Obsolete]` 触发 AVLN5001，是 `PlaceholderTextProperty` 的别名属性） |
+| 剪贴板文本写入 | `IClipboard.SetTextAsync`（接口成员） | 接口**没有**该方法；走扩展方法 `ClipboardExtensions.SetTextAsync(IClipboard, string)`（`Avalonia.Input.Platform`，12.1.2 源码核实） |
+| 填充椭圆 | `DrawingContext.FillEllipse` | 不存在；`DrawEllipse(IBrush, IPen, Rect)` 或 `DrawEllipse(IBrush, IPen, Point, double, double)` |
+| 圆角矩形填充 | `FillRectangle(RoundedRect)` | 无 RoundedRect 重载；`DrawRectangle(IBrush, IPen, RoundedRect, BoxShadows)` |
+| 直角矩形填充 | `FillRectangle(IBrush, Rect)` | `DrawRectangle(IBrush, IPen, Rect, double, double, BoxShadows)` 或线框 `DrawRectangle(IPen, Rect, float)` |
+| 代码编辑器文本 | `TextEditor.Text` 当依赖属性绑定 | AvaloniaEdit 的 `Text` 是普通 CLR 属性（文档读写 `Document.Text`），不可 XAML 绑定；绑定 `Document`（`TextDocument`，`StyledProperty`）或代码后置双向同步 |
+| Semi 主题装配 | `MergedDictionaries` 里 `avares://Semi.Avalonia/Themes/Index.axaml` | 12.x `Index.axaml` 在程序集根且是 `Styles` 类型；走 `Application.Styles` 的 `<semi:SemiTheme />`，细节见 references/version-and-setup.md |
+
 ## 决策入口
 
 - **选弹层**：按钮附带小菜单 → `Button.Flyout`；右键菜单 → `ContextMenu`；菜单项列表 → `MenuFlyout`；项目已有弹框宿主、导航或标签页生命周期时，新增同类弹框先复用既有结构；没有可复用宿主或需要统一模态结果 / 关闭契约时再用 Ursa `OverlayDialogHost`（装配、IDialogContext 关闭契约、叠加弹窗与迁移边界见 references/ursa-overlays.md）。注意：Transient 弹层在窗口失活时的首击会「打开即被光熄灭关闭」（references/windows-flyouts-popups.md）。

@@ -29,23 +29,33 @@ public static AppBuilder BuildAvaloniaApp(this AppBuilder builder)
         .LogToTrace();
 ```
 
-App.axaml 资源合并顺序（后合并的优先）：
+App.axaml 装配（Semi 12.x 官方写法，主题是 `Styles` 不是资源字典，**走 `Application.Styles`，禁止放进 `Resources.MergedDictionaries`**——类型不符直接抛异常）：
 
 ```xml
-<Application.Resources>
-  <ResourceDictionary>
-    <ResourceDictionary.MergedDictionaries>
-      <ResourceInclude Source="avares://Semi.Avalonia/Themes/Index.axaml" />
-      <ResourceInclude Source="avares://Ursa.Themes.Semi/Index.axaml" />
-      <!-- 项目自有 token 与样式在主题之后，允许覆盖（avares:// 后为当前项目程序集名） -->
-      <ResourceInclude Source="avares://MyApp/Assets/Styles/Colors.axaml" />
-      <ResourceInclude Source="avares://MyApp/Assets/Styles/Spacing.axaml" />
-      <ResourceInclude Source="avares://MyApp/Assets/Styles/Shadows.axaml" />
-      <!-- 各领域 Styles.axaml ... -->
-    </ResourceDictionary.MergedDictionaries>
-  </ResourceDictionary>
-</Application.Resources>
-```
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:semi="https://irihi.tech/semi"
+             x:Class="MyApp.App">
+  <Application.Styles>
+    <semi:SemiTheme Locale="zh-CN" />
+    <semi:UrsaSemiTheme Locale="zh-CN" />
+  </Application.Styles>
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!-- 项目自有 token 与样式在主题之后，允许覆盖（avares:// 后为当前项目程序集名） -->
+        <ResourceInclude Source="avares://MyApp/Assets/Styles/Colors.axaml" />
+        <ResourceInclude Source="avares://MyApp/Assets/Styles/Spacing.axaml" />
+        <ResourceInclude Source="avares://MyApp/Assets/Styles/Shadows.axaml" />
+        <!-- 各领域 Styles.axaml ... -->
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>
+
+路径与命名陷阱（12.x DLL 内资源核实，`Themes/Index.axaml` 旧路径已废弃会报 AVLN2000 资源不存在）：
+- Semi 12.x 的 `Index.axaml` 在程序集根：需要 StyleInclude 细粒度引主题时用 `avares://Semi.Avalonia/Index.axaml`（不带 `Themes/`）
+- Ursa 主题程序集名是 `Ursa.Themes.Semi`（NuGet 包 ID 是 `Irihi.Ursa.Themes.Semi`，avares URI 用程序集名）：`avares://Ursa.Themes.Semi/Index.axaml`
+- 首选 `<semi:SemiTheme />` / `<semi:UrsaSemiTheme />` 控件形式（同 `https://irihi.tech/semi` 命名空间，可带 Locale 等参数）；两者本质是 Styles，混入 MergedDictionaries 必然报类型不符
 
 编译绑定默认开启：
 
