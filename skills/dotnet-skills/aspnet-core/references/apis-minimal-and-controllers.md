@@ -70,6 +70,30 @@ Key `[ApiController]` behaviors:
 - Apply authorization at the endpoint or controller boundary, not only inside service methods
 - Use `ProblemDetails` for errors instead of ad hoc JSON shapes
 
+## Default Health Controller
+
+Controller-based service templates should include a small health controller for deployment probes and timezone diagnostics. Keep `alive` independent of external dependencies; let `ready` include dependency checks only when the service needs them. In a result-wrapped API, mark the two probe actions with the wrapper library's raw-response attribute so they return the expected JSON directly.
+
+```csharp
+using Azrng.AspNetCore.Core.Filter; // 仅使用结果包装器时需要
+using Microsoft.AspNetCore.Mvc;
+
+namespace YourProject.Service.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class HealthController : ControllerBase
+{
+    [HttpGet("alive")]
+    [NoWrapper]
+    public IActionResult Alive() => Ok(new { status = "ok" });
+
+    [HttpGet("ready")]
+    [NoWrapper]
+    public IActionResult Ready() => Ok(new { status = "ok" });
+}
+```
+
 ## Browser-Facing Notes
 
 - Be careful with cookie-authenticated API endpoints and CORS

@@ -1,46 +1,67 @@
 # 分层职责详解与代码示例
 
 ## 目录
-1. 各层职责对照
-2. 跨层数据流（一个请求的完整旅程）
-3. 各层完整代码示例
-4. .csproj 依赖关系
+1. 解决方案结构
+2. 各层职责对照
+3. 跨层数据流（一个请求的完整旅程）
+4. 各层完整代码示例
+5. .csproj 依赖关系
+
+---
+
+## 0. 解决方案结构
+
+`.slnx` 放在仓库根目录，业务项目放在 `src/`，测试项目放在 `test/`。解决方案使用相对路径引用项目，并按 `/src/`、`/test/` 两个目录节点组织；没有测试项目时保留空的 `/test/` 节点即可。
+
+```text
+YourProject/
+├── YourProject.slnx
+├── src/
+│   ├── YourProject.Core/
+│   ├── YourProject.IDomain/
+│   ├── YourProject.IApplication/
+│   ├── YourProject.Domain/
+│   ├── YourProject.Application/
+│   ├── YourProject.EntityFramework/
+│   └── YourProject.Service/
+└── test/
+    └── YourProject.Tests/
+```
+
+```xml
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/YourProject.Core/YourProject.Core.csproj" />
+    <Project Path="src/YourProject.Service/YourProject.Service.csproj" />
+  </Folder>
+  <Folder Name="/test/" />
+</Solution>
+```
+
+新增测试项目时，项目路径必须位于 `test/` 下，并加入 `.slnx` 的 `/test/` 节点；不要把测试项目放回 `src/`。
 
 ---
 
 ## 1. 各层职责对照
 
 ### Core（内核，零业务依赖）
-**放**：DTO、Request/Response、枚举、常量、通用结果类型。纯 POCO，不引用任何项目，不引用 EFCore/HttpContext 等基础设施。
-**不放**：实体、业务逻辑、数据访问、任何 `using` 基础设施包。
+**放**：**跨业务域复用**的 DTO、枚举、常量、通用结果类型（如公共枚举、跨域包装、分页基类衍生参数）。纯 POCO，不引用任何项目，不引用 EFCore/HttpContext 等基础设施。**单业务域的请求/响应 DTO 不放这里**——放 `IApplication/{业务域}/Dto/`（见下文）；「接口、实现、控制器都用」是应用层 DTO 的常态，不构成放 Core 的判据（判据详见 SKILL.md 核心规则 4）。
+**不放**：实体、业务逻辑、数据访问、单业务域 DTO、任何 `using` 基础设施包。
 **包引用**：仅 `Azrng.Core`（取 `GetPageRequest`/`ResultModel` 等）等基础类库。
 
 ```csharp
-using Azrng.Core.Requests;   // GetPageRequest
-
 namespace App.Core.Models;
 
-public class ProductDto
+// Core/Models/OrderStatus.cs —— 被多个业务域引用的公共枚举才放 Core
+public enum OrderStatus
 {
-    public long Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-    public int Status { get; set; }
-    public DateTime CreateTime { get; set; }
-}
-
-// 分页请求：继承 GetPageRequest，免手写 PageIndex/PageSize 字段
-public class ProductListRequest : GetPageRequest
-{
-    public string? Name { get; set; }
-}
-
-public class CreateProductRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public decimal Price { get; set; }
+    Pending = 0,
+    Paid = 1,
+    Shipped = 2
 }
 ```
+
+公开契约类一类一个文件（文件名与类名一致）。单业务域的 DTO/Request/Response 落位示例见下方 IApplication 节。
 
 ### IDomain（领域契约层）
 **放**：实体（继承 `IdentityOperatorStatusEntity`）。**EFCore 配置类不在这层——放 EntityFramework 层**（见下）。
@@ -68,15 +89,73 @@ public class Product : IdentityOperatorStatusEntity   // Id + 审计 + 软删除
 }
 ```
 
+#### 外部存储契约
+
+文件或对象存储属于可替换的外部适配能力。面向业务的接口放在 `IDomain`（例如 `IDomain/Storage/IMaterialStorage.cs`），接口只表达保存、读取、删除等领域语义，不出现 `IFormFile`、`HttpContext` 或具体磁盘路径；本地磁盘、对象存储等实现放在 `Storage` 项目。
+
+```csharp
+// 文件：IDomain/Storage/IMaterialStorage.cs
+namespace App.IDomain.Storage;
+
+public interface IMaterialStorage
+{
+    string GenerateStorageName(string extension);
+    Task<string> SaveAsync(string storageName, Stream content);
+    Task<Stream?> OpenReadAsync(string storageName);
+    Task DeleteAsync(string storageName);
+}
+```
+
+`Storage.csproj` 依赖 `Core + IDomain`，Service 组合根注册 `IMaterialStorage` 的具体实现；Application 只依赖 `IDomain` 中的接口。
+
 ### IApplication（应用契约层）
-**放**：`I*AppService` 接口，方法签名用 Core 的 DTO。是控制器唯一依赖的契约。
+**放**：`I*AppService` 接口 + 本业务域的 DTO/Request/Response（`{业务域}/Dto/`，一类一文件）。是控制器唯一依赖的契约，接口签名只出现本业务域 DTO 或跨业务域通用 DTO。
 **不放**：实现、仓储、实体直接暴露（接口参数/返回一律 DTO）。
 **依赖**：Core、IDomain。
 **返回类型**：**全局包装模式**——方法返回 `Task<T>` / `Task<GetQueryPageResult<T>>`，**不出现 `IResultModel`**。
 
 ```csharp
+// 文件：IApplication/Product/Dto/ProductDto.cs —— 单业务域 DTO 放 IApplication，不放 Core/Models
+namespace App.IApplication.Product.Dto;
+
+public class ProductDto
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public int Status { get; set; }
+    public DateTime CreateTime { get; set; }
+}
+```
+
+```csharp
+// 文件：IApplication/Product/Dto/ProductListRequest.cs
+using Azrng.Core.Requests;   // GetPageRequest
+
+namespace App.IApplication.Product.Dto;
+
+// 分页请求：继承 GetPageRequest，免手写 PageIndex/PageSize 字段
+public class ProductListRequest : GetPageRequest
+{
+    public string? Name { get; set; }
+}
+```
+
+```csharp
+// 文件：IApplication/Product/Dto/CreateProductRequest.cs
+namespace App.IApplication.Product.Dto;
+
+public class CreateProductRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+```
+
+```csharp
+// 文件：IApplication/Product/IProductAppService.cs
 using Azrng.Core.Results;            // GetQueryPageResult<T>
-using App.Core.Models;
+using App.IApplication.Product.Dto;
 
 namespace App.IApplication.Product;
 
@@ -100,7 +179,7 @@ public interface IProductAppService
   - `Azrng.AspNetCore.Authentication.JwtBearer` — 登录/鉴权 AppService 注入 `IBearerAuthService` 生成 token
   - `Azrng.DistributeLock.Core` — 并发控制 AppService 注入 `ILockProvider`
 
-**核心约定（全局包装模式）**：成功直接 `return` 业务对象；**业务校验/规则失败 `throw new ParameterException(msg)`**；资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`。**不要手写 `ResultModel.Success/Error`**（那是历史写法）。
+**核心约定（全局包装模式）**：成功直接 `return` 业务对象；**业务校验/规则失败 `throw new ParameterException(msg)`**；资源不存在 `if (entity is null) throw new NotFoundException("...")`。**不要手写 `ResultModel.Success/Error`**（那是历史写法）。
 
 ```csharp
 using Azrng.Core.CommonDto;            // RefAsync
@@ -111,8 +190,8 @@ using Azrng.Core.Results;              // GetQueryPageResult
 using Azrng.EFCore;                    // IBaseRepository
 using Azrng.EFCore.Extensions;         // ToPageListAsync
 using Microsoft.EntityFrameworkCore;
-using App.Core.Models;
 using App.IApplication.Product;
+using App.IApplication.Product.Dto;
 using App.IDomain.Entities;
 
 namespace App.Application.Product;
@@ -145,7 +224,8 @@ public class ProductAppService : IScopedDependency, IProductAppService
     public async Task<ProductDto> GetAsync(long id)
     {
         var product = await _productRepository.EntitiesNoTacking.FirstOrDefaultAsync(p => p.Id == id);
-        NotFoundException.ThrowIfNull(product, "商品不存在");   // 资源不存在 → 由异常中间件映射成 404
+        if (product is null)                          // 资源不存在 → 由异常中间件映射成 404；is null 检查原生收窄可空流分析
+            throw new NotFoundException("商品不存在");
         return new ProductDto { Id = product.Id, Name = product.Name, Price = product.Price, Status = product.Status };
     }
 
@@ -167,6 +247,32 @@ public class ProductAppService : IScopedDependency, IProductAppService
 }
 ```
 
+#### 文件上传的 HTTP 适配
+
+Application 不接受 ASP.NET 的 `IFormFile`。在 IApplication 业务域下定义只包含业务数据的 Command（`IApplication/Material/Dto/MaterialUploadCommand.cs`——仅 Material 业务域使用，非跨域通用，不放 Core/Models），由 Controller 把 HTTP 文件对象转换后调用 AppService：
+
+```csharp
+// 文件：IApplication/Material/Dto/MaterialUploadCommand.cs
+namespace App.IApplication.Material.Dto;
+
+public class MaterialUploadCommand
+{
+    public string FileName { get; set; } = string.Empty;
+    public long Size { get; set; }
+    public Stream Content { get; set; } = Stream.Null;
+}
+
+// 文件：Service/Controllers/MaterialController.cs
+[HttpPost("upload")]
+public Task<MaterialDto> Upload(IFormFile file)
+    => _materialAppService.UploadAsync(new MaterialUploadCommand
+    {
+        FileName = file.FileName,
+        Size = file.Length,
+        Content = file.OpenReadStream()
+    });
+```
+
 #### 读取追踪 vs 不追踪（`Entities` / `EntitiesNoTacking`）
 - **`EntitiesNoTacking`（默认首选）**：纯查询、列表、详情读取。不进 ChangeTracker，性能好。90% 的查询用这个。
 - **`Entities`（带追踪）**：读出来后**还要修改并回写**时才用——先查、改属性、`UpdateAsync` 提交，EF 靠追踪算 diff。读了不改却用 `Entities` 会白白吃追踪开销。
@@ -183,9 +289,9 @@ await _repo.UpdateAsync(entity, submit: true);
 
 #### 返回值与错误处理（全局包装模式）
 
-AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：成功 `return dto;`、资源不存在 `NotFoundException.ThrowIfNull(entity, "...")`、参数/业务校验失败 `throw new ParameterException(msg)`（也可是 `LogicBusinessException`）、无权限 `throw new ForbiddenException(msg)`。
+AppService 方法**统一返回裸 `Task<T>`**（业务对象），由 `Service` 层装配的框架三件套自动包成统一 `ResultModel`。错误通过**抛业务异常**表达（不要返回错误码、不要手写 `ResultModel.Error`）：成功 `return dto;`、资源不存在 `if (entity is null) throw new NotFoundException("...")`（is null 检查原生收窄流分析，后续直接用实体，不要 `entity!` 断言或中间变量）、参数/业务校验失败 `throw new ParameterException(msg)`（也可是 `LogicBusinessException`）、无权限 `throw new ForbiddenException(msg)`。
 
-> 业务异常 → 结果映射表、三件套装配、`IResultModel<T>` 迁移期说明见 `SKILL.md → 全局返回包装`。这套要工作，**异常中间件 `app.UseGlobalException()` 必须在 Program.cs 管道最外层装配**，否则抛出的异常会变成裸 500。
+> 业务异常 → 结果映射表、三件套装配、`IResultModel<T>` 迁移期说明见 `SKILL.md → 全局返回包装`。这套要工作，**异常中间件 `app.UseGlobalException()` 必须在 `Startup.SetupMiddlewares` 管道最外层装配**，否则抛出的异常会变成裸 500。
 
 需要多步原子写时用 `IUnitOfWork.CommitTransactionAsync`（自动开/提交/回滚事务，传入业务委托）：
 ```csharp
@@ -207,6 +313,15 @@ await _unitOfWork.CommitTransactionAsync(async () =>
 **结对**：接口 `I{X}DomainService` 在 `IDomain/{Module}/`，实现 `{X}DomainService : IScopedDependency, I{X}DomainService` 在 `Domain/{Module}/`（与 AppService 的 IApplication/Application 结对方式一致）。**AppService 注入 `I{X}DomainService` 调用它**。
 
 ```csharp
+// 文件：IDomain/SessionManager/Bo/SendSessionMessageBo.cs —— DomainService 接口签名用的业务对象 Bo，统一放 IDomain/{模块}/Bo/（Adapter 的 Bo 例外，在 IDomain/Adapter/Bo/{外部系统}/）
+namespace App.IDomain.SessionManager.Bo;
+
+public class SendSessionMessageBo
+{
+    public string SessionName { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+}
+
 // IDomain/SessionManager/ISessionDomainService.cs —— 接口，返回领域对象（Entity/Bo），不出现 DTO
 public interface ISessionDomainService
 {
@@ -248,16 +363,17 @@ public class ConversationService : IConversationAppService
 ### Adapter（外部适配器层）
 **放**：外部系统调用的封装——`I{X}Adapter`（领域适配器）实现 + `IXxxHttpClient`（HTTP 客户端）实现。屏蔽第三方 API / 微服务 / SDK 的 HTTP/协议细节，对内暴露领域语义方法。
 **不放**：业务规则、用例编排（那是 AppService/DomainService 的活）；把 HttpClient/URL 直接暴露给业务层。
-**依赖**：IDomain（+ 第三方 SDK 包）。`Adapter.csproj` 只引用 `IDomain`。
+**依赖**：IDomain（+ `Common.HttpClients`——`IHttpHelper` 当前核对 4.2.0，实际以目标项目锁定版本为准——或其它第三方 SDK 包）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部能力所需 NuGet 包按需引用在 Adapter。
 **结对 + 两层**（复杂外部调用推荐）：
-- 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Service/`，方法用 **Bo**（`IDomain/Adapter/{模块}/`）。
-- HTTP 客户端：接口 `IXxxHttpClient` 在 `Adapter/HttpWebClient/`，实现 `XxxHttpClient : IScopedDependency, IXxxHttpClient`，用 **Ho**（`Adapter/Ho/{模块}/`），注入 `IHttpHelper` / `IHttpClientFactory` 做真实 HTTP 调用。
+- 领域适配器：接口 `I{X}Adapter` 在 `IDomain/Adapter/`，实现 `{X}Adapter : IScopedDependency, I{X}Adapter` 在 `Adapter/Services/`，方法用 **Bo**（`IDomain/Adapter/Bo/{外部系统}/`）。
+- HTTP 客户端包装（复杂场景可选）：接口 `I{X}HttpClient` 与实现 `{X}HttpClient : IScopedDependency, I{X}HttpClient` 都在 `Adapter/HttpClients/`，用 **Ho**（`Adapter/Ho/{外部系统}/`），注入 `IHttpHelper` 做真实 HTTP 调用。普通方法返回 `IHttpResult<T>`；需要响应头时优先调用 `IHttpHelper.SendAsync` 获取原始 `HttpResponseMessage`，需要更底层的 `ResponseHeadersRead` 或自定义管道时才在实现内使用原生 `HttpClient` / `IHttpClientFactory`。
+- **非幂等端点关闭重试**：`IHttpHelper` 默认自动重试 5xx / 408 / 超时（`MaxRetryAttempts=3`）。token 换发、委托授权、扣款等重试会放大请求的调用，必须在调用点传 `HttpSendOptions { EnableRetry = false }`（4.2.0+）单独关闭，不影响同一客户端上的幂等调用；锁定 4.1.x 的项目只能为该服务单独注册命名客户端并配 `MaxRetryAttempts = 0`。大响应体分页拉取优先 `GetStreamAsync` / `PostStreamAsync`（4.2.0+）流式读取，不整体缓冲进内存；OAuth token 端点等标准表单用 `PostFormUrlEncodedAsync`（4.2.0+，Content-Type 一目了然）。
 
 ```csharp
 // IDomain/Adapter/ISmsAdapter.cs —— 接口在 IDomain，用 Bo，不暴露 HttpClient
 public interface ISmsAdapter { Task<bool> SendAsync(SendSmsBo bo); }
 
-// Adapter/Service/SmsAdapter.cs —— 实现：标 IScopedDependency，做 Bo→Ho 转换，调下层 HttpClient
+// Adapter/Services/SmsAdapter.cs —— 实现：标 IScopedDependency，做 Bo→Ho 转换，调下层 HttpClient
 public class SmsAdapter : IScopedDependency, ISmsAdapter
 {
     private readonly ISmsHttpClient _client;
@@ -266,13 +382,16 @@ public class SmsAdapter : IScopedDependency, ISmsAdapter
         => _client.SendAsync(new SendSmsRequestHo { Phone = bo.Phone, Content = bo.Content });
 }
 
-// Adapter/HttpWebClient/SmsHttpClient.cs —— 真实 HTTP 调用，输入/输出用 Ho
+// Adapter/HttpClients/SmsHttpClient.cs —— 真实 HTTP 调用，输入/输出用 Ho
 public class SmsHttpClient : IScopedDependency, ISmsHttpClient
 {
     private readonly IHttpHelper _httpHelper;
     public SmsHttpClient(IHttpHelper httpHelper) => _httpHelper = httpHelper;
-    public Task<bool> SendAsync(SendSmsRequestHo req)
-        => _httpHelper.PostAsync<bool>("https://sms.example.com/send", req);
+    public async Task<bool> SendAsync(SendSmsRequestHo req)
+    {
+        var result = await _httpHelper.PostAsync<bool>("https://sms.example.com/send", req);
+        return result.EnsureSuccess().Data is true;
+    }
 }
 
 // Application/XxxAppService.cs —— 业务层只依赖 IDomain 里的接口
@@ -282,7 +401,7 @@ public class XxxAppService
 }
 ```
 
-> **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用领域适配器一层（直接调通用 `IHttpHelper`），复杂/协议多变时才拆出 `IXxxHttpClient` 层。
+> **什么时候用 Adapter**：调用**本系统数据库** → AppService/DomainService 直接注入 `IBaseRepository`；调用**外部系统** → 走 Adapter（业务层依赖 `I{X}Adapter` 接口）。简单外部调用可只用 `Adapter/Services/{X}Adapter.cs`，直接调通用 `IHttpHelper` 并按 `IHttpResult<T>.IsSuccess` / `StatusCode` 处理；外部调用复杂、协议多变或需要独立测试边界时，才在同一个 `Adapter/HttpClients/` 目录下拆出 `I{X}HttpClient` / `{X}HttpClient`。需要响应头时优先使用 `IHttpHelper.SendAsync`；只有需要 `ResponseHeadersRead` 等包未暴露的底层控制或自定义 HttpClient 管道时，才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`，不把 HTTP 细节带入业务层。
 
 ### EntityFramework（基础设施-数据）
 **放**：`DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移。
@@ -334,16 +453,16 @@ public class AppDbContext : DbContext
 ```
 
 ### Service（入口/组装层）
-**放**：`Controllers`、`Program.cs`（DI 装配 + 中间件管道）、`appsettings`、迁移 SQL 脚本、安全/过滤器。
+**放**：`Controllers`、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、`appsettings`、`wwwroot/index.html`、`wwwroot/MigrationSql/`、安全/过滤器。
 **不放**：EF 查询、业务校验、`IBaseRepository` 注入。
-**依赖**：Application（+ Storage/EntityFramework 经传递可达）。
+**依赖**：Application、EntityFramework、Storage。Service 是组合根，负责注册存储实现、数据库、迁移、Swagger 和中间件。
 
 控制器（瘦）——**一行转发** AppService 返回值，不写 `Ok()`、不写 `ResultModel`（全局包装过滤器自动包装）：
 ```csharp
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using App.Core.Models;
 using App.IApplication.Product;
+using App.IApplication.Product.Dto;
 
 namespace App.Service.Controllers;
 
@@ -370,9 +489,114 @@ public class ProductController(IProductAppService productAppService) : Controlle
 }
 ```
 
-Program.cs 装配（全局包装三件套 + 异常中间件 + 自动注册）见 `SKILL.md → 全局返回包装 → Program.cs 装配` 与 `SKILL.md → 依赖注入与中间件装配`。
+### 默认健康检查控制器
 
-> 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/code/data）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
+Service 项目默认提供 `HealthController`，供容器编排、负载均衡和运维探针使用。`alive` 只表示进程仍能响应，`ready` 表示服务已完成启动；如果 `ready` 还需要核对数据库或其它依赖，应在该端点中接入对应检查，不要让 `alive` 依赖外部服务。两个探针必须使用 `[NoWrapper]` 返回裸 JSON，避免被全局结果包装器改写。
+
+```csharp
+using Azrng.AspNetCore.Core.Filter;
+using Microsoft.AspNetCore.Mvc;
+
+namespace YourProject.Service.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class HealthController : ControllerBase
+{
+    [HttpGet("alive")]
+    [NoWrapper]
+    public IActionResult Alive() => Ok(new { status = "ok" });
+
+    [HttpGet("ready")]
+    [NoWrapper]
+    public IActionResult Ready() => Ok(new { status = "ok" });
+}
+```
+
+### Program.cs 与 Startup.cs 分工
+
+`Program.cs` 只保留宿主生命周期代码；所有 DI 注册放在 `Startup.RegisterServices(IServiceCollection)`，所有中间件和端点管道放在 `Startup.SetupMiddlewares(WebApplication)`。这样新增数据库、认证、Swagger 或中间件时不会持续膨胀宿主入口。
+
+```csharp
+// Service/Program.cs
+using DotNetEnv;
+
+// 本地开发敏感配置走仓库根目录 .env（gitignore 排除）。注入为进程环境变量后由默认配置链读取，
+// 不覆盖已存在的环境变量（NoClobber）；生产/容器无 .env 时不加载任何值
+Env.NoClobber().TraversePath().Load();
+
+var builder = WebApplication.CreateBuilder(args);
+var startup = new Startup(builder.Configuration, builder.Environment);
+
+startup.RegisterServices(builder.Services);
+
+var app = builder.Build();
+startup.SetupMiddlewares(app);
+app.Run();
+```
+
+`DotNetEnv` 是 Service 项目的可选开发依赖：
+
+```xml
+<PackageReference Include="DotNetEnv" />
+```
+
+将 `.env` 放在仓库根目录并加入根 `.gitignore`；可提交不含敏感值的 `.env.example`。加载必须发生在 `WebApplication.CreateBuilder(args)` 之前，不能放到 `Startup.RegisterServices` 之后，否则默认配置链可能已经完成构建。
+
+```csharp
+// Service/Startup.cs
+public sealed class Startup
+{
+    private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _environment;
+
+    public Startup(IConfiguration configuration, IWebHostEnvironment environment)
+    {
+        _configuration = configuration;
+        _environment = environment;
+    }
+
+    public void RegisterServices(IServiceCollection services)
+    {
+        services.AddControllers();
+        services.AddMvcResultPackFilter("/swagger");
+        services.AddMvcModelVerifyFilter();
+        services.RegisterBusinessServices("YourProject.*.dll");
+
+        // CORS：默认放开任意来源（仅开发联调，开箱即用）；生产按需改 AddCorsByOrigins 读配置白名单
+        services.AddAnyCors();
+
+        var migrationSqlPath = Path.Combine(
+            _environment.ContentRootPath,
+            "wwwroot",
+            "MigrationSql");
+        services.AddSqlMigrationService("default", options =>
+        {
+            options.VersionPrefix = string.Empty;
+            options.SqlRootPath = migrationSqlPath;
+            options.ConnectionBuilder = _ =>
+                new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")!);
+        }).AddAutoMigration();
+    }
+
+    public void SetupMiddlewares(WebApplication app)
+    {
+        app.UseGlobalException();
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+        app.UseCorsPolicy();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
+    }
+}
+```
+
+三件套装配细节见 `SKILL.md → 全局返回包装 → Startup 装配` 与 `SKILL.md → 依赖注入与中间件装配`。
+
+> 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/isFailure/code/message/data/errors）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
+
+Service 中如需提供 `wwwroot/index.html` 联调页，在 `MapControllers()` 前调用 `app.UseDefaultFiles()` 和 `app.UseStaticFiles()`。SQL 迁移脚本放在 `Service/wwwroot/MigrationSql/`，代码通过 `ContentRootPath` 组合出绝对路径。文件下载 action 返回 `FileResult` 时包装过滤器会自动跳过；如果返回其它原始 `IActionResult`，可使用 `Azrng.AspNetCore.Core.Filter.NoWrapperAttribute`。
 
 ---
 
@@ -415,9 +639,9 @@ IApplication      → Core, IDomain
 Domain            → IDomain, EntityFramework, Adapter    ← 纯 CRUD 可空，有复用操作则建
 Application       → IApplication, Domain
 EntityFramework   → Core, IDomain
-Service           → Application, Storage
+Service           → Application, EntityFramework, Storage
 Adapter           → Core, IDomain                         ← 可选
-Storage           → Core                                   ← 可选
+Storage           → Core, IDomain                          ← 可选
 ```
 
 对应 `<ProjectReference>` 示例（Application.csproj，`App` 替换成实际解决方案名）：
@@ -440,12 +664,12 @@ Storage           → Core                                   ← 可选
 
 | 步骤 | 文件 | 层 | 内容 |
 |---|---|---|---|
-| 1 | `Core/Models/OrderDto.cs` | Core | `OrderDto`/`CreateOrderRequest`；列表 Request 继承 `GetPageRequest` |
+| 1 | `IApplication/{业务域}/Dto/` | IApplication | 应用层契约类一类一个文件：`OrderDto.cs`、`OrderListRequest.cs`（继承 `GetPageRequest`）、`CreateOrderRequest.cs`；跨业务域通用 DTO/枚举/常量才放 `Core/Models`（判据见 SKILL.md 核心规则 4） |
 | 2 | `IDomain/Entities/Order.cs` | IDomain | 实体 + `SetCreator` |
 | 3 | `EntityFramework/OrderEtc.cs` | EntityFramework | EFCore 配置类（表名/列名/查询过滤） |
 | 4 | `IApplication/Order/IOrderAppService.cs` | IApplication | 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，无 IResultModel） |
-| 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `NotFoundException.ThrowIfNull`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
+| 5 | `Application/Order/OrderAppService.cs` | Application | 实现 `IScopedDependency` + 仓储 + 业务：成功 `return`、失败 `throw ParameterException`、资源不存在 `if (entity is null) throw NotFoundException`、列表用 `ToPageListAsync`+`GetQueryPageResult`（自动注册，免手写 AddScoped） |
 | 6 | `Service/Controllers/OrderController.cs` | Service | 瘦控制器，一行转发 `Task<T>`（不写 `Ok()`） |
-| 7 | `Service/Program.cs` | Service | 已有 `RegisterBusinessServices("App.*.dll")` + `AddMvcResultPackFilter` + `AddMvcModelVerifyFilter` + `app.UseGlobalException()`，实现 `IScopedDependency` 即自动注册，无需改 |
+| 7 | `Service/Program.cs` + `Service/Startup.cs` | Service | `Program.cs` 只保留宿主生命周期；`Startup.RegisterServices` 放 `RegisterBusinessServices`、结果过滤器等 DI 注册，`Startup.SetupMiddlewares` 放 `app.UseGlobalException()` 等管道配置 |
 
-新增实体在 DbContext 加 `DbSet` + 写 `{Entity}Etc.cs` 配置类，`ApplyConfigurationsFromAssembly` 自动扫描。若用 SQL 脚本迁移，装 `Azrng.SqlMigration` 包 + 加 `Service/MigrationSql/x.x.x.sql`（详见 azrng-efcore「SQL 脚本迁移」）。
+新增实体在 DbContext 加 `DbSet` + 写 `{Entity}Etc.cs` 配置类，`ApplyConfigurationsFromAssembly` 自动扫描。若用 SQL 脚本迁移，装 `Azrng.SqlMigration` 包 + 加 `Service/wwwroot/MigrationSql/x.x.x.sql`（详见 azrng-efcore「SQL 脚本迁移」）。

@@ -1,0 +1,172 @@
+name: release-win-x64
+
+# 推送 master 自动发布。双版本口径：
+#   引擎版本 = 2.<run_number>（如 2.17）：CI 按流水线号自动递增，exe 只是引擎，随每次发布 +1；
+#   内容包版本 = manifest.vars.version（如 1.95.0）：规则与技能的事实源，改 fragments/skills 必须升版。
+# Release 以引擎版本为 tag（v2.17），latest.json 同时携带两个版本；
+# exe 内旧版更新检查只认 latest.json 的 version 字段（内容包版本），引擎版本仅展示。
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+env:
+  PROJECT_PATH: app/RuleAssembler/RuleAssembler.csproj
+  PUBLISH_DIR: publish/win-x64
+  PACK_NAME: ai-rule-pack.zip
+  MANIFEST_NAME: latest.json
+
+jobs:
+  publish-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolve release metadata
+        id: release_meta
+        shell: pwsh
+        run: |
+          # 引擎版本：2.<run_number>，run_number 随每次推送严格递增（ApixPress 同款日历口径的简化版，
+          # 本仓库发布频率低，无跨年进位诉求，纯递增段即可）
+          $engineVersion = "2.${{ github.run_number }}"
+
+          # 内容包版本：唯一事实源是 manifest.vars.version（改 fragments/skills 必须升版）
+          $manifest = Get-Content -LiteralPath 'fragments/manifest.json' -Raw | ConvertFrom-Json
+          $packVersion = $manifest.vars.version
+          if (-not $packVersion) { throw 'manifest.vars.version 为空，无法确定内容包版本' }
+
+          $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+          $tag = "v$engineVersion"
+          $releaseName = "use-ai-rule 引擎 $engineVersion（内容包 $packVersion，$timestamp）"
+          $packPath = Join-Path '${{ github.workspace }}' '${{ env.PACK_NAME }}'
+          $manifestPath = Join-Path '${{ github.workspace }}' '${{ env.MANIFEST_NAME }}'
+          $tagExists = git ls-remote --tags origin "refs/tags/$tag" | Out-String
+
+          "engine_version=$engineVersion" >> $env:GITHUB_OUTPUT
+          "pack_version=$packVersion" >> $env:GITHUB_OUTPUT
+          "tag_name=$tag" >> $env:GITHUB_OUTPUT
+          "release_name=$releaseName" >> $env:GITHUB_OUTPUT
+          "pack_path=$packPath" >> $env:GITHUB_OUTPUT
+          "manifest_path=$manifestPath" >> $env:GITHUB_OUTPUT
+          "tag_exists=$([bool]($tagExists.Trim()))" >> $env:GITHUB_OUTPUT
+
+      - name: Publish framework-dependent exe
+        shell: pwsh
+        run: |
+          if (Test-Path '${{ env.PUBLISH_DIR }}') {
+            Remove-Item '${{ env.PUBLISH_DIR }}' -Recurse -Force
+          }
+
+          # 框架依赖单文件：目标机需自装 .NET 10 运行时；
+          # 引擎版本经 InformationalVersion 与环境变量双通道写入，运行时 banner 读取
+          dotnet publish '${{ env.PROJECT_PATH }}' `
+            -c Release `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -p:InformationalVersion='${{ steps.release_meta.outputs.engine_version }}' `
+            -o '${{ env.PUBLISH_DIR }}'
+
+      - name: Build pack and latest.json
+        shell: pwsh
+        run: |
+          $engineVersion = '${{ steps.release_meta.outputs.engine_version }}'
+          $packVersion = '${{ steps.release_meta.outputs.pack_version }}'
+          $stage = 'pack-stage'
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          New-Item -ItemType Directory -Path $stage | Out-Null
+
+          Copy-Item -Recurse 'fragments' (Join-Path $stage 'fragments')
+          Copy-Item -Recurse 'skills' (Join-Path $stage 'skills')
+          # README.md 是仓库文档不随包发布（口径与 csproj 的 Exclude 一致）
+          $readme = Join-Path $stage 'skills/README.md'
+          if (Test-Path $readme) { Remove-Item -Force $readme }
+
+          # 逐文件 SHA-256 清单（相对路径用 /，哈希小写十六进制）
+          $hashMap = [ordered]@{}
+          foreach ($file in (Get-ChildItem -Recurse -File $stage)) {
+            $relative = ([System.IO.Path]::GetRelativePath($stage, $file.FullName)) -replace '\\', '/'
+            $hashMap[$relative] = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
+          }
+
+          $packManifest = [ordered]@{
+            kind = 'merged'
+            version = $packVersion
+            schema_version = 1
+            files = $hashMap
+          }
+          $packManifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $stage 'pack.json') -Encoding UTF8
+
+          $packZip = '${{ steps.release_meta.outputs.pack_path }}'
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $packZip -CompressionLevel Optimal
+
+          # latest.json：version 是内容包版本（旧版 exe 更新检查的事实源），engine_version 仅展示
+          $latest = [ordered]@{
+            version = $packVersion
+            engine_version = $engineVersion
+            sha256 = (Get-FileHash -Algorithm SHA256 $packZip).Hash.ToLowerInvariant()
+          }
+          $latest | ConvertTo-Json | Set-Content -LiteralPath '${{ steps.release_meta.outputs.manifest_path }}' -Encoding UTF8
+
+          Remove-Item -Recurse -Force $stage
+
+      - name: Delete existing release for tag
+        if: steps.release_meta.outputs.tag_exists == 'True'
+        shell: pwsh
+        run: |
+          # 同引擎版本重推：先删旧 Release 与远端 tag，资产整体替换
+          gh release delete '${{ steps.release_meta.outputs.tag_name }}' --repo '${{ github.repository }}' --yes --cleanup-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag_name }}
+          name: ${{ steps.release_meta.outputs.release_name }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            ${{ env.PUBLISH_DIR }}/use-ai-rule.exe
+            ${{ steps.release_meta.outputs.pack_path }}
+            ${{ steps.release_meta.outputs.manifest_path }}
+          body: |
+            use-ai-rule 自动发布（引擎 ${{ steps.release_meta.outputs.engine_version }}，内容包 ${{ steps.release_meta.outputs.pack_version }}）
+
+            ## 产物
+            - use-ai-rule.exe：win-x64 framework-dependent 单文件（需自装 [.NET 10 运行时](https://dotnet.microsoft.com/download/dotnet/10.0)）
+            - ai-rule-pack.zip：merged 内容包（manifest.json + fragments/ + skills/）
+            - latest.json：更新检查清单（内容包版本 + 引擎版本 + zip SHA-256）
+
+            ## 版本说明
+            - 引擎版本 ${{ steps.release_meta.outputs.engine_version }}：随每次发布自动递增，仅表示生成器程序本身
+            - 内容包版本 ${{ steps.release_meta.outputs.pack_version }}：事实源 fragments/manifest.json 的 vars.version，改规则/技能必须升版
+          draft: false
+          prerelease: false
+          make_latest: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

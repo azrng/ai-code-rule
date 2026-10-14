@@ -25,6 +25,15 @@ Use standalone Blazor WebAssembly only when the app is intentionally client-heav
 - Use interactive WebAssembly when offline capability, client-side execution, or browser-local compute is the point
 - Mix render modes only when the split is clear and justified
 
+## Static SSR 404 Handling (.NET 10 breaking change)
+
+- In .NET 10, manually setting `Response.StatusCode = 404` in a component under Static SSR **suppresses the response body** regardless of where/when you set it (`OnInitialized`, `OnInitializedAsync`, render phase): the framework detects a final 404 without its own NotFound flow and returns a bare empty-body 404. Other status codes (e.g. 402, 500 set via the same pattern) still render normally — the suppression is specific to 404.
+- The `<NotFound>` render fragment parameter on `Router` is `[Obsolete]` in .NET 10; the replacement is the `Router.NotFoundPage` parameter pointing to a routable NotFound page component.
+- Correct patterns for Static SSR 404s:
+  - Interactive flows and enhanced navigation: call `NavigationManager.NotFound()` from the component (which triggers the router's NotFoundPage).
+  - Address-bar requests with no matching `@page` route (bare 404): handle via `UseStatusCodePagesWithReExecute` re-executing a dedicated 404 endpoint; do not try to set the status code manually inside a component.
+- Rule of thumb: **never set `Response.StatusCode = 404` by hand in a component**. Non-404 status codes (401/402/403/…) set from `OnInitializedAsync` still work, but keep the timing rule: set them only after async data loading completes.
+
 ## Component Patterns
 
 - Keep components focused and composable

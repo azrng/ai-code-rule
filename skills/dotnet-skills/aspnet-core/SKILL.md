@@ -37,13 +37,14 @@ Load the smallest set of references that fits the task. Do not load every refere
 - Prefer built-in DI, options/configuration, logging, ProblemDetails, OpenAPI, health checks, rate limiting, output caching, and Identity before adding third-party infrastructure.
 - Keep feature slices cohesive so the page, component, endpoint, controller, validation, service, data access, and tests are easy to trace.
 - Respect the existing app model. Do not rewrite Razor Pages to MVC or controllers to Minimal APIs without a clear reason.
+- For controller-based service templates, include the default liveness/readiness and time-check endpoints described in the API reference; adapt the raw-response attribute to the result-wrapper library in use.
 
 ## Reference Guide
 
 - [references/_sections.md](references/_sections.md): Quick index and reading order.
 - [references/stack-selection.md](references/stack-selection.md): Choose the right ASP.NET Core application model and template.
 - [references/program-and-pipeline.md](references/program-and-pipeline.md): Structure `Program.cs`, services, middleware, routing, configuration, logging, and static assets.
-- [references/ui-blazor.md](references/ui-blazor.md): Build Blazor Web Apps, choose render modes, and use components, forms, and JS interop correctly.
+- [references/ui-blazor.md](references/ui-blazor.md): Build Blazor Web Apps, choose render modes, and use components, forms, and JS interop correctly. Includes .NET 10 Static SSR 404 handling (body suppression on manual `Response.StatusCode = 404`; `Router.NotFoundPage` + `NavigationManager.NotFound()` patterns).
 - [references/ui-razor-pages.md](references/ui-razor-pages.md): Build page-focused server-rendered apps with handlers, model binding, and conventions.
 - [references/ui-mvc.md](references/ui-mvc.md): Build controller/view applications with clear separation of concerns.
 - [references/apis-minimal-and-controllers.md](references/apis-minimal-and-controllers.md): Build HTTP APIs with Minimal APIs or controllers, including validation and response patterns.

@@ -1,6 +1,6 @@
 # Providers 对照（多数据库注入）
 
-各 provider 包的注入扩展都是 `Microsoft.Extensions.DependencyInjection` 命名空间下的 `AddEntityFramework` / `AddEntityFramework<T>`，签名一致，仅连接串与可选的驱动 builder 委托不同。
+各 provider 包的注入扩展都是 `Microsoft.Extensions.DependencyInjection` 命名空间下的 `AddEntityFramework` / `AddEntityFramework<T>`，公共配置参数形态一致，仅连接串与可选的驱动 builder 委托不同。非内存 provider 的配置类型是基础包中的 `Azrng.EFCore.EfCoreConnectOption`，不是 provider 专属 options 类型。
 
 ## 对照表
 
@@ -14,13 +14,18 @@
 
 ## 注入签名差异
 
-非内存库统一签名：
+非内存库公共签名（以下以 PostgreSQL 为例，第二个参数随 provider 不同）：
 ```csharp
+using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
+
 services.AddEntityFramework<TDbContext>(
-    Action<EfCoreConnectOption> config,
-    Action<ProviderOptionsBuilder>? builder = null,          // 驱动特有，如 MigrationsAssembly
+    Action<Azrng.EFCore.EfCoreConnectOption> config,
+    Action<NpgsqlDbContextOptionsBuilder>? builder = null,
     Action<IServiceProvider, DbContextOptionsBuilder>? dbOpt = null);
 ```
+
+第二个参数是 provider 专属的 options builder：MySQL 使用 `MySqlDbContextOptionsBuilder`，SQLite 使用 `SqliteDbContextOptionsBuilder`，SQLServer 使用 `SqlServerDbContextOptionsBuilder`。没有 provider 特有配置时可以省略该参数。
 
 **InMemory 签名不同**（无需连接串，传数据库名）：
 ```csharp
@@ -36,7 +41,6 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
     config.Schema = "public";
-    config.WorkId = 1;
 });
 ```
 
@@ -45,7 +49,6 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
-    config.WorkId = 1;
 });
 // 内部已调用 ServerVersion.AutoDetect(connectionString)
 ```
@@ -55,7 +58,6 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = "Data Source=app.db";
-    config.WorkId = 1;
 });
 ```
 
@@ -64,13 +66,12 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
-    config.WorkId = 1;
 });
 ```
 
 ### InMemory（测试）
 ```csharp
-builder.Services.AddEntityFramework<AppDbContext>("test-db", workId: 1);
+builder.Services.AddEntityFramework<AppDbContext>("test-db");
 ```
 
 ## 各注册了什么
@@ -82,6 +83,8 @@ builder.Services.AddEntityFramework<AppDbContext>("test-db", workId: 1);
 - `IUnitOfWork` → `UnitOfWork<TDbContext>`（Scoped）
 
 需要 `IUnitOfWork<TDbContext>` 时追加 `.AddUnitOfWork<TDbContext>()`（来自 `Azrng.EFCore` 基础包）。
+
+> 非内存 provider 的 `AddEntityFramework<TDbContext>` 默认使用 `EfCoreConnectOption` 的节点号和蛇形命名策略，并据最终的 `config.WorkId` 内部初始化 `IdHelper`。不要在普通注册示例中把 `WorkId` 固定为 `1`；只有已经明确节点号分配策略时才显式设置。只有独立于 EF 注册的 Console 或工具程序，才需要额外调用基础包提供的 `AddIdHelper(workId)`。
 
 ## 各 provider 的 DbTypeId（影响时间列类型）
 

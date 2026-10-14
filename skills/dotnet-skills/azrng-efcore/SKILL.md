@@ -1,8 +1,6 @@
 ---
 name: azrng-efcore
-version: 1.1.0
-last_updated: 2026-07-29
-description: Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when building or modifying data-access code that relies on these packages — installing/injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities with the IdentityBaseEntity/IdentityOperatorEntity base classes, calling IBaseRepository CRUD and IUnitOfWork transactions, composing read queries (same-DbContext table left joins via EntitiesNoTacking.GroupJoin + SelectMany(DefaultIfEmpty), GroupBy aggregation, dynamic OrderBy/Where, SelectMapper DTO mapping, ToPageListAsync paging) using the QueryableExtensions, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors like "Cannot write DateTime with Kind=Unspecified to timestamp with time zone".
+description: "Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when installing or injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities on the Identity base classes, calling IBaseRepository / IUnitOfWork, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors. Keywords: Common.EFCore, IBaseRepository, IUnitOfWork, DbContext, 仓储, 迁移."
 ---
 
 # Azrng EFCore (Common.EFCore) 数据访问指南
@@ -19,7 +17,7 @@ description: Guide for using the Azrng Common.EFCore family of NuGet packages to
 | MySQL | `Common.EFCore.MySQL` | `Azrng.EFCore.MySQL` | Pomelo |
 | SQLite | `Common.EFCore.SQLite` | `Azrng.EFCore.SQLite` | Microsoft.Data.Sqlite |
 | SQLServer | `Common.EFCore.SQLServer` | `Azrng.EFCore.SQLServer` | Microsoft.Data.SqlClient |
-| 内存库(测试) | `Common.EFCore.InMemory` | `Azrng.EFCore.InMemory` | EFCore.InMemory |
+| 内存库(测试) | `Common.EFCore.InMemory` | `Azrng.EFCore.InMemory` | EFCore.InMemory（不支持事务，见 repository-and-unitofwork.md） |
 
 > 包名注意：实际 NuGet 包 id 是 `Common.EFCore.PostgresSql`（非 PostgreSQL），按上表原样引用。
 
@@ -31,11 +29,13 @@ description: Guide for using the Azrng Common.EFCore family of NuGet packages to
 
 ```xml
 <!-- EntityFrameworkal 项目 -->
-<PackageReference Include="Common.EFCore" Version="1.7.0" />
-<PackageReference Include="Common.EFCore.PostgresSql" Version="1.7.0" />
+<PackageReference Include="Common.EFCore" Version="1.7.1" />
+<PackageReference Include="Common.EFCore.PostgresSql" Version="1.7.2" />
 <!-- IDomain 项目（仅实体） -->
-<PackageReference Include="Common.EFCore" Version="1.7.0" />
+<PackageReference Include="Common.EFCore" Version="1.7.1" />
 ```
+
+> 以上版本是当前核实基线：`Common.EFCore` 1.7.1、PostgreSQL provider `Common.EFCore.PostgresSql` 1.7.2。其他 provider 按项目锁定版本核实 API 与行为。
 
 ### 2. 注入（Program.cs）
 
@@ -50,13 +50,15 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 {
     config.ConnectionString = builder.Configuration.GetConnectionString("Default")!;
     config.Schema = "public";             // PostgreSQL schema；其它库可留空
-    config.WorkId = 1;                    // 分布式 Id 生成机器号
-    config.IsSnakeCaseNaming = true;      // 是否蛇形命名（默认 true）
     config.UseOldUpdateColumn = false;    // 是否用旧字段名 creator/modifyer/modify_time
 });
 // 多数场景到此即可，注入 IUnitOfWork 直接用。多 DbContext 时才追加：
 // .AddUnitOfWork<AppDbContext>();
 ```
+
+> PostgreSQL provider 的配置参数类型是 `Azrng.EFCore.EfCoreConnectOption`，定义在基础包 `Common.EFCore`，不是 `Azrng.EFCore.PostgresSql`。`AddEntityFramework<TDbContext>` 扩展方法位于 `Microsoft.Extensions.DependencyInjection`。`WorkId` 默认使用包内置的节点号策略，`IsSnakeCaseNaming` 默认是 `true`；除非已经明确设计节点号或命名策略，否则不要显式覆盖这两个默认值。该注册过程会按最终的 `WorkId` 初始化 `IdHelper`，使用实体基类或直接调用 `IdHelper.GetLongId()` 时，通常不需要再单独调用 `AddIdHelper`。
+>
+> **该注册还携带两个隐藏副作用（1.7.x 源码核实），脱离它单独构建 DbContext 模型会失真**：①写入全局静态 `EfCoreGlobalConfig.SetConfig(DatabaseType.PostgresSql, ...)`——包配置基类里的 `IsUnTimeZoneDateTime(DbType == PostgresSql)` 靠它才真正生效，跳过注册时基类不配时间类型（详见 references/postgres-time-pitfall.md 场景 1 的路径条件）；②`IsSnakeCaseNaming = true` 时在 options 管道挂 `UseSnakeCaseNamingConvention`——蛇形列名仅存在于经注册构建的模型，临时工程核对 DDL 必须复刻同一管道（见「迁移脚本与 EF 模型核对」）。
 
 > 自定义 DbContext 时重写 `OnModelCreating`，调 `ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `*Etc` 配置类；加 `HasDefaultSchema(...)` 设默认 schema。详见 references/entities-and-context.md。
 
@@ -105,7 +107,7 @@ public class UserService
 }
 ```
 
-> `AddAsync/UpdateAsync/DeleteAsync(entity, submit)` 第二参 `submit=false` 时不立即保存，配合工作单元统一提交。完整 API（查询/分页/批量更新/原生 SQL）见 references/repository-and-unitofwork.md。
+> `AddAsync/UpdateAsync/DeleteAsync(entity, submit)` 的 `submit=false` 只表示该仓储调用不立即执行 `SaveChanges`。需要统一保存时，必须显式调用 `_unitOfWork.SaveChangesAsync()`；事务作用域的 `CommitAsync()` 只提交数据库事务，不会替代保存。完整 API（查询/分页/批量更新/原生 SQL）见 references/repository-and-unitofwork.md。
 
 ### 5. 事务（注入 IUnitOfWork）
 
@@ -115,12 +117,15 @@ public class UserService
 await using var scope = await _unitOfWork.BeginTransactionScopeAsync();
 try {
     await _orderRep.AddAsync(order);
-    await _itemRep.AddRangeAsync(items);
+    await _itemRep.AddAsync(items);   // 批量新增即 AddAsync 集合重载（无 AddRangeAsync）
+    await _unitOfWork.SaveChangesAsync();
     await scope.CommitAsync();
 } catch { await scope.RollbackAsync(); throw; }
 ```
 
-三种事务方式对比见 references/repository-and-unitofwork.md。
+`CommitAsync()` 只提交数据库事务，不会触发 `SaveChanges`；事务中的变更必须先显式调用 `_unitOfWork.SaveChangesAsync()`，再提交事务。
+
+三种事务方式对比见 references/repository-and-unitofwork.md。**InMemory provider 不支持任何一种事务入口**（测试环境替身/换库方案见同文件「InMemory provider 不支持事务」）。
 
 ## 分页与条件查询扩展（常用）
 
@@ -135,21 +140,16 @@ try {
 | `.WhereIfTrue(bool condition, predicate)` / `.QueryableWhereIf(...)` | 任意布尔条件才 Where |
 | `.WhereAny(params predicates)` | 多条件 OR 查询 |
 
-**动态排序 / 映射 / 计数**（同一命名空间 `Azrng.Core.Extension`，`using Azrng.Core.Extension;`）——列名/方向由前端传入时用，避免手写 `switch`：
-
-| 扩展 | 用途 |
-|---|---|
-| `.OrderBy(string 字段名, bool isAsc)` / `.OrderBy(SortContent)` / `.OrderBy(FiledOrderParam[])` | 字符串列名动态排序；多字段使用 `FiledOrderParam[]`，单字段可用 `SortEnum` |
-| `.EqualWhere / .LessWhere / .GreaterWhere(字段名, 值)` | 字符串列名动态条件筛选（等于 / 小于 / 大于） |
-| `.SelectMapper<T, Tm>()` | 将同名、类型兼容的可写属性映射成 DTO；EF Core 可翻译为 SQL 投影 |
-| `.CountBy(out int total)` | 顺手算总数，返回 queryable 继续链式 |
-
-> 完整重载、`SelectMapper` 的同名局限、动态 Where 的适用边界见 references/querying-and-extensions.md。
-
-**分页**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）——一个扩展调用内先 Count 再 Skip/Take（共两条 SQL）：
+**分页**（`Azrng.EFCore.Extensions`，`using Azrng.EFCore.Extensions;`）——一次完成 Count + Skip/Take：
 
 ```csharp
-// 推荐：传 GetPageRequest + RefAsync<int> 接收总数，内部依次执行 Count 和分页查询
+using Azrng.Core.CommonDto;       // 分页总数引用
+using Azrng.Core.Extension;       // 条件查询扩展
+using Azrng.Core.Requests;        // 分页请求基类
+using Azrng.Core.Results;         // 分页结果模型
+using Azrng.EFCore.Extensions;    // 分页查询扩展
+
+// 推荐：传 GetPageRequest + RefAsync<int> 接收总数，内部一次 Count + 分页
 var total = new RefAsync<int>();
 var list = await query.ToPageListAsync(request, total);   // request: GetPageRequest
 
@@ -158,7 +158,7 @@ var page  = await query.ToPageListAsync(request);          // 不算 total
 var page2 = await query.ToPageListAsync(pageIndex, pageSize);
 ```
 
-> `ToPageListAsync` 来自 `Common.EFCore`（`Azrng.EFCore.Extensions`）；`PagedBy(GetPageRequest)` 只分页不算总数（来自 `Azrng.Core.Extension`），用于已单独算过总数的场景。
+> `ToPageListAsync` 来自 `Common.EFCore`（`Azrng.EFCore.Extensions`），返回 `Task<List<T>>`；`PagedBy(GetPageRequest)` 只分页不算总数（来自 `Azrng.Core.Extension`），用于已单独算过总数的场景。
 
 **分页结果模型**（`Azrng.Core.Results`，`using Azrng.Core.Results;`）——`GetQueryPageResult<T>`，含 `Rows`(List<T>) + `PageInfo`(PageIndex/PageSize/Total/TotalPage)：
 
@@ -179,41 +179,6 @@ public async Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListReques
 
 > `RefAsync<T>`（`using Azrng.Core.CommonDto;`）有到 `T` 的隐式转换，`new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。分页在 AppService 的整体编排（含全局返回包装）见 onion-architecture skill「分页查询最佳实践」。
 
-## 复杂查询：表连接（GroupJoin）与分组
-
-**只读 / 投影 / 连接 / 分组查询默认从 `EntitiesNoTacking` 出发**（不追踪，性能优）。需要继续修改已加载实体、依赖 ChangeTracker，或当前 DbContext 已跟踪同一主键时，用追踪的 `Entities`；脱离跟踪的实体也可传给 `UpdateAsync`，但会被标记为全字段更新。
-
-**表连接的标准写法**：两个查询必须来自同一个 `DbContext` 实例。从主表仓储的 `EntitiesNoTacking` 出发，`GroupJoin` 关联另一个仓储的 `EntitiesNoTacking`（可带 `.Where(...)` 预筛选），再 `SelectMany(...DefaultIfEmpty())` 摊平成左连接：
-
-```csharp
-using Microsoft.EntityFrameworkCore;
-
-// 模型列表 + 当前用户是否收藏：左连接，关联表先按用户筛选
-var list = await _modelRepository.EntitiesNoTacking
-    .GroupJoin(
-        _favoriteRepository.EntitiesNoTacking.Where(t => t.UserId == currentUserId),  // 预筛选的关联表
-        model => model.Id,
-        favorite => favorite.ModelId,
-        (model, favorites) => new { model, favorites })
-    .SelectMany(
-        x => x.favorites.DefaultIfEmpty(),
-        (x, fav) => new ModelListDto
-        {
-            Id = x.model.Id,
-            Name = x.model.Name,
-            IsFavorited = fav != null          // 关联表为空 → false（左连接）
-        })
-    .ToListAsync();
-```
-
-- `GroupJoin` 先得到「主表行 + 匹配集合」；接上 `SelectMany(...DefaultIfEmpty())` 才是左连接。此时主表行全部保留，关联表无匹配时为 null。
-- 关联表可先 `.Where(...)` 过滤（如「只取当前用户的收藏」），缩小连接范围。
-- **内连接**用 `Join`：`_rep.EntitiesNoTacking.Join(other.EntitiesNoTacking, outerKey, innerKey, (o,i) => ...)`。
-- 聚合统计用 `GroupBy(...).Select(g => new { g.Key, Count = g.Count(), Sum = g.Sum(...) })`。
-- 有导航属性时也可直接在 `Select` 里 `o.User.Account` 跨表取值，EF 自动 JOIN。
-- 连接 / 分组后是只读投影，**别用追踪的 `Entities`**。
-- 完整写法（GroupJoin / Join / GroupBy）见 references/querying-and-extensions.md。
-
 ## SQL 脚本迁移（Azrng.SqlMigration）
 
 数据库 schema 变更用 SQL 脚本版本化管理（不走 EF Core 的 Code-First Migrations）。装 `Azrng.SqlMigration` 包，应用启动时自动按版本顺序执行未应用的脚本，已执行的记在版本日志表、不重复跑。
@@ -229,28 +194,41 @@ using Azrng.SqlMigration;
 using Npgsql;
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-var migrationSqlPath = Path.Combine(builder.Environment.ContentRootPath, "MigrationSql");
+var migrationSqlPath = Path.Combine(
+    builder.Environment.ContentRootPath,
+    "wwwroot",
+    "MigrationSql");
 
 builder.Services.AddSqlMigrationService("default", config =>
 {
     config.Schema = "public";                  // 数据库 schema
     config.VersionPrefix = string.Empty;       // SQL 文件版本前缀（默认 "version"）
-    config.SqlRootPath = migrationSqlPath;     // SQL 脚本目录（Service/MigrationSql）
+    config.SqlRootPath = migrationSqlPath;     // SQL 脚本目录（Service/wwwroot/MigrationSql）
     config.ConnectionBuilder = _ => new NpgsqlConnection(connectionString);
 }).AddAutoMigration();                         // ← 启动时自动跑未应用的脚本
 ```
 
-**SQL 脚本约定**：放 `Service/MigrationSql/`，文件名 = `VersionPrefix + 版本号 + 扩展名`，扩展名支持 `.sql` / `.txt`（如 `1.0.0.sql`、`1.1.0.txt`、`1.0.0.1.sql`），**不含描述文字**——去掉前缀与扩展名后的剩余部分会被整体解析为版本号，带描述会破坏版本排序；按版本号顺序执行。
+`ConnectionBuilder` 的真实类型是 `Func<IServiceProvider, IDbConnection>`；使用 PostgreSQL 时，Service 项目应直接引用 `Npgsql`，并通过 `sp => new NpgsqlConnection(connectionString)` 创建连接。
+
+> 迁移只能由 `.AddAutoMigration()` 注册的启动过滤器触发：包内执行服务（如 `ISqlMigrationService`）是 internal，不要手动从容器解析服务来触发迁移或单独执行脚本。
+
+> **执行时序与迁移后补数据**：迁移在 `RunAsync()` 内由启动过滤器执行——晚于 Program 顶层语句、早于 Kestrel 监听。迁移完成后要跑 C# 逻辑（种子数据、缓存预热等）时，用自定义 `IStartupFilter` 挂接：IStartupFilter 按注册的相反顺序执行（后注册者先执行），自定义过滤器须在 `.AddAutoMigration()` 之前注册才会后于迁移运行。
+
+**SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，**文件名必须是三段式（四段式）数字版本**：`1.0.0.sql`、`1.1.0.txt`（或 `1.0.0.1.sql`），升级按数字递增（如 `1.0.0` → `1.0.1`）。版本号解析器（0.5.0 实测）只接受以 `.` 分隔的三段或四段数字：`1.sql`、`1.0.sql` 等段数不足的文件名会解析失败——该失败被记为错误日志（`获取版本号异常...不支持的版本格式`）并返回版本 0，脚本被静默跳过，应用正常启动但表没建。如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号。
+
+> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
+
+> **历史库中途接入**：为已在线的存量库补迁移脚本时，脚本可安全重放（幂等：`IF NOT EXISTS` / `ON CONFLICT` 等）的场景不需要 `IInitVersionSetter`——版本日志表首次执行自动创建，存量脚本从零顺序跑一遍即可；仅当存量脚本不可安全重放时，才用 `IInitVersionSetter` 预置初始版本、避免存量脚本重放。
 
 ## 决策指引（AI 必读）
 
 - **选 provider**：按目标数据库选包，注入方式几乎一致（仅连接串与可选 builder 委托不同）。对照表见 references/providers.md。
 - **DbContext 怎么扫描配置类**：继承普通 `DbContext`，在 `OnModelCreating` 里 `modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly())` 扫描本程序集（EntityFramework 层）的 `{Entity}Etc.cs` 配置类；再 `modelBuilder.HasDefaultSchema(...)` 设默认 schema。
-- **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤（包不自动全局过滤）。
-- **查询入口 / 表连接**：只读、连接、分组查询默认从 `_rep.EntitiesNoTacking` 出发；需要 ChangeTracker 时使用 `Entities`。表连接两侧必须来自同一个 `DbContext`，左连接用 `_rep.EntitiesNoTacking.GroupJoin(other.EntitiesNoTacking.Where(...), ...).SelectMany(...DefaultIfEmpty())`。条件筛选和分页可用 `WhereIf*` / `OrderBy` / `ToPageListAsync`；字段不匹配或需要计算时保留强类型 `Select`。详见 references/querying-and-extensions.md。
-- **遇到 PostgreSQL 时间报错**：先看 references/postgres-time-pitfall.md —— 这是本系列包最常见的崩溃根因，三层（模型/赋值/DDL）必须一致。
+- **新增实体三件套**：实体类 + DbContext 的 `DbSet<{实体名}>` + `{实体名}Etc.cs` 配置类，三处同步缺一不可——只登记 DbSet 不建 Etc 时 EF 模型缺失，运行期才暴露；表名以 Etc 的 `ToTable` 为准，迁移 SQL 表名保持一致。
+- **软删除**：用 `IdentityOperatorStatusEntity`（带 `Deleted`/`Disabled`），查询手动加 `!x.Deleted` 过滤，或在实体配置中统一 `HasQueryFilter`（包不自动全局过滤）。注意 `DeleteAsync` 是**物理删除**——软删除走 `SetDeleted + UpdateAsync` 或 `UpdateAsync(predicate, setters)` 条件批量更新；有外键子表的实体物理删除会 500（含 Blazor 电路长寿命 DbContext 的 fixup 陷阱，见 references/repository-and-unitofwork.md §2）。
+- **PostgreSQL 时间列（新项目强制前置）**：首次写库前必须先完成时间列三层一致——模型 `IsUnTimeZoneDateTime()`、赋值 `DateTime.Now.ToUnspecifiedDateTime()`、DDL `timestamp without time zone`——再写任何读写代码；这是本系列包最常见的崩溃根因，细则见 references/postgres-time-pitfall.md。
 
 ## 关键陷阱（高频）
 
@@ -260,3 +238,51 @@ builder.Services.AddSqlMigrationService("default", config =>
 3. DDL 层：迁移脚本列用 `timestamp without time zone`
 
 诊断与完整修复步骤见 references/postgres-time-pitfall.md。
+
+## 迁移脚本与 EF 模型核对
+
+手写 SQL 迁移脚本前，建议在临时 Console 或设计期工具中让 EF 输出当前模型的权威 DDL，再据此核对表名、蛇形列名、主键、默认值和 PostgreSQL 时间列类型：
+
+```csharp
+var ddl = dbContext.Database.GenerateCreateScript();
+await File.WriteAllTextAsync("ef-model.sql", ddl);
+```
+
+**临时工程必须复刻应用的注册管道，否则 DDL 会失真**（1.7.x 实测，两大失真源）：
+
+- **时间列**：包配置基类（如 `EntityTypeConfigurationIdentityOperatorStatus`）里的 `IsUnTimeZoneDateTime(isPgsql: EfCoreGlobalConfig.DbType == PostgresSql)` 是**条件 no-op**——`DbType` 是全局静态，只在 provider 包 `AddEntityFramework<T>` 注册时写入。临时工程若手工 `new DbContextOptionsBuilder().UseNpgsql(...)`，`DbType` 默认 0（MySql）→ 基类不配时间类型 → 审计字段全部输出 `timestamptz`，与运行期实际模型不一致。
+- **命名**：`IsSnakeCaseNaming` 默认 `true` 的蛇形命名是 `AddEntityFramework` 在 options 管道里挂的 `UseSnakeCaseNamingConvention`，手工建 options 时不会生效 → DDL 输出引号 PascalCase（`"Id"`），与运行期查询生成的 `id` 不一致。
+
+两种复刻方式任选：
+
+```csharp
+// 方式 A（推荐）：复用注册扩展，从容器解析——与运行期完全同源
+var services = new ServiceCollection();
+services.AddEntityFramework<AppDbContext>(config =>
+{
+    config.ConnectionString = "Host=...;Database=...";   // 仅为注册，不真连库
+    config.Schema = "public";
+});
+var dbContext = services.BuildServiceProvider().GetRequiredService<AppDbContext>();
+var ddl = dbContext.Database.GenerateCreateScript();
+
+// 方式 B：手工 options 时必须显式补齐两个包内置行为
+EfCoreGlobalConfig.SetConfig(DatabaseType.PostgresSql, useOldUpdateColumn: false, schema: "public");
+optionsBuilder.UseNpgsql(connectionString)
+    .UseSnakeCaseNamingConvention();   // EFCore.NamingConventions，默认配置下开启
+```
+
+> 方式 B 中 `SetConfig` 与 `UseSnakeCaseNamingConvention` 均为公开 API，但默认值（命名开启、旧字段名关闭）需与真实注入配置逐项对齐；配置不一致时优先方式 A。
+
+该脚本用于比对，不替代 `Azrng.SqlMigration` 的版本脚本。修改实体配置后重新生成并检查 `timestamp without time zone`、`snake_case` 等关键差异。
+
+> **命名与 DDL 一致性自检**：默认 `IsSnakeCaseNaming = true` 时，运行期查询按蛇形列名（`u.id`）生成 SQL，手写迁移 DDL 必须同样蛇形（`id bigint`），两边禁止混用（蛇形模型 + PascalCase DDL → 运行期 42703 undefined column）。核对清单：① 用上述同源方式生成模型 DDL；② 逐列比对迁移脚本与模型 DDL 的列名/类型；③ 迁移脚本不改模型推断出的类型与命名，只补默认值、注释、索引等 DDL 细节。
+
+## 包 API 核实流程
+
+当 NuGet 文档、技能示例和编译结果不一致时，按以下顺序核实，结论必须绑定具体包版本：
+
+1. 先查看锁定版本的包 XML 文档、README 和传递依赖，确认类型、命名空间和公开签名。
+2. 再建立最小可编译示例，优先用编译器确认泛型、委托和返回类型，不要只凭 IntelliSense 或旧代码猜测。
+3. 对运行时行为（路径、环境条件、静默跳过、结果过滤）补一个最小集成验证，并记录日志和实际响应。
+4. 只有源码和公开文档仍无法解释行为时，才使用反射或 IL 分析；不要把某一次反编译结果当成跨版本稳定契约。

@@ -1,0 +1,222 @@
+using System.Text.Json;
+
+namespace RuleAssembler.Tests;
+
+public sealed class RecipeRecorderTests : IDisposable
+{
+    private readonly string _root;
+
+    public RecipeRecorderTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), $"rule-recipe-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_root);
+    }
+
+    public void Dispose()
+    {
+        Directory.Delete(_root, recursive: true);
+    }
+
+    // 直接构造配方记录（组合路径产物形态）：配方写入测试只关心序列化形状，
+    // 不依赖具体构建入口
+    private static RecipeRecord MakeRecord(
+        string mode = "wizard",
+        Dictionary<string, string>? answers = null,
+        Dictionary<string, string>? sources = null,
+        List<string>? features = null)
+    {
+        return new RecipeRecord
+        {
+            ManifestVersion = "1.75.0",
+            GeneratedAt = "2026-09-16T10:00:00+08:00",
+            Mode = mode,
+            ProfileId = "reactWailsExe",
+            ProfileLabel = "React + Wails 桌面应用",
+            Family = "hybrid-app",
+            Answers = answers ?? new Dictionary<string, string>(),
+            AnswerSources = sources ?? new Dictionary<string, string>(),
+            Features = features ?? new List<string> { "doc" },
+            FileHashes = new Dictionary<string, string>(),
+            Files = new List<string> { "AGENTS.md" }
+        };
+    }
+
+    [Fact]
+    public void Write_ProducesJsonRecordWithProfile()
+    {
+        var record = MakeRecord(
+            answers: new Dictionary<string, string> { ["form"] = "desktop" },
+            sources: new Dictionary<string, string> { ["form"] = "manual" },
+            features: new List<string> { "doc", "infra" });
+        new RecipeRecorder().Write(_root, record);
+
+        var path = Path.Combine(_root, RecipeRecorder.RecordFileName);
+        Assert.True(File.Exists(path));
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        Assert.Equal("reactWailsExe", doc.RootElement.GetProperty("profile_id").GetString());
+        Assert.Equal("wizard", doc.RootElement.GetProperty("mode").GetString());
+        Assert.Equal("desktop", doc.RootElement.GetProperty("answers").GetProperty("form").GetString());
+        Assert.Equal("manual", doc.RootElement.GetProperty("answer_sources").GetProperty("form").GetString());
+        // 仓库约定生成文件统一 LF，配方记录不得带 CRLF
+        Assert.DoesNotContain("\r\n", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void Write_RecordDetectedAnswerSources()
+    {
+        // 补答完成的配方保留 mode=detected，回答来源区分检测确认与人工补答
+        var record = MakeRecord(
+            mode: "detected",
+            answers: new Dictionary<string, string>
+            {
+                ["form"] = "desktop", ["backend"] = "dotnet", ["shell"] = "electron", ["frontend"] = "vue"
+            },
+            sources: new Dictionary<string, string>
+            {
+                ["form"] = "detected", ["backend"] = "detected", ["shell"] = "detected", ["frontend"] = "manual"
+            },
+            features: new List<string> { "doc", "infra", "design-system" });
+        new RecipeRecorder().Write(_root, record);
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));
+        Assert.Equal("detected", doc.RootElement.GetProperty("mode").GetString());
+        Assert.Equal("detected", doc.RootElement.GetProperty("answer_sources").GetProperty("shell").GetString());
+        Assert.Equal("manual", doc.RootElement.GetProperty("answer_sources").GetProperty("frontend").GetString());
+    }
+
+    [Fact]
+    public void EnsureGitignored_CreatesFileWhenMissing()
+    {
+        var message = new RecipeRecorder().EnsureGitignored(_root, "hybrid");
+
+        var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
+        Assert.Contains(".ai-rule-profile.json", content);
+        // 通配条目同时覆盖 use-ai-rule.exe、无扩展名本体与历史带 RID 后缀的副本
+        Assert.Contains("use-ai-rule*", content);
+        // 规则效果反馈记录属本地产物，随生成器忽略块一起写入
+        Assert.Contains(".ai-rule-feedback.md", content);
+        // AI 工具本地目录随默认模板块一起写入
+        Assert.Contains(".zcode/", content);
+        Assert.Contains(".claude/", content);
+        Assert.Contains(".learnings/", content);
+        Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.Trim() == "artifacts/"));
+        Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.Trim() == ".env"));
+        Assert.Contains("node_modules/", content);
+        Assert.Contains("已创建", message);
+    }
+
+    [Fact]
+    public void EnsureGitignored_AppendsEntryToExistingFile()
+    {
+        File.WriteAllText(Path.Combine(_root, ".gitignore"), "bin/\nobj/\n");
+
+        new RecipeRecorder().EnsureGitignored(_root, "dotnet");
+
+        var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
+        Assert.StartsWith("bin/\nobj/\n", content);
+        Assert.Contains(".ai-rule-profile.json", content);
+        Assert.Contains("use-ai-rule*", content);
+        Assert.Contains(".ai-rule-feedback.md", content);
+        // 追加路径同样补齐 AI 工具本地目录
+        Assert.Contains(".claude/", content);
+        Assert.Contains(".cursor/", content);
+        // 生成器执行后的本地产物与敏感配置不得进入版本库
+        Assert.Contains(".artifacts/", content);
+        Assert.Contains(".codegraph/", content);
+        Assert.Contains(".learnings/", content);
+        Assert.Contains("artifacts/", content);
+        Assert.Contains(".env", content);
+        Assert.DoesNotContain("node_modules/", content);
+    }
+
+    [Fact]
+    public void EnsureGitignored_AppendsOnlyMissingEntries()
+    {
+        // 旧版生成器只忽略配方记录：再跑一次必须只补缺失条目，不重复已有条目
+        File.WriteAllText(Path.Combine(_root, ".gitignore"), "bin/\n.ai-rule-profile.json\n");
+
+        var message = new RecipeRecorder().EnsureGitignored(_root, "dotnet");
+
+        var content = File.ReadAllText(Path.Combine(_root, ".gitignore"));
+        Assert.Equal(1, content.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.Trim() == ".ai-rule-profile.json"));
+        Assert.Contains("use-ai-rule*", content);
+        Assert.Contains(".ai-rule-feedback.md", content);
+        Assert.Contains(".codegraph/", content);
+        Assert.Contains("追加忽略规则：use-ai-rule*、.ai-rule-feedback.md、.zcode/", message);
+    }
+
+    [Fact]
+    public void EnsureGitignored_IsIdempotent()
+    {
+        var recorder = new RecipeRecorder();
+        recorder.EnsureGitignored(_root, "dotnet");
+        var first = File.ReadAllText(Path.Combine(_root, ".gitignore"));
+
+        var message = recorder.EnsureGitignored(_root, "dotnet");
+        var second = File.ReadAllText(Path.Combine(_root, ".gitignore"));
+
+        Assert.Equal(first, second);
+        Assert.Contains("已包含", message);
+    }
+
+    [Fact]
+    public void StackKeyFor_MapsFamiliesToTemplates()
+    {
+        Assert.Equal("hybrid", RecipeRecorder.StackKeyFor("hybrid-app", "reactWailsExe"));
+        Assert.Equal("flutter", RecipeRecorder.StackKeyFor("mobile", "flutterMobile"));
+        Assert.Equal("python", RecipeRecorder.StackKeyFor("python-backend", "python"));
+        // Web 前后端分离同时包含 .NET 后端，不能只给 Node 模板
+        Assert.Equal("webstack", RecipeRecorder.StackKeyFor("web-fullstack", "reactLinkdotNet-ai"));
+        var template = GitignoreTemplates.Get("webstack");
+        Assert.Contains("node_modules/", template);
+        Assert.Contains("[Bb]in/", template);
+    }
+
+    [Fact]
+    public void WithSkills_AttachesSortedSkillSelection()
+    {
+        var record = MakeRecord();
+
+        var withSkills = RecipeRecorder.WithSkills(record, new[] { "summarize", "brainstorming" }, new[] { "zcode", "codex" });
+
+        Assert.Equal(new[] { "brainstorming", "summarize" }, withSkills.Skills);
+        Assert.Equal(new[] { "codex", "zcode" }, withSkills.SkillTargets);
+        Assert.Equal(record.ProfileId, withSkills.ProfileId);
+        Assert.Equal(record.Files, withSkills.Files);
+    }
+
+    [Fact]
+    public void Write_RecipeWithoutSkills_OmitsSkillFieldsFromJson()
+    {
+        // 未导入技能的配方与旧形状完全一致，不出现 skills / skill_targets 键
+        var record = MakeRecord();
+        new RecipeRecorder().Write(_root, record);
+
+        var json = File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName));
+        using var doc = JsonDocument.Parse(json);
+        Assert.False(doc.RootElement.TryGetProperty("skills", out _));
+        Assert.False(doc.RootElement.TryGetProperty("skill_targets", out _));
+
+        // 空勾选视为未导入：补写空列表后配方 JSON 保持原样
+        var withEmptySkills = RecipeRecorder.WithSkills(record, new List<string>(), new List<string>());
+        new RecipeRecorder().Write(_root, withEmptySkills);
+        Assert.Equal(json, File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));
+    }
+
+    [Fact]
+    public void Write_RecipeWithSkills_SerializesSkillFields()
+    {
+        var record = RecipeRecorder.WithSkills(
+            MakeRecord(),
+            new[] { "brainstorming" }, new[] { "claude" });
+
+        new RecipeRecorder().Write(_root, record);
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(_root, RecipeRecorder.RecordFileName)));
+        Assert.Equal("brainstorming", doc.RootElement.GetProperty("skills")[0].GetString());
+        Assert.Equal("claude", doc.RootElement.GetProperty("skill_targets")[0].GetString());
+    }
+}

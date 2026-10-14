@@ -1,0 +1,163 @@
+using System.Text;
+using System.Text.Json;
+
+namespace RuleAssembler;
+
+// 生成成功后的收尾：写配方记录 .ai-rule-profile.json，并确保目标项目 .gitignore 忽略该记录与生成器本体。
+// 配方记录用于人工核对该次生成选择了什么，也为后续按原配方升级规则留档。
+internal sealed class RecipeRecorder
+{
+    public const string RecordFileName = GitignoreTemplates.RecipeEntry;
+
+    // 组合内核路径的配方：额外记录维度选择与命中组件；唯一映射到兼容样例时回填 profile 三件套
+    // （id / label / family 均来自样例携带的展示元数据），供旧读者与升级流程继续按 Profile 语义消费
+    public static RecipeRecord BuildComposition(
+        Manifest manifest,
+        Selection selection,
+        IReadOnlyList<string> componentIds,
+        string mode,
+        IReadOnlyDictionary<string, string> answers,
+        IReadOnlyDictionary<string, string> answerSources,
+        IEnumerable<string> features,
+        IReadOnlyList<PlannedFile> files)
+    {
+        var caseItem = MatchSingleCase(manifest, selection);
+        return new RecipeRecord
+        {
+            ManifestVersion = manifest.Vars.Version,
+            GeneratedAt = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm:sszzz"),
+            Mode = mode,
+            ProfileId = caseItem?.Profile ?? "",
+            ProfileLabel = caseItem?.Label ?? "",
+            Family = caseItem?.Family ?? "",
+            Selection = new Dictionary<string, string>(selection.Dimensions, StringComparer.Ordinal),
+            ComponentIds = componentIds.ToList(),
+            Answers = new Dictionary<string, string>(answers, StringComparer.Ordinal),
+            AnswerSources = new Dictionary<string, string>(answerSources, StringComparer.Ordinal),
+            Features = features.OrderBy(id => id, StringComparer.Ordinal).ToList(),
+            FileHashes = HashFiles(files),
+            Files = files.Select(file => file.Output).ToList()
+        };
+    }
+
+    // 生成内容的内容寻址指纹：路径 → SHA256（UTF-8 字节，十六进制小写），供 --upgrade 识别本地修改
+    public static Dictionary<string, string> HashFiles(IReadOnlyList<PlannedFile> files)
+    {
+        var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in files)
+            hashes[file.Output] = HashContent(file.Content);
+        return hashes;
+    }
+
+    // init-only 记录的补写：技能勾选发生在规则配方构建之后，这里按原值重建并附加技能字段；
+    // 两个列表都为空时置 null，配方 JSON 与未导入技能时保持同形
+    public static RecipeRecord WithSkills(
+        RecipeRecord record, IReadOnlyList<string>? skills, IReadOnlyList<string>? skillTargets)
+    {
+        var skillList = skills is { Count: > 0 }
+            ? skills.OrderBy(id => id, StringComparer.Ordinal).ToList()
+            : null;
+        var targetList = skillTargets is { Count: > 0 }
+            ? skillTargets.OrderBy(id => id, StringComparer.Ordinal).ToList()
+            : null;
+        return new RecipeRecord
+        {
+            SchemaVersion = record.SchemaVersion,
+            ManifestVersion = record.ManifestVersion,
+            GeneratedAt = record.GeneratedAt,
+            Mode = record.Mode,
+            ProfileId = record.ProfileId,
+            ProfileLabel = record.ProfileLabel,
+            Family = record.Family,
+            Selection = record.Selection,
+            ComponentIds = record.ComponentIds,
+            Answers = record.Answers,
+            AnswerSources = record.AnswerSources,
+            Features = record.Features,
+            FileHashes = record.FileHashes,
+            Skills = skillList,
+            SkillTargets = targetList,
+            Files = record.Files
+        };
+    }
+
+    public static string HashContent(string content)
+    {
+        var bytes = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(content));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    // 组合路径的 gitignore 模板键：唯一映射到兼容样例时沿用其 family 口径，否则退到 minimal
+    public static string StackKeyForComposition(Manifest manifest, CompositionPlan plan)
+    {
+        var caseItem = MatchSingleCase(manifest, plan.Selection);
+        return caseItem is not null ? StackKeyFor(caseItem.Family, caseItem.Profile) : "minimal";
+    }
+
+    public void Write(string rootDirectory, RecipeRecord record)
+    {
+        var path = Path.Combine(Path.GetFullPath(rootDirectory), RecordFileName);
+        var json = JsonSerializer.Serialize(record, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        });
+        // WriteIndented 的缩进换行随系统为 CRLF，仓库约定生成文件统一 LF
+        File.WriteAllText(path, json.Replace("\r\n", "\n") + "\n", new UTF8Encoding(false));
+    }
+
+    // 返回给用户看的说明文案；.gitignore 缺失时按技术栈创建默认模板
+    public string EnsureGitignored(string rootDirectory, string stackKey)
+    {
+        var path = Path.Combine(Path.GetFullPath(rootDirectory), ".gitignore");
+        if (File.Exists(path))
+        {
+            var existing = File.ReadAllLines(path)
+                .Select(line => line.Trim())
+                .ToHashSet(StringComparer.Ordinal);
+            var missing = GitignoreTemplates.AllGitignoreEntries
+                .Where(entry => !existing.Contains(entry))
+                .ToList();
+            if (missing.Count == 0)
+                return ".gitignore 已包含配方记录、生成器与 AI 工具目录忽略规则";
+
+            // 只追加缺失条目，已存在的忽略规则保持原样，保证重复执行幂等
+            File.AppendAllText(
+                path,
+                "\n" + GitignoreTemplates.GeneratorComment + string.Join("\n", missing) + "\n",
+                new UTF8Encoding(false));
+            return "已在 .gitignore 追加忽略规则：" + string.Join("、", missing);
+        }
+
+        File.WriteAllText(path, GitignoreTemplates.Get(stackKey), new UTF8Encoding(false));
+        return "已创建 .gitignore（含技术栈默认忽略规则、AI rule 本地产物与 AI 工具目录）";
+    }
+
+    // 选择唯一映射到兼容样例时返回该样例，否则 null
+    private static CompatibilityCase? MatchSingleCase(Manifest manifest, Selection selection)
+    {
+        var matches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        return matches.Count == 1
+            ? manifest.CompatibilityCases.FirstOrDefault(item =>
+                item.Profile.Equals(matches[0], StringComparison.OrdinalIgnoreCase))
+            : null;
+    }
+
+    // 样例（family / id）→ gitignore 模板键
+    public static string StackKeyFor(string family, string profileId)
+    {
+        if (profileId == "flutterMobile")
+            return "flutter";
+        return family switch
+        {
+            "dotnet-backend" => "dotnet",
+            "python-backend" => "python",
+            "web-fullstack" => "webstack",
+            "hybrid-app" => "hybrid",
+            "frontend-static" => "node",
+            "mobile" => "dotnet",
+            "desktop" => "dotnet",
+            _ => "minimal"
+        };
+    }
+}

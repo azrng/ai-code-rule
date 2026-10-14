@@ -1,0 +1,527 @@
+# 设计与组件规则的唯一事实来源。
+# 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
+# status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
+# 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
+# 技术栈：Flutter + Dart + Material 3 + Riverpod
+
+meta:
+  name: "Flutter 移动端设计系统"
+  version: "1.1.0"
+  last_updated: "2026-08-29"
+  status: "基线待定制"
+  owners:
+    - "design"
+    - "mobile"
+  tech_stack:
+    framework: "Flutter"
+    language: "Dart"
+    ui: "Material 3（Flutter 内置）"
+    state_management: "Riverpod"
+    routing: "GoRouter"
+    http: "Dio / http（仅需要远程服务的项目）"
+    local_db: "drift"
+    target_platforms:
+      - "Android"
+      - "iOS"
+  usage:
+    read_order:
+      - "在进行任何 UI 改动前阅读本文件"
+      - "然后查看 lib/config/theme.dart 主题配置"
+      - "然后查看现有 Widget、页面布局和字体配置"
+      - "最后再开始新增页面、Widget 或状态逻辑"
+    principles:
+      - "优先复用已有 Widget、样式和资源"
+      - "优先使用 Material 3 语义化 token，不直接写视觉常量"
+      - "移动端优先，保证触摸目标和可读性"
+      - "页面状态必须完整，不交付半成品视图"
+      - "动效克制自然，不制造分散注意力的装饰"
+
+product:
+  style_keywords:
+    - "现代"
+    - "简洁"
+    - "流畅"
+    - "易用"
+    - "原生感"
+  ui_goal:
+    - "遵循 Material 3 设计语言，充分利用 Flutter 原生能力"
+    - "信息层级清晰，操作确定性高"
+    - "重要状态一眼可辨，表单与列表操作成本低"
+    - "触摸友好，关键操作区域满足最小触摸目标要求"
+    - "动效克制自然，增强操作反馈而非装饰"
+
+# ============================================================
+# 颜色 Token
+# Material 3 ColorScheme 映射
+# ============================================================
+tokens:
+  colors:
+    # 主品牌色
+    primary:
+      light: "#FF6B6B"
+      dark: "#FF8A9A"
+      container_light: "#FFE8E8"
+      container_dark: "#4A1F27"
+    # 辅助色
+    secondary:
+      light: "#4ECDC4"
+      dark: "#4EC89D"
+      container_light: "#D9F6EE"
+      container_dark: "#173F35"
+    # 成功色
+    success:
+      light: "#22A97E"
+      dark: "#4EC89D"
+      container_light: "#DCFBE6"
+      container_dark: "#1A3D2E"
+    # 警告色
+    warning:
+      light: "#B76A00"
+      dark: "#F8B72B"
+      container_light: "#FFF1B8"
+      container_dark: "#3D2E0A"
+    # 错误色
+    error:
+      light: "#D92D46"
+      dark: "#FF8A9A"
+      container_light: "#FFE4E8"
+      container_dark: "#3D0A10"
+    # 中性色
+    gray:
+      50: "#F8FAFC"
+      100: "#F1F5F9"
+      200: "#E2E8F0"
+      300: "#CBD5E1"
+      400: "#94A3B8"
+      500: "#64748B"
+      600: "#475569"
+      700: "#334155"
+      800: "#1E293B"
+      900: "#0F172A"
+
+  # ============================================================
+  # 语义化颜色映射（Material 3 ColorScheme 对应）
+  # 优先使用 ColorScheme.of(context)，而非硬编码颜色
+  # ============================================================
+  semantic:
+    text:
+      primary: "colorScheme.onSurface（gray-900）"
+      secondary: "colorScheme.onSurfaceVariant（gray-600）"
+      muted: "gray-500"
+      disabled: "colorScheme.onSurface.withOpacity(0.38)"
+      inverse: "colorScheme.onPrimary（white）"
+      link: "colorScheme.primary"
+    background:
+      page: "colorScheme.surface（gray-50）"
+      card: "colorScheme.surfaceContainerLow（white）"
+      surface: "colorScheme.surfaceContainerHighest（gray-100）"
+      active: "colorScheme.primaryContainer"
+      brand: "colorScheme.primary"
+    border:
+      default: "colorScheme.outlineVariant（gray-200）"
+      strong: "colorScheme.outline（gray-300）"
+      focus: "colorScheme.primary"
+    status:
+      success_bg: "success container_light"
+      success_text: "success.light"
+      warning_bg: "warning container_light"
+      warning_text: "warning.light"
+      error_bg: "error container_light"
+      error_text: "error.light"
+
+  # ============================================================
+  # Material 3 ThemeData 映射
+  # 实现文件：lib/config/theme.dart
+  # ============================================================
+  material3:
+    theme_config:
+      location: "lib/config/theme.dart"
+      description: "通过 ThemeData + ColorScheme 统一管理主题"
+      light_theme: |
+        ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Color(0xFFFF6B6B),
+            brightness: Brightness.light,
+          ),
+          fontFamily: 'SystemDefault',
+        )
+      dark_theme: |
+        ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Color(0xFFFF6B6B),
+            brightness: Brightness.dark,
+          ),
+          fontFamily: 'SystemDefault',
+        )
+      usage_rules:
+        - "主题定制统一通过 ThemeData + ColorScheme 配置"
+        - "组件中使用 Theme.of(context).colorScheme 获取颜色，禁止硬编码"
+        - "间距统一使用 Material 3 的 Spacing token 或自定义常量"
+        - "响应式使用 LayoutBuilder 或 MediaQuery"
+
+  typography:
+    font_family:
+      default: "系统默认字体（Flutter 自动映射平台原生字体）"
+      mono: "等宽字体（Consolas / Menlo）"
+    font_size:
+      caption: "12"
+      body: "14"
+      subhead: "16"
+      title: "18"
+      headline: "22"
+      display: "28"
+    font_weight:
+      regular: "FontWeight.w400"
+      medium: "FontWeight.w500"
+      semibold: "FontWeight.w600"
+      bold: "FontWeight.w700"
+    line_height:
+      tight: "1.25"
+      normal: "1.5"
+      relaxed: "1.7"
+
+  spacing:
+    base_unit: "4"
+    scale:
+      xs: "4"
+      sm: "8"
+      md: "12"
+      base: "16"
+      lg: "20"
+      xl: "24"
+      xxl: "32"
+      xxxl: "48"
+    page_padding: "16（水平）"
+    section_gap: "24"
+    item_gap: "12"
+    card_padding: "16"
+    card_radius: "16（通用圆角；列表内小容器可使用 12）"
+
+  radius:
+    sm: "6"
+    md: "10"
+    lg: "14"
+    xl: "20"
+    full: "28（胶囊形）"
+
+  shadow:
+    sm: "0 2 8 rgba(0,0,0,0.08)"
+    md: "0 4 16 rgba(0,0,0,0.10)"
+    lg: "0 8 32 rgba(0,0,0,0.14)"
+
+  transitions:
+    fast: "100ms"
+    base: "200ms（标准）"
+    slow: "300ms"
+    slower: "500ms"
+
+  touch_target:
+    minimum_ios: "44x44"
+    minimum_android: "48x48"
+    recommended: "48x48"
+    button_height: "44"
+    input_height: "44"
+    bar_height: "48"
+    icon_size: "24"
+
+  safe_area:
+    top: "遵循平台状态栏高度"
+    bottom: "遵循平台导航栏 / Home Indicator 高度"
+    rule: "使用 SafeArea Widget 自动处理"
+
+# ============================================================
+# 动效规范
+# 从「掌上数据分析」项目提炼，适配 Flutter API
+# ============================================================
+animation:
+  # 页面转场动画
+  page_transitions:
+    default:
+      type: "fade + slight slide"
+      duration: "200ms"
+      curve: "Curves.easeOut"
+      flutter_api: "FadeTransition + SlideTransition"
+    slide_from_right:
+      description: "从右侧滑入，用于前进导航"
+      offset: "Offset(1.0, 0.0) → Offset.zero"
+      duration: "250ms"
+      curve: "Curves.easeOutCubic"
+    slide_from_bottom:
+      description: "从底部滑入，用于模态页面"
+      offset: "Offset(0.0, 1.0) → Offset.zero"
+      duration: "300ms"
+      curve: "Curves.easeOutCubic"
+    scale_up:
+      description: "缩放进入，用于详情展开"
+      begin_scale: "0.9"
+      end_scale: "1.0"
+      duration: "200ms"
+      curve: "Curves.easeOut"
+    fade:
+      description: "纯淡入淡出，用于标签切换"
+      duration: "150ms"
+      curve: "Curves.linear"
+
+  # 列表交错入场动画
+  staggered_animation:
+    enabled: true
+    delay_per_item: "30ms"
+    duration_per_item: "300ms"
+    curve: "Curves.easeOutCubic"
+    flutter_api: "AnimatedList + Interval / StaggeredAnimation"
+    usage: "卡片网格、列表数据加载后逐项入场"
+
+  # 弹簧物理动画
+  spring_physics:
+    description: "用于底部弹窗、抽屉、模态等需要弹性的场景"
+    damping: "25"
+    stiffness: "200-300"
+    flutter_api: "SpringSimulation / Curves.elasticOut"
+    usage_rules:
+      - "底部弹窗（BottomSheet）使用弹簧动画"
+      - "抽屉（Drawer）使用弹簧动画"
+      - "避免在文字变化、颜色变化等非位移动画中使用弹簧"
+
+  # 进度条动画
+  progress_animation:
+    duration: "1200ms"
+    curve: "Curves.easeOut"
+    flutter_api: "AnimatedContainer / TweenAnimationBuilder"
+    usage: "进度条从 0 到目标值的动画填充"
+
+  # 交互动效反馈
+  feedback:
+    tap_scale:
+      description: "按压缩放反馈"
+      scale_down: "0.95"
+      scale_up: "1.0"
+      duration: "100ms"
+      flutter_api: "ScaleTransition + GestureDetector"
+      usage: "卡片、按钮等可点击元素的按压反馈"
+    pulse_indicator:
+      description: "脉冲指示器，表示实时/在线状态"
+      color: "success.light"
+      flutter_api: "AnimatedContainer + AnimatedOpacity loop"
+      usage: "实时数据状态、在线指示"
+    ink_splash:
+      description: "Material 水波纹点击效果"
+      flutter_api: "InkWell / InkResponse"
+      usage: "所有可点击元素默认使用 InkWell"
+
+  # 毛玻璃效果
+  glass_morphism:
+    description: "半透明模糊背景效果，用于导航栏、浮层"
+    blur_radius: "10-20"
+    background_opacity: "0.7-0.9"
+    border_opacity: "0.1"
+    flutter_api: "BackdropFilter + ImageFilter.blur"
+    usage_rules:
+      - "顶部导航栏：BackdropFilter blur=10, bg white/0.8"
+      - "底部操作栏：BackdropFilter blur=15, bg white/0.85"
+      - "深色背景浮层：BackdropFilter blur=20, bg black/0.3"
+      - "避免在列表滚动区域过度使用，影响性能"
+
+# ============================================================
+# 图表样式规范
+# 适用于 fl_chart 或其他 Flutter 图表库
+# ============================================================
+chart_styles:
+  color_palette:
+    - "#1A90FF" # 主蓝
+    - "#10B981" # 主绿
+    - "#F59E0B" # 主橙
+    - "#EF4444" # 主红
+    - "#8B5CF6" # 紫
+    - "#EC4899" # 粉
+    - "#06B6D4" # 青
+    - "#F97316" # 橙红
+
+  area_gradient:
+    description: "面积图渐变填充"
+    opacity_top: "0.4"
+    opacity_bottom: "0.0"
+    flutter_api: "LinearGradient begin=Alignment.topCenter, end=Alignment.bottomCenter"
+
+  line_style:
+    stroke_width: "2-3"
+    dot_radius: "3"
+    dot_style: "白底 + 彩色描边"
+    curve: "Curves.linear（折线）/ Curves.easeOut（曲线）"
+
+  bar_style:
+    border_radius: "BorderRadius.vertical(top: Radius.circular(4))"
+    bar_width: "18-25"
+    spacing: "8"
+
+  pie_style:
+    type: "donut（环形图）"
+    inner_radius_ratio: "0.5-0.6"
+    padding_angle: "2-6 度"
+    section_border: "白色描边, strokeWidth=2"
+
+  grid_style:
+    show_horizontal: true
+    show_vertical: false
+    dash_pattern: "[3, 3]"
+    color: "gray-200"
+
+  axis_style:
+    show_axis_line: false
+    show_ticks: false
+    label_font_size: "10-12"
+    label_font_weight: "bold"
+    label_color: "gray-400"
+
+  tooltip_style:
+    background: "white"
+    border_radius: "12"
+    border: "none"
+    shadow: "0 10px 25px -5px rgba(0,0,0,0.1)"
+    text_style: "text-sm, gray-700"
+
+  usage_rules:
+    - "图表颜色统一引用 chart_styles.color_palette，不在 option 中硬编码颜色"
+    - "图表容器必须设置明确的高度"
+    - "图表组件必须处理 loading 和 empty 状态"
+    - "tooltip、legend、axis 样式统一来自本配置，不单独覆盖"
+
+# ============================================================
+# 移动端模式
+# ============================================================
+mobile_patterns:
+  navigation:
+    router: "GoRouter（声明式路由）"
+    tab_bar: "底部标签栏最多 5 个标签"
+    modal: "使用模态页面用于创建、编辑、确认等独立流程"
+    back: "系统返回按钮由平台自动管理，无需自定义"
+    deep_link: "GoRouter 统一配置深度链接"
+  list:
+    component: "ListView.builder / GridView.builder"
+    pull_to_refresh: "RefreshIndicator"
+    load_more: "长列表支持增量加载或分页"
+    swipe_action: "Dismissible 实现滑动操作"
+    empty_state: "空列表必须显示引导性空状态"
+  form:
+    label_position: "标签在输入框上方"
+    validation: "实时校验 + 提交校验双阶段"
+    error_display: "输入框下方红色错误文案"
+    submit_button: "固定在底部或键盘上方"
+    keyboard_type: "根据输入内容设置合适的 TextInputType"
+  feedback:
+    loading: "CircularProgressIndicator 或骨架屏"
+    snackbar: "ScaffoldMessenger.of(context).showSnackBar"
+    dialog: "showDialog / showAdaptiveDialog"
+    bottom_sheet: "showModalBottomSheet"
+    empty: "说明当前为空的原因，并给出引导动作"
+    error: "错误信息可读、可恢复，提供重试或返回路径"
+  gesture:
+    tap: "主要交互方式（InkWell）"
+    swipe: "列表项操作、页面切换"
+    pinch: "图片缩放（按需）"
+    long_press: "上下文菜单、快捷操作（按需）"
+
+# ============================================================
+# 页面状态规范
+# ============================================================
+page_states:
+  required:
+    - "loading"
+    - "empty"
+    - "error"
+    - "no-permission"
+  guidance:
+    loading:
+      implementation: "使用 CircularProgressIndicator 或骨架屏，避免页面空白"
+    empty:
+      implementation: "说明当前为空的原因，并提供引导操作按钮"
+    error:
+      implementation: "错误信息可读、可恢复，提供重试或返回按钮"
+    no_permission:
+      implementation: "明确提示权限不足，不暴露内部实现细节"
+
+# ============================================================
+# 组件使用规则
+# ============================================================
+component_rules:
+  reuse_first: true
+  file_placement:
+    pages: "lib/features/<module>/（每目录对应一个屏幕）"
+    widgets: "lib/widgets/（跨模块复用）"
+    providers: "lib/providers/"
+    database: "lib/data/database/（drift 表定义与生成实体类）"
+    models: "lib/data/models/（视图 / 展示 DTO）"
+    services: "lib/data/services/"
+    repositories: "lib/data/repositories/"
+    theme: "lib/core/theme/"
+    constants: "lib/core/constants/"
+    router: "lib/router/"
+  naming:
+    pages: "PascalCase，以 Page / Screen 结尾"
+    widgets: "PascalCase，以 Widget 结尾（可复用组件）"
+    providers: "snake_case 文件名，PascalCase 类名"
+    models: "视图 DTO 按业务域 PascalCase 命名；实体类以 drift 生成结果为准"
+    services: "PascalCase，以 Service 结尾"
+    repositories: "PascalCase，以 Repository 结尾"
+  rules:
+    - "优先复用项目已有 Widget、转换器和样式"
+    - "共享 Widget 必须具备明确复用价值"
+    - "避免为单页面需求抽出无边界的大而全 Widget"
+    - "优先使用 Material 3 内置组件，不满足需求时再自定义"
+
+# ============================================================
+# 表单规范
+# ============================================================
+form_rules:
+  layout:
+    label_position: "标签在输入框上方"
+    field_gap: "12"
+    section_gap: "24"
+    submit_position: "页面底部或键盘上方固定"
+  validation:
+    strategy: "实时 + 提交双阶段校验"
+    error_style: "输入框下方文字提示 + 边框颜色变化"
+  submit_behavior:
+    loading: "提交按钮 disabled + CircularProgressIndicator"
+    success: "反馈成功并刷新受影响数据"
+    failure: "保留用户输入并提示可恢复原因"
+    keyboard_dismiss: "提交前收起键盘（FocusScope.unfocus）"
+
+# ============================================================
+# 响应式设计规范
+# ============================================================
+responsive:
+  principle: "移动端优先，竖屏为主"
+  common_patterns:
+    phone_portrait: "单列布局，全宽组件"
+    phone_landscape: "双列或横向滚动布局"
+    tablet: "多列布局，利用宽屏空间"
+  rules:
+    - "关键操作必须可单手完成"
+    - "触摸目标不小于 44x44"
+    - "文字不小于 12sp"
+    - "使用 LayoutBuilder / MediaQuery 适配不同尺寸"
+
+# ============================================================
+# Do / Don't 规则
+# ============================================================
+do:
+  - "优先使用 Material 3 内置组件，不满足需求时再自定义 Widget"
+  - "优先复用 token、样式、资源和现有 Widget"
+  - "保持页面状态完整：loading / empty / error / no-permission"
+  - "使用语义化颜色（ColorScheme），而不是视觉硬编码"
+  - "确保触摸目标满足最小尺寸要求"
+  - "列表页面支持下拉刷新"
+  - "颜色必须使用 ColorScheme 语义化 token，以保证主题切换时自动适配"
+  - "动效使用 animation 区域定义的参数，保持一致性"
+
+dont:
+  - "不要在 Widget 中直接硬编码颜色、间距、圆角（如 Color(0xFF1677FF)）"
+  - "不要在 Widget 树中编写业务逻辑"
+  - "不要使用静态全局类存储业务状态（使用 Riverpod）"
+  - "不要交付没有 loading / empty / error 状态的页面"
+  - "不要为了单次需求额外引入新的样式体系或组件库"
+  - "不要在图表 option 中硬编码颜色，必须引用 chart_styles"
+  - "不要使用过度动效（弹跳、旋转等装饰性动画）"
+  - "不要在列表滚动区域使用 BackdropFilter（影响性能）"

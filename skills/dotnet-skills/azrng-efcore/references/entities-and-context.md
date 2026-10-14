@@ -112,5 +112,7 @@ public class UserEtc : EntityTypeConfigurationIdentityOperatorStatus<User, long>
 ## 6. ID 生成
 
 - 继承带主键基类时，构造函数自动 `Id = IdHelper.GetLongId()`（雪花 ID，来自 IdHelper 包）。
-- `WorkId`（注入时 `config.WorkId` 或 InMemory 的 `workId` 参）是雪花机器号，分布式部署每节点设不同值（默认随机 1-1023）。
+- 非内存 provider 的 `WorkId`（注入时 `config.WorkId`）是雪花机器号，默认由包按随机 1-1023 策略生成；分布式部署只有在已有节点号分配方案时才显式设置。InMemory 的 `workId` API 默认值仍由 provider 签名决定，测试示例不要无理由覆盖它。
+- 非内存 provider 的 `AddEntityFramework<TDbContext>` 会根据 `config.WorkId` 内部调用 IdHelper 启动器；普通 Web 项目不需要再单独调用 `AddIdHelper`。独立 Console 或工具程序没有 EF 注册时，再显式调用 `services.AddIdHelper(workId)`。
+- 业务代码手工调用 `IdHelper.GetLongId()` 时使用 `Coldairarrow.Util` 命名空间；不要把 `IdHelper` 误认为 `Azrng.EFCore` 自己提供的类型。
 - 自增主键：不继承基类、用 `[DatabaseGenerated(DatabaseGeneratedOption.Identity)]` + 自增列。

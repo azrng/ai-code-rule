@@ -1,6 +1,6 @@
 ---
 name: wechat-ui-sender
-description: Send desktop WeChat messages via screenshot-driven UI automation. Focus the WeChat window, search a contact or group, paste message from a markdown file, and optionally capture an audit screenshot. Supports automatic launch from tray and retry logic. Use when official APIs are unavailable. NOTE: Only supports markdown files - raw text messages are not supported.
+description: "Send desktop WeChat messages via screenshot-driven UI automation. Focus the WeChat window, search a contact or group, paste message from a markdown file, and optionally capture an audit screenshot. Supports automatic launch from tray and retry logic. Use when official APIs are unavailable. NOTE: Only supports markdown files - raw text messages are not supported."
 compatibility: Windows desktop with WeChat PC client, Python 3.9+, and pyautogui + pyperclip + pygetwindow + pillow.
 ---
 

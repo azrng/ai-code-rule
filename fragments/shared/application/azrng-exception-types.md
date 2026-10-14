@@ -1,0 +1,6 @@
+- 业务异常继承 `BaseException` 或其子类：
+  - `LogicBusinessException`：业务逻辑异常
+  - `ParameterException`：参数校验异常
+  - `NotFoundException`：资源不存在
+  - `ForbiddenException`：禁止访问
+  - `InternalServerException`：服务器内部错误

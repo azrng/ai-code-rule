@@ -46,7 +46,9 @@ var q = _repo.Entities.Where(x => x.IsValid).OrderByDescending(x => x.CreateTime
 | `DeleteAsync(entities, submit=false)` | 批量删除 |
 | `DeleteAsync(predicate)` | 按条件删除（查后删，自动保存） |
 
-> `submit` 默认 false：不立即保存，用于工作单元内多操作后统一提交。独立操作记得传 `submit: true`。
+> `submit` 默认 false：该仓储调用不立即执行 `SaveChanges`。工作单元内多步写入需显式调用 `_unitOfWork.SaveChangesAsync()`；独立操作可传 `submit: true` 立即保存。
+
+> **`DeleteAsync` 系列全部是物理删除**（`Remove` + SaveChanges），不是软删除。软删除场景（实体继承 `IdentityOperatorStatusEntity`）：① 实体无关联时 `SetDeleted("operator")` + `UpdateAsync(entity, submit: true)`；② Blazor 电路等长寿命 DbContext 下同一实体先建后删会触发 1:1 关系 fixup 异常，改用条件批量更新 `UpdateAsync(predicate, x => x.SetProperty(u => u.Deleted, true)...)`；③ 有外键子表的实体直接物理删除会因外键约束 500，先处理子表或改级联软删。
 
 ```csharp
 await _repo.AddAsync(user, submit: true);              // 立即落库
@@ -90,6 +92,7 @@ await _unitOfWork.CommitTransactionAsync(async () =>
 {
     await _orderRep.AddAsync(order);
     await _itemRep.AddAsync(item);
+    await _unitOfWork.SaveChangesAsync();
 });   // 异常自动回滚并抛出
 ```
 
@@ -100,6 +103,7 @@ try
 {
     await _orderRep.AddAsync(order);
     await _itemRep.AddAsync(item);
+    await _unitOfWork.SaveChangesAsync();
     await scope.CommitAsync();
 }
 catch { await scope.RollbackAsync(); throw; }
@@ -116,7 +120,17 @@ try {
 } catch { await tran.RollbackAsync(); throw; }
 ```
 
-> 方式 1/2 内部不自动 SaveChanges，业务侧要 `AddAsync(..., submit:false)` 后调 `_unitOfWork.SaveChangesAsync()`，或各 Add 传 `submit:true`。
+> 方式 1/2 的事务提交不会自动调用 `SaveChanges`。无论仓储写操作使用默认 `submit:false` 还是显式 `submit:false`，都必须在事务提交前调用 `_unitOfWork.SaveChangesAsync()`；也可在写操作传 `submit:true`，使变更在事务内立即保存。仅调用事务的 `CommitAsync()` 会提交数据库事务，不会落库未保存的变更。
+
+### InMemory provider 不支持事务（测试环境必读）
+
+`BeginTransactionScopeAsync` / `CommitTransactionAsync` / `GetDatabase().BeginTransactionAsync()` 三种方式内部都走 `RelationalDatabaseFacadeExtensions`（关系型 facade）。测试项目用 `Common.EFCore.InMemory` 跑集成测试时，任何一种事务入口都会直接抛 `InvalidOperationException`（非关系型 provider 不支持事务），且 `ConfigureWarnings(x => x.Ignore(TransactionIgnoredWarning))` **只压告警、不解决 facade 抛错**（该告警配置针对的是 SaveChanges 时的事务忽略提示，不是 BeginTransaction 本身）。
+
+应对（按优先级）：
+
+1. **测试替身降级**：用 `DispatchProxy` 把 `ITransactionScope` 相关调用降级为无操作，业务代码保持真实事务写法。要点：拦截 `IUnitOfWork.BeginTransactionScopeAsync` 返回无操作 scope（`CommitAsync`/`RollbackAsync`/`DisposeAsync` 全部空转），业务层无需感知测试环境；
+2. **换真实库**：Testcontainers / 本地 PostgreSQL 验证真实事务语义（含回滚隔离性），事务行为本身就是被测内容时必选；
+3. 若测试必须保留 InMemory 且要验证多表写入顺序，只能把用例拆成单表断言（放弃跨表原子性验证）。
 
 ## 5. 原生 SQL（IUnitOfWork）
 

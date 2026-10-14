@@ -35,7 +35,7 @@ Npgsql **默认把 `DateTime` 映射为 `timestamptz`（带时区）**。带时�
 
 1. 看异常信息是否含 `timestamp with time zone` + `Kind=Unspecified` → 命中。
 2. 确认哪一层漏配：
-   - 实体继承 `IdentityOperatorEntity`/`StatusEntity` 并用了对应配置基类 → 模型层已自动配（审计字段）。
+   - 实体继承 `IdentityOperatorEntity`/`StatusEntity` 并用了对应配置基类 → 审计字段的自动配置**有路径条件**（见场景 1），先确认模型是经 `AddEntityFramework` 注册构建的。
    - 实体自声明时间字段（如 `ShowTime`）→ 检查是否 `.IsUnTimeZoneDateTime()`。
    - 实体用空 `IEntity` + 手写 `CreatedAt` → 模型层**未**配，需在 `OnModelCreating` 批量配或每属性配。
 3. 查实际列类型：`SELECT column_name, data_type FROM information_schema.columns WHERE table_name='x';` 看是否 `timestamp without time zone`。
@@ -53,15 +53,21 @@ public override void Configure(EntityTypeBuilder<Scene> builder)
 ```
 赋值：`ShowTime = request.ShowTime.ToUnspecifiedDateTime();`
 
-### 场景 2：实体继承空 IEntity + 手写字段（如 CreatedAt）
-模型层无人配，需在 DbContext 批量声明。在自定义 DbContext 重写 `OnModelCreating`：
+> **⚠️ 自动配置有路径条件（Common.EFCore 1.7.x 实测）**：基类的审计字段配置是 `IsUnTimeZoneDateTime(EfCoreGlobalConfig.DbType == PostgresSql)`——`DbType` 是全局静态，**只在 provider 包 `AddEntityFramework<T>` 注册时写入**（默认 0 = MySql）。以下两条路径上基类是 no-op，审计字段仍是 `timestamptz`：
+> - 临时 Console / 设计期工具手工 `UseNpgsql` 构建 DbContext 输出 DDL（`GenerateCreateScript` 全部输出 timestamptz）；
+> - 未走包注册直接构建模型的任何场景。
+>
+> 应用内正常运行不受影响；设计期核对 DDL 时必须复刻注册管道（复用 `AddEntityFramework` 后从容器解析，或手工补 `EfCoreGlobalConfig.SetConfig(DatabaseType.PostgresSql, ...)` + `UseSnakeCaseNamingConvention`，见 SKILL.md「迁移脚本与 EF 模型核对」）。**若希望设计期与运行期无条件一致，直接采用场景 2 的 DbContext 全局批量声明**——它不依赖 `DbType`，任何构建路径都生效。
+
+### 场景 2：实体继承空 IEntity + 手写字段（如 CreatedAt）；或需要无条件统一时间列
+模型层无人配，需在 DbContext 批量声明。在自定义 DbContext 重写 `OnModelCreating`（新项目推荐直接采用本场景做全局保底，不依赖包内部 `DbType` 状态）：
 ```csharp
 protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
     base.OnModelCreating(modelBuilder);
     const string t = "timestamp without time zone";
     foreach (var et in modelBuilder.Model.GetEntityTypes())
-        foreach (var p in et.GetProperties().Where(p => p.ClrType == typeof(DateTime)))
+        foreach (var p in et.GetProperties().Where(p => p.ClrType == typeof(DateTime) || p.ClrType == typeof(DateTime?)))   // 可空列必须同时匹配，漏掉 DateTime? 会留在 timestamptz
             p.SetColumnType(t);   // 等价 IsUnTimeZoneDateTime（该扩展只接受 PropertyBuilder<T>）
 }
 ```

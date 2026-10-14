@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>use-ai-rule</AssemblyName>
+    <RootNamespace>RuleAssembler</RootNamespace>
+  </PropertyGroup>
+
+  <!-- 把整个 fragments/ 作为嵌入式资源打包，逻辑名以 Fragments. 前缀 + 相对路径 -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\fragments\**\*">
+      <LogicalName>Fragments.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- 把整个 skills/ 作为嵌入式资源打包，逻辑名以 Skills. 前缀 + 相对路径；
+       README.md 是仓库文档不随包发布，技能身份由 SkillsStore 按「含 SKILL.md 的最外层目录」判定 -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\skills\**\*" Exclude="..\..\skills\README.md">
+      <LogicalName>Skills.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.52.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RuleAssembler.Tests" />
+  </ItemGroup>
+
+</Project>
