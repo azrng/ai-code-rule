@@ -1,4 +1,4 @@
-﻿﻿# 构建并发布 use-ai-rule 生成器。
+﻿# 构建并发布 use-ai-rule 生成器。
 # 默认三平台 self-contained 单文件矩阵（目标机无需安装 .NET 运行时）：
 #   dist/use-ai-rule.exe              —— win-x64
 #   dist/use-ai-rule-linux-x64        —— linux-x64
@@ -16,10 +16,6 @@ param(
     [string]$Rids = "win-x64,linux-x64,osx-x64",
     [switch]$FrameworkDependent,
     [switch]$SkipPack
-)
-param(
-    [string]$Rids = "win-x64,linux-x64,osx-x64",
-    [switch]$FrameworkDependent
 )
 
 $ErrorActionPreference = 'Stop'
