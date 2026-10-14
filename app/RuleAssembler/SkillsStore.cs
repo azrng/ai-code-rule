@@ -1,39 +1,37 @@
-using System.Reflection;
-
 namespace RuleAssembler;
 
-// 技能信息：ID 取含 SKILL.md 的最外层目录名；ResourceRoot 是该技能在嵌入资源中的相对根
+// 技能信息：ID 取含 SKILL.md 的最外层目录名；ResourceRoot 是该技能在资源来源中的相对根
 // （如 dotnet-skills/aspnet-core，分组目录只是维护侧归档，不参与技能身份）
 internal sealed record SkillInfo(string Id, string ResourceRoot, string Description, int FileCount);
 
 // 技能文件：字节级内容，保证脚本、schema 等非 UTF8 文本原样释放
 internal sealed record SkillFile(string RelativePath, byte[] Content);
 
-// 嵌入式技能仓库：skills/ 以 Skills.* 逻辑名打进程序集（见 csproj），
+// 技能仓库：技能内容可来自程序集内嵌（Skills.* 逻辑名）或内容包目录，由 IResourceProvider 屏蔽差异；
 // 按「含 SKILL.md 的最外层目录」发现技能；嵌套在其它技能根内的 SKILL.md 属于外层技能，随外层整体拷贝
 internal sealed class SkillsStore
 {
-    private const string Prefix = "Skills.";
+    private const string Prefix = "skills/";
 
-    private readonly Assembly _assembly = Assembly.GetExecutingAssembly();
+    private readonly IResourceProvider _provider;
 
-    // 归一化名（反斜杠统一为斜杠，抹平 Windows / Linux 构建机的 RecursiveDir 分隔符差异）→ 程序集原始资源名
-    private readonly Dictionary<string, string> _normalizedNames;
+    // 归一化相对路径（skills/ 前缀 + 相对技能文件路径）缓存，构造时一次枚举
+    private readonly IReadOnlyList<string> _relativeNames;
 
-    public SkillsStore()
+    // 缺省走程序集内嵌（兼容既有调用与单测）；内容包模式下由 Program 注入 FolderResourceProvider
+    public SkillsStore(IResourceProvider? provider = null)
     {
-        _normalizedNames = _assembly.GetManifestResourceNames()
+        _provider = provider ?? new EmbeddedResourceProvider();
+        _relativeNames = _provider.Names
+            .Select(name => EmbeddedResourceProvider.Normalize(name))
             .Where(name => name.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(
-                name => name.Replace('\\', '/'),
-                name => name,
-                StringComparer.OrdinalIgnoreCase);
+            .Select(name => name[Prefix.Length..])
+            .ToList();
     }
 
     public IReadOnlyList<SkillInfo> Discover()
     {
-        var relatives = _normalizedNames.Keys.Select(name => name[Prefix.Length..]).ToList();
-        var manifestTargets = relatives
+        var manifestTargets = _relativeNames
             .Where(relative => relative.EndsWith("/SKILL.md", StringComparison.OrdinalIgnoreCase))
             .OrderBy(relative => relative.Count(ch => ch == '/'))
             .ThenBy(relative => relative, StringComparer.OrdinalIgnoreCase)
@@ -49,8 +47,8 @@ internal sealed class SkillsStore
                 continue;
 
             claimedRoots.Add(root);
-            var fileCount = relatives.Count(relative => relative.StartsWith(root + "/", StringComparison.Ordinal));
-            var content = ReadText(Prefix + root + "/SKILL.md");
+            var fileCount = _relativeNames.Count(relative => relative.StartsWith(root + "/", StringComparison.Ordinal));
+            var content = ReadText(root + "/SKILL.md");
             skills.Add(new SkillInfo(
                 root[(root.LastIndexOf('/') + 1)..],
                 root,
@@ -61,6 +59,7 @@ internal sealed class SkillsStore
         return skills.OrderBy(skill => skill.Id, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
+
     public SkillInfo? Find(string skillId)
     {
         return Discover().FirstOrDefault(skill => skill.Id.Equals(skillId, StringComparison.OrdinalIgnoreCase));
@@ -68,8 +67,8 @@ internal sealed class SkillsStore
 
     public IReadOnlyList<SkillFile> ReadFiles(SkillInfo skill)
     {
-        var prefix = Prefix + skill.ResourceRoot + "/";
-        return _normalizedNames.Keys
+        var prefix = skill.ResourceRoot + "/";
+        return _relativeNames
             .Where(name => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             .Select(name => new SkillFile(name[prefix.Length..], ReadBytes(name)))
             .OrderBy(file => file.RelativePath, StringComparer.Ordinal)
@@ -115,24 +114,21 @@ internal sealed class SkillsStore
         return "";
     }
 
-    private byte[] ReadBytes(string normalizedResourceName)
+    private byte[] ReadBytes(string relativePath)
     {
-        using var stream = _assembly.GetManifestResourceStream(_normalizedNames[normalizedResourceName]);
-        if (stream is null)
-            throw new InvalidOperationException($"嵌入资源缺失：{normalizedResourceName}");
-
-        using var memory = new MemoryStream();
-        stream.CopyTo(memory);
-        return memory.ToArray();
+        var bytes = _provider.ReadBytes(Prefix + relativePath);
+        if (bytes is null)
+            throw new InvalidOperationException($"技能资源缺失：skills/{relativePath}");
+        return bytes;
     }
 
-    private string ReadText(string normalizedResourceName)
+    private string ReadText(string relativePath)
     {
-        using var stream = _assembly.GetManifestResourceStream(_normalizedNames[normalizedResourceName]);
-        if (stream is null)
-            throw new InvalidOperationException($"嵌入资源缺失：{normalizedResourceName}");
+        var bytes = _provider.ReadBytes(Prefix + relativePath);
+        if (bytes is null)
+            throw new InvalidOperationException($"技能资源缺失：skills/{relativePath}");
 
-        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        using var reader = new StreamReader(new MemoryStream(bytes), System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         return ResourceStore.NormalizeLineEndings(reader.ReadToEnd());
     }
 }

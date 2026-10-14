@@ -18,7 +18,9 @@
 
 目标项目会把规则命中 / 违反情况记录到其根目录 `.ai-rule-feedback.md`（条目约定见生成规则 `collaboration-AGENTS.md` 的「规则效果反馈」小节；该文件是待处理清单，本地产物，已由生成器加入目标项目 `.gitignore` 不随项目提交，回传时直接粘贴文件内容）。承接口径统一维护在 `doc/规则效果反馈承接.md`：收集登记 → 按其「变更归属」表归属 → 改 `fragments/` → 验证升版 → 回传处理结果，由目标项目删除已处理条目。处理反馈时遵循该文件，不临时另立口径。
 
-其中技能（skills）类条目不走 fragments 承接：直接修改 `skills/` 对应技能目录并核对内容（对照上游官方源或实战项目），无需 emit 基线刷新与 `vars.version` 升版；修正后由目标项目重新导入或 `--upgrade` 重放同步（同名技能先删后写），回执口径与规则条目一致。
+其中技能（skills）类条目直接修改 `skills/` 对应技能目录并核对内容（对照上游官方源或实战项目），无需 emit 基线刷新；但由于内容包随发布统一携带版本号，技能变更后发内容包时同样递增 `vars.version`（emit 基线仍只在 fragments 变更时刷新），修正后由目标项目重新导入或 `--upgrade` 重放同步（同名技能先删后写），回执口径与规则条目一致。
+
+发布形态为「exe 引擎 + merged 内容包」分离：`publish.ps1` / `publish.sh` 除三平台 exe 外打包 `dist/ai-rule-pack.zip`（fragments + skills，pack.json 记录版本与逐文件 SHA-256）与 `dist/latest.json`（版本 + zip SHA-256）；改 fragments / skills 后重打内容包发 Release 即可，仅生成器代码（`app/RuleAssembler/`）变更才需要重发 exe。exe 启动时经 PackResolver 决定内容来源：`--pack` 指定包 → `--offline` 本地缓存 → 交互模式更新检查（latest.json，失败降级）→ 程序集内嵌资源兜底，单 exe 无网络永远可用。
 
 其中「冗余」反馈的判定、证据门槛与候选规则维护在 `doc/规则退役清单.md`，不得凭单次体验删除规则。
 

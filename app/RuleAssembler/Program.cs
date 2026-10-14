@@ -14,16 +14,29 @@ internal static class Program
             // 编码设置纳入兜底：个别宿主没有标准输入句柄时 setter 会抛，裸崩不如走友好错误处理
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
+            // 内容包解析在一切之前：确定规则与技能内容的来源（--pack / 缓存 / 内嵌兜底），
+            // 命令行模式（带业务参数）不做网络检查，交互模式允许询问更新
+            var isInteractiveStart = args.Length == 0;
+            var packArgs = args;
+            var resolution = PackResolver.Resolve(
+                packArgs,
+                interactive: isInteractiveStart,
+                confirmUpgrade: isInteractiveStart
+                    ? version => AnsiConsole.Confirm($"发现新版本 {version}，是否更新内容包？", defaultValue: true)
+                    : null);
+            foreach (var line in resolution.Logs)
+                Console.WriteLine(line);
 
-            var resources = new ResourceStore();
+            var resources = new ResourceStore(resolution.Provider);
             var manifest = new ManifestLoader(resources).Load();
 
             // 版本以 manifest.vars 为唯一事实来源，随规则内容一起演进，避免 exe 与规则版本漂移
             Console.WriteLine($"use-ai-rule {manifest.Vars.Version}（{manifest.Vars.LastUpdated}）");
 
-            var skills = new SkillsStore();
-            if (args.Length > 0)
-                return RunCommand(args, manifest, resources, skills);
+            var skills = new SkillsStore(resolution.Provider);
+            var hasBusinessArgs = StripPackArgs(ref packArgs);
+            if (hasBusinessArgs)
+                return RunCommand(packArgs, manifest, resources, skills);
 
             return RunInteractive(manifest, resources, skills);
         }
@@ -41,6 +54,30 @@ internal static class Program
 
             return 1;
         }
+    }
+
+    // 剥离内容包开关（--pack <路径> / --offline），返回剩余业务参数；
+    // 业务命令不接受这两个开关，避免拼错被静默吞掉
+    private static bool StripPackArgs(ref string[] args)
+    {
+        if (args.Length == 0)
+            return false;
+
+        var remaining = new List<string>();
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i].Equals("--offline", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (args[i].Equals("--pack", StringComparison.OrdinalIgnoreCase))
+            {
+                i++; // 跳过路径参数
+                continue;
+            }
+            remaining.Add(args[i]);
+        }
+
+        args = remaining.ToArray();
+        return args.Length > 0;
     }
 
     // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染；
@@ -510,6 +547,8 @@ internal static class Program
             Console.WriteLine("--recipe <配方.json> [目标目录]：按配方记录重放生成（缺省写入当前目录），写入配方与 .gitignore。");
             Console.WriteLine("--upgrade [目录] [--force]：按目标目录的配方记录升级规则；识别本地修改默认保留，--force 全部覆盖。");
             Console.WriteLine("--emit <目录>：把全部兼容样例的组合路径生成结果输出到指定目录，用于批量预览与产物回归。");
+            Console.WriteLine("--pack <内容包.zip|目录>：使用指定内容包（zip 或已解包目录），校验失败直接报错退出。");
+            Console.WriteLine("--offline：跳过网络更新检查，使用本地缓存或内嵌资源。");
             Console.WriteLine("--help：显示帮助。");
             return 0;
         }
