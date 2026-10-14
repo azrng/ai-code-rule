@@ -189,7 +189,7 @@ public sealed class PackTests : IDisposable
             ["fragments/manifest.json"] = Sha256Of(root, "fragments/manifest.json")
         });
 
-        var resolution = PackResolver.Resolve(new[] { "--pack", root }, interactive: false);
+        var resolution = PackResolver.Resolve(new[] { "--pack", root });
 
         Assert.Equal("9.9.9", resolution.Version);
         Assert.Equal("pack", resolution.Source);
@@ -201,13 +201,13 @@ public sealed class PackTests : IDisposable
     public void Resolve_PackWithMissingPath_Throws()
     {
         Assert.ThrowsAny<Exception>(() =>
-            PackResolver.Resolve(new[] { "--pack", Path.Combine(_tempDir, "nope.zip") }, interactive: false));
+            PackResolver.Resolve(new[] { "--pack", Path.Combine(_tempDir, "nope.zip") }));
     }
 
     [Fact]
     public void Resolve_OfflineWithoutCache_FallsBackToEmbedded()
     {
-        var resolution = PackResolver.Resolve(new[] { "--offline" }, interactive: false);
+        var resolution = PackResolver.Resolve(new[] { "--offline" });
 
         Assert.Null(resolution.Version);
         Assert.Equal("embedded", resolution.Source);
@@ -218,7 +218,7 @@ public sealed class PackTests : IDisposable
     public void Resolve_BareCommandLineArgs_WithoutCache_FallsBackToEmbedded()
     {
         // 命令行启动不做网络检查：无缓存直接内嵌
-        var resolution = PackResolver.Resolve(new[] { "--help" }, interactive: false);
+        var resolution = PackResolver.Resolve(new[] { "--help" });
 
         Assert.Equal("embedded", resolution.Source);
     }

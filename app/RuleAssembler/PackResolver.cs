@@ -28,12 +28,15 @@ internal static class PackResolver
 
     private sealed record LatestInfo(
         [property: JsonPropertyName("version")] string Version,
+        [property: JsonPropertyName("engine_version")] string? EngineVersion,
         [property: JsonPropertyName("sha256")] string Sha256);
 
     private sealed record Pointer([property: JsonPropertyName("version")] string Version);
 
-    // args 为去掉已知开关后的原始参数；interactive 表示当前启动可询问（无参数交互模式）
-    public static PackResolution Resolve(string[] args, bool interactive, Func<string, bool>? confirmUpgrade = null)
+    // args 为去掉已知开关后的原始参数；interactive 表示当前启动可询问（无参数交互模式）。
+    // 更新检查是惰性的：Resolve 只决定「本次用哪个来源」，绝不产生网络副作用；
+    // 真正的更新检查由 Program 在用户选择了会用到内容包的操作后调用 CheckForUpdates
+    public static PackResolution Resolve(string[] args)
     {
         var packArg = ReadOption(args, "--pack");
         var offline = args.Contains("--offline", StringComparer.OrdinalIgnoreCase);
@@ -46,72 +49,131 @@ internal static class PackResolver
             return new PackResolution(new FolderResourceProvider(root), manifest.Version, "pack", logs);
         }
 
-        // 2) 离线模式：缓存命中用缓存，否则内嵌，绝不联网
-        if (offline)
+        // 2) 离线模式 / 命令行模式：缓存命中用缓存，否则内嵌，绝不联网
+        var cached = FindCachedRoot();
+        if (cached is not null)
         {
-            var cached = FindCachedRoot();
-            if (cached is not null)
-            {
-                var manifest = PackReader.Load(cached);
-                var logs = new List<string> { $"[pack] 离线模式：使用本地缓存 {manifest.Version}" };
-                return new PackResolution(new FolderResourceProvider(cached), manifest.Version, "cache", logs);
-            }
-
-            return new PackResolution(new EmbeddedResourceProvider(), null, "embedded",
-                new List<string> { "[pack] 无本地缓存，使用内嵌资源" });
+            var manifest = PackReader.Load(cached);
+            var source = offline ? "cache" : "cache";
+            var logs = offline
+                ? new List<string> { $"[pack] 离线模式：使用本地缓存 {manifest.Version}" }
+                : new List<string>();
+            return new PackResolution(new FolderResourceProvider(cached), manifest.Version, source, logs);
         }
 
-        // 3) 交互启动：检查更新（失败静默降级）；命令行启动：直接用现有来源，不产生网络副作用
-        var cachedRoot = FindCachedRoot();
-        if (interactive)
-            return ResolveInteractive(cachedRoot, confirmUpgrade);
-
-        if (cachedRoot is not null)
-        {
-            var manifest = PackReader.Load(cachedRoot);
-            return new PackResolution(new FolderResourceProvider(cachedRoot), manifest.Version, "cache", new List<string>());
-        }
-
-        return new PackResolution(new EmbeddedResourceProvider(), null, "embedded", new List<string>());
+        var offlineLog = offline
+            ? new List<string> { "[pack] 无本地缓存，使用内嵌资源" }
+            : new List<string>();
+        return new PackResolution(new EmbeddedResourceProvider(), null, "embedded", offlineLog);
     }
 
-    // 交互路径：拉 latest.json → 有新版且用户同意 → 下载安装；其余情况沿用缓存或内嵌
-    private static PackResolution ResolveInteractive(string? cachedRoot, Func<string, bool>? confirmUpgrade)
+    // 惰性更新检查：进入会使用内容包的交互路径（生成规则 / 导入 Skills）前调用。
+    // 拉一次 latest.json，有新版且用户同意则下载安装；任何失败静默降级不阻塞
+    public static void CheckForUpdates(string? currentVersion, Func<string, bool> confirmUpgrade)
     {
         var logs = new List<string>();
         var latest = TryFetchLatest(logs);
-        var cachedVersion = cachedRoot is null ? null : SafePackVersion(cachedRoot);
-
-        if (latest is not null && IsNewer(latest.Version, cachedVersion))
+        if (latest is null)
         {
-            var agreed = confirmUpgrade?.Invoke(latest.Version) ?? true;
-            if (agreed)
-            {
-                try
-                {
-                    var installed = DownloadAndInstall(latest);
-                    logs.Add($"[pack] 已更新到 {latest.Version}");
-                    return new PackResolution(new FolderResourceProvider(installed), latest.Version, "pack", logs);
-                }
-                catch (Exception ex)
-                {
-                    logs.Add($"[pack] 告警：更新失败（{ex.Message}），继续使用 {cachedVersion ?? "内嵌资源"}");
-                }
-            }
-            else
-            {
-                logs.Add($"[pack] 本次跳过更新 {latest.Version}");
-            }
+            foreach (var line in logs)
+                Console.WriteLine(line);
+            return;
         }
 
-        if (cachedRoot is not null)
+        if (!IsNewer(latest.Version, currentVersion))
+            return;
+
+        if (!confirmUpgrade(latest.Version))
         {
-            if (latest is not null && !IsNewer(latest.Version, cachedVersion))
-                logs.Add($"[pack] 已是最新：{cachedVersion}");
-            return new PackResolution(new FolderResourceProvider(cachedRoot), cachedVersion, "cache", logs);
+            Console.WriteLine($"[pack] 本次跳过更新 {latest.Version}");
+            return;
         }
 
-        return new PackResolution(new EmbeddedResourceProvider(), null, "embedded", logs);
+        try
+        {
+            DownloadAndInstall(latest);
+            Console.WriteLine($"[pack] 内容包已更新到 {latest.Version}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[pack] 告警：更新失败（{ex.Message}），继续使用 {currentVersion ?? "内嵌资源"}");
+        }
+    }
+
+    // 引擎版本检查：只拉 latest.json 返回远端引擎版本（无网络 / 字段缺失返回 null），不下载
+    public static string? TryFetchLatestEngineVersion()
+    {
+        var logs = new List<string>();
+        var latest = TryFetchLatest(logs);
+        return latest?.EngineVersion is { Length: > 0 } remote ? remote : null;
+    }
+
+    // 引擎版本比较：引擎用 2.x（run_number 单调递增），与内容包 IsNewer 的 x.y.z 语义兼容
+    public static bool IsEngineNewer(string candidate, string current)
+    {
+        return IsNewer(candidate, current);
+    }
+
+    // 引擎在线自更新：下载新 exe → 「运行中 exe 改名 .old + 新 exe 落位」原子替换，重启后生效。
+    // Windows 对正在运行的 exe 只锁写不锁删/改名；改名失败（占用异常）清理半成品并回退提示手动下载。
+    // expectedLatest 传入调用方刚查到的远端版本，避免二次网络请求
+    public static bool TryUpdateEngine(string currentEngineVersion, string expectedLatest)
+    {
+        var currentExe = Environment.ProcessPath;
+        if (currentExe is null || !File.Exists(currentExe))
+        {
+            Console.WriteLine("[engine] 无法定位当前 exe，跳过引擎自更新");
+            return false;
+        }
+
+        try
+        {
+            Console.WriteLine($"[engine] 下载新引擎 {expectedLatest} …");
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(300) };
+            var exeBytes = client.GetByteArrayAsync($"{BaseUrl}/use-ai-rule.exe").GetAwaiter().GetResult();
+
+            var tempExe = currentExe + ".new";
+            File.WriteAllBytes(tempExe, exeBytes);
+
+            var oldExe = currentExe + ".old";
+            if (File.Exists(oldExe))
+                File.Delete(oldExe);
+            File.Move(currentExe, oldExe);
+            File.Move(tempExe, currentExe);
+
+            Console.WriteLine($"[engine] 引擎已更新到 {expectedLatest}，重新启动 exe 生效（旧版本将自动清理）");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            TryCleanupEngineUpdateTemp(currentExe);
+            Console.WriteLine($"[engine] 告警：引擎更新失败（{ex.Message}），请到 Release 页手动下载");
+            Console.WriteLine($"[engine] {BaseUrl.Replace("/releases/latest/download", "/releases/latest")}");
+            return false;
+        }
+    }
+
+    // 供 Program.Main 启动时调用的公开清理入口（内部委托 TryCleanupEngineUpdateTemp）
+    public static void CleanupEngineUpdateResidue(string currentExe)
+    {
+        TryCleanupEngineUpdateTemp(currentExe);
+    }
+    // 引擎更新残留清理：上一次自更新留下的 .old / .new（改名成功后的常态残留、或中途失败的半成品）。
+    // 只处理与当前 exe 同目录同名前缀的文件，删不掉（仍被占用）静默跳过
+    private static void TryCleanupEngineUpdateTemp(string currentExe)
+    {
+        foreach (var stale in new[] { currentExe + ".old", currentExe + ".new" })
+        {
+            try
+            {
+                if (File.Exists(stale))
+                    File.Delete(stale);
+            }
+            catch (Exception)
+            {
+                // 占用中：下下次启动再试
+            }
+        }
     }
 
     // 准备包根目录：目录直接用；zip 解到缓存下的临时目录（调用方校验后落位）

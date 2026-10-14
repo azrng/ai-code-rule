@@ -15,16 +15,17 @@ internal static class Program
             // 编码设置纳入兜底：个别宿主没有标准输入句柄时 setter 会抛，裸崩不如走友好错误处理
             Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
-            // 内容包解析在一切之前：确定规则与技能内容的来源（--pack / 缓存 / 内嵌兜底），
-            // 命令行模式（带业务参数）不做网络检查，交互模式允许询问更新
-            var isInteractiveStart = args.Length == 0;
+
+            // 引擎自更新残留清理：上一次「.old + 新 exe 落位」留下的旧版本文件，
+            // 运行中的新 exe 不锁它，正常都能删掉；删不掉（仍被占用）静默跳过下次再试
+            if (Environment.ProcessPath is { } currentExe)
+                PackResolver.CleanupEngineUpdateResidue(currentExe);
+
+
+            // 内容包解析只决定来源（--pack / 缓存 / 内嵌兜底），绝不产生网络副作用；
+            // 更新检查是惰性的：交互模式选定「会用到内容包的操作」后才检查（见 RunInteractive）
             var packArgs = args;
-            var resolution = PackResolver.Resolve(
-                packArgs,
-                interactive: isInteractiveStart,
-                confirmUpgrade: isInteractiveStart
-                    ? version => AnsiConsole.Confirm($"发现新版本 {version}，是否更新内容包？", defaultValue: true)
-                    : null);
+            var resolution = PackResolver.Resolve(packArgs);
             foreach (var line in resolution.Logs)
                 Console.WriteLine(line);
 
@@ -44,12 +45,26 @@ internal static class Program
 
             Console.WriteLine($"use-ai-rule 引擎 {engineVersion}（内容包 {manifest.Vars.Version}，{manifest.Vars.LastUpdated}）");
 
-            var skills = new SkillsStore(resolution.Provider);
-            var hasBusinessArgs = StripPackArgs(ref packArgs);
-            if (hasBusinessArgs)
+            // 引擎在线自更新：交互模式启动时静默查一次引擎版本（带参模式不查，避免脚本调用出网络副作用；
+            // --pack 指定包模式同理）。有新版询问一次，同意则下载并原子替换 exe，重启后生效
+            if (StripPackArgs(ref packArgs))
+            {
+                var skills = new SkillsStore(resolution.Provider);
                 return RunCommand(packArgs, manifest, resources, skills);
+            }
 
-            return RunInteractive(manifest, resources, skills);
+            if (!args.Contains("--offline", StringComparer.OrdinalIgnoreCase) && resolution.Source != "pack")
+            {
+                var latestEngine = PackResolver.TryFetchLatestEngineVersion();
+                if (latestEngine is not null && PackResolver.IsEngineNewer(latestEngine, engineVersion)
+                    && AnsiConsole.Confirm($"发现新引擎版本 {latestEngine}（当前 {engineVersion}），是否在线更新？", defaultValue: true))
+                {
+                    PackResolver.TryUpdateEngine(engineVersion, latestEngine);
+                }
+            }
+
+            var interactiveSkills = new SkillsStore(resolution.Provider);
+            return RunInteractive(manifest, resources, interactiveSkills, engineVersion);
         }
         catch (Exception ex)
         {
@@ -92,8 +107,10 @@ internal static class Program
     }
 
     // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染；
-    // 旧 Profile 渲染路径与 profiles 节点已整体退役，组合内核是唯一渲染路径
-    private static int RunInteractive(Manifest manifest, ResourceStore resources, SkillsStore skillsStore)
+    // 旧 Profile 渲染路径与 profiles 节点已整体退役，组合内核是唯一渲染路径。
+    // 内容包更新检查是惰性的：只有选定「生成规则 / 仅导入 Skills」这类真正用到内容包的
+    // 操作后才检查一次（仅查看检测不查，避免不干活也出网络请求）
+    private static int RunInteractive(Manifest manifest, ResourceStore resources, SkillsStore skillsStore, string engineVersion)
     {
         Console.WriteLine(Banner);
         Console.WriteLine($"当前目录：{Environment.CurrentDirectory}");
@@ -124,6 +141,12 @@ internal static class Program
 
         if (mode == 1)
             return DetectInteractive(manifest, ui, Environment.CurrentDirectory);
+
+        // 进入真正用到内容包的路径：此刻才做内容包更新检查（失败静默降级）
+        if (mode == 0 || mode == 2)
+            PackResolver.CheckForUpdates(
+                manifest.Vars.Version,
+                version => AnsiConsole.Confirm($"发现内容包新版本 {version}，是否更新？（当前 {manifest.Vars.Version}）", defaultValue: true));
 
         if (mode == 2)
             return ImportSkillsOnly(ui, skillsStore);
