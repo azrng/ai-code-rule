@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using Spectre.Console;
 
@@ -30,8 +31,18 @@ internal static class Program
             var resources = new ResourceStore(resolution.Provider);
             var manifest = new ManifestLoader(resources).Load();
 
-            // 版本以 manifest.vars 为唯一事实来源，随规则内容一起演进，避免 exe 与规则版本漂移
-            Console.WriteLine($"use-ai-rule {manifest.Vars.Version}（{manifest.Vars.LastUpdated}）");
+            // 双版本口径：引擎版本（CI 发布经 USE_AI_RULE_ENGINE_VERSION 注入；未注入时回退
+            // 程序集 InformationalVersion，本地开发为空则显示 dev）与内容包版本
+            // （manifest.vars，规则与技能的事实源）分开展示，各自独立演进
+            var engineVersion = Environment.GetEnvironmentVariable("USE_AI_RULE_ENGINE_VERSION");
+            if (string.IsNullOrWhiteSpace(engineVersion))
+            {
+                var informational = Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                engineVersion = string.IsNullOrWhiteSpace(informational) ? "dev" : informational;
+            }
+
+            Console.WriteLine($"use-ai-rule 引擎 {engineVersion}（内容包 {manifest.Vars.Version}，{manifest.Vars.LastUpdated}）");
 
             var skills = new SkillsStore(resolution.Provider);
             var hasBusinessArgs = StripPackArgs(ref packArgs);

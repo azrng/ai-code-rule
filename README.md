@@ -163,22 +163,27 @@ fragments/
 #   use-ai-rule.exe --upgrade [目录] [--force]
 ```
 
-发布产物是 self-contained 单文件（win-x64 / linux-x64 / osx-x64 三平台矩阵，目标机器无需安装 .NET 10 运行时；本机需 .NET SDK 10 构建）。拼接器把公共入口、指针和可复用能力抽成模块，按所选组合填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部组合。后续只维护 `fragments/`，重新构建即可让所有组合生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。
+发布产物是 win-x64 框架依赖单文件（目标机需自装 .NET 10 运行时；本机需 .NET SDK 10 构建）。拼接器把公共入口、指针和可复用能力抽成模块，按所选组合填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部组合。后续只维护 `fragments/`，重新构建即可让所有组合生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。
 
-### exe 与内容包分离发布
+### exe 与内容包分离发布（CI 自动化）
 
-`publish.ps1` / `publish.sh` 除三平台 exe 外，还会把 `fragments/` + `skills/` 打成 merged 内容包（版本取 `manifest.vars.version`）：
+推送 `master` 后 GitHub Actions（`.github/workflows/release.yml`）自动完成发布，产物：
 
 ```text
-dist/
-├── use-ai-rule.exe          # 引擎（组合、校验、交互、导入逻辑），仅生成器代码变更时重发
-├── use-ai-rule-linux-x64
-├── use-ai-rule-osx-x64
+GitHub Release（tag = v<引擎版本>，如 v2.17）
+├── use-ai-rule.exe          # 引擎，win-x64 框架依赖单文件（需自装 .NET 10 运行时）
 ├── ai-rule-pack.zip         # 内容包：pack.json（版本 + 逐文件 SHA-256）+ manifest.json + fragments/ + skills/
-└── latest.json              # 更新检查清单（版本 + zip SHA-256），随 Release 上传
+└── latest.json              # 更新检查清单：version（内容包版本）+ engine_version + zip SHA-256
 ```
 
-exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需重新发布内容包，不必重发 exe：
+双版本口径，各自独立演进：
+
+| 版本 | 事实源 | 递增时机 |
+|---|---|---|
+| 引擎版本（如 `2.17`） | CI 生成 `2.<run_number>`，随每次发布自动 +1 | 每次推送 master |
+| 内容包版本（如 `1.95.0`） | `fragments/manifest.json` 的 `vars.version` | 改 fragments / skills 时手动升版（emit 基线仍只在规则变更时刷） |
+
+exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需升内容包版本并推送，CI 自动发新内容包：
 
 1. `--pack <zip|目录>`：显式指定内容包（zip 或已解包目录），SHA-256 校验失败直接报错退出；
 2. `--offline`：跳过网络检查，用本地缓存（`%LOCALAPPDATA%\use-ai-rule\packs\<版本>\`），无缓存则内嵌资源；
@@ -186,7 +191,7 @@ exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需�
 4. 命令行模式（带参数启动）：不做网络检查，直接用本地缓存或内嵌资源；
 5. 程序集内嵌资源：编译期固化的兜底，单 exe 无网络永远可用。
 
-更新失败（网络中断、校验不匹配）只告警降级不阻塞；内容包 `schema_version` 高于 exe 支持版本时回退内嵌并提示升级 exe（这是唯一强制重发 exe 的场景，如组合内核结构变更）。环境变量 `USE_AI_RULE_PACK_URL` 可替换发布源（gitee 镜像等），缺省指向 GitHub Release。
+更新失败（网络中断、校验不匹配）只告警降级不阻塞；内容包 `schema_version` 高于 exe 支持版本时回退内嵌并提示升级 exe（这是唯一强制换 exe 的场景，如组合内核结构变更）。环境变量 `USE_AI_RULE_PACK_URL` 可替换发布源（gitee 镜像等），缺省指向 GitHub Release。本地手动发布仍可跑 `publish.ps1`（win-x64 框架依赖 + 内容包），但常规流程无需手动操作。
 
 生成的规则内置效果反馈闭环：AI 在目标项目协作中发现规则被违反、与现实冲突或缺失时，任务收尾把条目记入项目根目录 `.ai-rule-feedback.md`（本地产物，已加入 `.gitignore` 不随项目提交）；把这些反馈回传本仓库，按 `doc/规则效果反馈承接.md` 的口径登记并转化为 `fragments/` 修改，目标项目再通过 `--upgrade` 拿到改进后的规则。
 
