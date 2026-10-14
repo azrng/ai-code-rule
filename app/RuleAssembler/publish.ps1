@@ -1,35 +1,27 @@
-﻿# 构建并发布 use-ai-rule 生成器（只面向 win-x64）。
+﻿# 构建并发布 use-ai-rule 生成器（win-x64，框架依赖模式）。
+# 目标机需自装 .NET 10 运行时（https://dotnet.microsoft.com/download/dotnet/10.0）。
 # 产物：
-#   dist/use-ai-rule.exe              —— win-x64 self-contained 单文件（目标机无需安装 .NET 运行时）
+#   dist/use-ai-rule.exe              —— win-x64 framework-dependent 单文件（体积小，跟随运行时更新）
 # 同时打包 merged 内容包（fragments + skills，manifest.vars.version 作包版本）：
 #   dist/ai-rule-pack.zip             —— 内容包（pack.json + manifest.json + fragments/ + skills/）
 #   dist/latest.json                  —— 更新检查清单（版本 + zip SHA-256），随 Release 上传
 # exe 启动时拉 latest.json 比对本地缓存版本，新版本自动下载校验；无网络回退内嵌资源。
 # 参数：
-#   -FrameworkDependent         退回框架相关发布（目标机需自装 .NET 10 运行时）
 #   -SkipPack                   只发布 exe，不重打内容包
 param(
-    [switch]$FrameworkDependent,
     [switch]$SkipPack
 )
 
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $here
-
-$selfContained = 'true'
-if ($FrameworkDependent) {
-    $selfContained = 'false'
-}
-
 $repoRoot = Split-Path -Parent (Split-Path -Parent $here)
 $distDirectory = Join-Path $repoRoot 'dist'
 New-Item -ItemType Directory -Path $distDirectory -Force | Out-Null
 
-Write-Host "发布 win-x64（self-contained=$selfContained，单文件）..."
-dotnet publish -c Release `
+Write-Host "发布 win-x64（框架依赖，单文件）..."
+dotnet publish app/RuleAssembler/RuleAssembler.csproj -c Release `
   -r win-x64 `
-  --self-contained $selfContained `
+  --self-contained false `
   -p:PublishSingleFile=true `
   -p:IncludeNativeLibrariesForSelfExtract=true
 if ($LASTEXITCODE -ne 0) {
