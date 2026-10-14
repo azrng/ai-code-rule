@@ -1,0 +1,158 @@
+name: release-win-x64
+
+# 推送 master 自动发布：打日历版本 → 发布框架依赖 exe + merged 内容包 + latest.json → GitHub Release。
+# 版本取 manifest.vars.version（与内容包口径一致），同版本重推时 tag 先删后建（内容包整体替换语义）。
+# 手动触发：Actions 页面 workflow_dispatch；只改文档/测试时可跳过（paths-ignore）。
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+env:
+  PROJECT_PATH: app/RuleAssembler/RuleAssembler.csproj
+  PUBLISH_DIR: publish/win-x64
+  EXE_NAME: use-ai-rule.exe
+  PACK_NAME: ai-rule-pack.zip
+  MANIFEST_NAME: latest.json
+
+jobs:
+  publish-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolve release metadata
+        id: release_meta
+        shell: pwsh
+        run: |
+          # 版本唯一事实源是 manifest.vars.version：改 fragments/skills 必须升版（AGENTS.md 口径），
+          # exe 只是引擎，发布随包版本走，避免 exe 与规则版本漂移
+          $manifest = Get-Content -LiteralPath 'fragments/manifest.json' -Raw | ConvertFrom-Json
+          $version = $manifest.vars.version
+          if (-not $version) { throw 'manifest.vars.version 为空，无法确定发布版本' }
+
+          $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+          $tag = "v$version"
+          $releaseName = "use-ai-rule $version ($timestamp)"
+          $exePath = Join-Path '${{ github.workspace }}' '${{ env.EXE_NAME }}'
+          $packPath = Join-Path '${{ github.workspace }}' '${{ env.PACK_NAME }}'
+          $manifestPath = Join-Path '${{ github.workspace }}' '${{ env.MANIFEST_NAME }}'
+          $tagExists = git ls-remote --tags origin "refs/tags/$tag" | Out-String
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag_name=$tag" >> $env:GITHUB_OUTPUT
+          "release_name=$releaseName" >> $env:GITHUB_OUTPUT
+          "exe_path=$exePath" >> $env:GITHUB_OUTPUT
+          "pack_path=$packPath" >> $env:GITHUB_OUTPUT
+          "manifest_path=$manifestPath" >> $env:GITHUB_OUTPUT
+          "tag_exists=$([bool]($tagExists.Trim()))" >> $env:GITHUB_OUTPUT
+
+      - name: Publish framework-dependent exe
+        shell: pwsh
+        run: |
+          if (Test-Path '${{ env.PUBLISH_DIR }}') {
+            Remove-Item '${{ env.PUBLISH_DIR }}' -Recurse -Force
+          }
+
+          # 框架依赖单文件：目标机需自装 .NET 10 运行时（体积 6.9MB，self-contained 为 80MB）
+          dotnet publish '${{ env.PROJECT_PATH }}' `
+            -c Release `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o '${{ env.PUBLISH_DIR }}'
+
+      - name: Build pack and latest.json
+        id: build_pack
+        shell: pwsh
+        run: |
+          $version = '${{ steps.release_meta.outputs.version }}'
+          $stage = 'pack-stage'
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          New-Item -ItemType Directory -Path $stage | Out-Null
+
+          Copy-Item -Recurse 'fragments' (Join-Path $stage 'fragments')
+          Copy-Item -Recurse 'skills' (Join-Path $stage 'skills')
+          # README.md 是仓库文档不随包发布（口径与 csproj 的 Exclude 一致）
+          $readme = Join-Path $stage 'skills/README.md'
+          if (Test-Path $readme) { Remove-Item -Force $readme }
+
+          # 逐文件 SHA-256 清单（相对路径用 /，哈希小写十六进制）
+          $hashMap = [ordered]@{}
+          foreach ($file in (Get-ChildItem -Recurse -File $stage)) {
+            $relative = ([System.IO.Path]::GetRelativePath($stage, $file.FullName)) -replace '\\', '/'
+            $hashMap[$relative] = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
+          }
+
+          $packManifest = [ordered]@{
+            kind = 'merged'
+            version = $version
+            schema_version = 1
+            files = $hashMap
+          }
+          $packManifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $stage 'pack.json') -Encoding UTF8
+
+          $packZip = '${{ steps.release_meta.outputs.pack_path }}'
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $packZip -CompressionLevel Optimal
+
+          $latest = [ordered]@{
+            version = $version
+            sha256 = (Get-FileHash -Algorithm SHA256 $packZip).Hash.ToLowerInvariant()
+          }
+          $latest | ConvertTo-Json | Set-Content -LiteralPath '${{ steps.release_meta.outputs.manifest_path }}' -Encoding UTF8
+
+          Remove-Item -Recurse -Force $stage
+
+          # exe 从发布目录拷到 workspace 根，路径扁平便于上传
+          Copy-Item (Join-Path '${{ env.PUBLISH_DIR }}' 'use-ai-rule.exe') '${{ steps.release_meta.outputs.exe_path }}' -Force
+
+      - name: Delete existing release for tag
+        if: steps.release_meta.outputs.tag_exists == 'True'
+        shell: pwsh
+        run: |
+          # 同版本重推：先删旧 Release 与远端 tag，资产整体替换（内容包是全量快照语义）
+          gh release delete '${{ steps.release_meta.outputs.tag_name }}' --repo '${{ github.repository }}' --yes --cleanup-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag_name }}
+          name: ${{ steps.release_meta.outputs.release_name }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            ${{ steps.release_meta.outputs.exe_path }}
+            ${{ steps.release_meta.outputs.pack_path }}
+            ${{ steps.release_meta.outputs.manifest_path }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
