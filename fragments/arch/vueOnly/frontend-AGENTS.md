@@ -79,7 +79,7 @@ project-root/
 - 优先使用 Element Plus 组件内置样式和 class
 - 自定义样式使用 SCSS，变量来自 `design-system.yaml`
 - 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）
-- 响应式设计遵循移动优先原则，必须在不同断点下测试
+- 响应式设计遵循移动优先原则，必须在不同断点下测试；存量样式文件已是桌面优先写法（max-width 查询）时，增量改动沿用该文件既有约定，不整体重写扩大 diff，新增文件仍遵循移动优先
 
 <!-- include: shared/frontend/component-rules.md -->
 

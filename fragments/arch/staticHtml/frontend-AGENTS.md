@@ -305,7 +305,7 @@ project-root/
 - 颜色、间距、圆角等视觉 token 在 `css/variables.css` 中定义为 CSS 变量
 - 禁止使用 `!important`（Bootstrap 覆盖场景除外）
 - 禁止硬编码颜色值（如 `#1A90FF`），使用 CSS 变量或 Bootstrap 语义类
-- 响应式设计遵循移动优先原则，使用 Bootstrap 断点（`sm`、`md`、`lg`、`xl`、`xxl`）
+- 响应式设计遵循移动优先原则，使用 Bootstrap 断点（`sm`、`md`、`lg`、`xl`、`xxl`）；存量样式文件已是桌面优先写法（max-width 查询）时，增量改动沿用该文件既有约定，不整体重写扩大 diff，新增文件仍遵循移动优先
 - 动效使用 CSS transition / animation，保持流畅自然
 
 ### CSS 变量命名

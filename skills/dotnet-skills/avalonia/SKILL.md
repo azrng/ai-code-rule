@@ -5,7 +5,7 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 # Avalonia UI 12.x 开发指南
 
-指导在 .NET 桌面项目中正确使用 Avalonia UI（锁定 12.x，基准组合 12.1.2 + Semi.Avalonia 12.1.0.1 + Ursa.Avalonia 2.2.0 + CommunityToolkit.Mvvm）：样式与资源管线、编译绑定、弹层体系、动画、列表虚拟化、窗口自绘，以及三类「编译通过但启动/运行崩溃」的高频坑。
+指导在 .NET 桌面项目中正确使用 Avalonia UI（锁定 12.x，基准组合 12.1.2 + Semi.Avalonia 12.1.0.1 + Ursa.Avalonia 2.2.0 + CommunityToolkit.Mvvm）：样式与资源管线、编译绑定、弹层体系、动画、列表虚拟化、窗口自绘，以及四类「编译通过但启动/运行崩溃」的高频坑。
 
 **适用场景**：
 - 新建 / 修改 Avalonia 视图（.axaml）、样式（Styles / ControlTheme）、资源字典
@@ -44,15 +44,16 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 
 辅助：NuGet ref 程序集 XML（`~/.nuget/packages/avalonia/12.1.2/ref/net8.0/Avalonia.Base.xml`）可 grep 快速确认 API 存在性。查不到、核实不了的一律不写，向用户说明。
 
-## 三类「编译通过但启动/运行崩溃」速查（高频，详见 references/startup-crash-checklist.md）
+## 四类「编译通过但启动/运行崩溃」速查（高频，详见 references/startup-crash-checklist.md）
 
 | 症状（错误原文） | 根因 | 正确写法 |
 |---|---|---|
 | `InvalidCastException: Setter value '8' is not a valid value for property 'Padding'`（启动即崩） | 标量 token（`x:Double` 的 `Space.*`）赋给了 Thickness 属性 | Padding/Margin 用 `Pad.*`（Thickness token） |
 | `FormatException`（BoxShadow 解析，启动即崩） | 阴影值带 `px` 单位（`-24px 0 48px 0`） | 纯数值 `-24 0 48 0 #80000000`（`BoxShadow.Parse` 用 `double.Parse`） |
 | `InvalidOperationException: No animator registered for the property RenderTransform`（动画首次运行崩） | `rotate(0deg)` 关键帧未注册 Animator | `RenderTransform` 挂 `<RotateTransform />` 后动画 `RotateTransform.Angle`（double 自动推断） |
+| `No precompiled XAML found for view ...`（运行时才暴露） | 上一次全量编译失败后，后续 `dotnet build` 增量跳过 CoreCompile，axaml 的 AVLN 错误被掩盖 | axaml 改动后首次验证用 `dotnet build --no-incremental`（或删主工程 obj/bin 重建）；快速确认产物 DLL 含 XamlIl 字符串再启动 |
 
-**编译成功 ≠ 能启动**：样式附加期与动画解析异常发生在运行时。样式改动后必须实际启动冒烟。
+**编译成功 ≠ 能启动，增量成功 ≠ 编译过**：样式附加期与动画解析异常发生在运行时；增量构建在 CoreCompile 被跳过时连 AVLN 编译错误都不报。axaml 改动后先用 `--no-incremental` 全量构建，再实际启动冒烟。
 
 ## Avalonia 11 → 12 平台 API 变化速查（源码核实）
 

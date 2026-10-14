@@ -75,7 +75,7 @@ frontend/
 - 自定义样式使用 CSS Modules 或全局 CSS，变量来自 `design-system.yaml`
 - 禁止 inline style，禁止硬编码颜色值（如 `#1677ff`）
 - 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
-- 响应式设计遵循移动优先原则，使用 Ant Design 的 Grid 系统（Row / Col）
+- 响应式设计遵循移动优先原则，使用 Ant Design 的 Grid 系统（Row / Col）；存量样式文件已是桌面优先写法（max-width 查询）时，增量改动沿用该文件既有约定，不整体重写扩大 diff，新增文件仍遵循移动优先
 
 <!-- include: shared/frontend/component-rules.md -->
 

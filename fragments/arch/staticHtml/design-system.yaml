@@ -657,6 +657,7 @@ icons:
 # ============================================================
 responsive:
   principle: "移动优先（Mobile First）"
+  legacy_files: "存量样式文件已是桌面优先写法（max-width 查询 + 桌面基础样式）时，增量改动沿用该文件既有约定，不整体重写扩大 diff；新增文件遵循移动优先"
   breakpoints:
     default: "手机竖屏（< 576px）"
     sm: "576px - 手机横屏"

@@ -105,7 +105,7 @@ frontend/
 - 自定义样式使用 Tailwind 工具类为主；确需全局或复杂样式时用 CSS Modules 或 `globals.css`，变量来自 `design-system.yaml`
 - 禁止 inline style 硬编码颜色值（如 `style={{ color: '#1677ff' }}`）
 - 暗色模式通过 shadcn 的 `dark` 类与 CSS 变量切换，不另建一套颜色
-- 响应式设计遵循移动优先原则，使用 Tailwind 断点（`sm:` / `md:` / `lg:` ...）
+- 响应式设计遵循移动优先原则，使用 Tailwind 断点（`sm:` / `md:` / `lg:` ...）；存量 CSS 已是桌面优先写法（max-width 查询）时，增量改动沿用该文件既有约定，不整体重写扩大 diff，新增文件仍遵循移动优先
 
 ### 组件规则
 - 优先复用 `src/components/ui/` 下 shadcn 组件与 `src/components/` 下已有业务组件，禁止重复创建

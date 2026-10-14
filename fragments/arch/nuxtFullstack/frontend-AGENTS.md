@@ -101,7 +101,7 @@ dependencies: [agents-root]
 - 优先复用项目现有 `components/ui` 组件、`cn()`、`cva` 或等价封装
 - 禁止 inline style
 - 禁止硬编码颜色值、阴影值、圆角值、z-index、断点
-- 响应式遵循移动优先原则
+- 响应式遵循移动优先原则；存量样式文件已是桌面优先写法（max-width 查询 + 桌面基础样式）时，增量改动沿用该文件既有约定，不整体重写扩大 diff，新增文件仍遵循移动优先
 
 ### 组件规则
 - 优先复用 `components/` 与 `components/<业务域>/` 现有组件

@@ -283,6 +283,7 @@ form_rules:
 
 responsive:
   principle: "移动优先"
+  legacy_files: "存量样式文件已是桌面优先写法（max-width 查询 + 桌面基础样式）时，增量改动沿用该文件既有约定，不整体重写扩大 diff；新增文件遵循移动优先"
   common_patterns:
     page_padding: "小屏紧凑，大屏留白更充足"
     grid: "优先单列，再按断点扩展多列"

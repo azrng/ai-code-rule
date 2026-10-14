@@ -385,6 +385,7 @@ icons:
 
 responsive:
   principle: "移动优先"
+  legacy_files: "存量样式文件已是桌面优先写法（max-width 查询 + 桌面基础样式）时，增量改动沿用该文件既有约定，不整体重写扩大 diff；新增文件遵循移动优先"
   common_patterns:
     page_padding: "px-4 md:px-6 lg:px-8"
     grid: "grid-cols-1 md:grid-cols-2 xl:grid-cols-4"

@@ -1,6 +1,6 @@
 # 「编译通过但启动/运行崩溃」排查清单
 
-Avalonia 的三大类崩溃都发生在**运行时**：样式附加期（启动即崩）、资源解析期（启动即崩）、动画启动期（界面首次触发时崩）。`dotnet build` 全绿不代表能启动。以下三类全部来自真实工程踩坑（消费工程，2026-09 一天内实际命中三类）。
+Avalonia 的四大类崩溃都发生在**运行时**：样式附加期（启动即崩）、资源解析期（启动即崩）、动画启动期（界面首次触发时崩），以及增量构建掩盖编译错误导致的「假成功」（运行时才暴露）。`dotnet build` 全绿不代表能启动。以下前三类全部来自真实工程踩坑（消费工程，2026-09 一天内实际命中三类），第四类来自 2026-10 消费工程实测。
 
 **排查前置**：如果应用还没有全局异常挂点（`AppDomain.CurrentDomain.UnhandledException` / `Dispatcher.UIThread.UnhandledException` / `TaskScheduler.UnobservedTaskException`）与文件日志，闪退原因会完全丢失——先按 logging-and-crash-report.md 把挂点补上再排查；历史崩溃可去事件查看器（`.NET Runtime` 来源条目）与 `%LOCALAPPDATA%\CrashDumps` 找回线索。
 
@@ -48,6 +48,20 @@ System.InvalidOperationException: No animator registered for the property Render
 
 **修复**：见 animation.md 的 RotateTransform.Angle 安全写法。
 
+## 崩溃四：增量构建掩盖 AVLN 编译错误
+
+**错误原文**：
+
+```text
+No precompiled XAML found for view <视图类全名>.
+```
+
+**根因**：上一次全量编译失败后，后续 `dotnet build` 走增量构建、跳过 CoreCompile，axaml 的 AVLN 编译错误（如属性名写错：`u:Loading` 的 `IsRunning`，实际是 `IsLoading`）完全不出现，报「已成功生成 0 警告 0 错误」，给人虚假信心。运行到该视图时才发现 DLL 内根本没有预编译 XAML。
+
+**排查**：运行时报 `No precompiled XAML found`，优先怀疑上一次全量编译失败被增量掩盖；grep 产物 DLL 是否含 `XamlIl` 字符串可快速确认（无字符串 = 没有预编译 XAML）。
+
+**修复**：axaml 改动后的首次验证用 `dotnet build --no-incremental`（或删除主工程 obj/bin 后重建），让 AVLN 错误真实暴露；修复至全量构建通过后再启动。
+
 ## 通用排查流程
 
 ```text
@@ -56,8 +70,9 @@ System.InvalidOperationException: No animator registered for the property Render
    InvalidCastException + Setter.Instance → 样式 Setter 值类型错（崩溃一）
    FormatException + BoxShadow.Parse → 阴影单位（崩溃二）
    InvalidOperationException + No animator registered → 动画（崩溃三）
+   No precompiled XAML found → 增量构建掩盖编译错误（崩溃四）
 3. 定位样式：异常发生在哪类控件附加时 → 全局搜对应 Selector
-4. 修复后必须：dotnet build + 实际启动 + 走一遍触发该样式的界面
+4. 修复后必须：dotnet build --no-incremental + 实际启动 + 走一遍触发该样式的界面
 ```
 
 ## 预防规则（写代码时）
@@ -65,3 +80,4 @@ System.InvalidOperationException: No animator registered for the property Render
 1. 新样式 Setter 用资源时，先确认 token 的 XAML 类型（`x:Double` / `Thickness` / `CornerRadius` / `BoxShadows` / `SolidColorBrush`）
 2. 阴影、动画这类「CSS 直觉强」的属性，写之前回本清单或源码核对格式
 3. 样式文件改动后，至少启动一次应用并冒烟到会渲染新样式的界面
+4. axaml 改动后的首次构建验证用 `--no-incremental` 全量构建（增量跳过 CoreCompile 时 AVLN 错误不出现），通过后再启动冒烟
