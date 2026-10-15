@@ -39,7 +39,8 @@ services.AddScoped<IEntityService, EntityService>();
 @attribute [TabItemOption(Text = "实体管理")]
 @attribute [Authorize]
 
-<PageHeader Title="实体管理" SubTitle="管理系统中的实体数据"/>
+<h3>实体管理</h3>
+<h4>管理系统中的实体数据</h4>
 
 <div class="mb-3">
     <Button Color="Color.Primary" OnClick="@OnShowAddModal">

@@ -80,9 +80,11 @@ public async Task ShowAsync(Entity entity)
 ```
 
 ```razor
-<!-- Key 绑定确保强制重建 -->
-<TreeView Key="@TreeViewKey" Items="@TreeItems" .../>
+<!-- 用 Blazor 内置 @key 指令强制重建（TreeView 没有 Key 参数） -->
+<TreeView @key="TreeViewKey" Items="@TreeItems" .../>
 ```
+
+**注意**：`Key` **不是 `TreeView` 的参数**（源码 `TreeView.razor.cs` 只有 `CustomKeyAttribute` 与 `ModelEqualityComparer`，没有 `Key`）。`TreeView` 基类带 `AdditionalAttributes`（`CaptureUnmatchedValues=true`），写 `Key="@x"` 会**静默降级为普通 HTML 属性**，既不报错也不重建，状态污染照旧。强制重建必须用 Razor 的 `@key` 指令（如上），或在同一位置换掉整个 `Items` 实例并配合 `@key`。
 
 **模型要求**：数据模型必须实现 `Equals` 和 `GetHashCode`：
 ```csharp

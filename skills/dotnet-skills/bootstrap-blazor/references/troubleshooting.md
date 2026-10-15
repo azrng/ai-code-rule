@@ -1,7 +1,7 @@
 # 常见问题
 
 ## TreeView 不显示选中状态
-确保数据模型实现了 `Equals` 和 `GetHashCode`，并使用 `Key` 属性强制重建。
+确保数据模型实现了 `Equals` 和 `GetHashCode`，并用 Razor `@key` 指令强制重建。注意 `Key` **不是 `TreeView` 的参数**（只有 `CustomKeyAttribute` / `ModelEqualityComparer`），写了会经 `CaptureUnmatchedValues` 静默变成 HTML 属性、既不报错也不重建（详见 `treeview-toast.md`）。
 
 ## 模态框首开恒空 / 数据不更新
 两类根因，修复不同：

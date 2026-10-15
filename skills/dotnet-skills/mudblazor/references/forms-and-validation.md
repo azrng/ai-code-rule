@@ -84,7 +84,7 @@
     private async Task OpenDialogAsync()
     {
         var parameters = new DialogParameters<EditDialog>();
-        parameters.Add(x => x.Person, _person);   // 泛型 Add（集合初始化器 { {x=>x.P, v} } 写法不被 DialogParameters 支持）
+        parameters.Add(x => x.Person, _person);   // 泛型 Add（等价于集合初始化器 { { x => x.Person, _person } }）
         var options = new DialogOptions
         {
             CloseButton = true,

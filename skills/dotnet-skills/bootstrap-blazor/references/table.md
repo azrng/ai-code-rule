@@ -13,7 +13,6 @@
        CustomerSearchModel="@CustomerSearchModel" SearchMode="SearchMode.Top"
        ShowEmpty="true"
        OnQueryAsync="@OnSearchModelQueryAsync"
-       OnResetSearchAsync="@OnResetSearchAsync"
        OnDeleteAsync="@OnDeleteAsync">
 
     <!-- 自定义搜索模板 -->
@@ -100,12 +99,6 @@ public partial class Index
         return new QueryData<GetUserListResult>();
     }
 
-    private Task<GetUserPageListVm> OnResetSearchAsync()
-    {
-        CustomerSearchModel = new GetUserPageListVm();
-        return Task.FromResult(CustomerSearchModel);
-    }
-
     private async Task<bool> OnDeleteAsync(IEnumerable<GetUserListResult> items)
     {
         var ids = items.Select(x => x.Id).ToArray();
@@ -126,6 +119,7 @@ public partial class Index
 - `ShowExtendEditButton="false"` `ShowExtendDeleteButton="false"` 隐藏内置编辑/删除按钮，改用自定义行按钮
 - `SearchMode="SearchMode.Top"` 搜索框在表格上方
 - `OnQueryAsync` 返回 `QueryData<T>` 包含分页信息
+- `OnResetSearchAsync` 签名是 `Func<TItem, Task>`（参数是**表格行类型** `TItem`，返回 `Task`，不是 `Task<T搜索模型>`），且**仅在 Table 用 `SearchModel` 时触发**；上面用 `CustomerSearchModel`，重置走 `CustomerSearchModel.Reset()`，无需该回调
 - 批量删除通过 `IsMultipleSelect="true"` + `OnDeleteAsync` 处理
 - 列定义必须包在 `<TableColumns>` 内，`TableColumn` 直接放在 `Table` 下不生效
 - 嵌套模板的上下文显式改名（如 `<Template Context="value">`）：`TableColumns`、`RowButtonTemplate`、`AuthorizeView` 等默认上下文都叫 `context`，嵌套时同名互相遮蔽导致编译错误或取错对象

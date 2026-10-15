@@ -50,9 +50,8 @@ MudBlazor 开发指南，提供在 .NET Blazor 项目中使用 MudBlazor 组件�
 - `MudTabs` 激活方法是 `ActivatePanelAsync()`（不是 `ActivatePanel`）
 - 修改默认抽屉宽度用 `MudTheme.LayoutProperties.DrawerWidthLeft/Right`（默认 240px），不是 `Width` 参数（裸容器时才用）
 - `MudHidden Breakpoint="Breakpoint.Lg"` 语义是「LG 及以上不渲染」（可用 `Invert` 反转），不是 CSS 隐藏
-- `MudTabs` 激活方法是 `ActivatePanelAsync()`（不是 `ActivatePanel`）
 - v9 `MudChart` 是泛型组件：`<MudChart T="double" ChartType="..." ChartSeries="..." ChartLabels="..." />`，数据是 `List<ChartSeries<double>>`（`Data = new double[]{...}`）；旧版非泛型 `ChartSeries[]` + `XAxisLabels`/`InputData` 写法已不存在
-- `DialogParameters<T>` 不支持集合初始化器 `{ { x => x.P, v } }`：用 `new DialogParameters<T>()` 后逐个 `parameters.Add(x => x.P, v)`；且模型类型须与对话框组件参数同源（各自嵌套定义同名 record 会回退到 `Add(string, object?)` 编译失败）
+- `DialogParameters<T>` 的集合初始化器 `{ { x => x.P, v } }` 与逐个 `Add(x => x.P, v)` 都可用（泛型 `Add` 来自 `DialogParametersGeneric.cs`）；真正会失败的是**模型类型不同源**：页面与对话框各自嵌套定义同名 record 时类型标识不一致，lambda 无法转换，回退到 `Add(string, object?)` 报 CS1660（"无法将 lambda 转换为 string"）。模型放独立 `Models/` 文件共用
 - 对话框传参模型放独立 Models/ 文件共用；页面注入 `HttpClient` 需在 Program.cs 自行 `AddScoped<HttpClient>()`（Web App 模板不自动提供）
 
 ## API 查询规则

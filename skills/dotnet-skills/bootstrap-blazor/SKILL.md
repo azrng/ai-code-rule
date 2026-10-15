@@ -7,7 +7,7 @@ description: "BootstrapBlazor 组件库开发指南。.NET Blazor 项目中使�
 
 BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中使用 BootstrapBlazor 组件库的最佳实践、代码模板和常见模式。
 
-> 版本锚定：本技能示例基于 BootstrapBlazor 10.10.x 编译验证；组件 API 随版本演进，遇到与示例不符的编译错误时以官方文档（https://www.blazor.zone/ ）为准。
+> 版本锚定：本技能示例基于 **BootstrapBlazor 10.10.x**（源码 `v10.10.2-10-gfb09b84de`，commit `fb09b84de`，2026-09-18）对照源码验证；组件 API 随版本演进，遇到与示例不符的编译错误时以官方文档（https://www.blazor.zone/ ）为准。
 
 **适用场景**：
 - 使用 BootstrapBlazor 构建 Blazor Server 应用
@@ -43,7 +43,7 @@ BootstrapBlazor 企业级开发指南，提供在 .NET Blazor Server 项目中�
 
 ## 高频陷阱速览
 
-- TreeView 选中状态丢失：数据模型须实现 `Equals`/`GetHashCode`，并用 `Key` 强制重建（`treeview-toast.md`）
+- TreeView 选中状态丢失：数据模型须实现 `Equals`/`GetHashCode`，并用 Razor `@key` 指令强制重建（**`Key` 不是 TreeView 参数**，写了会经 `CaptureUnmatchedValues` 静默变成 HTML 属性）（`treeview-toast.md`）
 - 模态框首开恒空/数据不更新：先加载数据再 `Show()` 时 body 按旧状态渲染，`Show()` 之后必须 `await InvokeAsync(StateHasChanged)`；Modal 内隐藏 Table 首渲染已用空参数查询并缓存，打开后必须显式 `table.QueryAsync()`（BB 10 无 `Refresh()`）（`modal.md`、`troubleshooting.md`）
 - 表格自定义行按钮不显示：操作列必须走 `RowButtonTemplate`（`ShowExtendButtons="true"` 且关闭内置编辑/删除按钮）；`TableColumn` Template 内直接放 `TableCellButton` 渲染为空（`table.md`）
 - Layout 不写 `<Side />` 片段时侧栏（含 `Menus` 菜单）整段不渲染且无任何警告，只传 `Menus` 参数无效（`layout-menu.md`）

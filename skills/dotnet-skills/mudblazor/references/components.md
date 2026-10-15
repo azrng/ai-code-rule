@@ -224,7 +224,7 @@
 @code { private List<BreadcrumbItem> _items = [new("首页", "/"), new("用户", "/users", disabled: true)]; }
 
 @* 分页器（独立组件，DataGrid 的分页见 data-grid.md） *@
-<MudPagination Count="10" @bind-Selected="_page" Color="Color.Primary" Radius="2" />
+<MudPagination Count="10" @bind-Selected="_page" Color="Color.Primary" Rectangular="true" />
 ```
 
 - `MudNavLink.Match` 默认 `NavLinkMatch.Prefix`
@@ -236,7 +236,7 @@
 ```razor
 <MudPaper Width="300px">
     <MudList T="string" @bind-SelectedValue="_picked">
-        <MudSubheader>收件箱</MudSubheader>
+        <MudListSubheader>收件箱</MudListSubheader>
         <MudListItem Value="inbox" Text="收件" Icon="@Icons.Material.Filled.Inbox" />
         <MudListItem Value="trash" Text="垃圾箱" SecondaryText="已删除邮件" />
     </MudList>
@@ -245,7 +245,7 @@
 
 - `MudList<T>` **没有 Items/ItemTemplate 数据绑定参数**（静态子项声明）；T 是选中值类型
 - 多选：`SelectionMode="SelectionMode.MultiSelection"` + `@bind-SelectedValues`
-- 嵌套：`MudListItem` 内 `<NestedList>`；分组标题 `MudSubheader`
+- 嵌套：`MudListItem` 内 `<NestedList>`；分组标题用 `MudListSubheader`（**不存在 `MudSubheader`**）
 - `MudCarousel<T>`：声明式 `MudCarouselItem` 或 `ItemsSource` + `ItemTemplate`；`@bind-SelectedIndex`、`AutoCycle`(true)、`AutoCycleTime`(5s)
 
 ## 图标 MudIcon
@@ -265,4 +265,5 @@
 > 新项目优先 `MudDataGrid`（见 data-grid.md）；这里仅速查。
 
 - `MudSimpleTable`：纯样式壳，手写 `<thead>/<tbody>`；`Hover`、`Striped`、`Dense`、`Bordered`、`FixedHeader`（需配 `Style="height:300px"`）
-- `MudTable<T>`：`Items` 或 `ServerData(Func<TableState, CancellationToken, Task<TableData<T>>>)`；列是 `<HeaderContent>` + `<MudTh>` / `<RowTemplate>` + `<MudTd DataLabel=>` 手写（**没有 PropertyColumn/TemplateColumn**）；过滤用 `Filter="new Func<T,bool>(FilterFunc)"`（DataGrid 里叫 QuickFilter）；行点击事件叫 `OnRowClick`（DataGrid 叫 `RowClick`）；多选 `MultiSelection` + `SelectedItems`(HashSet\<T\>)；`Breakpoint`(Xs) 小屏切卡片布局；分页 `<PagerContent><MudTablePager Size="Size.Medium" /></PagerContent>`
+- `MudTable<T>`：`Items` 或 `ServerData(Func<TableState, CancellationToken, Task<TableData<T>>>)`；列是 `<HeaderContent>` + `<MudTh>` / `<RowTemplate>` + `<MudTd DataLabel=>` 手写（**没有 PropertyColumn/TemplateColumn**）；过滤用 `Filter="new Func<T,bool>(FilterFunc)"`（DataGrid 里叫 QuickFilter）；行点击事件叫 `OnRowClick`（DataGrid 叫 `RowClick`）；多选 `MultiSelection` + `SelectedItems`(HashSet\<T\>)；`Breakpoint`(Xs) 小屏切卡片布局；分页 `<PagerContent><MudTablePager /></PagerContent>`
+- `MudTablePager` **没有 `Size` 参数**（写 `Size=` 触发 MUD0002）；真实参数是 `PageSizeOptions`([10,25,50,100])、`RowsPerPageString`、`InfoFormat`、`HideRowsPerPage` / `HidePageNumber` / `HidePagination`、`HorizontalAlignment`、`AllItemsText`、`FirstIcon`/`BeforeIcon`/`NextIcon`/`LastIcon`

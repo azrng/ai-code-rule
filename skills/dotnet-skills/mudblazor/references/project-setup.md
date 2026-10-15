@@ -117,7 +117,7 @@ builder.Services.AddScoped<HttpClient>();
 - 资源挂 `wwwroot/index.html`；`MudBlazor.min.js` 在 `blazor.webassembly.js` 之前
 - `_Imports.razor` 只有 `@using MudBlazor`（模板缺 `MudBlazor.Services`，用到时自己补）
 - 多工程（Auto/WASM 交互）时 **Client 工程与服务端各自调用 `AddMudServices()`**，漏一侧则该层服务缺失
-- Individual auth 时 AppBar 用 `MudStaticNavDrawerToggle`（支持静态 SSR），普通交互用 `MudIconButton` + 翻转 `_drawerOpen`，不可混用
+- `MudStaticNavDrawerToggle` **不属于核心 MudBlazor 包**：它来自官方模板在 Individual 认证场景额外引入的第三方包 `Extensions.MudBlazor.StaticInput`（`Version="4.*"`，仅 `Condition="'$(IndividualLocalAuth)' == 'True'"` 时引用，命名空间 `MudBlazor.StaticInput`）；它支持静态 SSR 下开合抽屉，普通交互场景用 `MudIconButton` + 翻转 `_drawerOpen`。没有引该包却写 `<MudStaticNavDrawerToggle>` 会编译失败，不要当成核心组件
 
 ## 版本检查（生成代码前必做）
 

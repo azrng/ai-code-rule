@@ -142,8 +142,9 @@
 </PagerContent>
 ```
 
-- **泛型组件，`T=` 必填**（漏写编译错误）
-- `PageSizeOptions`(默认 [10,20,50,100])、`RowsPerPageString`、`InfoFormat`、`DisableRowsPerPagePicker`
+- **泛型组件**：放在 `MudDataGrid` 的 `PagerContent` 内时 `T` 由父网格 `[CascadingTypeParameter]` 自动推断、可省略（官方测试 `DataGridServerPaginationTest.razor` 就写 `<MudDataGridPager />`）；脱离 `MudDataGrid` 独立使用时才必须显式 `T=`，否则报 RZ10001（无法推断类型实参）
+- `PageSizeOptions`（默认 `[10, 25, 50, 100]`）、`PageSizeSelector`(true，显示每页条数下拉)、`RowsPerPageString`、`InfoFormat`、`AllItemsText`、`ShowNavigation`(true)、`ShowPageNumber`(true)、`Disabled`
+- **不存在 `DisableRowsPerPagePicker`**（源码 0 命中）；隐藏每页条数下拉用 `PageSizeSelector="false"`
 
 ## 服务端分页完整模式（官方示例裁剪）
 
@@ -289,7 +290,7 @@ await _grid.SetSortAsync("Name", SortDirection.Ascending, x => x.Name);
 1. `Items` + `ServerData` 同设 → `InvalidOperationException`
 2. `ServerData` 用单参 lambda → 编译不过（签名含 CancellationToken）
 3. `CommittedItemChanges` 写成 EventCallback → 编译不过
-4. `MudDataGridPager` 漏 `T=` → 编译不过
+4. `MudDataGridPager` 脱离 `MudDataGrid` 独立使用又漏 `T=` → RZ10001（在网格内可省略）
 5. 列上 `SortIcon` → `[Obsolete(error:true)]` 编译错误
 6. `SelectedItems.Clear()` 就地改 → 不刷新（赋新 HashSet）
 7. `Virtualize="true"` 不设 `Height` → 布局异常（remarks 明确要求）
