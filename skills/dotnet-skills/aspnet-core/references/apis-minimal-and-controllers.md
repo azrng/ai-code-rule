@@ -72,7 +72,7 @@ Key `[ApiController]` behaviors:
 
 ## Default Health Controller
 
-Controller-based service templates should include a small health controller for deployment probes and timezone diagnostics. Keep `alive` independent of external dependencies; let `ready` include dependency checks only when the service needs them. In a result-wrapped API, mark the two probe actions with the wrapper library's raw-response attribute so they return the expected JSON directly.
+Controller-based service templates should include a small health controller for deployment probes and timezone diagnostics. Keep `alive` independent of external dependencies; let `ready` include dependency checks only when the service needs them. In a result-wrapped API, mark the two probe actions with the wrapper library's raw-response attribute so they return the expected JSON directly. 固定响应直接用匿名对象 `Ok(new { status = "ok" })`——不要为静态探针响应建 `HealthProbeResponse` 之类的 DTO；只有响应契约确实需要命名类型或独立复用时才引入。
 
 ```csharp
 using Azrng.AspNetCore.Core.Filter; // 仅使用结果包装器时需要

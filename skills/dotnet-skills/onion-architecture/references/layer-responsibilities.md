@@ -47,7 +47,7 @@ YourProject/
 ### Core（内核，零业务依赖）
 **放**：**跨业务域复用**的 DTO、枚举、常量、通用结果类型（如公共枚举、跨域包装、分页基类衍生参数）。纯 POCO，不引用任何项目，不引用 EFCore/HttpContext 等基础设施。**单业务域的请求/响应 DTO 不放这里**——放 `IApplication/{业务域}/Dto/`（见下文）；「接口、实现、控制器都用」是应用层 DTO 的常态，不构成放 Core 的判据（判据详见 SKILL.md 核心规则 4）。
 **不放**：实体、业务逻辑、数据访问、单业务域 DTO、任何 `using` 基础设施包。
-**包引用**：仅 `Azrng.Core`（取 `GetPageRequest`/`ResultModel` 等）等基础类库。
+**包引用**：显式引用实际使用的基础包，Core 至少显式引 `Azrng.Core`（取 `GetPageRequest`/`ResultModel` 等）——不依赖 `IDomain → Common.EFCore → Azrng.Core` 的传递引用（那是 Application 层「传递可达无需显式引」的口径，见下文 IApplication 节）；版本以当前解决方案还原结果为准。
 
 ```csharp
 namespace App.Core.Models;
@@ -515,7 +515,7 @@ public sealed class HealthController : ControllerBase
 
 ### Program.cs 与 Startup.cs 分工
 
-`Program.cs` 只保留宿主生命周期代码；所有 DI 注册放在 `Startup.RegisterServices(IServiceCollection)`，所有中间件和端点管道放在 `Startup.SetupMiddlewares(WebApplication)`。这样新增数据库、认证、Swagger 或中间件时不会持续膨胀宿主入口。
+`Program.cs` 只保留宿主生命周期代码；所有 DI 注册放在 `Startup.RegisterServices(IServiceCollection)`，所有中间件和端点管道放在 `Startup.SetupMiddlewares(WebApplication)`。这样新增数据库、认证、Swagger 或中间件时不会持续膨胀宿主入口。`Startup` 使用显式构造函数（禁主构造函数，与生成规则的主构造函数禁令一致，组合根类不豁免）。
 
 ```csharp
 // Service/Program.cs
@@ -651,10 +651,12 @@ Storage           → Core, IDomain                          ← 可选
   <ProjectReference Include="..\App.Domain\App.Domain.csproj" />
 </ItemGroup>
 <ItemGroup>
-  <PackageReference Include="Azrng.Core" Version="1.19.0" />
+  <PackageReference Include="Azrng.Core" Version="1.20.1" />
   <!-- 仅当 AppService 需要时才引：JWT 认证、分布式锁等 -->
 </ItemGroup>
 ```
+
+> 版本号是核实基线（Azrng.Core 1.20.1，源码核实），实际以解决方案锁定版本的还原结果为准；示例 API 与锁定版本不一致时，先按锁定版本的公开 API 与编译结果核对再接入。
 
 **依赖方向自检**：若发现内层项目（如 Core）要 `using` 外层（如 Application），说明分层错了，立刻停下来纠正。
 
