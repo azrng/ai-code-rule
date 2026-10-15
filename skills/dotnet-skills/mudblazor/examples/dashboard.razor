@@ -1,0 +1,122 @@
+@* ============================================================
+   MudBlazor 仪表盘页示例（MudBlazor 9.11.x）
+   演示：统计卡片栅格、MudChart 饼图/柱状图、Tabs 内容分区、
+         列表 + 进度、暗色主题切换入口由 MainLayout 承担
+   依赖：MainLayout 已挂 MudThemeProvider / MudPopoverProvider /
+         MudDialogProvider / MudSnackbarProvider（见 project-setup.md）
+   ============================================================ *@
+
+@page "/dashboard"
+
+<PageTitle>仪表盘</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">运营概览</MudText>
+
+@* 统计卡片：12 列栅格，断点参数全小写 *@
+<MudGrid Spacing="4">
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 d-flex flex-column" Elevation="1">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">今日订单</MudText>
+            <MudText Typo="Typo.h3" Color="Color.Primary">@_todayOrders</MudText>
+            <MudProgressLinear Value="@_orderGrowth" Color="Color.Success" Class="mt-2" Rounded="true" />
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 d-flex flex-column" Elevation="1">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">销售额</MudText>
+            <MudText Typo="Typo.h3">¥@_sales.ToString("N0")</MudText>
+            <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="mt-2 align-self-start">+12%</MudChip>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">待处理工单</MudText>
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h3" Color="Color.Warning">@_openTickets</MudText>
+                <MudBadge Content="@_openTickets" Overlap="true" Color="Color.Error">
+                    <MudIcon Icon="@Icons.Material.Filled.SupportAgent" Size="Size.Large" />
+                </MudBadge>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">系统健康</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudProgressCircular Value="@_health" Size="Size.Small" Color="Color.Success" />
+                <MudText>@_health%</MudText>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@* 图表与最新动态：Tabs 分区 + 列表 *@
+<MudGrid Spacing="4" Class="mt-2">
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="1" Class="pa-2">
+            <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="false">
+                <MudTabPanel Text="销售趋势">
+                    <MudChart T="double" ChartType="ChartType.Bar" ChartSeries="@_salesSeries" ChartLabels="@_months"
+                              Width="100%" Height="350px" />
+                </MudTabPanel>
+                <MudTabPanel Text="品类占比">
+                    <MudChart T="double" ChartType="ChartType.Pie" ChartSeries="@_categorySeries" ChartLabels="@_categories"
+                              Width="100%" Height="350px" />
+                </MudTabPanel>
+            </MudTabs>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-2">项目进度</MudText>
+            <MudList T="string">
+                @foreach (var project in _projects)
+                {
+                    <MudListItem Value="@project.Name" Icon="@project.Icon">
+                        <MudStack Spacing="0" Class="mud-width-full">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.body2">@project.Name</MudText>
+                                <MudText Typo="Typo.caption">@project.Percent%</MudText>
+                            </MudStack>
+                            <MudProgressLinear Value="@project.Percent" Color="@(project.Percent >= 100 ? Color.Success : Color.Primary)"
+                                               Rounded="true" Class="mt-1" />
+                        </MudStack>
+                    </MudListItem>
+                }
+            </MudList>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private int _todayOrders = 328;
+    private double _orderGrowth = 68;
+    private decimal _sales = 128_540m;
+    private int _openTickets = 7;
+    private double _health = 99;
+
+    private static readonly List<ChartSeries<double>> _salesSeries =
+    [
+        new() { Name = "本月", Data = new double[] { 82, 95, 110, 98, 132, 118, 145 } },
+        new() { Name = "上月", Data = new double[] { 70, 85, 92, 105, 118, 108, 126 } },
+    ];
+    private static readonly string[] _months = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+
+    private static readonly List<ChartSeries<double>> _categorySeries =
+    [
+        new() { Name = "消费电子", Data = new double[] { 38 } },
+        new() { Name = "家居", Data = new double[] { 25 } },
+        new() { Name = "办公", Data = new double[] { 20 } },
+        new() { Name = "其他", Data = new double[] { 17 } },
+    ];
+    private static readonly string[] _categories = ["消费电子", "家居", "办公", "其他"];
+
+    private sealed record Project(string Name, string Icon, int Percent);
+    private static readonly Project[] _projects =
+    [
+        new("官网改版", Icons.Material.Filled.Web, 100),
+        new("移动端 App", Icons.Material.Filled.PhoneIphone, 64),
+        new("数据中台", Icons.Material.Filled.Storage, 32),
+        new("运维自动化", Icons.Material.Filled.Build, 12),
+    ];
+}

@@ -1,0 +1,139 @@
+@* ============================================================
+   MudBlazor 对话框表单组件示例（MudBlazor 9.11.x）
+   演示：IDialogService.ShowAsync<T> 传参与取结果、
+         对话框内 MudForm 校验（DataAnnotations 自动通道 + Validation 委托）、
+         先 ValidateAsync 再 Close 的标准提交模式、Snackbar 反馈
+   用法（父页面）：见文件底部注释
+   ============================================================ *@
+
+@* DeviceEditDialog.razor —— 对话框内容组件 *@
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(IsNew ? "新增设备" : "编辑设备")</MudText>
+    </TitleContent>
+    <DialogContent>
+        @* Model + 子控件 For：DataAnnotations 自动校验，无需 DataAnnotationsValidator *@
+        <MudForm @ref="_form" Model="Model" Spacing="2">
+            <MudTextField @bind-Value="Model.Name" For="() => Model.Name"
+                          Label="设备名称" Required="true"
+                          RequiredError="设备名称必填"
+                          Validation="@(new Func<string?, string?>(ValidateName))" />
+
+            <MudTextField @bind-Value="Model.Ip" For="() => Model.Ip"
+                          Label="IP 地址" Required="true"
+                          Validation="@(new Func<string?, string?>(ValidateIp))" />
+
+            <MudNumericField @bind-Value="Model.Port" For="() => Model.Port"
+                             Label="端口" Min="1" Max="65535" Required="true" />
+
+            <MudSelect @bind-Value="Model.Status" Label="状态" For="() => Model.Status">
+                <MudSelectItem Value="@DeviceStatus.Online">在线</MudSelectItem>
+                <MudSelectItem Value="@DeviceStatus.Offline">离线</MudSelectItem>
+            </MudSelect>
+
+            <MudTextField @bind-Value="Model.Description" For="() => Model.Description"
+                          Label="描述" Lines="3" MaxLines="6" Sizing="InputSizing.Auto" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelAsync">取消</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Save" OnClick="SubmitAsync">保存</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public Device Model { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; }
+
+    private MudForm? _form;
+
+    // Validation 委托：Func<T,string?>，null=有效，非 null=错误文本
+    private string? ValidateName(string? name)
+        => string.IsNullOrWhiteSpace(name) ? "设备名称必填"
+         : name.Length > 50 ? "名称不能超过 50 字符"
+         : null;
+
+    private string? ValidateIp(string? ip)
+    {
+        if (string.IsNullOrWhiteSpace(ip)) return "IP 地址必填";
+        var parts = ip.Split('.');
+        return parts.Length == 4 && parts.All(p => byte.TryParse(p, out _))
+            ? null
+            : "IP 格式不正确（示例 192.168.1.100）";
+    }
+
+    // 标准提交模式：ValidateAsync → 判 IsValid → Close(DialogResult.Ok(...))
+    // MudDialog.Close() 不会触发校验；校验失败留在对话框
+    private async Task SubmitAsync()
+    {
+        if (_form is null) return;
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            Snackbar.Add("请先修正表单错误", Severity.Warning);
+            return;
+        }
+
+        Snackbar.Add(IsNew ? "新增成功" : "保存成功", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(Model));
+    }
+
+    private void CancelAsync() => MudDialog.Cancel();   // ESC / 取消返回 Canceled
+
+    // Device / DeviceStatus 模型定义在独立文件 Models/Device.cs（本示例文件的尾部注释有完整代码），
+    // 供页面与对话框组件共用；切勿在两个组件里各自嵌套定义——嵌套类型不兼容会导致
+    // DialogParameters<T> 的 lambda 传参回退到 Add(string, object?) 重载而编译失败。
+}
+
+@*
+父页面调用（crud-page.razor 中）：
+
+    private async Task OpenDialogAsync(Device device, bool isNew)
+    {
+        var parameters = new DialogParameters<DeviceEditDialog>();
+        parameters.Add(x => x.Model, device);   // 泛型 Add：编译期检查参数名与类型
+        parameters.Add(x => x.IsNew, isNew);
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            BackdropClick = false,      // 表单弹窗建议禁遮罩关闭，防误丢输入
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true,
+        };
+
+        var dialog = await DialogService.ShowAsync<DeviceEditDialog>(
+            isNew ? "新增设备" : $"编辑 {device.Name}", parameters, options);
+        var result = await dialog.Result;      // Task，必须 await
+
+        if (result is not null && !result.Canceled)
+        {
+            var saved = (Device)result.Data!;  // Cancel 时 Data 为 null
+            // 持久化 saved ...
+        }
+    }
+
+Models/Device.cs（页面与对话框共用的独立模型文件）：
+
+    namespace YourApp.Components;   // 按项目命名空间调整
+
+    public sealed record Device
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Ip { get; set; } = string.Empty;
+        public int Port { get; set; }
+        public DeviceStatus Status { get; set; }
+        public string Description { get; set; } = string.Empty;
+    }
+
+    public enum DeviceStatus { Online, Offline }
+
+注意：勿在页面与对话框组件里各自嵌套定义同名模型——嵌套类型互不兼容，
+DialogParameters&lt;T&gt; 的 lambda 传参会回退到 Add(string, object?) 重载而编译失败。
+*@
