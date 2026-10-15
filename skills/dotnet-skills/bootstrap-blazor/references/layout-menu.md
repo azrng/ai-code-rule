@@ -56,7 +56,7 @@ Menus = new List<MenuItem>()
 
 Menu 组件初始化时（`InitMenus`），**仅当叶子菜单项的 `Url` 与当前页面路径完全相等**（忽略大小写、去前导 `/`、去查询串）时才自动展开其父分组——**不使用 `Match` 属性、不做前缀匹配**。因此进入子路由页面（如 `/users/edit/1`）时，所属分组会保持默认收起。
 
-修复方法：构建菜单数据后，按当前路径前缀命中子项，手动将分组 `IsCollapsed = false`（public 属性，继承自 CollapseItem；注意 `SetCollapse()` 是 protected internal，应用代码不可调用）：
+修复方法：构建菜单数据后，按当前路径前缀命中子项，手动将分组 `IsCollapsed = false`（public 属性，`MenuItem : NodeItem`，默认 `true`；注意 `SetCollapse()` 是 protected internal，应用代码不可调用）：
 
 ```csharp
 protected override async Task OnInitializedAsync()

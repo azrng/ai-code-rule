@@ -50,7 +50,7 @@ private async Task OnManualSubmit()
 
 <!-- 只读 -->
 <BootstrapInput @bind-Value="@Model.UserName" DisplayText="用户账号"
-                ReadOnly="true" ShowLabel="true"/>
+                Readonly="true" ShowLabel="true"/>
 
 <!-- 密码 -->
 <BootstrapInput @bind-Value="@Model.Password" PlaceHolder="请输入密码"
@@ -72,8 +72,10 @@ private async Task OnManualSubmit()
 **开关**：
 ```razor
 <Switch @bind-Value="@Model.Disabled" DisplayText="是否禁用"
-        ShowLabel="true" OnLabel="是" OffLabel="否"/>
+        ShowLabel="true" OnText="是" OffText="否"/>
 ```
+
+`Switch` 继承 `ToggleBase<bool>`，开关两侧文字参数是 `OnText` / `OffText`（**不存在 `OnLabel` / `OffLabel`**）；另有 `OnColor`(Success)、`OffColor`、`Width`(40)、`Height`(20)、`ShowInnerText` / `OnInnerText` / `OffInnerText`。
 
 ## 3.3 下拉选择组件
 

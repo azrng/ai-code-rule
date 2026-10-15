@@ -218,7 +218,9 @@ CORS 优先用 `Azrng.AspNetCore.Core` 内置扩展，不要手写原生 `AddCor
 
 ### Swagger 与静态文件装配
 
-当前 `Azrng.Swashbuckle` 的 `UseDefaultSwagger` 行为如下：`onlyDevelopmentEnabled: true` 时仅当 `ASPNETCORE_ENVIRONMENT` 为 `Development` 才注册 Swagger；传 `false`（默认值）时所有环境都注册。默认不传自定义 UI 配置时，UI 的 `RoutePrefix` 为空，即访问根路径 `/`；JSON 端点是 `/swagger/v1/swagger.json`。
+Swagger 注册用 `services.AddDefaultSwaggerGen(title: "项目名称", showJwtToken: ...)`（Azrng.Swashbuckle，禁止直接引 Swashbuckle.AspNetCore；签名以锁定版本为准，当前基线 0.4.0，源码核实）。`showJwtToken` 默认 `false`：开启会向 OpenAPI 文档声明全局 Bearer 安全要求（`AddSecurityRequirement`）、改变接口契约——**仅在认证方案就绪（已注册 JWT 认证 + 授权策略）后传 `true`**，并与 `app.UseAuthentication()` / `app.UseAuthorization()` 一起验证；无认证的服务保持默认，不要提前开启。
+
+当前 `UseDefaultSwagger` 行为（0.4.0 源码核实）：`onlyDevelopmentEnabled: true` 时仅当 `ASPNETCORE_ENVIRONMENT` 为 `Development` 才注册 Swagger；传 `false`（默认值）时所有环境都注册。默认不传自定义 UI 配置时，UI 的 `RoutePrefix` 为空，即访问根路径 `/`；JSON 端点是 `/swagger/v1/swagger.json`。
 
 需要把 UI 放到 `/swagger` 时显式设置路由前缀：
 
@@ -524,7 +526,7 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 ```
 
 > 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
-> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、对应的 `Common.EFCore.*` provider 包（如 `Common.EFCore.PostgresSql`）、按需 `Azrng.SqlMigration`（SQL 迁移）/ `Azrng.Swashbuckle`（Swagger）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）/ `DotNetEnv`（仅本地 `.env` 开发配置）。如果代码直接写 `new NpgsqlConnection(...)`，Service 还应显式引用 `Npgsql`；不要依赖 provider 的传递引用。
+> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、对应的 `Common.EFCore.*` provider 包（如 `Common.EFCore.PostgresSql`）、`Azrng.SqlMigration`（SQL 迁移——接库即装，属骨架必装项，不因「暂无业务实体」延后，见下方「新项目骨架清单」）/ `Azrng.Swashbuckle`（Swagger）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）/ `DotNetEnv`（仅本地 `.env` 开发配置）。如果代码直接写 `new NpgsqlConnection(...)`，Service 还应显式引用 `Npgsql`；不要依赖 provider 的传递引用。
 
 ## 常见反模式（最易踩）
 
@@ -537,6 +539,15 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 | 管道写 `app.UseCors()` 但未注册 CORS 服务 | 先 `AddCorsByOrigins`（白名单）/ `AddAnyCors`（仅开发）注册，再 `app.UseCorsPolicy()` |
 
 > 遇到存量项目未遵循上述约定（如用 Newtonsoft、自研 ResultFilter、`QueryableWhereIf`），按现有代码风格走、不强行改写可工作代码；新增功能才按本指南。
+
+## 新项目骨架清单（新建解决方案时逐项核对）
+
+骨架阶段就位、不依赖业务实体是否已存在的能力，核对时不要以「还没有业务代码」为由延后：
+
+1. **Core.csproj 显式引用 `Azrng.Core`**：Core 项目直接声明架构允许且实际使用的基础包，不依赖 `IDomain → Common.EFCore → Azrng.Core` 的传递引用（传递可达是 Application 层的口径，见 layer-responsibilities.md）；包版本以当前解决方案还原结果为准。
+2. **SQL 迁移骨架**：Service 引用 `Azrng.SqlMigration`、建 `wwwroot/MigrationSql/` 目录、`RegisterServices` 内完成 `AddSqlMigrationService(...).AddAutoMigration()` 装配（模板见上方 Startup 装配）——迁移框架属数据层骨架能力，无业务 SQL 也要接好。
+3. **Startup 显式构造函数**：`Startup` 不用主构造函数，按模板写显式构造函数（与生成规则的主构造函数禁令一致，Startup 不豁免）。
+4. **`showJwtToken` 默认关闭**：未配置认证时不开启（见上方 Swagger 小节）。
 
 ## 深入参考
 

@@ -28,15 +28,17 @@
 </Drawer>
 ```
 
-**编程式关闭**：没有公开的 `Close()` 方法（`Close` 是 `JSInvokable`，供 ESC/遮罩点击回调）。父组件把 `IsOpen` 置 `false` 后，组件在 `OnAfterRenderAsync` 调 JS `execute(id,false)` 关闭。注意两点：
+**编程式关闭**：`Close()` 是**公开方法**（`Drawer.razor.cs:233`，带 `[JSInvokable]`，供 ESC/遮罩点击回调，也可经 `@ref` 直接调用）；它先过 `OnClosingAsync` 拦截（返回 false 则中止），再置 `IsOpen = false`、调 JS `execute(id,false)`，动画时 `await Task.Delay(300)`，最后触发 `OnCloseAsync` / `IsOpenChanged`。父组件把 `IsOpen` 置 `false` 同样可行：组件在 `OnAfterRenderAsync` 调 JS `execute(id,false)` 关闭。注意两点：
 - 保存成功后建议「先刷列表再收抽屉 + 显式 `StateHasChanged()`」，刷新异常不拖累关闭，也防电路内丢渲染；
 - 关闭动画依赖 `requestAnimationFrame`（320ms 帧循环移除根元素 `.show`），rAF 节流环境（后台标签页/webview/自动化受控页面）根类残留导致"关不掉"，详见 `troubleshooting.md`。
 
 ## 7.4 Alert 警告
 ```razor
 <Alert Color="Color.Info">信息提示</Alert>
-<Alert Color="Color.Danger" ShowBorder="true" ShowIcon="true">错误警告</Alert>
+<Alert Color="Color.Danger" ShowBorder="true" Icon="fa-solid fa-circle-exclamation">错误警告</Alert>
 ```
+
+**Alert 参数**（`AlertBase` + `Alert.razor.cs`）：`Color`(Primary)、`ShowDismiss`、`Icon`（字符串，**没有 `ShowIcon`**）、`ShowBar`、`ChildContent`、`OnDismiss`，以及 `Alert` 上的 `ShowBorder`(false)、`ShowShadow`(false)。
 
 ## 7.5 Avatar 头像
 ```razor

@@ -1,0 +1,175 @@
+@* ============================================================
+   MudBlazor CRUD 管理页示例（MudBlazor 9.11.x）
+   演示：MudDataGrid（ServerData 服务端分页/排序/过滤自己执行）、
+         SelectColumn 多选、搜索框防抖、删除确认 MessageBox、
+         Snackbar 反馈、编辑走自定义 Dialog（见 dialog-form.razor）
+   依赖：IDialogService / ISnackbar 已注入；Provider 已挂载
+   ============================================================ *@
+
+@page "/devices"
+
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject HttpClient Http
+
+<PageTitle>设备管理</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">设备管理</MudText>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+    <MudTextField @bind-Value="_search" Placeholder="搜索名称 / IP..."
+                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                  IconSize="Size.Medium" Immediate="true" Clearable="true"
+                  OnDebounceIntervalElapsed="OnSearchAsync" DebounceInterval="400"
+                  Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:320px;" />
+    <MudStack Row="true" Spacing="1">
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete"
+                   Disabled="@(_selected.Count == 0)" OnClick="DeleteSelectedAsync">
+            删除选中 (@_selected.Count)
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="AddAsync">新增设备</MudButton>
+    </MudStack>
+</MudStack>
+
+<MudDataGrid @ref="_grid" T="Device" ServerData="ServerReloadAsync"
+             MultiSelection="true" @bind-SelectedItems="_selected"
+             Hover="true" Dense="true" Striped="true" Filterable="false"
+             RowsPerPage="10" SortMode="SortMode.Single">
+    <Columns>
+        <SelectColumn T="Device" />
+        <PropertyColumn Property="x => x.Name" Title="名称" />
+        <PropertyColumn Property="x => x.Ip" Title="IP 地址" />
+        <PropertyColumn Property="x => x.Port" Title="端口" />
+        <TemplateColumn Title="状态">
+            <CellTemplate>
+                <MudChip T="string" Size="Size.Small"
+                         Color="@(context.Item.Status == DeviceStatus.Online ? Color.Success : Color.Error)">
+                    @(context.Item.Status == DeviceStatus.Online ? "在线" : "离线")
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="操作" Sortable="false">
+            <CellTemplate>
+                <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                               OnClick="@(() => EditAsync(context.Item))" />
+                <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                               OnClick="@(() => DeleteAsync(context.Item))" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="Device" PageSizeOptions="[10, 25, 50]" RowsPerPageString="每页 {0} 条" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private MudDataGrid<Device> _grid = null!;
+    private HashSet<Device> _selected = [];
+    private string _search = string.Empty;
+
+    // ---- 服务端数据（演示用内存源；真实场景替换为 API/EF 查询） ----
+    private static readonly List<Device> _db =
+    [
+        new() { Id = 1, Name = "网关-A", Ip = "192.168.1.1", Port = 8080, Status = DeviceStatus.Online },
+        new() { Id = 2, Name = "网关-B", Ip = "192.168.1.2", Port = 8080, Status = DeviceStatus.Offline },
+        new() { Id = 3, Name = "摄像头-01", Ip = "192.168.1.101", Port = 554, Status = DeviceStatus.Online },
+        new() { Id = 4, Name = "摄像头-02", Ip = "192.168.1.102", Port = 554, Status = DeviceStatus.Online },
+        new() { Id = 5, Name = "打印机", Ip = "192.168.1.200", Port = 9100, Status = DeviceStatus.Offline },
+    ];
+
+    // ServerData 是双参签名（含 CancellationToken）；过滤/排序/分页全部自己执行
+    private Task<GridData<Device>> ServerReloadAsync(GridState<Device> state, CancellationToken token)
+    {
+        IEnumerable<Device> query = _db;
+
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            query = query.Where(d =>
+                d.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                d.Ip.Contains(_search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var sortDef = state.SortDefinitions.FirstOrDefault();
+        if (sortDef is not null)
+        {
+            query = sortDef.Descending
+                ? query.OrderByDescending(d => d.Name)
+                : query.OrderBy(d => d.Name);
+        }
+
+        var items = query.Skip(state.Page * state.PageSize).Take(state.PageSize).ToList();
+        return Task.FromResult(new GridData<Device> { Items = items, TotalItems = query.Count() });
+    }
+
+    private Task OnSearchAsync(string _) => _grid.ReloadServerData();
+
+    private async Task AddAsync()
+    {
+        var newDevice = new Device { Status = DeviceStatus.Online };
+        var parameters = new DialogParameters<DeviceEditDialog>();
+        parameters.Add(x => x.Model, newDevice);
+        parameters.Add(x => x.IsNew, true);
+        var dialog = await DialogService.ShowAsync<DeviceEditDialog>("新增设备", parameters,
+            new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            newDevice.Id = _db.Max(d => d.Id) + 1;
+            _db.Add(newDevice);
+            Snackbar.Add($"已新增 {newDevice.Name}", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+    }
+
+    private async Task EditAsync(Device device)
+    {
+        var parameters = new DialogParameters<DeviceEditDialog>();
+        parameters.Add(x => x.Model, device);
+        parameters.Add(x => x.IsNew, false);
+        var dialog = await DialogService.ShowAsync<DeviceEditDialog>($"编辑 {device.Name}", parameters,
+            new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            Snackbar.Add($"已保存 {device.Name}", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+    }
+
+    private async Task DeleteAsync(Device device)
+    {
+        // ShowMessageBoxAsync 返回 bool?：null=取消 / true=Yes / false=No
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "确认删除",
+            $"确定删除设备 {device.Name}（{device.Ip}）吗？此操作不可恢复。",
+            yesText: "删除", cancelText: "取消");
+
+        if (confirmed is not true) return;
+
+        _db.RemoveAll(d => d.Id == device.Id);
+        _selected.RemoveWhere(d => d.Id == device.Id);
+        Snackbar.Add($"已删除 {device.Name}", Severity.Info);
+        await _grid.ReloadServerData();
+    }
+
+    private async Task DeleteSelectedAsync()
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "批量删除", $"确定删除选中的 {_selected.Count} 台设备吗？",
+            yesText: "删除", cancelText: "取消");
+        if (confirmed is not true) return;
+
+        var ids = _selected.Select(d => d.Id).ToHashSet();
+        _db.RemoveAll(d => ids.Contains(d.Id));
+        _selected = [];   // SelectedItems 按引用检测变更：整组替换而不是就地 Clear
+        Snackbar.Add($"已删除 {ids.Count} 台设备", Severity.Info);
+        await _grid.ReloadServerData();
+    }
+
+    // Device / DeviceStatus 模型定义在独立文件 Models/Device.cs（dialog-form.razor 尾部注释有完整代码），
+    // 供页面与对话框组件共用；切勿在此嵌套重复定义（嵌套类型不兼容会导致
+    // DialogParameters<T> 的 lambda 传参回退到 Add(string, object?) 重载而编译失败）。
+}
