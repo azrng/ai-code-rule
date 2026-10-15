@@ -155,7 +155,7 @@ Skill 的「代码规范」小节应提炼此文件的结论（注明提取自�
 
 * IDialogService / DialogService
 * ISnackbar / SnackbarService
-* IBreakpointService、IPopoverService 等以实际源码为准
+* IBrowserViewportService（断点/视口订阅，经 `AddMudBlazorResizeListener` 注册；不存在 `IBreakpointService`）、IPopoverService 等以实际源码为准
 
 说明：
 
@@ -174,16 +174,16 @@ Skill 的「代码规范」小节应提炼此文件的结论（注明提取自�
 * 行选择（多选、全选）、行点击
 * 行内编辑与对话框编辑
 * 聚合（AggregateDefinition）
-* Hover、Dense、StickyColumns 等外观参数
+* Hover、Dense 等外观参数；列冻结用**列上的** `StickyLeft` / `StickyRight`（`Column.razor.cs:357-366`；不存在 `StickyColumns` 参数，`HasStickyColumns` 是内部私有判定）
 
 以上以当前源码 `src/MudBlazor/Components/DataGrid/`（`MudDataGrid.razor.cs` 约 129KB）实际 API 为准，最终应能指导 Coding Agent 正确生成复杂 CRUD DataGrid。
 
 ### 5. Form 与校验体系
 
-* MudForm / MudFormItem
-* MudTextField 等表单组件的 `For` 表达式校验
-* DataAnnotations 校验与 `Validation` / `ValidationResolver`
-* 手动校验触发（`Validate()` / `Reset()` / `ResetValidation()`）
+* MudForm（**v9 无 `MudFormItem`**，嵌套表单直接用 `MudForm`，`IsValid` 自动聚合子表单）
+* MudTextField 等表单组件的 `For` 表达式校验（反射属性 `ValidationAttribute` 自动执行，无需 DataAnnotationsValidator）
+* `Validation` 参数多签名分发（`Func<T,bool>` / `Func<T,string?>` / `Func<T,IEnumerable<string?>>` / `ValidationAttribute` 实例及各 Task 版本；**不存在 `ValidationResolver`**）
+* 手动校验触发（**`ValidateAsync()` / `ResetAsync()` / `ResetValidationAsync()`**；同步 `Validate()` 已 `[Obsolete]`）
 
 ### 6. 主题体系
 
@@ -205,6 +205,8 @@ Skill 的「代码规范」小节应提炼此文件的结论（注明提取自�
 必须重点分析 `src/MudBlazor.Docs/Pages/Components/` 下的官方示例，因为：
 
 > Docs 中的实际写法优先于 AI 自己推断出来的写法。
+
+注意：Docs 示例文件头部带 `@namespace MudBlazor.Docs.Examples`，部分依赖 `MudBlazor.Examples.Data`（如 `Employee`、`ClientInfo` 模型）与 `httpClient` 注入。提取进 skill 前必须剥离这些引用，换为示例自包含的最小模型与数据。
 
 寻找：
 
@@ -331,7 +333,7 @@ SKILL.md 应负责：
 </MudDataGrid>
 ```
 
-这种「看起来非常像 MudBlazor」的代码，参数名、默认值、事件签名都可能与当前版本不符。Skill 必须给出「先查源码再写参数」的硬性流程。
+这段示例本身就藏着三个真实幻觉：`Pageable` 不存在（分页靠 `PagerContent` 放 `MudDataGridPager`）、`OnRowClick` 是 MudTable 的事件名（DataGrid 叫 `RowClick`，参数类型 `DataGridRowClickEventArgs<T>`）、`RowsPerPage` 需配合分页器才可见。Skill 必须给出「先查源码再写参数」的硬性流程，并收录 Table↔DataGrid 互异命名对照（`QuickFilter`↔`Filter`、`OnRowClick`↔`RowClick`、`TableData<T>`↔`GridData<T>`、默认 `ReadOnly` false↔true）。
 
 ---
 
@@ -411,7 +413,7 @@ Snackbar 反馈
 
 * 本地源码：dev 分支，`v9.11.0-65-g326bf8c8d`（commit `326bf8c8d`，2026-10-14）
 * 组件库目标框架：net8.0 / net9.0 / net10.0
-* v9 引入 `ParameterState<T>` 参数状态模式，v8 及更早版本没有——跨版本套用示例会直接编译失败或行为不一致
+* `ParameterState<T>` 参数状态框架自 **v6.18.0** 引入（git tag 证实，2024-03 #8258），并非 v9 新增；但 v9 大量组件参数改用它（`@bind-IsDarkMode`、`@bind-Open`、`@bind-ActivePanelIndex` 等），从 v7/v8 迁移时注意绑定语义差异
 
 Skill 应记录：
 
@@ -521,6 +523,7 @@ Toolbar
 
 * 使用真实 MudBlazor API（参数名、事件签名与当前版本源码一致）
 * 可以编译（实际执行 `dotnet build`，Windows 环境下禁止 `&&` 链式命令）
+* **`dotnet build` 0 警告**——过时 API（如 `Validate()`）、MUD0002（TemplateColumn 未包 `<CellTemplate>`）等都是靠警告而非错误暴露的，带警告通过 = Skill 教了将过时的写法
 * 与项目 csproj 声明的 MudBlazor 版本一致，没有把 dev 专属 API 用到旧版本
 * 没有虚构参数
 * 没有混入其他 Blazor UI 框架 API
