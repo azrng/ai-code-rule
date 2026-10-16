@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flutter UI Implementation"
+  short_description: "Implement polished adaptive Flutter UI"
+  default_prompt: "Use $flutter-implementation to implement the approved Flutter interface."

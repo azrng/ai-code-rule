@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flutter Motion"
+  short_description: "Design purposeful Flutter motion systems"
+  default_prompt: "Use $flutter-motion to add purposeful, accessible motion to this Flutter flow."
