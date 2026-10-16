@@ -1,62 +1,205 @@
 ---
 name: aspnet-core
-description: Build, review, refactor, or architect ASP.NET Core web applications using current official guidance for .NET web development. Use when working on Blazor Web Apps, Razor Pages, MVC, Minimal APIs, controller-based Web APIs, SignalR, gRPC, middleware, dependency injection, configuration, authentication, authorization, testing, performance, deployment, or ASP.NET Core upgrades.
+description: "Build, debug, modernize, or review ASP.NET Core applications with correct hosting, middleware, security, configuration, logging, and deployment patterns on current .NET. USE FOR: working on ASP.NET Core apps, services, or middleware; changing auth, routing, configuration, hosting, or deployment behavior; deciding between ASP.NET Core sub-stacks. DO NOT USE FOR: unrelated stacks; generic tasks that do not need this specific guidance. INVOKES: inspect the repository context, edit targeted files, and run relevant build, test, lint, or validation commands when changes are made."
+compatibility: "Requires an ASP.NET Core project or solution."
 ---
 
 # ASP.NET Core
 
-## Overview
+## Trigger On
 
-Choose the right ASP.NET Core application model, compose the host and request pipeline correctly, and implement features in the framework style Microsoft documents today.
+- working on ASP.NET Core apps, services, or middleware
+- changing auth, routing, configuration, hosting, or deployment behavior
+- deciding between ASP.NET Core sub-stacks such as Blazor, Minimal APIs, or controller APIs
+- debugging request pipeline issues
+- modernizing legacy ASP.NET to ASP.NET Core
 
-Load the smallest set of references that fits the task. Do not load every reference by default.
+## Documentation
+
+- [ASP.NET Core Overview](https://learn.microsoft.com/en-us/aspnet/core/?view=aspnetcore-10.0)
+- [ASP.NET Core Middleware](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-10.0)
+- [ASP.NET Core Best Practices](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/best-practices?view=aspnetcore-10.0)
+- [Configuration in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-10.0)
+- [Authentication and Authorization](https://learn.microsoft.com/en-us/aspnet/core/security/?view=aspnetcore-10.0)
+
+### References
+
+- [patterns.md](references/patterns.md) - Detailed middleware patterns, security patterns, configuration patterns, DI patterns, error handling patterns, and logging patterns
+- [anti-patterns.md](references/anti-patterns.md) - Common ASP.NET Core mistakes including HttpClient misuse, async anti-patterns, configuration errors, DI issues, middleware ordering problems, and security vulnerabilities
 
 ## Workflow
 
-1. Confirm the target framework, SDK, and current app model.
-2. Open [references/stack-selection.md](references/stack-selection.md) first for new apps or major refactors.
-3. Open [references/program-and-pipeline.md](references/program-and-pipeline.md) next for `Program.cs`, DI, configuration, middleware, routing, logging, and static assets.
-4. Open exactly one primary app-model reference:
-   - [references/ui-blazor.md](references/ui-blazor.md)
-   - [references/ui-razor-pages.md](references/ui-razor-pages.md)
-   - [references/ui-mvc.md](references/ui-mvc.md)
-   - [references/apis-minimal-and-controllers.md](references/apis-minimal-and-controllers.md)
-5. Add cross-cutting references only as needed:
-   - [references/data-state-and-services.md](references/data-state-and-services.md)
-   - [references/security-and-identity.md](references/security-and-identity.md)
-   - [references/realtime-grpc-and-background-work.md](references/realtime-grpc-and-background-work.md)
-   - [references/testing-performance-and-operations.md](references/testing-performance-and-operations.md)
-6. Open [references/versioning-and-upgrades.md](references/versioning-and-upgrades.md) before introducing new platform APIs into an older solution or when migrating between major versions.
-7. Use [references/source-map.md](references/source-map.md) when you need the Microsoft Learn section that corresponds to a task not already covered by the focused references.
+1. **Detect the real hosting shape first:**
+   - top-level `Program.cs` structure
+   - middleware order and registration
+   - auth model (Identity, JWT, OAuth, cookies)
+   - endpoint registrations and routing
 
-## Default Operating Assumptions
+2. **Follow the correct middleware order:**
+   ```
+   ExceptionHandler → HttpsRedirection → Static Files → Routing
+   → CORS → Authentication → Authorization → Rate Limiting
+   → Response Caching → Custom Middleware → Endpoints
+   ```
 
-- Prefer the latest stable ASP.NET Core and .NET unless the repository or user request pins an older target.
-- As of March 2026, prefer .NET 10 / ASP.NET Core 10 for new production work. Treat ASP.NET Core 11 as preview unless the user explicitly asks for preview features.
-- Prefer `WebApplicationBuilder` and `WebApplication`. Avoid older `Startup` and `WebHost` patterns unless the codebase already uses them or the task is migration.
-- Prefer built-in DI, options/configuration, logging, ProblemDetails, OpenAPI, health checks, rate limiting, output caching, and Identity before adding third-party infrastructure.
-- Keep feature slices cohesive so the page, component, endpoint, controller, validation, service, data access, and tests are easy to trace.
-- Respect the existing app model. Do not rewrite Razor Pages to MVC or controllers to Minimal APIs without a clear reason.
-- For controller-based service templates, include the default liveness/readiness and time-check endpoints described in the API reference; adapt the raw-response attribute to the result-wrapper library in use.
+3. **Use built-in patterns correctly:**
+   - Prefer `IOptions<T>` / `IOptionsSnapshot<T>` for configuration
+   - Use `ILogger<T>` for structured logging
+   - Use `IHttpClientFactory` for HTTP clients (never `new HttpClient()`)
+   - Use `IHostedService` / `BackgroundService` for background work
 
-## Reference Guide
+4. **Route specialized work to specific skills:**
+   - UI and components → `blazor`
+   - Real-time → `signalr`
+   - RPC → `grpc`
+   - New HTTP APIs → `minimal-apis` (prefer unless controllers needed)
+   - Controller APIs → `web-api`
 
-- [references/_sections.md](references/_sections.md): Quick index and reading order.
-- [references/stack-selection.md](references/stack-selection.md): Choose the right ASP.NET Core application model and template.
-- [references/program-and-pipeline.md](references/program-and-pipeline.md): Structure `Program.cs`, services, middleware, routing, configuration, logging, and static assets.
-- [references/ui-blazor.md](references/ui-blazor.md): Build Blazor Web Apps, choose render modes, and use components, forms, and JS interop correctly. Includes .NET 10 Static SSR 404 handling (body suppression on manual `Response.StatusCode = 404`; `Router.NotFoundPage` + `NavigationManager.NotFound()` patterns).
-- [references/ui-razor-pages.md](references/ui-razor-pages.md): Build page-focused server-rendered apps with handlers, model binding, and conventions.
-- [references/ui-mvc.md](references/ui-mvc.md): Build controller/view applications with clear separation of concerns.
-- [references/apis-minimal-and-controllers.md](references/apis-minimal-and-controllers.md): Build HTTP APIs with Minimal APIs or controllers, including validation and response patterns.
-- [references/data-state-and-services.md](references/data-state-and-services.md): Use EF Core, `DbContext`, options, `IHttpClientFactory`, session, temp data, and app state responsibly.
-- [references/security-and-identity.md](references/security-and-identity.md): Apply authentication, authorization, Identity, secrets, data protection, CORS, CSRF, and HTTPS guidance.
-- [references/realtime-grpc-and-background-work.md](references/realtime-grpc-and-background-work.md): Use SignalR, gRPC, and hosted services.
-- [references/testing-performance-and-operations.md](references/testing-performance-and-operations.md): Add integration tests, browser tests, caching, compression, health checks, rate limits, and deployment concerns.
-- [references/versioning-and-upgrades.md](references/versioning-and-upgrades.md): Handle target frameworks, breaking changes, obsolete APIs, and migrations.
-- [references/source-map.md](references/source-map.md): Map the official ASP.NET Core documentation tree to the references in this skill.
+5. **Validate with build, tests, and targeted endpoint checks.**
 
-## Execution Notes
+## Current Upstream Notes
 
-- When generating new code, start from the correct `dotnet new` template and keep the generated structure recognizable.
-- When editing an existing solution, follow the solution's conventions first and use these references to avoid framework misuse or outdated patterns.
-- When a task mentions "latest", verify the feature on Microsoft Learn or the ASP.NET Core docs repo before relying on memory.
+- ASP.NET Core `v10.0.11` is a servicing release rather than a new programming model. It updates OpenAPI to `2.7.5`, fixes restoration of expired client-persisted Blazor circuit state, and refreshes servicing dependencies. Keep the existing middleware and endpoint architecture, then rerun focused OpenAPI, interactive-rendering, auth, and startup tests.
+- The August 2026 Microsoft Learn overview for `aspnetcore-10.0` remains the routing entry point for choosing between Blazor, Minimal APIs, controller APIs, SignalR, and gRPC; the refresh does not justify changing an existing app model by itself.
+
+## Middleware Patterns
+
+### Correct Order Matters
+```csharp
+var app = builder.Build();
+
+app.UseExceptionHandler("/error");      // 1. Catch all exceptions
+app.UseHsts();                          // 2. Security headers
+app.UseHttpsRedirection();              // 3. HTTPS redirect
+app.UseStaticFiles();                   // 4. Serve static files
+app.UseRouting();                       // 5. Route matching
+app.UseCors();                          // 6. CORS policy
+app.UseAuthentication();                // 7. Who are you?
+app.UseAuthorization();                 // 8. Can you access?
+app.UseRateLimiter();                   // 9. Rate limiting
+app.UseResponseCaching();               // 10. Response cache
+app.MapControllers();                   // 11. Endpoints
+```
+
+### Custom Middleware Pattern
+```csharp
+public class RequestTimingMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly ILogger<RequestTimingMiddleware> _logger;
+
+    public RequestTimingMiddleware(RequestDelegate next, ILogger<RequestTimingMiddleware> logger)
+    {
+        _next = next;
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        var sw = Stopwatch.StartNew();
+        await _next(context);
+        _logger.LogInformation("Request {Path} completed in {Elapsed}ms",
+            context.Request.Path, sw.ElapsedMilliseconds);
+    }
+}
+```
+
+## Configuration Patterns
+
+### Strongly-Typed Options
+```csharp
+// appsettings.json
+{
+  "EmailSettings": {
+    "SmtpServer": "smtp.example.com",
+    "Port": 587
+  }
+}
+
+// Registration
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
+
+// Usage
+public class EmailService(IOptions<EmailSettings> options)
+{
+    private readonly EmailSettings _settings = options.Value;
+}
+```
+
+### Environment-Based Configuration
+```csharp
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddEnvironmentVariables()
+    .AddUserSecrets<Program>(optional: true);
+```
+
+## Security Patterns
+
+### Authentication Setup
+```csharp
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+```
+
+### Authorization Policies
+```csharp
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+    options.AddPolicy("MinAge18", policy =>
+        policy.RequireClaim("Age", "18", "19", "20")); // simplified
+});
+```
+
+## Anti-Patterns to Avoid
+
+| Anti-Pattern | Why It's Bad | Better Approach |
+|--------------|--------------|-----------------|
+| `new HttpClient()` | Socket exhaustion | `IHttpClientFactory` |
+| Sync-over-async (`Task.Result`) | Thread pool starvation | `await` properly |
+| Storing secrets in `appsettings.json` | Security risk | User Secrets, Key Vault |
+| Catching all exceptions silently | Hides bugs | Use `IExceptionHandler` |
+| `async void` in middleware | Crashes process | `async Task` |
+| Missing HTTPS redirect | Security risk | `UseHttpsRedirection()` |
+
+## Performance Best Practices
+
+1. **Use async/await everywhere** — avoid sync blocking calls
+2. **Pool DbContext properly** — use scoped lifetime
+3. **Enable response compression** — `UseResponseCompression()`
+4. **Use output caching** — `UseOutputCache()` for .NET 7+
+5. **Profile with diagnostic tools** — Visual Studio Diagnostic Tools, PerfView
+6. **Avoid allocations in hot paths** — use `Span<T>`, pooling
+
+## Deliver
+
+- production-credible ASP.NET Core code and config
+- a clear request pipeline and hosting story
+- verification that matches the affected endpoints and middleware
+- security headers and HTTPS configured correctly
+
+## Validate
+
+- middleware order is intentional and documented
+- security and configuration changes are explicit
+- endpoint behavior is covered by tests or smoke checks
+- no blocking calls in async context
+- secrets are not committed to source control
+- health checks are implemented for production readiness
