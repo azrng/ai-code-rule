@@ -92,12 +92,6 @@ npx skills add managedcode/dotnet-skills --skill platform-detection --agent univ
 # 运行测试
 npx skills add managedcode/dotnet-skills --skill run-tests --agent universal --copy --yes
 
-# 测试分析扩展参考
-npx skills add managedcode/dotnet-skills --skill test-analysis-extensions --agent universal --copy --yes
-
-# 测试反模式检查
-npx skills add managedcode/dotnet-skills --skill test-anti-patterns --agent universal --copy --yes
-
 # 测试覆盖缺口分析
 npx skills add managedcode/dotnet-skills --skill test-gap-analysis --agent universal --copy --yes
 
