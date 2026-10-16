@@ -15,6 +15,11 @@ npx skills add kamranbekirovyz/skills --skill flutter-improve-design --agent uni
 # UI UX Pro Max-必须
 npx ui-ux-pro-max-cli init --ai universal --offline
 
+flutter-add-widget-test，Flutter 官方提供。
+它可以让 AI 使用 WidgetTester 编写组件测试，验证按钮点击、输入框、列表滚动、状态变化。
+# Flutter Widget 自动化测试 可选
+npx skills add flutter/agent-plugins --skill flutter-add-widget-test --agent universal --copy --yes
+
 
 一、开发流程类
 # 需求分析与头脑风暴
@@ -132,3 +137,24 @@ npx skills add managedcode/dotnet-skills --skill test-gap-analysis --agent unive
 # 测试标签管理
 npx skills add managedcode/dotnet-skills --skill test-tagging --agent universal --copy --yes
 
+# 通用联网搜索（国内网络、无 API Key）- 推荐
+npx skills add cute-omega/min-web-search-skill --skill min-web-search --agent universal --copy --yes
+
+
+
+
+1. .NET 编码最佳实践
+来源：dotnet-best-practices
+# .NET / C# 编码最佳实践
+npx skills add github/awesome-copilot --skill dotnet-best-practices --agent universal --copy --yes
+
+
+它包括 XML 注释、SOLID、依赖注入、结构化日志和异常处理等规范。
+
+但有一个缺点：它对主构造函数、MSTest、Semantic Kernel 等技术存在特定偏好。建议下载后稍作修改，明确要求优先遵守项目的 .NET 和 C# 版本，不强制引入特定库。
+
+
+
+
+# 2. Web 页面自动化测试（优先）
+npx skills add anthropics/skills --skill webapp-testing --agent universal --copy --yes
