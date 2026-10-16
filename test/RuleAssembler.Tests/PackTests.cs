@@ -207,7 +207,9 @@ public sealed class PackTests : IDisposable
     [Fact]
     public void Resolve_OfflineWithoutCache_FallsBackToEmbedded()
     {
-        var resolution = PackResolver.Resolve(new[] { "--offline" });
+        // cacheRoot 注入隔离目录：测试不依赖也不污染本机 %LOCALAPPDATA% 真实缓存，
+        // 保证「无缓存 → 内嵌兜底」分支在任何开发机上可复现
+        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: NewDir());
 
         Assert.Null(resolution.Version);
         Assert.Equal("embedded", resolution.Source);
@@ -215,10 +217,24 @@ public sealed class PackTests : IDisposable
     }
 
     [Fact]
+    public void Resolve_OfflineWithCache_PrefersCache()
+    {
+        var cache = NewDir();
+        WriteFile(cache, "2.0.0/pack.json", "{\"version\":\"2.0.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
+        WriteFile(cache, "2.0.0/fragments/manifest.json", "{}");
+        File.WriteAllText(Path.Combine(cache, "current.json"), "{\"version\":\"2.0.0\"}");
+
+        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
+
+        Assert.Equal("2.0.0", resolution.Version);
+        Assert.Equal("cache", resolution.Source);
+    }
+
+    [Fact]
     public void Resolve_BareCommandLineArgs_WithoutCache_FallsBackToEmbedded()
     {
         // 命令行启动不做网络检查：无缓存直接内嵌
-        var resolution = PackResolver.Resolve(new[] { "--help" });
+        var resolution = PackResolver.Resolve(new[] { "--help" }, cacheRoot: NewDir());
 
         Assert.Equal("embedded", resolution.Source);
     }

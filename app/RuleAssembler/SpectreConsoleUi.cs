@@ -58,36 +58,38 @@ internal sealed class SpectreConsoleUi : IConsoleUi
         IReadOnlyList<SkillGroupChoice> groups,
         IReadOnlyList<int> selected)
     {
+        // 选项值带全局编号前缀（与 ChooseMany 的 N. 风格一致）：desc 为空的技能值退化为纯 ID，
+        // 编号保证组标题与技能值永不相撞，Spectre 按值勾选不会串选
         var prompt = new MultiSelectionPrompt<string>()
             .Title(Markup.Escape(title))
             .InstructionsText("[grey](方向键展开分组，空格切换勾选，回车确认)[/]")
             .PageSize(PageBudget(choices.Count + groups.Count))
             .NotRequired();
 
+        var display = new List<string>(choices.Count);
+        for (var i = 0; i < choices.Count; i++)
+        {
+            var suffix = string.IsNullOrWhiteSpace(choices[i].Desc) ? "" : $" — {choices[i].Desc}";
+            display.Add($"{i + 1}. {choices[i].Label}{suffix}");
+        }
+
         foreach (var group in groups)
         {
-            var items = group.SkillIndices
-                .Select(index => (index, Label: GroupedLabel(choices[index])))
-                .ToList();
             prompt.AddChoiceGroup(
                 group.Title,
-                items.Select(item => item.Label));
+                group.SkillIndices.Select(index => display[index]));
         }
 
         foreach (var index in selected)
-            prompt.Select(GroupedLabel(choices[index]));
+            prompt.Select(display[index]);
 
         var chosen = AnsiConsole.Prompt(prompt);
         var chosenSet = chosen.ToHashSet(StringComparer.Ordinal);
-        return Enumerable.Range(0, choices.Count)
-            .Where(index => chosenSet.Contains(GroupedLabel(choices[index])))
+        return display
+            .Select((label, index) => (label, index))
+            .Where(item => chosenSet.Contains(item.label))
+            .Select(item => item.index)
             .ToList();
-    }
-
-    private static string GroupedLabel(UiChoice choice)
-    {
-        var suffix = string.IsNullOrWhiteSpace(choice.Desc) ? "" : $" — {choice.Desc}";
-        return $"{choice.Label}{suffix}";
     }
 
     // Spectre.Console 要求 PageSize >= 3：选项行数不足 3（如汇总确认只有 1 项 + 取消）时取下限，超长列表封顶 12

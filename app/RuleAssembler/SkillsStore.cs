@@ -29,7 +29,18 @@ internal sealed class SkillsStore
             .ToList();
     }
 
+    // 发现结果缓存：内容来源（内嵌 / 内容包目录）在进程内不可变，Discover 可安全复用
+    private IReadOnlyList<SkillInfo>? _discovered;
+
     public IReadOnlyList<SkillInfo> Discover()
+    {
+        // 技能资源来自内嵌程序集或内容包目录，进程内不可变；发现结果含 49 个 SKILL.md 的
+        // frontmatter 解析，--check 与交互流程会多次调用，这里缓存避免重复枚举解析
+        _discovered ??= DiscoverCore();
+        return _discovered;
+    }
+
+    private IReadOnlyList<SkillInfo> DiscoverCore()
     {
         var manifestTargets = _relativeNames
             .Where(relative => relative.EndsWith("/SKILL.md", StringComparison.OrdinalIgnoreCase))

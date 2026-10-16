@@ -2,43 +2,9 @@ using System.Text.Json;
 
 namespace RuleAssembler;
 
-internal sealed record DetectionEvidence(string Trait, string Value, string Reason);
-
-// 检测候选：一个候选对应一个兼容样例（维度组合 + 样例映射的 Profile ID 与标签，仅供旧展示路径）。
-// 样例未携带的维度即通配维度；候选顺序与 manifest Profile 顺序对齐，与旧 traits 过滤口径的展示一致
-internal sealed record DetectionCandidate(
-    Selection Selection,
-    string? SampleProfileId,
-    string Label);
-
-// 检测结果：既可能是收敛到唯一组合的完整结果，也可能是带待确认维度的部分结果。
-// 部分结果不伪造完整推荐；Sample* 成员仅在候选唯一（收敛）时给出
-internal sealed record DetectionResult(
-    Dictionary<string, string> Confirmed,
-    List<string> Unconfirmed,
-    List<DetectionCandidate> Candidates,
-    List<string> Reasons,
-    List<string> Notes)
-{
-    public bool Converged => Candidates.Count == 1;
-
-    // 收敛候选对应的兼容样例 ID 与标签
-    public string? SampleProfileId => Converged ? Candidates[0].SampleProfileId : null;
-
-    public string? SampleLabel => Converged ? Candidates[0].Label : null;
-
-    // 完整回答组合取候选样例的全部维度选择，保证按配方能还原到同一组合
-    public Dictionary<string, string> BuildSampleAnswers()
-    {
-        if (!Converged)
-            return new Dictionary<string, string>(StringComparer.Ordinal);
-        return new Dictionary<string, string>(Candidates[0].Selection.Dimensions, StringComparer.Ordinal);
-    }
-}
-
 // 目标项目技术栈检测：扫描目录中的特征文件（sln/csproj/package.json/wails.json/tauri/pubspec 等），
-// 产出维度证据，再按兼容样例收敛候选（组件口径：候选来源是 compatibilityCases 而非 Profile traits，
-// 样例未携带的维度视为通配），保证推荐的一定是可生成的组合。
+// 产出维度证据（DetectionModels），再按兼容样例收敛候选（组件口径：候选来源是 compatibilityCases
+// 而非 Profile traits，样例未携带的维度视为通配），保证推荐的一定是可生成的组合。
 // 只做浅层扫描（深度 ≤2，跳过 node_modules/bin/obj 等），双击启动时也要保持瞬时完成。
 internal sealed class ProjectDetector
 {
@@ -361,8 +327,9 @@ internal sealed class ProjectDetector
                 "backend",
                 "python",
                 signals.HasFastapiDependency ? "Python 依赖中包含 fastapi" : "发现 Python 工程文件（pyproject/requirements）"));
-        if ((signals.HasPyproject || signals.HasRequirementsTxt) && !signals.DotNetOrNodePresent())
-            evidence.TryAddEvidence(new("form", "backend-only", "发现 Python 后端工程文件（pyproject/requirements）"));
+        if ((signals.HasPyproject || signals.HasRequirementsTxt) && !signals.DotNetOrNodePresent()
+            && !evidence.Any(item => item.Trait == "form" && item.Value == "backend-only"))
+            evidence.Add(new("form", "backend-only", "发现 Python 后端工程文件（pyproject/requirements）"));
 
         if (signals.NextInPackageJson)
         {
@@ -459,7 +426,7 @@ internal sealed class ProjectDetector
                 {
                     signals.CsprojContents.Add(File.ReadAllText(file));
                 }
-                catch (IOException)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     // 读不动的工程文件直接跳过，不影响整体检测
                 }
@@ -636,70 +603,5 @@ internal sealed class ProjectDetector
                 stack.Push((sub, depth + 1));
             }
         }
-    }
-}
-
-internal sealed class ScanSignals
-{
-    public bool HasWailsJson;
-    public bool HasGoMod;
-    public bool HasTauriConf;
-    public bool HasNuxtConfig;
-    public bool HasElectronConfig;
-    public bool HasPubspec;
-    public bool HasPackageJson;
-    public bool HasPyproject;
-    public bool HasRequirementsTxt;
-    public bool HasSln;
-    public bool HasRazorFiles;
-
-    // Components/ 目录（深度 ≤3）下存在 .razor 文件：Blazor Web App 模板结构特征
-    public bool RazorUnderComponents;
-    public bool HasRootHtml;
-    public bool HasRootHtmlOnly;
-    public bool ReactInPackageJson;
-    public bool VueInPackageJson;
-    public bool NextInPackageJson;
-    public bool NuxtInPackageJson;
-    public bool ElectronInPackageJson;
-    public bool HasFastapiDependency;
-    public int CsprojCount;
-    public List<string> CsprojContents { get; } = new();
-
-    public bool DotNetOrNodePresent()
-    {
-        return CsprojCount > 0 || HasSln || HasPackageJson;
-    }
-
-    public bool PackageJsonWithoutBackend
-    {
-        // Electron 是桌面壳而非纯前端工程，存在 Electron 信号时不得再给 form=web 兜底证据，
-        // 否则与壳证据的 form=desktop 冲突会把 form 维度打回未确认
-        get
-        {
-            return HasPackageJson
-                && !HasWailsJson
-                && !HasTauriConf
-                && !HasNuxtConfig
-                && !NuxtInPackageJson
-                && !HasElectronConfig
-                && !ElectronInPackageJson
-                && CsprojCount == 0
-                && !NextInPackageJson;
-        }
-    }
-
-    public bool OnlyStaticHtml
-    {
-        get { return HasRootHtmlOnly && !HasGoMod && !HasPubspec && !HasPyproject; }
-    }
-}
-
-internal static class DetectionEvidenceExtensions
-{
-    public static void TryAddEvidence(this List<DetectionEvidence> evidence, DetectionEvidence item)
-    {
-        if (!evidence.Any(existing => existing.Trait == item.Trait && existing.Value == item.Value))
-            evidence.Add(item);
     }
 }

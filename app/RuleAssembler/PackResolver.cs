@@ -36,29 +36,30 @@ internal static class PackResolver
     // args 为去掉已知开关后的原始参数；interactive 表示当前启动可询问（无参数交互模式）。
     // 更新检查是惰性的：Resolve 只决定「本次用哪个来源」，绝不产生网络副作用；
     // 真正的更新检查由 Program 在用户选择了会用到内容包的操作后调用 CheckForUpdates
-    public static PackResolution Resolve(string[] args)
+    public static PackResolution Resolve(string[] args, string? cacheRoot = null)
     {
+        // cacheRoot 供测试注入隔离目录；生产缺省走本机缓存根，行为不变
+        var cache = cacheRoot ?? CacheRoot;
         var packArg = ReadOption(args, "--pack");
         var offline = args.Contains("--offline", StringComparer.OrdinalIgnoreCase);
 
         // 1) 显式指定包：zip 或已解包目录，校验失败硬报错（显式指定不做静默兜底）
         if (packArg is not null)
         {
-            var (root, logs) = PreparePack(packArg, validate: true);
+            var (root, logs) = PreparePack(packArg, validate: true, cache);
             var manifest = PackReader.Load(root);
             return new PackResolution(new FolderResourceProvider(root), manifest.Version, "pack", logs);
         }
 
         // 2) 离线模式 / 命令行模式：缓存命中用缓存，否则内嵌，绝不联网
-        var cached = FindCachedRoot();
+        var cached = FindCachedRoot(cache);
         if (cached is not null)
         {
             var manifest = PackReader.Load(cached);
-            var source = offline ? "cache" : "cache";
             var logs = offline
                 ? new List<string> { $"[pack] 离线模式：使用本地缓存 {manifest.Version}" }
                 : new List<string>();
-            return new PackResolution(new FolderResourceProvider(cached), manifest.Version, source, logs);
+            return new PackResolution(new FolderResourceProvider(cached), manifest.Version, "cache", logs);
         }
 
         var offlineLog = offline
@@ -176,8 +177,8 @@ internal static class PackResolver
         }
     }
 
-    // 准备包根目录：目录直接用；zip 解到缓存下的临时目录（调用方校验后落位）
-    private static (string Root, List<string> Logs) PreparePack(string path, bool validate)
+    // 准备包根目录：目录直接用；zip 解到注入缓存根下的临时目录（调用方校验后落位）
+    private static (string Root, List<string> Logs) PreparePack(string path, bool validate, string cacheRoot)
     {
         var logs = new List<string>();
         if (Directory.Exists(path))
@@ -190,7 +191,7 @@ internal static class PackResolver
         if (!File.Exists(path))
             throw new FileNotFoundException($"--pack 指定的内容包不存在：{path}");
 
-        var extractRoot = Path.Combine(CacheRoot, "explicit", Guid.NewGuid().ToString("N"));
+        var extractRoot = Path.Combine(cacheRoot, "explicit", Guid.NewGuid().ToString("N"));
         ZipFile.ExtractToDirectory(path, extractRoot, overwriteFiles: true);
         // zip 内可能带一层根目录：解开后找不到 pack.json 时下探一层
         if (!File.Exists(Path.Combine(extractRoot, "pack.json")))
@@ -218,18 +219,18 @@ internal static class PackResolver
                 $"内容包校验失败（{mismatches.Count} 个文件不匹配）：{string.Join("、", mismatches.Take(5))}…");
     }
 
-    private static string? FindCachedRoot()
+    private static string? FindCachedRoot(string cacheRoot)
     {
         try
         {
-            var pointer = Path.Combine(CacheRoot, PointerFile);
+            var pointer = Path.Combine(cacheRoot, PointerFile);
             if (!File.Exists(pointer))
                 return null;
             var version = JsonSerializer.Deserialize<Pointer>(File.ReadAllText(pointer))?.Version;
             if (string.IsNullOrWhiteSpace(version))
                 return null;
 
-            var root = Path.Combine(CacheRoot, version);
+            var root = Path.Combine(cacheRoot, version);
             return File.Exists(Path.Combine(root, "pack.json")) ? root : null;
         }
         catch (Exception)

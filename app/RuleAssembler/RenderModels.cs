@@ -3,30 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace RuleAssembler;
 
-// 结构化输出声明：输出契约的事实来源是本结构与片段声明，不通过解析根文件 Markdown 反向推断。
-// kind：generated = 本次确实生成；referenced-existing = 根规则提到但不由生成器创建的目标项目现有文件
-internal sealed class OutputDeclaration
-{
-    // kind 与 merge 的合法取值；校验与比较都以这里为准
-    public const string KindGenerated = "generated";
-    public const string KindReferencedExisting = "referenced-existing";
-    public const string MergeReplace = "replace";
-    public const string MergeAppend = "append";
-
-    [JsonPropertyName("path")]
-    public string Path { get; set; } = "";
-
-    [JsonPropertyName("kind")]
-    public string Kind { get; set; } = KindGenerated;
-
-    // 能力归属：doc / infra / ai-capability / design-system 等，空表示核心输出
-    [JsonPropertyName("feature")]
-    public string Feature { get; set; } = "";
-
-    [JsonPropertyName("merge")]
-    public string Merge { get; set; } = MergeReplace;
-}
-
 // 根变量条目：普通文本始终渲染；带 features 的条目仅在所列能力全部启用时渲染；
 // when 提供按启用能力的多档文案，取第一个满足条件的档位，全部不满足时整条丢弃
 [JsonConverter(typeof(RootLineJsonConverter))]
@@ -101,6 +77,7 @@ internal sealed class RootLineJsonConverter : JsonConverter<RootLine>
         }
     }
 
+    // 手工写对象：options 仍携带本转换器，委托 JsonSerializer.Serialize(RootLine) 会无限递归
     public override void Write(Utf8JsonWriter writer, RootLine value, JsonSerializerOptions options)
     {
         if (value.When is null && value.Features.Count == 0)
@@ -109,7 +86,35 @@ internal sealed class RootLineJsonConverter : JsonConverter<RootLine>
             return;
         }
 
-        JsonSerializer.Serialize(writer, value, options);
+        writer.WriteStartObject();
+        writer.WriteString("line", value.Text);
+        if (value.Features.Count > 0)
+        {
+            writer.WriteStartArray("features");
+            foreach (var feature in value.Features)
+                writer.WriteStringValue(feature);
+            writer.WriteEndArray();
+        }
+
+        if (value.When is not null)
+        {
+            writer.WriteStartArray("when");
+            foreach (var variant in value.When)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("line", variant.Text);
+                if (variant.Features.Count > 0)
+                {
+                    writer.WriteStartArray("features");
+                    foreach (var feature in variant.Features)
+                        writer.WriteStringValue(feature);
+                    writer.WriteEndArray();
+                }
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+        }
+        writer.WriteEndObject();
     }
 }
 
@@ -242,49 +247,4 @@ internal sealed class RootVariables
             PersistenceLine = PersistenceLine
         };
     }
-}
-
-internal sealed class Subrule
-{
-    [JsonPropertyName("source")]
-    public string Source { get; set; } = "";
-
-    // B 档骨架继承：多源按序拼接为一个输出文件，与 source 互斥；
-    // front matter 只允许出现在首个源，其余源是纯内容段
-    [JsonPropertyName("sources")]
-    public List<string> Sources { get; set; } = new();
-
-    [JsonPropertyName("output")]
-    public string Output { get; set; } = "";
-
-    // 能力归属（doc / infra / ai-capability 等），空表示核心输出；归属必须挂在声明上而非靠文件名推断
-    [JsonPropertyName("feature")]
-    public string Feature { get; set; } = "";
-
-    // 合并方式：replace（默认）或显式 append；当前渲染器全部按 replace 落盘，append 供后续阶段消费
-    [JsonPropertyName("merge")]
-    public string Merge { get; set; } = OutputDeclaration.MergeReplace;
-
-    // 文件级槽位：骨架正文中的 {{slot:x}} 在渲染时以这里提供的值替换（P2 阶段 5 内容收敛）。
-    // 旧 Profile 路径用静态值；组合路径由 CompositionPlan.Slots（组件并集）提供，文件级可覆盖
-    [JsonPropertyName("slots")]
-    public Dictionary<string, string> Slots { get; set; } = new(StringComparer.Ordinal);
-
-    public IReadOnlyList<string> GetSources()
-    {
-        return Sources.Count > 0 ? Sources : new List<string> { Source };
-    }
-}
-
-// 一个输出文件的单项贡献；同一路径允许一个 replace 基底和多个 append 片段
-internal sealed class FileContribution
-{
-    public string OwnerId { get; init; } = "";
-    public Subrule File { get; init; } = new();
-}
-
-internal sealed class PlannedFile
-{
-    public string Output { get; init; } = "";
-    public string Content { get; init; } = "";
 }
