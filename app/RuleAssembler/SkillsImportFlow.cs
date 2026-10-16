@@ -10,11 +10,17 @@ internal static class SkillsImportFlow
         IReadOnlyList<SkillTarget> Targets,
         IReadOnlySet<string>? SkipKeys);
 
-    // Skills 导入（可选步骤）：规则文件落盘后追加；技能多选（默认全不勾）→ 目标工具多选（默认全勾）。
+    // Skills 导入（可选步骤）：规则文件落盘后追加；技能分组多选（按本次组合预选推荐）→ 目标工具多选（默认全勾）。
     // 导入是追加语义：目标目录已有同名技能（含 SKILL.md）时先问覆盖还是跳过，未选中的技能一律不动；
     // 覆盖 = 同名技能目录先删后写、按内置内容整体重写；任何一步取消或零勾选都视为跳过导入，配方不记录技能字段。
     // confirmEntry = false 供「仅导入 Skills」入口使用：用户已在顶层表达导入意图，跳过入口确认直接进技能多选
-    internal static SkillImportSelection? OfferSkillsImport(IConsoleUi ui, SkillsStore skillsStore, bool confirmEntry = true)
+    // context = null（仅导入 Skills 入口）时不做推荐预选：入口菜单没走组合流程，没有可依据的维度选择
+    internal static SkillImportSelection? OfferSkillsImport(
+        IConsoleUi ui,
+        SkillsStore skillsStore,
+        Manifest manifest,
+        Selection? context = null,
+        bool confirmEntry = true)
     {
         var skills = skillsStore.Discover();
         if (skills.Count == 0)
@@ -33,10 +39,16 @@ internal static class SkillsImportFlow
                 return null;
         }
 
-        var picked = ui.ChooseMany(
-            "选择要导入的 Skills（可多选）：",
+        // 推荐预选：按本次组合的维度选择推导（检测 / 问答 / 经典入口一致口径），无上下文时全不勾
+        var recommended = SkillCatalog.Recommend(manifest, context, skills);
+        var groups = SkillCatalog.BuildGroups(manifest, skills);
+        var picked = ui.ChooseManyGrouped(
+            recommended.Count > 0
+                ? $"选择要导入的 Skills（已按技术栈预选 {recommended.Count} 个，可调整，可多选）："
+                : "选择要导入的 Skills（可多选）：",
             skills.Select(skill => new UiChoice(skill.Id, TruncateDescription(skill.Description))).ToList(),
-            new List<int>());
+            groups,
+            recommended);
         if (picked.Count == 0)
         {
             Console.WriteLine("未勾选任何 Skill，跳过导入。");

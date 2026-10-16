@@ -35,6 +35,17 @@ internal sealed class ScriptedConsoleUi : IConsoleUi
         return Enumerable.Range(0, state.Length).Where(index => state[index]).ToList();
     }
 
+    // 脚本化分组多选：与 ChooseMany 同一套脚本语义，直接确认返回预选集合
+    public IReadOnlyList<int> ChooseManyGrouped(
+        string title,
+        IReadOnlyList<UiChoice> choices,
+        IReadOnlyList<SkillGroupChoice> groups,
+        IReadOnlyList<int> selected)
+    {
+        Titles.Add(title);
+        return selected.ToList();
+    }
+
     public void Head(string text) => Lines.Add(text);
 
     public void Line(string text) => Lines.Add(text);

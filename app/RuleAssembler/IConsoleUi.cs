@@ -19,4 +19,12 @@ internal interface IConsoleUi
 
     // 能力多选：selected 为默认勾选的下标集合；确认后返回勾选的下标集合
     IReadOnlyList<int> ChooseMany(string title, IReadOnlyList<UiChoice> choices, IReadOnlyList<int> selected);
+
+    // 分组多选：choices 为全量技能（下标与全量清单对齐），groups 为树形分组视图。
+    // 返回勾选的全量下标集合；选择 0 项（取消）返回空集合，由调用方按「跳过导入」处置
+    IReadOnlyList<int> ChooseManyGrouped(
+        string title,
+        IReadOnlyList<UiChoice> choices,
+        IReadOnlyList<SkillGroupChoice> groups,
+        IReadOnlyList<int> selected);
 }

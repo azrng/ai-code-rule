@@ -41,6 +41,11 @@ internal sealed class Manifest
 
     [JsonPropertyName("compatibilityCases")]
     public List<CompatibilityCase> CompatibilityCases { get; set; } = new();
+
+    // 技能元数据：展示分组与推荐预选的事实来源；技能内容发现仍由 SkillsStore 负责，
+    // 此处只登记 ID（与 SkillInfo.Id 同口径）、group 与 when（检测/问答组合 → 推荐预选）
+    [JsonPropertyName("skills")]
+    public List<SkillDefinition> Skills { get; set; } = new();
 }
 
 // 能力定义：仅注册 ID 与展示文案；能力是否可用、默认是否勾选由后续阶段按 Profile/模块声明判断

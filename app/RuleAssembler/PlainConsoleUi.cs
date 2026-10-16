@@ -50,6 +50,49 @@ internal sealed class PlainConsoleUi : IConsoleUi
         }
     }
 
+    // 分组多选：按组打印编号（跨组连续），输入编号切换勾选、直接回车确认，与 ChooseMany 同一套交互
+    public IReadOnlyList<int> ChooseManyGrouped(
+        string title,
+        IReadOnlyList<UiChoice> choices,
+        IReadOnlyList<SkillGroupChoice> groups,
+        IReadOnlyList<int> selected)
+    {
+        var state = choices.Select((_, index) => selected.Contains(index)).ToArray();
+        var flat = groups.SelectMany(group => group.SkillIndices).ToList();
+        while (true)
+        {
+            Console.WriteLine(title);
+            var cursor = 1;
+            foreach (var group in groups)
+            {
+                Console.WriteLine($"  [{group.Title}]");
+                foreach (var index in group.SkillIndices)
+                {
+                    var suffix = string.IsNullOrWhiteSpace(choices[index].Desc) ? "" : $" — {choices[index].Desc}";
+                    Console.WriteLine($"  {cursor}. [{(state[index] ? "x" : " ")}] {choices[index].Label}{suffix}");
+                    cursor++;
+                }
+            }
+
+            Console.Write("输入编号切换勾选（可多个，如 1,3），a 全选/反选，直接回车确认：");
+            var input = Console.ReadLine()?.Trim();
+            if (string.IsNullOrEmpty(input))
+                return Enumerable.Range(0, state.Length).Where(index => state[index]).ToList();
+            if (input.Equals("a", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var index in flat)
+                    state[index] = !state[index];
+                continue;
+            }
+
+            foreach (var token in input.Split(',', ' ', '，', '、', ';', '；'))
+            {
+                if (int.TryParse(token.Trim(), out var number) && number >= 1 && number <= flat.Count)
+                    state[flat[number - 1]] = !state[flat[number - 1]];
+            }
+        }
+    }
+
     public void Head(string text)
     {
         Console.WriteLine(text);

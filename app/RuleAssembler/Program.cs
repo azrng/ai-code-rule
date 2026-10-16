@@ -149,7 +149,7 @@ internal static class Program
                 version => AnsiConsole.Confirm($"发现内容包新版本 {version}，是否更新？（当前 {manifest.Vars.Version}）", defaultValue: true));
 
         if (mode == 2)
-            return ImportSkillsOnly(ui, skillsStore);
+            return ImportSkillsOnly(ui, skillsStore, manifest);
 
         // 交互模式同样尊重已有配方：当前目录存在 .ai-rule-profile.json 时优先提供按配方重放，
         // 避免第二次使用仍走目录检测误判（嵌套子目录检测不到特征文件时尤其明显）
@@ -247,7 +247,7 @@ internal static class Program
             var written = new OutputWriter().WriteFiles(files);
 
             // Skills 导入：规则文件落盘后的可选追加步骤，勾选结果随配方记录（--upgrade / --recipe 按配方同步）
-            var skillImport = SkillsImportFlow.OfferSkillsImport(ui, skillsStore);
+            var skillImport = SkillsImportFlow.OfferSkillsImport(ui, skillsStore, manifest, entry.Selection);
             var skillWritten = 0;
             if (skillImport is not null)
             {
@@ -351,9 +351,9 @@ internal static class Program
     // 仅导入 Skills：不生成规则文件、不写配方记录（配方是组合口径，空组合会让 --upgrade / --recipe
     // 尝试渲染规则文件，违背只要技能的意图）；更新技能重新运行导入即可（同名技能先删后写）。
     // gitignore 按 minimal 处理：仅导入模式不知道技术栈，取最保守模板；已存在时幂等追加 AI 工具目录忽略
-    private static int ImportSkillsOnly(IConsoleUi ui, SkillsStore skillsStore)
+    private static int ImportSkillsOnly(IConsoleUi ui, SkillsStore skillsStore, Manifest manifest)
     {
-        var skillImport = SkillsImportFlow.OfferSkillsImport(ui, skillsStore, confirmEntry: false);
+        var skillImport = SkillsImportFlow.OfferSkillsImport(ui, skillsStore, manifest, context: null, confirmEntry: false);
         if (skillImport is null)
         {
             Console.WriteLine("未导入任何 Skills。");
