@@ -1,6 +1,6 @@
 ---
 name: avalonia
-description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Avalonia 12.1.2 + Semi.Avalonia + Ursa.Avalonia + CommunityToolkit.Mvvm）。在编写或修改 axaml 视图、样式与资源 token、编译绑定、MVVM 视图模型、Flyout/Popup 弹层、动画、虚拟化或自绘窗口时使用，也用于排查 AVLN2000 绑定错误与启动崩溃，以及 dotnet publish 单文件打包、产物体积优化（R2R / 裁剪 / ExcludeFromSingleFile 剔除冗余运行时）。Keywords: Avalonia, AvaloniaUI, axaml, XAML, .NET 桌面, Semi.Avalonia, Ursa, CommunityToolkit.Mvvm, 编译绑定, x:DataType, 发布, 打包, 单文件, 体积。"
+description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Avalonia 12.1.2 + Semi.Avalonia + Ursa.Avalonia + CommunityToolkit.Mvvm）。在编写或修改 axaml 视图、样式与资源 token、编译绑定、MVVM 视图模型、Flyout/Popup 弹层、动画、虚拟化或自绘窗口时使用，也用于排查 AVLN2000 绑定错误与启动崩溃，以及 dotnet publish 单文件打包、产物体积优化（R2R / 裁剪 / Native AOT / ExcludeFromSingleFile 剔除冗余运行时）。另覆盖属性系统（StyledProperty / DirectProperty / 附加属性）、TemplatedControl 自定义控件、桌面生命周期（ShutdownMode / ShowDialog）与 Dispatcher UI 线程封送。Keywords: Avalonia, AvaloniaUI, axaml, XAML, .NET 桌面, Semi.Avalonia, Ursa, CommunityToolkit.Mvvm, 编译绑定, x:DataType, 发布, 打包, 单文件, 体积, Native AOT, StyledProperty, TemplatedControl, ShutdownMode, Dispatcher。"
 ---
 
 # Avalonia UI 12.x 开发指南
@@ -12,7 +12,8 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 - 数据绑定报 `AVLN2000`、样式附加期抛 `InvalidCastException`、弹层不弹出或秒关
 - 写动画（`Style.Animations`）、操作剪贴板 / 文件选择等平台 API
 - 列表性能（虚拟化）、窗口自绘（`u:UrsaWindow` 托管装饰 / `WindowDecorations` + `ElementRole`）
-- `dotnet publish` 单文件打包、产物体积异常或瘦身、发布参数取舍（R2R / 压缩 / 裁剪 / 剔除冗余依赖）
+- 自定义控件属性（StyledProperty / DirectProperty / 附加属性选型、SetAndRaise、TemplatePart）
+- 生命周期与关闭行为（ShutdownMode 取舍、ShowDialog owner、多窗口退出语义）
 
 **范围外**：业务分层（ViewModel/Service/Repository 怎么摆）归 onion-architecture skill；EF Core 归 azrng-efcore skill；Semi/Ursa 全量控件 API 以各自源码为准，本 skill 只写装配与高频用法。
 
@@ -75,7 +76,8 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 - **选窗口基座**：需要标题栏内容 / 托管最小化-最大化-关闭按钮 → `u:UrsaWindow`（`TitleBarContent` / `LeftContent` / `RightContent` 槽位 + 托管 CaptionButton，见 references/windows-flyouts-popups.md「窗口装饰」节）；不用 Ursa 才走 `WindowDecorations="None"` + `BeginMoveDrag` 手工方案。
 - **选列表控件**：只读展示 → `ItemsControl`；可选中 → `ListBox`；大数据量 → 必须配 `VirtualizingStackPanel`（默认 ItemsPanel **不虚拟化**）。
 - **选绑定写法**：同 DataContext 内普通路径绑定；跨层级取值 `$parent[Window].((vm:X)DataContext)`；模板内先设 `x:DataType`。
-- **写动画**：先查 references/animation.md 的「属性类型 → Animator 对照表」，Transform 类动画用 `RotateTransform.Angle` 安全写法。
+- **写自定义控件**：先分清 DataTemplate / ControlTemplate / ControlTheme / Styles 四个概念；属性选型与模板部件见 references/property-system-and-custom-controls.md。
+- **接后台线程结果 / 决定关闭行为**：Dispatcher 封送三件套与 ShutdownMode 三选一见 references/lifetimes-and-dispatcher.md。
 
 ## references 导航
 
@@ -89,12 +91,14 @@ description: "Avalonia UI 12.x 桌面客户端开发与发布指南（.NET + Ava
 | `references/windows-flyouts-popups.md` | 窗口自绘、Flyout/Popup 行为与陷阱、剪贴板、文件对话框 |
 | `references/ursa-overlays.md` | 用 Ursa Dialog/Drawer/MessageBox 装配弹层、IDialogContext 关闭契约、叠加弹窗、迁移手写弹窗 |
 | `references/animation.md` | 写 `Style.Animations`，Animator 选型 |
-| `references/controls-catalog.md` | 选控件、查伪类与易错默认值 |
+| `references/property-system-and-custom-controls.md` | 写自定义控件属性（Styled / Direct / Attached）、TemplatedControl 模板部件、伪类、SetCurrentValue |
+| `references/lifetimes-and-dispatcher.md` | 配 ShutdownMode、ShowDialog 模态、后台线程更新 UI、Dispatcher 优先级 |
+| `references/controls-catalog.md` | 选控件、查伪类与易错默认值、Ursa 控件速记 |
 | `references/layout-and-virtualization.md` | 布局面板、对齐、列表虚拟化 |
 | `references/startup-crash-checklist.md` | 编译过但启动崩 / 运行崩 |
 | `references/logging-and-crash-report.md` | 接全局异常挂点、崩溃落盘、日志分层（**新桌面项目必读**） |
 | `references/testing-and-performance.md` | 界面回归测试、性能基线 |
-| `references/publishing-and-single-file.md` | `dotnet publish` 单文件打包、产物体积优化（R2R/压缩/裁剪取舍、剔除冗余运行时）、发布配置变更后的验证 |
+| `references/publishing-and-single-file.md` | `dotnet publish` 单文件打包、产物体积优化（R2R/压缩/裁剪取舍、剔除冗余运行时、Native AOT）、发布配置变更后的验证 |
 
 ## 代码生成优先级
 

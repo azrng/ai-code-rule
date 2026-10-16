@@ -31,6 +31,30 @@ dotnet publish <proj> -c Release -r win-x64 -p:PublishSingleFile=false -o <目�
 
 功能库取舍原则：两个库如果各撑一个功能（如 PdfSharp 写 PDF 分割、PdfPig 读 PDF 文本），**不可互替，去哪个砍哪个功能**——这是产品决策，必须让用户拍板；只有「一个库已具备另一个库的能力」（如 OpenXml 与 NPOI.XWPF 都能写 Word）才做合并改造。
 
+## Native AOT（官方文档核实，docs.avaloniaui.net「Native AOT」）
+
+R2R / 裁剪之外的第三条路：整体 AOT 编译。收益是启动快、内存低、无 JIT；代价是反射受限、部分第三方控件可能不兼容。
+
+```xml
+<PropertyGroup>
+  <PublishAot>true</PublishAot>            <!-- 只加在主可执行工程 -->
+  <IsAotCompatible>true</IsAotCompatible>  <!-- 加到所有自有类库，启用 AOT 兼容分析 -->
+  <BuiltInComInteropSupport>false</BuiltInComInteropSupport>  <!-- 12.0 之前才需要；12.x 不需要（官方注释：旧辅助功能 API 用） -->
+</PropertyGroup>
+```
+
+AOT 约束（XAML 构建期已编译，风险在运行时动态面）：
+
+- **XAML**：编译绑定（本 skill 默认开启即满足）；禁止运行时动态加载 XAML；资源尽量 `StaticResource`。
+- **反射面**：反射式 ViewModel→View 定位器、动态成员发现需要显式裁剪保留（`TrimmerRootAssembly`）或改成显式类型映射；DI 用启动期注册，不做反射式服务定位。
+- **资产**：`AvaloniaResource` 内嵌，`avares://` 寻址；不读外部动态资产。
+- 不能 blanket `TrimmerRootAssembly` 全部程序集或压掉全部 trim 警告——告警是真实的兼容债，逐个处理。
+
+发布：`dotnet publish -r <rid> -c Release`，产物**必须实际启动验证**（AOT 错误在运行时暴露，反射缺失常表现为绑定静默失效）。已知限制：动态控件创建需在裁剪设置中配置、第三方控件库需逐一确认 AOT 兼容。
+
+取舍口径：R2R（启动 ~1.2s、体积大）→ 纯 JIT（启动 ~3s、体积小）→ AOT（启动最快、体积小，但反射受限 + 兼容性风险）。消费工程未走 AOT（Semi/Ursa 生态兼容性未验证），引入前先做小样验证。
+
+
 ## 剔除单文件条目的正确机制（高频踩坑）
 
 要把某个文件从**单文件 bundle** 里去掉，唯一有效写法——`Update` 语法打 `ExcludeFromSingleFile` 元数据，且挂钩在 `_ComputeFilesToBundle` **之前**：
