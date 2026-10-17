@@ -22,6 +22,8 @@ dependencies: [agents-root]
 - 使用 Ant Design 主题系统（ConfigProvider + Design Token），所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 Ant Design 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
 
+<!-- include: shared/ui/spec-lock.md -->
+
 <!-- include: shared/application/tech-choice.md -->
 
 ---
@@ -57,6 +59,35 @@ frontend/
 ├── vite.config.ts
 └── tsconfig.json
 ```
+
+---
+
+### 阶段 1 — 前端实现（前端实现角色主导）
+
+**触发条件**：用户发出「开始前端开发」指令
+
+**入场要求**：阶段 0 设计文档已由用户确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+HTML 原型即视觉基线，实现需逐页对照原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
+
+**工作内容**：
+1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 和 Ant Design 规范
+2. 数据层使用 mock（静态 mock 数据），不依赖真实后端接口
+3. 同步输出接口说明文档，供后端开发参考
+
+**产物**：
+- 可在浏览器中运行的前端页面
+- 接口需求说明（用于后端开发）
+
+**门控规则**：
+- 用户确认前端页面符合设计文档预期
+- 前端页面交互逻辑已验证通过
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2。
+- 满足以上三点后，才允许进入阶段 2
+
+<!-- include: shared/ui/visual-acceptance.md -->
 
 ---
 

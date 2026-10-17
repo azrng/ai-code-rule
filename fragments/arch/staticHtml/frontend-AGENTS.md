@@ -38,6 +38,8 @@ dependencies: [agents-root]
 - 使用 Bootstrap 5 主题系统，所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 Bootstrap 组件和工具类，禁止 inline style，禁止硬编码颜色/间距/圆角
 
+<!-- include: shared/ui/spec-lock.md -->
+
 <!-- include: shared/application/tech-choice.md -->
 
 ---
@@ -130,7 +132,11 @@ project-root/
 
 **触发条件**：用户发出「开始开发」指令
 
-**入场要求**：阶段 0 设计文档已由用户确认
+**入场要求**：阶段 0 设计文档已由用户确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+HTML 原型即视觉基线，实现需逐页对照原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
 
 **工作内容**：
 1. 按设计文档实现 HTML 页面和交互逻辑
@@ -145,6 +151,9 @@ project-root/
 **门控规则**：
 - 用户确认页面符合设计文档预期
 - 所有 CRUD 操作经刷新验证数据持久化成功
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2。
+
+<!-- include: shared/ui/visual-acceptance.md -->
 
 ---
 

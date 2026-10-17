@@ -37,6 +37,8 @@ dependencies: [agents-root]
 - 样式必须使用 MAUI ResourceDictionary（`.xaml`），禁止把颜色、间距、圆角直接硬编码在控件属性中
 - 颜色、间距、圆角必须来自样式资源，使用 `StaticResource` 或 `DynamicResource` 引用
 
+<!-- include: shared/ui/spec-lock.md -->
+
 <!-- include: shared/application/tech-choice.md -->
 
 ---
@@ -78,7 +80,11 @@ src/AppName/
 
 **触发条件**：用户发出「开始视图开发」指令
 
-**入场要求**：阶段 0 设计文档已由用户确认
+**入场要求**：阶段 0 设计文档已由用户确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+移动端涉及复杂手势、动画、转场或平台原生行为时，优先用 MAUI 搭建最小可运行原型验证交互；交互简单时允许降级为 HTML 原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
 
 **工作内容**：
 1. 按设计文档实现页面和控件，遵循 `design-system.yaml` 和 MAUI 样式规范。
@@ -92,9 +98,12 @@ src/AppName/
 **门控规则**：
 - 用户确认页面符合设计文档预期。
 - DTO 类中的类型已定稳，不再变动。
-- 满足以上两点后，才允许进入阶段 2。
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2。
+- 满足以上三点后，才允许进入阶段 2。
 
 ---
+
+<!-- include: shared/ui/visual-acceptance.md -->
 
 ## UI 规则
 

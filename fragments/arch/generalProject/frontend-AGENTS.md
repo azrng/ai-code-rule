@@ -26,6 +26,8 @@ dependencies: [agents-root]
 - 优先复用项目已有组件、布局、样式变量与交互模式
 - 禁止在无约束情况下随意硬编码颜色、间距、圆角、阴影、断点；若现有技术栈无法完全避免，必须优先抽成可复用 token 或常量
 
+<!-- include: shared/ui/spec-lock.md -->
+
 <!-- include: shared/application/tech-choice.md -->
 
 ---
@@ -38,7 +40,11 @@ dependencies: [agents-root]
 
 **触发条件**：用户发出“开始前端开发”或等价指令
 
-**入场要求**：阶段 0 设计文档已确认
+**入场要求**：阶段 0 设计文档已确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+HTML 原型即视觉基线，实现需逐页对照原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
 
 **工作内容**：
 1. 基于当前项目使用的界面技术实现页面、布局、组件和导航结构。
@@ -50,6 +56,9 @@ dependencies: [agents-root]
 - 用户确认页面符合设计文档预期。
 - 页面交互逻辑经手工 smoke test 验证通过。
 - 显示层契约、字段说明和 schema / 类型定义已初步定稳；后续发现缺口时按 `collaboration-AGENTS.md`「纠错、回退与重构」处理。
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2。
+
+<!-- include: shared/ui/visual-acceptance.md -->
 
 ---
 

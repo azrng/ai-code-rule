@@ -35,7 +35,7 @@ dependencies: [agents-root, ai-agents]
 | --- | --- |
 | 需求追溯 | 关联 `REQ-` 编号、明确本次设计覆盖的范围和未覆盖项，不重复粘贴需求正文 |
 | 技术设计 | 模块职责、数据流向、技术决策和 AI 层 / Agent 编排边界 |
-| 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / streaming / empty / error） |
+| 界面原型 | 每个页面的 ASCII 线框图，含关键状态（loading / streaming / empty / error）；原型列出的页面是原型阶段的输入范围 |
 | 交互与异常 | 操作流程、状态流转、边界场景、错误处理方式、Agent 交互节点和验证方式 |
 | AI 设计（如涉及） | 模型选择、Agent 职责、工具 / Skills 清单、Prompt 关键约束、可选能力是否引入 |
 

@@ -37,6 +37,8 @@ dependencies: [agents-root]
 - 优先复用项目已有组件、布局、样式变量与交互模式
 - 禁止 inline style，禁止硬编码颜色、间距、圆角、阴影、断点
 
+<!-- include: shared/ui/spec-lock.md -->
+
 <!-- include: shared/application/tech-choice.md -->
 
 ---
@@ -49,7 +51,11 @@ dependencies: [agents-root]
 
 **触发条件**：用户发出“开始前端开发”或等价指令
 
-**入场要求**：阶段 0 设计文档已确认
+**入场要求**：阶段 0 设计文档已确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+HTML 原型即视觉基线，实现需逐页对照原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
 
 **工作内容**：
 1. 基于 Nuxt 文件路由（`pages/`）实现页面、布局、组件和导航结构。
@@ -61,6 +67,9 @@ dependencies: [agents-root]
 - 用户确认页面符合设计文档预期。
 - 页面交互逻辑经手工 smoke test 验证通过。
 - 前端契约、字段说明和 schema 已初步定稳；阶段 2 若发现契约缺口，按 `collaboration-AGENTS.md`「纠错、回退与重构」先回到契约变更流程。
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2。
+
+<!-- include: shared/ui/visual-acceptance.md -->
 
 ---
 

@@ -36,7 +36,7 @@ dependencies: [agents-root]
 | --- | --- |
 | 需求追溯 | 关联 `REQ-` 编号、明确本次设计覆盖的范围和未覆盖项，不重复粘贴需求正文 |
 | 技术设计 | 模块职责、Tauri / Rust / 前端边界、数据流向、缓存与权限方案 |
-| 界面原型 | 每个页面的 ASCII 线框图，包含 `loading` / `empty` / `error` / `no-permission` 状态 |
+| 界面原型 | 每个页面的 ASCII 线框图，包含 `loading` / `empty` / `error` / `no-permission` 状态；原型列出的页面是原型阶段的输入范围 |
 | 交互与异常 | 操作流程、状态流转、边界场景、错误提示、恢复方式和验证方式 |
 
 **门控规则**：

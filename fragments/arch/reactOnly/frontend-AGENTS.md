@@ -26,7 +26,35 @@ dependencies: [agents-root]
 - 使用 Ant Design 主题系统（ConfigProvider + Design Token），所有视觉规范在 `design-system.yaml` 中定义
 - 优先使用 Ant Design 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
 
+<!-- include: shared/ui/spec-lock.md -->
+
 <!-- include: shared/application/tech-choice.md -->
+
+---
+
+## 阶段 1 — 页面与交互实现
+
+**触发条件**：用户发出“开始前端开发”或等价指令
+
+**入场要求**：阶段 0 设计文档已确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+HTML 原型即视觉基线，实现需逐页对照原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
+
+**工作内容**：
+1. 基于 React + Vite 实现页面、布局、组件和导航结构。
+2. 先搭建页面骨架、数据状态和交互闭环，再补细节优化。
+3. 数据层按无后端口径执行：本地静态 / mock 数据、本地存储或第三方 / 远端 API，页面交互必须完整可演示。
+4. 同步产出数据口径说明：字段定义、筛选条件、分页参数、表单校验规则。
+
+**门控规则**：
+- 用户确认页面符合设计文档预期。
+- 页面交互逻辑经手工 smoke test 验证通过。
+- 数据口径、字段说明和类型定义已初步定稳；后续发现缺口时按 `collaboration-AGENTS.md`「纠错、回退与重构」处理。
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2。
+
+<!-- include: shared/ui/visual-acceptance.md -->
 
 ---
 

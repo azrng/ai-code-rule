@@ -45,6 +45,14 @@ internal static class Program
 
             Console.WriteLine($"use-ai-rule 引擎 {engineVersion}（内容包 {manifest.Vars.Version}，{manifest.Vars.LastUpdated}）");
 
+            // 带参模式走命令行分发（--check / --emit / --plan / --detect / --upgrade / --recipe 等），
+            // 不做交互与引擎更新，避免脚本调用出网络副作用
+            if (StripPackArgs(ref packArgs))
+            {
+                var skills = new SkillsStore(resolution.Provider);
+                return RunCommand(packArgs, manifest, resources, skills);
+            }
+
             // 引擎在线自更新：交互模式启动时静默查一次引擎版本（带参模式不查，避免脚本调用出网络副作用；
             // --pack 指定包模式同理）。发现新引擎直接下载并原子替换 exe，下次启动生效，本次会话继续用旧引擎；
             // 查版本 / 下载任何失败都只告警降级，旧引擎配合缓存 / 内嵌内容照常可用
@@ -56,6 +64,7 @@ internal static class Program
                     PackResolver.TryUpdateEngine(engineVersion, latestEngine.Value.Version, latestEngine.Value.Sha256);
                 }
             }
+
 
             var interactiveSkills = new SkillsStore(resolution.Provider);
             return RunInteractive(manifest, resources, interactiveSkills, engineVersion);

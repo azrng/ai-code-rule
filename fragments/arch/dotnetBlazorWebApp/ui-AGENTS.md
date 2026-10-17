@@ -30,6 +30,28 @@ dependencies: [agents-root]
 - 使用 BootstrapBlazor 主题系统，所有视觉规范在 `design-system.yaml` 中定义。
 - 优先复用现有组件、样式和设计 token，禁止 inline style，禁止硬编码颜色、间距或圆角。
 
+<!-- include: shared/ui/spec-lock.md -->
+
+---
+
+## 阶段 1 — 界面与交互实现
+
+**触发条件**：用户发出「开始开发」或「开始界面开发」指令
+
+**入场要求**：阶段 0 设计文档已由用户确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+Blazor Web App 属普通 Web 形态：HTML 交互原型即视觉基线，阶段 1 实现需逐页对照已确认的原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
+
+**门控规则**：
+- 主要页面和关键交互已可演示，页面状态完整且与设计文档保持一致
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2
+
+---
+
+<!-- include: shared/ui/visual-acceptance.md -->
+
 ---
 
 ## 渲染模式选择

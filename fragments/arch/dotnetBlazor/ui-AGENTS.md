@@ -28,6 +28,8 @@ dependencies: [agents-root]
 - 优先使用 BootstrapBlazor 组件和样式，禁止 inline style，禁止硬编码颜色 / 间距 / 圆角
 - BootstrapBlazor 组件的具体参数与用法不在本规则展开：环境提供 bootstrap-blazor skill 时优先遵循，否则以项目锁定版本的官方文档为准
 
+<!-- include: shared/ui/spec-lock.md -->
+
 <!-- include: shared/application/tech-choice.md -->
 
 ---
@@ -69,7 +71,11 @@ src/
 
 **触发条件**：用户发出「开始开发」或「开始界面开发」指令
 
-**入场要求**：阶段 0 设计文档已由用户确认
+**入场要求**：阶段 0 设计文档已由用户确认；原型已经用户确认，或本次改动命中原型跳过条件
+
+HTML 原型即视觉基线，实现需逐页对照原型。
+
+<!-- include: shared/ui/prototype-workflow.md -->
 
 **工作内容**：
 1. 按设计文档实现 Razor 页面、布局、导航和组件，遵循 `design-system.yaml` 与 BootstrapBlazor 规范。
@@ -80,6 +86,10 @@ src/
 **门控规则**：
 - 主要页面和关键交互已可演示。
 - 页面状态完整，且与设计文档保持一致。
+- 视觉验收按「视觉验收」小节执行，用户终审通过前不得进入阶段 2。
+- 满足以上三点后，才允许进入阶段 2。
+
+<!-- include: shared/ui/visual-acceptance.md -->
 
 ---
 
