@@ -26,7 +26,8 @@ if errorlevel 1 (
 rem 框架依赖单文件发布（win-x64），目标机需自装 .NET 10 运行时
 
 echo 开始打包...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0app\RuleAssembler\publish.ps1"
+rem 默认只出 exe；内容包（Release 更新资产）需要时去掉 -SkipPack 或直接执行 publish.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0app\RuleAssembler\publish.ps1" -SkipPack
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.

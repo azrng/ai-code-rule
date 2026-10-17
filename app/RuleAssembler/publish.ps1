@@ -102,6 +102,14 @@ if (-not $SkipPack) {
     Remove-Item -Recurse -Force $stageDirectory
     Write-Host ""
     Write-Host "内容包完成：$packZip（版本 $version，$($hashMap.Count) 个文件）"
+} else {
+    # 只出 exe 时同步清掉 dist 里残留的内容包与 latest.json，避免误传与当前 exe 不配套的发布资产
+    foreach ($stale in @('ai-rule-pack.zip', 'latest.json')) {
+        $stalePath = Join-Path $distDirectory $stale
+        if (Test-Path -LiteralPath $stalePath) { Remove-Item -Force $stalePath }
+    }
+    Write-Host ""
+    Write-Host "已跳过内容包打包（-SkipPack），dist 仅含 exe"
 }
 
 Write-Host ""

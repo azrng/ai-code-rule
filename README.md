@@ -140,10 +140,10 @@ fragments/
 # 只出 exe、不重打内容包（自用 / 内部分发，不走 Release 更新链路）：
 ./app/RuleAssembler/publish.ps1 -SkipPack
 
-# Windows 下也可以在仓库根目录双击或执行 build-use-ai-rule.bat（等价于不带 -SkipPack 的完整打包）
-./build-use-ai-rule.bat
+# Windows 下也可以在仓库根目录双击或执行 build-use-ai-rule.bat（只出 exe）；
+# 需要重打内容包（Release 更新资产）时执行不带 -SkipPack 的 publish.ps1
 
-# 产物位于 dist/：use-ai-rule.exe + ai-rule-pack.zip + latest.json（后两者是 Release 更新资产，exe 单独可用）
+# 产物位于 dist/：use-ai-rule.exe（内嵌全量规则与技能，单文件可用）；ai-rule-pack.zip 与 latest.json 仅发布 Release 时生成
 # Windows 产物双击启动（或命令行执行，支持 --check / --emit / --detect 等命令行模式）：
 # 启动时先选模式：生成规则文件（含可选 Skills 导入）、检测当前目录组合（仅查看），或仅导入 Skills（不生成规则文件、不写配方记录，gitignore 按 minimal 处理）。
 # 生成模式：自动检测当前项目并推荐组合（含判断依据）；证据不足时展示待确认维度与候选，
