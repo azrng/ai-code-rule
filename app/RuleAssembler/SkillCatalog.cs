@@ -10,7 +10,7 @@ internal static class SkillCatalog
 {
     internal const string FallbackGroup = "其他";
 
-    // 推荐预选：when 缺省的技能恒推荐；带 when 的技能按「任一条件命中」推荐。
+    // 推荐预选：when 缺省的技能恒不推荐（仅分组展示）；带 when 的技能按「任一条件命中」推荐。
     // 维度未确认（Selection 缺该维度）视为证据不足，不推荐
     public static IReadOnlyList<int> Recommend(
         Manifest manifest, Selection? selection, IReadOnlyList<SkillInfo> skills)
@@ -28,11 +28,13 @@ internal static class SkillCatalog
             .ToList();
     }
 
-    // 条件命中：多组条件任一组命中即可（OR）；组内全部维度命中（AND），维度取值任一命中（any-of）
+    // 条件命中：when 缺省（或空）= 恒不预选，仅分组展示——预选只服务「和本次技术栈强相关」的技能，
+    // 通用工具类技能（天气、新闻、文档生成等）不该默认勾上，用户需要时手动勾选。
+    // 多组条件任一组命中即可（OR）；组内全部维度命中（AND），维度取值任一命中（any-of）
     public static bool Matches(SkillDefinition skill, IReadOnlyDictionary<string, string> dimensions)
     {
         if (skill.When is null || skill.When.Count == 0)
-            return true;
+            return false;
 
         return skill.When.Any(condition => condition.All(pair =>
             dimensions.TryGetValue(pair.Key, out var value)

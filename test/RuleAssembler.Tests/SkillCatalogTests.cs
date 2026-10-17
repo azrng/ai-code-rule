@@ -102,7 +102,27 @@ public sealed class SkillCatalogTests
     }
 
     [Fact]
-    public void 多组条件任一组命中即可_无条件恒推荐()
+    public void 通用工具类技能不参与预选()
+    {
+        // 用户反馈：天气 / 新闻 / 总结等通用技能不该默认勾上——manifest 未登记 when 的技能恒不预选
+        var manifest = LoadManifest();
+        var recommended = RecommendedIds(manifest, SelectionOf(
+            ("form", "web"),
+            ("backend", "dotnet"),
+            ("frontend", "react"),
+            ("shell", "none"),
+            ("arch-style", "single")));
+
+        Assert.DoesNotContain(recommended, id => id == "weather-advisor");
+        Assert.DoesNotContain(recommended, id => id == "news-summary");
+        Assert.DoesNotContain(recommended, id => id == "summarize");
+        Assert.DoesNotContain(recommended, id => id == "github");
+        Assert.DoesNotContain(recommended, id => id == "web-access");
+    }
+
+
+    [Fact]
+    public void 多组条件任一组命中即可_条件缺省恒不推荐()
     {
         var multiGroup = new SkillDefinition
         {
@@ -113,12 +133,13 @@ public sealed class SkillCatalogTests
                 new Dictionary<string, List<string>> { ["frontend"] = ["avalonia"] },
             ],
         };
-        var always = new SkillDefinition { Id = "demo", When = null };
+        var unconditioned = new SkillDefinition { Id = "demo", When = null };
 
         Assert.True(SkillCatalog.Matches(multiGroup, new Dictionary<string, string> { ["frontend"] = "avalonia" }));
         Assert.True(SkillCatalog.Matches(multiGroup, new Dictionary<string, string> { ["backend"] = "dotnet" }));
         Assert.False(SkillCatalog.Matches(multiGroup, new Dictionary<string, string> { ["backend"] = "python" }));
-        Assert.True(SkillCatalog.Matches(always, new Dictionary<string, string>()));
+        // when 缺省 = 恒不预选，仅分组展示（通用工具类技能不默认勾选）
+        Assert.False(SkillCatalog.Matches(unconditioned, new Dictionary<string, string>()));
     }
 
     [Fact]
