@@ -62,8 +62,22 @@ internal static class PackResolver
             var embeddedVersion = TryGetEmbeddedPackVersion();
             if (embeddedVersion is not null && IsNewer(embeddedVersion, manifest.Version))
             {
+                // 缓存收敛：把内嵌内容落位为缓存并切指针，缓存从此与内嵌同版；
+                // 更新检查基准、离线加载与「下载安装的新包」走同一条加载路径
                 Console.WriteLine(
-                    $"[pack] 本地缓存 {manifest.Version} 旧于引擎内嵌内容 {embeddedVersion}，本次使用内嵌内容");
+                    $"[pack] 本地缓存 {manifest.Version} 旧于引擎内嵌内容 {embeddedVersion}，升位缓存…");
+                var installed = TryInstallEmbedded(cache, embeddedVersion);
+                if (installed is not null)
+                {
+                    var installedManifest = PackReader.Load(installed);
+                    var upgradeLogs = offline
+                        ? new List<string> { $"[pack] 离线模式：缓存已升位到 {installedManifest.Version}（来自引擎内嵌）" }
+                        : new List<string> { $"[pack] 缓存已从 {manifest.Version} 升位到 {installedManifest.Version}（来自引擎内嵌）" };
+                    return new PackResolution(
+                        new FolderResourceProvider(installed), installedManifest.Version, "cache", upgradeLogs);
+                }
+
+                Console.WriteLine("[pack] 告警：缓存升位失败，本次使用内嵌内容");
                 return new PackResolution(
                     new EmbeddedResourceProvider(), embeddedVersion, "embedded", new List<string>());
             }
@@ -284,6 +298,55 @@ internal static class PackResolver
                 .GetProperty("version")
                 .GetString();
             return string.IsNullOrWhiteSpace(version) ? null : version;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    // 把引擎内嵌内容落位为缓存目录并切指针：缓存从此收敛到内嵌版本。
+    // 任何失败返回 null（调用方降级为直接使用内嵌），不阻塞启动
+    private static string? TryInstallEmbedded(string cacheRoot, string version)
+    {
+        try
+        {
+            var provider = new EmbeddedResourceProvider();
+            var staging = Path.Combine(cacheRoot, $"{version}.staging");
+            if (Directory.Exists(staging))
+                Directory.Delete(staging, recursive: true);
+            Directory.CreateDirectory(staging);
+
+            var files = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            foreach (var relative in provider.Names)
+            {
+                var bytes = provider.ReadBytes(relative);
+                if (bytes is null)
+                    continue;
+                var target = Path.Combine(staging, relative.Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.WriteAllBytes(target, bytes);
+                files[relative] = Convert.ToHexString(
+                    System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant();
+            }
+
+            var packManifest = new PackManifest("merged", version, 1, new Dictionary<string, string>(files));
+            File.WriteAllText(Path.Combine(staging, "pack.json"), JsonSerializer.Serialize(packManifest));
+
+            var manifest = PackReader.Load(staging);
+            if (PackReader.Verify(manifest, staging).Count > 0)
+            {
+                Directory.Delete(staging, recursive: true);
+                return null;
+            }
+
+            var targetRoot = Path.Combine(cacheRoot, version);
+            if (Directory.Exists(targetRoot))
+                Directory.Delete(targetRoot, recursive: true);
+            Directory.Move(staging, targetRoot);
+            File.WriteAllText(
+                Path.Combine(cacheRoot, PointerFile), JsonSerializer.Serialize(new Pointer(version)));
+            return targetRoot;
         }
         catch (Exception)
         {

@@ -233,19 +233,25 @@ public sealed class PackTests : IDisposable
     }
 
     [Fact]
-    public void Resolve_CacheOlderThanEmbedded_PrefersEmbedded()
+    public void Resolve_CacheOlderThanEmbedded_UpgradesCache()
     {
-        // 引擎换代先于内容包发布：缓存版本旧于 exe 内嵌内容时必须用内嵌，
-        // 否则技能登记等新特性会被旧缓存静默压掉（用户实测：技能全归「其他」组）
+        // 引擎换代先于内容包发布：缓存版本旧于 exe 内嵌内容时，把内嵌内容落位为
+        // 新缓存并切指针（缓存收敛到内嵌版本），避免旧缓存压掉新特性（技能全归「其他」）
         var cache = NewDir();
         WriteFile(cache, "0.1.0/pack.json", "{\"version\":\"0.1.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
         WriteFile(cache, "current.json", "{\"version\":\"0.1.0\"}");
 
+        var embeddedVersion = new ManifestLoader(new ResourceStore()).Load().Vars.Version;
+
         var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
 
-        Assert.Equal("embedded", resolution.Source);
-        Assert.NotNull(resolution.Version);
-        Assert.NotEqual("0.1.0", resolution.Version);
+        Assert.Equal("cache", resolution.Source);
+        Assert.Equal(embeddedVersion, resolution.Version);
+        Assert.Contains(Path.Combine(cache, embeddedVersion), Directory.GetDirectories(cache));
+        Assert.True(File.Exists(Path.Combine(cache, embeddedVersion, "fragments", "manifest.json")));
+        Assert.Equal(embeddedVersion, JsonDocument.Parse(File.ReadAllText(Path.Combine(cache, "current.json"))).RootElement.GetProperty("version").GetString());
+        // 旧缓存目录保留（指针已切换，不再被选中）
+        Assert.True(Directory.Exists(Path.Combine(cache, "0.1.0")));
     }
 
     [Fact]
