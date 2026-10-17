@@ -23,14 +23,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem 默认只打包 win-x64（self-contained 单文件，目标机无需 .NET 运行时）；
-rem 传参 all 时按三平台矩阵发布（win-x64 / linux-x64 / osx-x64），
-rem mac/linux 产物由 publish.ps1 复制为 dist\use-ai-rule-<rid>
-set "RID_ARGS=-Rids win-x64"
-if /i "%~1"=="all" set "RID_ARGS="
+rem 框架依赖单文件发布（win-x64），目标机需自装 .NET 10 运行时
 
 echo 开始打包...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0app\RuleAssembler\publish.ps1" %RID_ARGS%
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0app\RuleAssembler\publish.ps1"
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.

@@ -15,6 +15,23 @@ param(
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent (Split-Path -Parent $here)
+
+<# 计算 SHA-256（小写十六进制）。不用 Get-FileHash：部分机器 PSModulePath 被 PS7 路径
+   污染后，PS 5.1 自动加载 Microsoft.PowerShell.Utility 失败，该 cmdlet 会凭空消失。 #>
+function Get-Sha256 {
+    param([string]$Path)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        try {
+            return ([System.BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+        } finally {
+            $stream.Dispose()
+        }
+    } finally {
+        $sha.Dispose()
+    }
+}
 $distDirectory = Join-Path $repoRoot 'dist'
 New-Item -ItemType Directory -Path $distDirectory -Force | Out-Null
 
@@ -38,7 +55,8 @@ Copy-Item -LiteralPath $publishedBinary -Destination $distBinary -Force
 # ── merged 内容包：fragments + skills 打 zip，pack.json 记录版本与逐文件 SHA-256 ──
 if (-not $SkipPack) {
     $manifestPath = Join-Path $repoRoot 'fragments/manifest.json'
-    $manifestJson = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    # 显式 UTF8：PS 5.1 对无 BOM 文件默认按系统 ANSI 解码，中文乱码会导致 ConvertFrom-Json 失败
+    $manifestJson = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $version = $manifestJson.vars.version
     if (-not $version) { throw "manifest.vars.version 为空，无法确定内容包版本" }
 
@@ -55,8 +73,9 @@ if (-not $SkipPack) {
     # 逐文件 SHA-256 清单（相对路径用 /，哈希小写十六进制）
     $hashMap = [ordered]@{}
     foreach ($file in (Get-ChildItem -Recurse -File $stageDirectory)) {
-        $relative = ([System.IO.Path]::GetRelativePath($stageDirectory, $file.FullName)) -replace '\\', '/'
-        $hashMap[$relative] = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
+        # PowerShell 5.1 无 System.IO.Path.GetRelativePath，用子串截取兼容 5.1 / 7
+        $relative = $file.FullName.Substring($stageDirectory.Length).TrimStart('\') -replace '\\', '/'
+        $hashMap[$relative] = Get-Sha256 $file.FullName
     }
 
     $packManifest = [ordered]@{
@@ -73,9 +92,12 @@ if (-not $SkipPack) {
 
     $latest = [ordered]@{
         version = $version
-        engine_sha256 = (Get-FileHash -Algorithm SHA256 $distBinary).Hash.ToLowerInvariant()
-        sha256 = (Get-FileHash -Algorithm SHA256 $packZip).Hash.ToLowerInvariant()
+        engine_sha256 = Get-Sha256 $distBinary
+        sha256 = Get-Sha256 $packZip
     }
+    # 落盘 latest.json：exe 更新检查与 Release 上传都依赖此文件；UTF-8 无 BOM（PS 5.1 的 Set-Content UTF8 带 BOM 会让 exe 解析失败）
+    $latestJson = $latest | ConvertTo-Json
+    [System.IO.File]::WriteAllText((Join-Path $distDirectory 'latest.json'), $latestJson, (New-Object System.Text.UTF8Encoding($false)))
 
     Remove-Item -Recurse -Force $stageDirectory
     Write-Host ""

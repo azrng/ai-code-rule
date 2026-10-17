@@ -132,8 +132,9 @@ jobs:
             engine_sha256 = (Get-FileHash -Algorithm SHA256 '${{ env.PUBLISH_DIR }}/use-ai-rule.exe').Hash.ToLowerInvariant()
             sha256 = (Get-FileHash -Algorithm SHA256 $packZip).Hash.ToLowerInvariant()
           }
-
-          Remove-Item -Recurse -Force $stage
+          # 必须落盘：release 上传清单引用 manifest_path，漏写会导致 fail_on_unmatched_files 报错
+          # 仓库口径 UTF-8 无 BOM：exe 的 JsonSerializer 对 BOM 字符直接解析失败
+          [System.IO.File]::WriteAllText('${{ steps.release_meta.outputs.manifest_path }}', ($latest | ConvertTo-Json), (New-Object System.Text.UTF8Encoding($false)))
 
       - name: Delete existing release for tag
         if: steps.release_meta.outputs.tag_exists == 'True'
