@@ -54,7 +54,7 @@ dependencies: [agents-root]
 - 排版 token
 - 间距、圆角、阴影 token
 - 布局与断点规则
-- BootstrapBlazor 主题配置映射
+- 所选组件库主题配置映射（BootstrapBlazor 或 MudBlazor，以项目实际引用为准）
 - 页面状态规范
 - 组件使用规则
 - 明确的 `do / dont` 规则

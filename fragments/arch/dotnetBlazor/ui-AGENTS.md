@@ -17,16 +17,16 @@ dependencies: [agents-root]
 
 ### Blazor Server（界面层）
 - .NET + Blazor Server（SignalR 实时通信）；版本以仓库现有 `TargetFramework` 为准，不主动升级，新项目先联网检索当前最新正式版
-- BootstrapBlazor 组件库（基于 Bootstrap 5）
-- BootstrapBlazor 图标库（Bootstrap Icons）
+- 组件库在 BootstrapBlazor（基于 Bootstrap 5）与 MudBlazor（Material Design）之间以项目实际引用为准，看包引用与 `_Imports.razor` / `App.razor` 的 using 和组件前缀确认；新项目未定库时先向用户确认再写代码，不得混用两套组件
+- 图标库随组件库：BootstrapBlazor 配 Bootstrap Icons，MudBlazor 配 MudBlazor 内置 Icon（Material Icons）
 - Blazor 内置路由管理
 - Blazor 状态管理（`CascadingValue` / `CascadingParameter` / Scoped 服务）
 
 ### 设计系统
 <!-- include: shared/ui/design-system-liveness.md -->
-- 使用 BootstrapBlazor 主题系统，所有视觉规范在 `design-system.yaml` 中定义
-- 优先使用 BootstrapBlazor 组件和样式，禁止 inline style，禁止硬编码颜色 / 间距 / 圆角
-- BootstrapBlazor 组件的具体参数与用法不在本规则展开：环境提供 bootstrap-blazor skill 时优先遵循，否则以项目锁定版本的官方文档为准
+- 使用所选组件库的主题系统，所有视觉规范在 `design-system.yaml` 中定义（基线以 BootstrapBlazor 语义书写；项目用 MudBlazor 时组件映射与 CSS 变量按 `mudblazor` skill 或官方文档换算，色彩 / 间距 token 语义仍适用）
+- 优先使用所选组件库的组件和样式，禁止 inline style，禁止硬编码颜色 / 间距 / 圆角
+- 组件库的具体参数与用法不在本规则展开：环境提供 `bootstrap-blazor` 或 `mudblazor` skill 时优先遵循（按项目实际选库对应者），否则以项目锁定版本的官方文档为准；禁止从非所选组件库借参数或样式类
 
 <!-- include: shared/ui/spec-lock.md -->
 
@@ -78,7 +78,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 <!-- include: shared/ui/prototype-workflow.md -->
 
 **工作内容**：
-1. 按设计文档实现 Razor 页面、布局、导航和组件，遵循 `design-system.yaml` 与 BootstrapBlazor 规范。
+1. 按设计文档实现 Razor 页面、布局、导航和组件，遵循 `design-system.yaml` 与所选组件库规范。
 2. 补齐页面的 `loading`、`empty`、`error`、`no-permission` 等关键状态。
 3. 先搭建完整可交互的页面骨架，再逐步接入服务层能力。
 4. 需要共享状态时，优先通过 Scoped 服务或 `CascadingValue` 管理。
@@ -124,7 +124,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 - 异步操作使用 `async Task` 方法，UI 更新通过 `StateHasChanged()` 或 `InvokeAsync(StateHasChanged)`。
 
 ### 样式规则
-- 优先使用 BootstrapBlazor 组件内置样式和 class。
+- 优先使用所选组件库的内置组件和样式 class。
 - 自定义样式使用 CSS 变量和 `wwwroot/css/app.css`。
 - 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）。
 - 主题覆盖统一在 `wwwroot/css/theme.css`。
@@ -132,8 +132,8 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 ### 组件规则
 - 优先复用 `Components/` 下已有组件，禁止重复创建。
 - 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象。
-- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`。
-- 除非仓库已在使用，否则不要引入新的组件库或样式体系。
+- 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`；组件名随所选组件库取对应实现（如 MudBlazor 用 `MudProgressLinear` / `MudAlert` 表达）
+- 除非仓库已在使用，否则不要引入新的组件库或样式体系；已定库的项目不得再引入第二套组件库
 
 ### 服务调用规则
 - 页面组件通过 `@inject` 注入服务。

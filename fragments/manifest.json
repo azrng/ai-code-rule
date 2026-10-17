@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "2.0.1",
+    "version": "2.1.0",
     "last_updated": "2026-10-17"
   },
   "schema_version": 3,
@@ -35,8 +35,8 @@
     { "id": "onion-architecture", "group": ".NET 后端", "when": { "backend": "dotnet", "arch-style": "layered" } },
     { "id": "azrng-efcore", "group": ".NET 后端", "when": { "backend": "dotnet" } },
     { "id": "maf", "group": ".NET 后端", "when": [{ "backend": "dotnet", "ai-capability": "yes" }] },
-    { "id": "mudblazor", "group": ".NET 后端", "when": { "frontend": "blazor", "blazor-flavor": "traditional" } },
-    { "id": "bootstrap-blazor", "group": ".NET 后端", "when": { "frontend": "blazor", "blazor-flavor": "webapp" } },
+    { "id": "mudblazor", "group": ".NET 后端", "when": { "frontend": "blazor" } },
+    { "id": "bootstrap-blazor", "group": ".NET 后端", "when": { "frontend": "blazor" } },
     { "id": "avalonia", "group": ".NET 桌面", "when": { "frontend": "avalonia" } },
     { "id": "frontend-design", "group": "前端 / UI", "when": { "form": ["web", "desktop"] } },
     { "id": "design-taste-frontend", "group": "前端 / UI", "when": { "form": ["web", "desktop"] } },

@@ -52,8 +52,15 @@ internal sealed class RecipeReplayer
                 var path = Path.Combine(Path.GetFullPath(targetDirectory), pair.Key);
                 if (!File.Exists(path))
                     continue;
-                var current = RecipeRecorder.HashContent(File.ReadAllText(path));
-                if (!current.Equals(pair.Value, StringComparison.OrdinalIgnoreCase))
+                // 配方哈希按生成时的内容字节计算；Windows 上 git autocrlf / 编辑器会把落盘换行在 LF/CRLF 间转换，
+                // 导致未修改文件被误判为本地修改。原样哈希或换行归一化后哈希任一命中即视为未修改，
+                // 真实内容改动（含换行转换后追加）两侧都不命中，仍能识别。
+                var raw = File.ReadAllText(path);
+                var current = RecipeRecorder.HashContent(raw);
+                if (current.Equals(pair.Value, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                var normalized = RecipeRecorder.HashContent(ResourceStore.NormalizeLineEndings(raw));
+                if (!normalized.Equals(pair.Value, StringComparison.OrdinalIgnoreCase))
                     modified.Add(pair.Key);
             }
         }

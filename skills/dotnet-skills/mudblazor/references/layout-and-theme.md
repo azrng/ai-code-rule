@@ -40,7 +40,7 @@
 
 ### MudMainContent
 
-仅 `ChildContent`；自动给 AppBar 留顶部 padding、随打开 drawer 留边距。常用 `Class="pt-16 pa-4"`（AppBar 高 64px）。
+仅 `ChildContent`；`.mud-main-content` 自带 `padding-top: var(--mud-appbar-height)`（xs 竖屏 / dense AppBar 时为 calc 折减）为固定 AppBar 留出首屏空间。自定义 `padding` 简写或 `pa-*` 工具类（含 `!important`）会整体覆盖该顶栏留白，导致首行内容被固定顶栏遮挡；需自定义内边距时改用 `pt-*` 之外维度的工具类（如 `px-*` / `pb-*`）或在自定义样式里显式重设 `padding-top: var(--mud-appbar-height)`。
 
 ## Theme 与暗色模式
 

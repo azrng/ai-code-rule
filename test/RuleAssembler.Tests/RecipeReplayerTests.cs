@@ -117,7 +117,7 @@ public sealed class RecipeReplayerTests : IDisposable
         Assert.DoesNotContain(result.Files, file => file.Output == "design-system.yaml");
         Assert.Contains(result.Notes, note =>
             note.Contains("React + TypeScript + Ant Design 5", StringComparison.Ordinal)
-            && note.Contains("Blazor Server + BootstrapBlazor", StringComparison.Ordinal)
+            && note.Contains("Blazor Server + 组件库", StringComparison.Ordinal)
             && note.Contains("技术栈描述", StringComparison.Ordinal)
             && note.Contains("不同，请核对", StringComparison.Ordinal));
     }
@@ -273,6 +273,36 @@ public sealed class RecipeReplayerTests : IDisposable
         Assert.Empty(upgrade.ModifiedFiles);
         Assert.Empty(upgrade.SkippedFiles);
         Assert.Equal(files.Count, upgrade.FilesToWrite.Count);
+    }
+    [Fact]
+    public void 升级_文件被换行符转换但内容未修改_不误判为本地修改()
+    {
+        // Windows 上 git autocrlf / 编辑器会把 LF 落盘为 CRLF：内容寻址比对前必须先归一化换行
+        var files = WriteGeneratedFiles("reactOnly");
+        var json = BuildRecipeJson("reactOnly", files, withHashes: true);
+        foreach (var file in files)
+            File.WriteAllText(Path.Combine(_tempDir, file.Output), file.Content.Replace("\n", "\r\n"));
+
+        var upgrade = _replayer.PlanUpgrade(json, _tempDir);
+
+        Assert.True(upgrade.HashDetectable);
+        Assert.Empty(upgrade.ModifiedFiles);
+        Assert.Empty(upgrade.SkippedFiles);
+        Assert.Equal(files.Count, upgrade.FilesToWrite.Count);
+    }
+
+    [Fact]
+    public void 升级_换行符转换后真有内容修改_仍能识别()
+    {
+        var files = WriteGeneratedFiles("reactOnly");
+        var json = BuildRecipeJson("reactOnly", files, withHashes: true);
+        var target = Path.Combine(_tempDir, "AGENTS.md");
+        File.WriteAllText(target, File.ReadAllText(target).Replace("\n", "\r\n") + "<!-- 本地定制追加 -->\r\n");
+
+        var upgrade = _replayer.PlanUpgrade(json, _tempDir);
+
+        Assert.Contains("AGENTS.md", upgrade.ModifiedFiles);
+        Assert.DoesNotContain(upgrade.FilesToWrite, file => file.Output == "AGENTS.md");
     }
 
     [Fact]
