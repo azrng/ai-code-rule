@@ -46,20 +46,14 @@ internal static class Program
             Console.WriteLine($"use-ai-rule 引擎 {engineVersion}（内容包 {manifest.Vars.Version}，{manifest.Vars.LastUpdated}）");
 
             // 引擎在线自更新：交互模式启动时静默查一次引擎版本（带参模式不查，避免脚本调用出网络副作用；
-            // --pack 指定包模式同理）。有新版询问一次，同意则下载并原子替换 exe，重启后生效
-            if (StripPackArgs(ref packArgs))
-            {
-                var skills = new SkillsStore(resolution.Provider);
-                return RunCommand(packArgs, manifest, resources, skills);
-            }
-
+            // --pack 指定包模式同理）。发现新引擎直接下载并原子替换 exe，下次启动生效，本次会话继续用旧引擎；
+            // 查版本 / 下载任何失败都只告警降级，旧引擎配合缓存 / 内嵌内容照常可用
             if (!args.Contains("--offline", StringComparer.OrdinalIgnoreCase) && resolution.Source != "pack")
             {
                 var latestEngine = PackResolver.TryFetchLatestEngineVersion();
-                if (latestEngine is not null && PackResolver.IsEngineNewer(latestEngine, engineVersion)
-                    && AnsiConsole.Confirm($"发现新引擎版本 {latestEngine}（当前 {engineVersion}），是否在线更新？", defaultValue: true))
+                if (latestEngine is not null && PackResolver.IsEngineNewer(latestEngine.Value.Version, engineVersion))
                 {
-                    PackResolver.TryUpdateEngine(engineVersion, latestEngine);
+                    PackResolver.TryUpdateEngine(engineVersion, latestEngine.Value.Version, latestEngine.Value.Sha256);
                 }
             }
 

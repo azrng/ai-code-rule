@@ -124,13 +124,14 @@ jobs:
           $packZip = '${{ steps.release_meta.outputs.pack_path }}'
           Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $packZip -CompressionLevel Optimal
 
-          # latest.json：version 是内容包版本（旧版 exe 更新检查的事实源），engine_version 仅展示
+          # latest.json：version 是内容包版本（旧版 exe 更新检查的事实源），engine_version 仅展示，
+          # engine_sha256 供新引擎静默直更做下载完整性校验（缺省则跳过自更新）
           $latest = [ordered]@{
             version = $packVersion
             engine_version = $engineVersion
+            engine_sha256 = (Get-FileHash -Algorithm SHA256 '${{ env.PUBLISH_DIR }}/use-ai-rule.exe').Hash.ToLowerInvariant()
             sha256 = (Get-FileHash -Algorithm SHA256 $packZip).Hash.ToLowerInvariant()
           }
-          $latest | ConvertTo-Json | Set-Content -LiteralPath '${{ steps.release_meta.outputs.manifest_path }}' -Encoding UTF8
 
           Remove-Item -Recurse -Force $stage
 

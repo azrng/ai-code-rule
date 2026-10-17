@@ -108,8 +108,8 @@ PYEOF
   pack_zip="$dist_directory/ai-rule-pack.zip"
   rm -f "$pack_zip"
   (cd "$stage_directory" && zip -q -r -X "$pack_zip" .)
-  zip_sha256="$(sha256sum "$pack_zip" | cut -d' ' -f1)"
-  printf '{\n  "version": "%s",\n  "sha256": "%s"\n}\n' "$version" "$zip_sha256" > "$dist_directory/latest.json"
+  win_exe_sha256="$(sha256sum "$dist_directory/use-ai-rule.exe" | cut -d' ' -f1)"
+  printf '{\n  "version": "%s",\n  "engine_sha256": "%s",\n  "sha256": "%s"\n}\n' "$version" "$win_exe_sha256" "$zip_sha256" > "$dist_directory/latest.json"
 
   rm -rf "$stage_directory"
   echo ""

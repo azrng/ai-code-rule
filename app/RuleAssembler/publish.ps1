@@ -73,9 +73,9 @@ if (-not $SkipPack) {
 
     $latest = [ordered]@{
         version = $version
+        engine_sha256 = (Get-FileHash -Algorithm SHA256 $distBinary).Hash.ToLowerInvariant()
         sha256 = (Get-FileHash -Algorithm SHA256 $packZip).Hash.ToLowerInvariant()
     }
-    $latest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $distDirectory 'latest.json') -Encoding UTF8
 
     Remove-Item -Recurse -Force $stageDirectory
     Write-Host ""

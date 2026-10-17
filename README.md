@@ -173,7 +173,7 @@ fragments/
 GitHub Release（tag = v<引擎版本>，如 v2.17）
 ├── use-ai-rule.exe          # 引擎，win-x64 框架依赖单文件（需自装 .NET 10 运行时）
 ├── ai-rule-pack.zip         # 内容包：pack.json（版本 + 逐文件 SHA-256）+ manifest.json + fragments/ + skills/
-└── latest.json              # 更新检查清单：version（内容包版本）+ engine_version + zip SHA-256
+└── latest.json              # 更新检查清单：version（内容包版本）+ engine_version + engine_sha256 + zip SHA-256
 ```
 
 双版本口径，各自独立演进：
@@ -187,7 +187,7 @@ exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需�
 
 1. `--pack <zip|目录>`：显式指定内容包（zip 或已解包目录），SHA-256 校验失败直接报错退出；
 2. `--offline`：跳过网络检查，用本地缓存（`%LOCALAPPDATA%\use-ai-rule\packs\<版本>\`），无缓存则内嵌资源；
-3. 交互模式（无参数启动）：拉取 Release 的 `latest.json`（3 秒超时），发现新版本询问一次，同意后下载内容包、整包 + 逐文件双重 SHA-256 校验、原子落盘切版本指针；
+3. 交互模式（无参数启动）：启动时拉取 Release 的 `latest.json`（3 秒超时），发现新引擎**直接下载替换**当前 exe（下载后按 `engine_sha256` 做 SHA-256 校验，不匹配 / 字段缺失拒绝替换），下次启动生效，本次会话继续用旧引擎；选定会用到内容包的操作后再询问一次内容包更新，同意后下载、整包 + 逐文件双重 SHA-256 校验、原子落盘切版本指针；
 4. 命令行模式（带参数启动）：不做网络检查，直接用本地缓存或内嵌资源；
 5. 程序集内嵌资源：编译期固化的兜底，单 exe 无网络永远可用。
 

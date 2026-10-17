@@ -29,6 +29,7 @@ internal static class PackResolver
     private sealed record LatestInfo(
         [property: JsonPropertyName("version")] string Version,
         [property: JsonPropertyName("engine_version")] string? EngineVersion,
+        [property: JsonPropertyName("engine_sha256")] string? EngineSha256,
         [property: JsonPropertyName("sha256")] string Sha256);
 
     private sealed record Pointer([property: JsonPropertyName("version")] string Version);
@@ -101,12 +102,15 @@ internal static class PackResolver
         }
     }
 
-    // 引擎版本检查：只拉 latest.json 返回远端引擎版本（无网络 / 字段缺失返回 null），不下载
-    public static string? TryFetchLatestEngineVersion()
+    // 引擎版本检查：只拉 latest.json 返回远端引擎版本与 exe 哈希（无网络 / 字段缺失返回 null），不下载。
+    // 哈希缺省返回 null：静默直更必须携带校验值，发布源没给就当没这个更新
+    public static (string Version, string Sha256)? TryFetchLatestEngineVersion()
     {
         var logs = new List<string>();
         var latest = TryFetchLatest(logs);
-        return latest?.EngineVersion is { Length: > 0 } remote ? remote : null;
+        if (latest?.EngineVersion is not { Length: > 0 } remote)
+            return null;
+        return string.IsNullOrWhiteSpace(latest.EngineSha256) ? null : (remote, latest.EngineSha256);
     }
 
     // 引擎版本比较：引擎用 2.x（run_number 单调递增），与内容包 IsNewer 的 x.y.z 语义兼容
@@ -114,11 +118,13 @@ internal static class PackResolver
     {
         return IsNewer(candidate, current);
     }
-
-    // 引擎在线自更新：下载新 exe → 「运行中 exe 改名 .old + 新 exe 落位」原子替换，重启后生效。
+    // 引擎在线自更新：下载新 exe → SHA-256 校验 → 「运行中 exe 改名 .old + 新 exe 落位」原子替换，
+    // 重启后生效。直更（无确认框）路径上哈希校验是唯一完整性防线：远端资产缺失 / 被代理替换 /
+    // 下载截断时拒绝落位，当前 exe 保持不动。latest.json 未携带 engine_sha256（旧发布源）视为
+    // 校验不可用，同样拒绝替换并提示手动下载——静默直更绝不接受未校验字节。
     // Windows 对正在运行的 exe 只锁写不锁删/改名；改名失败（占用异常）清理半成品并回退提示手动下载。
-    // expectedLatest 传入调用方刚查到的远端版本，避免二次网络请求
-    public static bool TryUpdateEngine(string currentEngineVersion, string expectedLatest)
+    // expectedLatest / expectedSha256 传入调用方刚查到的远端版本与哈希，避免二次网络请求
+    public static bool TryUpdateEngine(string currentEngineVersion, string expectedLatest, string? expectedSha256)
     {
         var currentExe = Environment.ProcessPath;
         if (currentExe is null || !File.Exists(currentExe))
@@ -127,11 +133,22 @@ internal static class PackResolver
             return false;
         }
 
+        if (string.IsNullOrWhiteSpace(expectedSha256))
+        {
+            Console.WriteLine("[engine] 告警：发布源 latest.json 缺少 engine_sha256，跳过引擎自更新（请到 Release 页手动下载）");
+            Console.WriteLine($"[engine] {BaseUrl.Replace("/releases/latest/download", "/releases/latest")}");
+            return false;
+        }
+
         try
         {
             Console.WriteLine($"[engine] 下载新引擎 {expectedLatest} …");
             using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(300) };
             var exeBytes = client.GetByteArrayAsync($"{BaseUrl}/use-ai-rule.exe").GetAwaiter().GetResult();
+
+            var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(exeBytes));
+            if (!actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"SHA-256 不匹配（期望 {expectedSha256[..Math.Min(16, expectedSha256.Length)]}…，实际 {actual[..16]}…）");
 
             var tempExe = currentExe + ".new";
             File.WriteAllBytes(tempExe, exeBytes);
