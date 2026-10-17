@@ -42,6 +42,8 @@ internal static class SkillsImportFlow
         // 推荐预选：按本次组合的维度选择推导（检测 / 问答 / 经典入口一致口径），无上下文时全不勾
         var recommended = SkillCatalog.Recommend(manifest, context, skills);
         var groups = SkillCatalog.BuildGroups(manifest, skills);
+        if (groups.Count == 1 && groups[0].Title == SkillCatalog.FallbackGroup)
+            Console.WriteLine($"[pack] 告警：内容包缺少技能登记，全部技能归入「其他」且无推荐预选；请升级内容包后重试（当前 {manifest.Vars.Version}）");
         var picked = ui.ChooseManyGrouped(
             recommended.Count > 0
                 ? $"选择要导入的 Skills（已按技术栈预选 {recommended.Count} 个，可调整，可多选）："
