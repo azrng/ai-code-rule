@@ -219,15 +219,47 @@ public sealed class PackTests : IDisposable
     [Fact]
     public void Resolve_OfflineWithCache_PrefersCache()
     {
+        // 夹具版本取远高于任何真实内嵌版本的值：该用例验证「缓存命中优先」，
+        // 不应随仓库 manifest 版本增长而反复失效（缓存 ≥ 内嵌时仍走缓存）
         var cache = NewDir();
-        WriteFile(cache, "2.0.0/pack.json", "{\"version\":\"2.0.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
-        WriteFile(cache, "2.0.0/fragments/manifest.json", "{}");
-        File.WriteAllText(Path.Combine(cache, "current.json"), "{\"version\":\"2.0.0\"}");
+        WriteFile(cache, "999.0.0/pack.json", "{\"version\":\"999.0.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
+        WriteFile(cache, "999.0.0/fragments/manifest.json", "{}");
+        File.WriteAllText(Path.Combine(cache, "current.json"), "{\"version\":\"999.0.0\"}");
 
         var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
 
-        Assert.Equal("2.0.0", resolution.Version);
+        Assert.Equal("999.0.0", resolution.Version);
         Assert.Equal("cache", resolution.Source);
+    }
+
+    [Fact]
+    public void Resolve_CacheOlderThanEmbedded_PrefersEmbedded()
+    {
+        // 引擎换代先于内容包发布：缓存版本旧于 exe 内嵌内容时必须用内嵌，
+        // 否则技能登记等新特性会被旧缓存静默压掉（用户实测：技能全归「其他」组）
+        var cache = NewDir();
+        WriteFile(cache, "0.1.0/pack.json", "{\"version\":\"0.1.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
+        WriteFile(cache, "current.json", "{\"version\":\"0.1.0\"}");
+
+        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
+
+        Assert.Equal("embedded", resolution.Source);
+        Assert.NotNull(resolution.Version);
+        Assert.NotEqual("0.1.0", resolution.Version);
+    }
+
+    [Fact]
+    public void Resolve_CacheNewerOrEqualEmbedded_KeepsCache()
+    {
+        // 缓存版本高于内嵌（正常更新路径）时维持缓存优先，不被本修复改变
+        var cache = NewDir();
+        WriteFile(cache, "999.0.0/pack.json", "{\"version\":\"999.0.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
+        WriteFile(cache, "current.json", "{\"version\":\"999.0.0\"}");
+
+        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
+
+        Assert.Equal("cache", resolution.Source);
+        Assert.Equal("999.0.0", resolution.Version);
     }
 
     [Fact]

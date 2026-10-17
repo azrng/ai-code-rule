@@ -52,11 +52,22 @@ internal static class PackResolver
             return new PackResolution(new FolderResourceProvider(root), manifest.Version, "pack", logs);
         }
 
-        // 2) 离线模式 / 命令行模式：缓存命中用缓存，否则内嵌，绝不联网
+        // 2) 离线模式 / 命令行模式：缓存命中用缓存，否则内嵌，绝不联网。
+        // 缓存版本可能旧于当前 exe 内嵌内容（引擎换代先于内容包发布）：谁新用谁，
+        // 避免旧缓存压过内嵌新内容导致技能登记等新特性静默失效
         var cached = FindCachedRoot(cache);
         if (cached is not null)
         {
             var manifest = PackReader.Load(cached);
+            var embeddedVersion = TryGetEmbeddedPackVersion();
+            if (embeddedVersion is not null && IsNewer(embeddedVersion, manifest.Version))
+            {
+                Console.WriteLine(
+                    $"[pack] 本地缓存 {manifest.Version} 旧于引擎内嵌内容 {embeddedVersion}，本次使用内嵌内容");
+                return new PackResolution(
+                    new EmbeddedResourceProvider(), embeddedVersion, "embedded", new List<string>());
+            }
+
             var logs = offline
                 ? new List<string> { $"[pack] 离线模式：使用本地缓存 {manifest.Version}" }
                 : new List<string>();
@@ -253,6 +264,29 @@ internal static class PackResolver
         catch (Exception)
         {
             // 指针损坏按无缓存处理，内嵌兜底
+            return null;
+        }
+    }
+
+    // 内嵌内容包版本：内嵌资源没有 pack.json，从 fragments/manifest.json 的 vars.version 读取；
+    // 读取失败返回 null（视为无法比较，保持既有缓存优先行为）
+    private static string? TryGetEmbeddedPackVersion()
+    {
+        try
+        {
+            var provider = new EmbeddedResourceProvider();
+            var bytes = provider.ReadBytes("fragments/manifest.json");
+            if (bytes is null || bytes.Length == 0)
+                return null;
+            using var doc = JsonDocument.Parse(bytes);
+            var version = doc.RootElement
+                .GetProperty("vars")
+                .GetProperty("version")
+                .GetString();
+            return string.IsNullOrWhiteSpace(version) ? null : version;
+        }
+        catch (Exception)
+        {
             return null;
         }
     }
