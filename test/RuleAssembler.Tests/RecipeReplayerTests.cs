@@ -208,6 +208,40 @@ public sealed class RecipeReplayerTests : IDisposable
         Assert.Contains("无法重建组合选择", ex.Message);
     }
 
+    [Fact]
+    public void 配方版本新于当前内容包_拒绝重放防止正文回退()
+    {
+        // 会话内更新内容包未生效（或引擎与内容包版本倒挂）时，配方版本可能新于当前 manifest：
+        // 继续重放会把正文回退到旧版并把配方版本回写降级，必须在两个重放入口都显式拒绝
+        var (_, json) = BuildRecipe("reactOnly");
+        var tampered = json.Replace(
+            $"\"manifest_version\": \"{_manifest.Vars.Version}\"",
+            "\"manifest_version\": \"999.0.0\"",
+            StringComparison.Ordinal);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => _replayer.PlanUpgrade(tampered, _tempDir));
+        Assert.Contains("回退", ex.Message);
+        Assert.Contains("999.0.0", ex.Message);
+        Assert.Throws<InvalidOperationException>(() => _replayer.Replay(tampered, _tempDir));
+    }
+
+    [Fact]
+    public void 配方版本旧于当前内容包_正常升级重放并提示更新()
+    {
+        var (_, json) = BuildRecipe("reactOnly");
+        var tampered = json.Replace(
+            $"\"manifest_version\": \"{_manifest.Vars.Version}\"",
+            "\"manifest_version\": \"0.0.9\"",
+            StringComparison.Ordinal);
+
+        var result = _replayer.Replay(tampered, _tempDir);
+
+        Assert.Contains(result.Notes, note =>
+            note.Contains("0.0.9", StringComparison.Ordinal)
+            && note.Contains("规则内容有更新", StringComparison.Ordinal));
+        Assert.Equal(_manifest.Vars.Version, result.Record.ManifestVersion);
+    }
+
     // ---------- --upgrade：本地修改检测 ----------
 
     private List<PlannedFile> WriteGeneratedFiles(string profileId)

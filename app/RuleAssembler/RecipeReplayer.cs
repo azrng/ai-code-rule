@@ -135,6 +135,16 @@ internal sealed class RecipeReplayer
 
     private ReplayResult Replay(RecipeRecord recipe, string targetDirectory)
     {
+        // 降级守卫：配方版本新于当前内容包 = 本次会话的内容来源落后于配方（典型：会话内更新了
+        // 缓存但 manifest 未重建、引擎与内容包版本倒挂）。继续重放会把正文回退到旧版并把配方
+        // 版本拉低，必须显式失败让用户先让新包生效，而不是静默生成旧内容
+        if (PackResolver.IsNewer(recipe.ManifestVersion, _manifest.Vars.Version))
+        {
+            throw new InvalidOperationException(
+                $"配方记录于规则版本 {recipe.ManifestVersion}，当前内容包为 {_manifest.Vars.Version}："
+                + "继续重放会把规则正文回退到旧版本。请重新启动生成器（或用 --pack 指定新内容包）让新版本生效后再重放。");
+        }
+
         var dimensions = recipe.Selection is { Count: > 0 }
             ? recipe.Selection
             : FromLegacyRecipe(recipe);
@@ -162,7 +172,8 @@ internal sealed class RecipeReplayer
         if (!string.IsNullOrWhiteSpace(recipe.ManifestVersion)
             && !recipe.ManifestVersion.Equals(_manifest.Vars.Version, StringComparison.Ordinal))
         {
-            notes.Add($"配方记录于规则版本 {recipe.ManifestVersion}，当前为 {_manifest.Vars.Version}：组合结构一致，正文按当前规则内容生成");
+            // 能走到这里只剩「配方旧于当前」的正常升级路径（降级已在入口守卫拒绝）
+            notes.Add($"配方记录于规则版本 {recipe.ManifestVersion}，当前为 {_manifest.Vars.Version}：规则内容有更新，正文已按当前（更新后）规则生成");
         }
 
         // 已定制的设计系统文件属于产品资产：重放同样保留本地版本

@@ -1,5 +1,8 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.IO.Compression;
 using System.Text.Json;
 
 namespace RuleAssembler.Tests;
@@ -275,6 +278,163 @@ public sealed class PackTests : IDisposable
         var resolution = PackResolver.Resolve(new[] { "--help" }, cacheRoot: NewDir());
 
         Assert.Equal("embedded", resolution.Source);
+    }
+
+    // ── CheckForUpdates：会话内更新 ──
+    [Fact]
+    public void CheckForUpdates_安装成功_返回新包解析并切缓存指针()
+    {
+        // 本地 stub 发布源替代 GitHub Release：验证「确认更新 → 下载校验落位 → 返回新包解析」
+        // 这条消费者可见行为（会话内更新必须返回新内容，否则正文退回旧版）
+        var cache = NewDir();
+        var packRoot = NewDir();
+        WriteFile(packRoot, "fragments/manifest.json", "{}");
+        WritePackJson(packRoot, "9.8.7", files: new Dictionary<string, string>
+        {
+            ["fragments/manifest.json"] = Sha256Of(packRoot, "fragments/manifest.json")
+        });
+        var zipPath = Path.Combine(_tempDir, "ai-rule-pack.zip");
+        ZipFile.CreateFromDirectory(packRoot, zipPath);
+
+        using var server = new StubReleaseServer(
+            ("latest.json", Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+            {
+                version = "9.8.7",
+                sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(zipPath))).ToLowerInvariant()
+            }))),
+            ("ai-rule-pack.zip", File.ReadAllBytes(zipPath)));
+        WithPackUrl(server.BaseUrl, cache, () =>
+        {
+            var resolution = PackResolver.CheckForUpdates("1.0.0", _ => true);
+
+            Assert.NotNull(resolution);
+            Assert.Equal("9.8.7", resolution.Version);
+            Assert.Equal("cache", resolution.Source);
+            Assert.IsType<FolderResourceProvider>(resolution.Provider);
+            Assert.NotNull(new ResourceStore(resolution.Provider).Read("manifest.json"));
+            // 缓存已落位并切指针：重启后的 Resolve 离线即可拿到新版本（重启生效语义的事实基础）
+            Assert.Equal(
+                "9.8.7",
+                JsonDocument.Parse(File.ReadAllText(Path.Combine(cache, "current.json")))
+                    .RootElement.GetProperty("version").GetString());
+            Assert.Equal("9.8.7", PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache).Version);
+        });
+    }
+
+    [Fact]
+    public void CheckForUpdates_用户跳过_返回null且不落缓存()
+    {
+        var cache = NewDir();
+        using var server = new StubReleaseServer(
+            ("latest.json", Encoding.UTF8.GetBytes($"{{\"version\":\"9.8.7\",\"sha256\":\"{new string('0', 64)}\"}}")));
+        WithPackUrl(server.BaseUrl, cache, () =>
+        {
+            Assert.Null(PackResolver.CheckForUpdates("1.0.0", _ => false));
+            Assert.False(File.Exists(Path.Combine(cache, "current.json")));
+        });
+    }
+
+    [Fact]
+    public void CheckForUpdates_已是最新_返回null()
+    {
+        var cache = NewDir();
+        using var server = new StubReleaseServer(
+            ("latest.json", Encoding.UTF8.GetBytes($"{{\"version\":\"1.0.0\",\"sha256\":\"{new string('0', 64)}\"}}")));
+        WithPackUrl(server.BaseUrl, cache, () =>
+        {
+            Assert.Null(PackResolver.CheckForUpdates("1.0.0", _ => true));
+        });
+    }
+
+    // 检查期间把发布源指到本地 stub、缓存根指到测试隔离目录，结束后还原，避免污染本机缓存与同进程其他测试；
+    // 隔离目录先清后用，保证断言不受历史残留影响
+    private static void WithPackUrl(string baseUrl, string cacheRoot, Action action)
+    {
+        var original = Environment.GetEnvironmentVariable("USE_AI_RULE_PACK_URL");
+        var originalCache = Environment.GetEnvironmentVariable("USE_AI_RULE_PACK_CACHE");
+        Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_URL", baseUrl);
+        if (Directory.Exists(cacheRoot))
+            Directory.Delete(cacheRoot, recursive: true);
+        Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_CACHE", cacheRoot);
+        try
+        {
+            action();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_URL", original);
+            Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_CACHE", originalCache);
+        }
+    }
+
+    // 只服务给定静态路径的最小 HTTP 源：TcpListener + 手写响应，避免 HttpListener 的 URLACL 依赖；
+    // Connection: close + Content-Length 足够 HttpClient 拉取 latest.json 与 zip
+    private sealed class StubReleaseServer : IDisposable
+    {
+        private readonly TcpListener _listener;
+        private readonly Dictionary<string, byte[]> _assets;
+        private readonly CancellationTokenSource _cts = new();
+
+        public StubReleaseServer(params (string Path, byte[] Content)[] assets)
+        {
+            _assets = assets.ToDictionary(a => "/" + a.Path, a => a.Content, StringComparer.Ordinal);
+            _listener = new TcpListener(IPAddress.Loopback, 0);
+            _listener.Start();
+            Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            _ = Task.Run(AcceptLoop);
+        }
+
+        private int Port { get; }
+
+        public string BaseUrl => $"http://127.0.0.1:{Port}";
+
+        private async Task AcceptLoop()
+        {
+            try
+            {
+                while (!_cts.IsCancellationRequested)
+                {
+                    using var client = await _listener.AcceptTcpClientAsync(_cts.Token);
+                    using var stream = client.GetStream();
+                    using var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+                    var requestLine = await reader.ReadLineAsync(_cts.Token);
+                    var path = requestLine?.Split(' ') is { Length: > 1 } parts ? parts[1] : "";
+                    while (!string.IsNullOrEmpty(await reader.ReadLineAsync(_cts.Token)))
+                    {
+                    }
+
+                    if (!_assets.TryGetValue(path, out var content))
+                    {
+                        await WriteAsync(stream, "404 Not Found", Array.Empty<byte>());
+                        continue;
+                    }
+
+                    await WriteAsync(stream, "200 OK", content);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception)
+            {
+                // Dispose 后的套接字中断按测试结束处理
+            }
+        }
+
+        private static async Task WriteAsync(NetworkStream stream, string status, byte[] content)
+        {
+            var header = Encoding.ASCII.GetBytes(
+                $"HTTP/1.1 {status}\r\nContent-Length: {content.Length}\r\nConnection: close\r\n\r\n");
+            await stream.WriteAsync(header);
+            if (content.Length > 0)
+                await stream.WriteAsync(content);
+        }
+
+        public void Dispose()
+        {
+            _cts.Cancel();
+            _listener.Stop();
+        }
     }
 
     // ── 辅助 ──

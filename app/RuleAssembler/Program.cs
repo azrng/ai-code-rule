@@ -109,6 +109,36 @@ internal static class Program
         return args.Length > 0;
     }
 
+    // 内容包更新安装成功后的进程自重启：以原 exe 路径、无参数重新拉起交互入口，
+    // 新进程从缓存重新 Resolve（加载刚更新的内容包），随后退出当前进程。
+    // 仅交互模式可达此处（带参模式不联网检查），无需透传命令行参数；
+    // 拉起失败降级为提示用户手动重启，不静默继续旧内容
+    private static void RestartSelf()
+    {
+        var exe = Environment.ProcessPath;
+        if (exe is null || !File.Exists(exe))
+        {
+            Console.WriteLine("[pack] 告警：无法定位生成器可执行文件，请手动重新启动以启用新内容包。");
+            return;
+        }
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = exe,
+                    UseShellExecute = false,
+                    WorkingDirectory = Environment.CurrentDirectory
+                });
+            Environment.Exit(0);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[pack] 告警：自动重启失败（{ex.Message}），请手动重新启动以启用新内容包。");
+        }
+    }
+
     // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染；
     // 旧 Profile 渲染路径与 profiles 节点已整体退役，组合内核是唯一渲染路径。
     // 内容包更新检查是惰性的：只有选定「生成规则 / 仅导入 Skills」这类真正用到内容包的
@@ -145,11 +175,21 @@ internal static class Program
         if (mode == 1)
             return DetectInteractive(manifest, ui, Environment.CurrentDirectory);
 
-        // 进入真正用到内容包的路径：此刻才做内容包更新检查（失败静默降级）
+        // 进入真正用到内容包的路径：此刻才做内容包更新检查（失败静默降级）。
+        // 安装成功返回新包解析结果：必须重启进程重新 Resolve，让新内容（与新引擎）即时生效；
+        // 若继续用启动时加载的旧 manifest，会静默按旧版生成并把配方版本回写降级。
+        // 重启后 IsNewer 不再成立，天然防循环；与引擎自更新「落位后重启生效」同一口径
         if (mode == 0 || mode == 2)
-            PackResolver.CheckForUpdates(
+        {
+            var refreshed = PackResolver.CheckForUpdates(
                 manifest.Vars.Version,
                 version => AnsiConsole.Confirm($"发现内容包新版本 {version}，是否更新？（当前 {manifest.Vars.Version}）", defaultValue: true));
+            if (refreshed is not null)
+            {
+                Console.WriteLine($"[pack] 内容包已生效，即将自动重启生成器（重启后无更新提示，直接继续操作）…");
+                RestartSelf();
+            }
+        }
 
         if (mode == 2)
             return ImportSkillsOnly(ui, skillsStore, manifest);

@@ -9,7 +9,8 @@ internal sealed record PackResolution(IResourceProvider Provider, string? Versio
 
 // 内容包解析器：决定规则与技能内容从哪来。
 // 优先级：--pack 指定包（硬失败语义）→ 本地缓存 → 程序集内嵌兜底；
-// 交互启动时尝试更新检查（latest.json，3 秒超时），命令行 / --offline 不做网络检查。
+// 交互启动时尝试更新检查（latest.json，3 秒超时），命令行 / --offline 不做网络检查；
+// 内容包更新安装成功后返回新包解析结果，交互入口据此重启自身进程让新内容即时生效。
 // 单 exe 无网络永远可用：下载失败、校验失败、超时都只降级不阻塞。
 internal static class PackResolver
 {
@@ -22,9 +23,18 @@ internal static class PackResolver
         Environment.GetEnvironmentVariable("USE_AI_RULE_PACK_URL")?.TrimEnd('/')
         ?? "https://github.com/azrng/ai-code-rule/releases/latest/download";
 
-    // 缓存根：%LOCALAPPDATA%\use-ai-rule\packs\<version>\
-    internal static string CacheRoot =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "use-ai-rule", "packs");
+    // 缓存根：%LOCALAPPDATA%\use-ai-rule\packs\<version>\；
+    // USE_AI_RULE_PACK_CACHE 可整体替换（测试隔离 / 双缓存并存），与 USE_AI_RULE_PACK_URL 同风格
+    internal static string CacheRoot
+    {
+        get
+        {
+            var overrideRoot = Environment.GetEnvironmentVariable("USE_AI_RULE_PACK_CACHE")?.Trim();
+            return string.IsNullOrEmpty(overrideRoot)
+                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "use-ai-rule", "packs")
+                : overrideRoot!;
+        }
+    }
 
     private sealed record LatestInfo(
         [property: JsonPropertyName("version")] string Version,
@@ -95,8 +105,11 @@ internal static class PackResolver
     }
 
     // 惰性更新检查：进入会使用内容包的交互路径（生成规则 / 导入 Skills）前调用。
-    // 拉一次 latest.json，有新版且用户同意则下载安装；任何失败静默降级不阻塞
-    public static void CheckForUpdates(string? currentVersion, Func<string, bool> confirmUpgrade)
+    // 拉一次 latest.json，有新版且用户同意则下载安装；任何失败静默降级不阻塞。
+    // 安装成功返回新包解析结果（Source=cache），调用方必须据此重启进程重新 Resolve——
+    // 若继续用启动时加载的旧 manifest，会出现「提示已更新、正文却按旧版生成、配方版本被回写降级」的静默退回；
+    // 无更新 / 用户跳过 / 下载或校验失败返回 null，沿用当前来源
+    public static PackResolution? CheckForUpdates(string? currentVersion, Func<string, bool> confirmUpgrade)
     {
         var logs = new List<string>();
         var latest = TryFetchLatest(logs);
@@ -104,26 +117,28 @@ internal static class PackResolver
         {
             foreach (var line in logs)
                 Console.WriteLine(line);
-            return;
+            return null;
         }
 
         if (!IsNewer(latest.Version, currentVersion))
-            return;
+            return null;
 
         if (!confirmUpgrade(latest.Version))
         {
             Console.WriteLine($"[pack] 本次跳过更新 {latest.Version}");
-            return;
+            return null;
         }
 
         try
         {
             DownloadAndInstall(latest);
             Console.WriteLine($"[pack] 内容包已更新到 {latest.Version}");
+            return new PackResolution(new FolderResourceProvider(Path.Combine(CacheRoot, latest.Version)), latest.Version, "cache", new List<string>());
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[pack] 告警：更新失败（{ex.Message}），继续使用 {currentVersion ?? "内嵌资源"}");
+            return null;
         }
     }
 
@@ -439,8 +454,9 @@ internal static class PackResolver
         return targetRoot;
     }
 
-    // 语义化版本比较：x.y.z；任一侧解析失败视为不比较（返回 false，不触发更新）
-    private static bool IsNewer(string candidate, string? current)
+    // 语义化版本比较：x.y.z；任一侧解析失败视为不比较（返回 false，不触发更新）。
+    // internal：RecipeReplayer 的降级守卫复用同一比较（配方版本新于当前包 → 拒绝重放）
+    internal static bool IsNewer(string candidate, string? current)
     {
         if (current is null)
             return true;
