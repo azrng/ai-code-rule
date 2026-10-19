@@ -24,7 +24,7 @@ doc/
 - `doc/design/index.md`：维护设计文档导航和整体设计状态
 - `doc/design/architecture.md`：只记录跨模块架构、公共数据流、公共技术决策和跨模块约束
 - `doc/design/<module>/<feature>.md`：只描述对应需求的实现方案、模块职责、数据流、状态、交互、异常和技术决策；通过需求 ID 引用需求，不重复粘贴完整需求
-- `doc/design/prototype/`：按 prototype-workflow.md 规则启用原型时必建，未启用时仍使用设计文档内的 ASCII 线框图；存放 HTML 交互原型（桌面/移动端复杂交互可用最小可运行原型），按 `<module>/<feature>.html` 与功能设计文档对应，并在对应设计文档中互相链接；原型确认后归档保留，目录内不得混入真实业务代码或真实接口调用。共享样式与静态资源放 `prototype/assets/`，页面以相对路径引用，不在每个页面内联重复
+- `doc/design/prototype/`：按 prototype-workflow.md 规则启用原型时必建，「可选」仅指新功能是否启用原型专项，不指存量原型可滞后——已存在的原型文件必须与实现保持同步，任何界面变更先改原型再改实现；未启用时仍使用设计文档内的 ASCII 线框图；存放 HTML 交互原型（桌面/移动端复杂交互可用最小可运行原型），按 `<module>/<feature>.html` 与功能设计文档对应，并在对应设计文档中互相链接；原型确认后归档保留，目录内不得混入真实业务代码或真实接口调用。共享样式与静态资源放 `prototype/assets/`，页面以相对路径引用，不在每个页面内联重复
 - `doc/contracts/<module>.md`：仅在需要给多个模块提供契约索引或补充说明时使用；`doc/contracts/<module>/<feature>.md` 用于阶段 0 的新契约草案。DTO、Schema、公开接口定义仍以代码或共享 Schema 为最终事实来源
 - 新文档在 YAML front matter 中至少标注 `doc_id`、`doc_type`、`module`、`status`、`last_updated` 和关联文档路径；需求文档使用 `REQ-` ID，设计文档使用 `DES-` ID，契约草案使用 `CON-` ID
 - `status` 统一使用 `draft`、`in-review`、`approved`、`superseded`；只有对应需求、设计和新增契约草案均为 `approved` 时，才允许进入阶段 1。已批准文档发生业务或技术变更时，先改为 `in-review`，确认后再恢复为 `approved`
