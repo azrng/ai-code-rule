@@ -352,9 +352,9 @@ internal static class Program
             Console.WriteLine("配方未记录内容哈希（早期版本生成），无法识别本地修改，将按配方直接重放覆盖。");
         }
 
-        if (force && plan.ModifiedFiles.Count > 0)
+        if (plan.ModifiedFiles.Count > 0 && plan.HashDetectable && force)
         {
-            // --force：被保留的修改文件重新纳入写入集合，配方按全新写入重算哈希
+            // --force / 交互选择覆盖：被保留的修改文件重新纳入写入集合，配方按全新写入重算哈希
             plan = new RecipeReplayer.UpgradePlan(
                 replay, plan.ModifiedFiles, new List<string>(), replay.Files, plan.HashDetectable, replay.Record);
         }
@@ -366,14 +366,39 @@ internal static class Program
 
         if (interactive)
         {
-            var confirm = new PlainConsoleUi().Choose(
-                $"确认写入 {plan.FilesToWrite.Count} 个文件到 {targetDirectory}？",
-                "取消",
-                new List<UiChoice> { new("开始升级", "按配方重放并保留本地修改文件") });
-            if (confirm is null)
+            if (plan.SkippedFiles.Count > 0)
             {
-                Console.WriteLine("已取消。");
-                return 0;
+                // 有被跳过的本地修改文件时给用户二次选择：目标项目有 git 兜底时可直接覆盖，不行再撤回
+                var overwrite = new PlainConsoleUi().Choose(
+                    $"检测到 {plan.SkippedFiles.Count} 个本地修改过的文件将被保留（跳过可能导致规则停留在旧版）：",
+                    "取消，不写入",
+                    new List<UiChoice>
+                    {
+                        new("保留本地修改并升级其余文件", "跳过的文件不动，只更新未修改文件"),
+                        new("全部覆盖为最新版", "本地修改的文件也重写为当前版本规则；如有本地定制请先自行备份或依赖 git 撤回")
+                    });
+                if (overwrite is null)
+                {
+                    Console.WriteLine("已取消。");
+                    return 0;
+                }
+                if (overwrite == 1)
+                {
+                    plan = new RecipeReplayer.UpgradePlan(
+                        replay, plan.ModifiedFiles, new List<string>(), replay.Files, plan.HashDetectable, replay.Record);
+                }
+            }
+            else
+            {
+                var confirm = new PlainConsoleUi().Choose(
+                    $"确认写入 {plan.FilesToWrite.Count} 个文件到 {targetDirectory}？",
+                    "取消",
+                    new List<UiChoice> { new("开始升级", "按配方重放并写入最新版规则") });
+                if (confirm is null)
+                {
+                    Console.WriteLine("已取消。");
+                    return 0;
+                }
             }
         }
 
