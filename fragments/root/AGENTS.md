@@ -71,6 +71,7 @@ dependencies: []
 - 所有源码、配置、文档统一使用 `UTF-8`；中文显示异常时，未确认是显示问题还是文件损坏前禁止覆盖
 - 编写注释时统一使用中文，不使用纯英文注释
 - PowerShell 命令不接受 `&&`，禁止使用；需要连续执行时改为分步执行或使用 PowerShell 兼容写法。
+- Git 暂存一律按文件显式点名：`git add -- <文件1> <文件2>`；禁止 `git add .`、`git add <目录>`、`git add -A`、`git add -u`、通配符等批量暂存及 `git commit -a`。提交前逐文件、逐差异核对本任务范围，细则见 `collaboration-AGENTS.md`「Git、验证与交付」。
 
 ---
 

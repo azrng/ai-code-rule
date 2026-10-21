@@ -29,6 +29,7 @@ dependencies: [agents-root]
 <!-- include: shared/ui/design-system-liveness.md -->
 - 使用所选组件库的主题系统，所有视觉规范在 `design-system.yaml` 中定义（基线以 BootstrapBlazor 语义书写；项目用 MudBlazor 时组件映射与 CSS 变量按 `mudblazor` skill 或官方文档换算，色彩 / 间距 token 语义仍适用）。
 - 优先复用现有组件、样式和设计 token，禁止 inline style，禁止硬编码颜色、间距、圆角；组件库以项目实际引用为准（BootstrapBlazor 或 MudBlazor），环境提供 `bootstrap-blazor` / `mudblazor` skill 时按实际选库优先遵循对应技能。
+<!-- include: shared/ui/blazor-scoped-css.md -->
 
 <!-- include: shared/ui/spec-lock.md -->
 
@@ -145,6 +146,8 @@ Blazor Web App 属普通 Web 形态：HTML 交互原型即视觉基线，阶段 
 ---
 
 ## 组件与状态规则
+
+<!-- include: shared/ui/blazor-component-parameters.md -->
 
 - 优先复用 `Components/` 下已有组件，只在有明确复用价值时新增共享组件。
 - 使用 BootstrapBlazor Toast / Swal / Dialog 等弹层能力的交互式页面，必须在本页面自身用 `<BootstrapBlazorRoot>` 包裹页面内容，不得把 Root 上移到布局：Static SSR 布局中的 Root 无法为交互式页面渲染弹层，Swal / Toast 会静默不渲染。项目选用 MudBlazor 时不适用本条，弹层（`MudDialog` / `MudSnackbar`）按 `mudblazor` skill 或官方文档接入。

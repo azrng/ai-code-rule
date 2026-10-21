@@ -128,8 +128,10 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 - 自定义样式使用 CSS 变量和 `wwwroot/css/app.css`。
 - 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）。
 - 主题覆盖统一在 `wwwroot/css/theme.css`。
+<!-- include: shared/ui/blazor-scoped-css.md -->
 
 ### 组件规则
+<!-- include: shared/ui/blazor-component-parameters.md -->
 - 优先复用 `Components/` 下已有组件，禁止重复创建。
 - 只有确实有复用价值时才新增共享组件，避免为单次需求过度抽象。
 - 页面状态必须完整：`loading`、`empty`、`error`、`no-permission`；组件名随所选组件库取对应实现（如 MudBlazor 用 `MudProgressLinear` / `MudAlert` 表达）
