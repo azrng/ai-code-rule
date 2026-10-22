@@ -49,7 +49,7 @@ public sealed class UniversalConstraintTests
             var files = renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan));
             var collaboration = Assert.Single(files, file => file.Output == "collaboration-AGENTS.md");
             Assert.Contains("需求澄清与计划关卡", collaboration.Content);
-            Assert.Contains("每轮优先提出 1 至 3 个最关键问题", collaboration.Content);
+            Assert.Contains("每轮提 1~3 个关键问题", collaboration.Content);
         }
     }
 

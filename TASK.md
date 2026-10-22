@@ -12,6 +12,7 @@
 
 | ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 | 状态 | 优先级 | 最近更新 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RULE-20261022-02 | collaboration 规则语言简化 | 8 节 40 条逐条压缩措辞不删约束，5114→4190 字；升版 2.5.2、基线刷新、计划关卡断言随措辞更新；34 组合与 238 测试通过 | 已完成并验证 | Codex | DONE | 高 | 2026-10-22 |
 | RULE-20261022-01 | TASK.md 单元格内容边界约束 | 任务管理节新增名称 ≤25 字、目标 ≤80 字条目，升版 2.5.1 并刷新 emit 基线 | 已完成并验证 | Codex | DONE | 高 | 2026-10-22 |
 | RULE-20261021-01 | 承接并行提交与 Blazor 迁移反馈 | 已落 `fragments/root/AGENTS.md`「编码硬约束」按文件暂存、`fragments/shared/common/collaboration-AGENTS.md`「Git、验证与交付 / 重复问题回顾」暂存核对与重写保全；`fragments/arch/dotnetBlazor/ui-AGENTS.md`「样式规则 / 组件规则」与 `fragments/arch/dotnetBlazorWebApp/ui-AGENTS.md`「设计系统 / 组件与状态规则」共享参数核名与 scope 检查 | v2.5.0；34 组合校验、238 项测试、产物差异与基线核对通过 | Codex | DONE | 高 | 2026-10-21 |
 | RULE-20261018-VISUAL | 视觉验收补强 | 自动化快照对比（可选）+ 基准快照更新守卫 + 对比条件一致性 + 修正优先级 | 已完成并验证 | main | DONE | 高 | 2026-10-18 |
