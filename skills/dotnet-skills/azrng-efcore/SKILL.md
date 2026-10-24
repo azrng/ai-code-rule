@@ -212,11 +212,11 @@ builder.Services.AddSqlMigrationService("default", config =>
 
 > 迁移只能由 `.AddAutoMigration()` 注册的启动过滤器触发：包内执行服务（如 `ISqlMigrationService`）是 internal，不要手动从容器解析服务来触发迁移或单独执行脚本。
 
-> **执行时序与迁移后补数据**：迁移在 `RunAsync()` 内由启动过滤器执行——晚于 Program 顶层语句、早于 Kestrel 监听。迁移完成后要跑 C# 逻辑（种子数据、缓存预热等）时，用自定义 `IStartupFilter` 挂接：IStartupFilter 按注册的相反顺序执行（后注册者先执行），自定义过滤器须在 `.AddAutoMigration()` 之前注册才会后于迁移运行。
+> **执行时序与迁移后补数据**：迁移在 `RunAsync()` 内由启动过滤器执行——晚于 Program 顶层语句、早于 Kestrel 监听。迁移完成后要跑 C# 逻辑（种子数据、缓存预热等）时，用自定义 `IStartupFilter` 挂接：ASP.NET Core 宿主对 `IStartupFilter` 集合按注册顺序依次包裹，先注册者位于最外层、先执行（实际执行顺序与注册顺序一致）。因此迁移后补数据的自定义过滤器须在 `.AddAutoMigration()` **之后**注册才会后于迁移运行；注册在之前会先于迁移执行，此时查询迁移才创建的表（如种子数据查业务表）会直接报 `42P01 relation does not exist` 导致宿主启动失败。
 
 **SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，**文件名必须是三段式（四段式）数字版本**：`1.0.0.sql`、`1.1.0.txt`（或 `1.0.0.1.sql`），升级按数字递增（如 `1.0.0` → `1.0.1`）。版本号解析器（0.5.0 实测）只接受以 `.` 分隔的三段或四段数字：`1.sql`、`1.0.sql` 等段数不足的文件名会解析失败——该失败被记为错误日志（`获取版本号异常...不支持的版本格式`）并返回版本 0，脚本被静默跳过，应用正常启动但表没建。如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号。
 
-> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。
+> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。启动过滤器报 `42P01 relation does not exist` 时，先核对过滤器注册顺序（迁移后补数据的自定义过滤器应晚于 `.AddAutoMigration()` 注册）与迁移日志确认已实际执行，再排查其他原因。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
 

@@ -40,14 +40,14 @@ dependencies: [agents-root]
 - 并行前划定文件范围，不同时改同一业务文件；更新 `TASK.md` 前重读确认任务 ID 未被占用，冲突先协调。
 - 暂存只按本任务文件清单逐文件显式点名，禁止目录级、全量、通配符暂存与 `git commit -a`；任何位置（含规则文件）不得附带其他会话改动。共享文件逐差异区分后仅暂存本任务部分；无法可靠区分先协调，不动他人暂存。
 - 临时产物统一放仓库根 `artifacts/<用途>/<任务名>/`；默认输出或端口被占时改用独立目录与端口，不停启或覆盖其他会话实例。
-- .NET 测试：`dotnet build <测试项目.csproj> -o artifacts/test/<任务名>` 后 `dotnet vstest <测试程序集.dll>`（该输出缺配置与 wwwroot，不能直接运行）；运行验收：`dotnet build <入口项目.csproj> -p:OutputPath=artifacts/run/<任务名>/`；`dotnet publish -o` 仍写默认 `bin`，不能绕过输出锁。
+- .NET 测试：`dotnet build <测试项目.csproj> -o artifacts/test/<任务名>` 后 `dotnet vstest <测试程序集.dll>`（该输出缺配置与 wwwroot，不能直接运行）；运行验收：`dotnet build <入口项目.csproj> -p:OutputPath=artifacts/run/<任务名>/`（`-p:OutputPath` 相对项目文件目录解析，需落仓库根时改用绝对路径，否则产物落在项目目录下的 artifacts 而非仓库根约定位置）；`dotnet publish -o` 仍写默认 `bin`，不能绕过输出锁。
 - 启动隔离实例时确认 `ContentRoot` 与迁移脚本等按物理路径读取的资源指向预期；直接 `dotnet <dll>` 时 `ContentRoot` 默认为当前工作目录。
 - 构建或测试失败用 `git diff HEAD` 归因工作区改动；不动其他会话未提交文件，需对方让路先协调。
 
 ## Git、验证与交付
 - 提交信息用 Conventional Commits，标题 `<type>(<scope>): <中文简述>`；非微小调整的正文含任务、原因、变更、风险，风险只写真实影响。
 - Windows / PowerShell 提交：经 `git commit -m` 或 UTF-8 文件配合 `git commit -F <file>` 传中文，禁止标准输入；提交后回读确认中文未乱码。
-- 提交前验证已通过且 `TASK.md` 已置 `DONE`。暂存前后各核对一次：先 `git status --short` + `git diff` 确认本任务文件清单，再 `git add -- <文件>` 逐文件暂存（共享文件 `git add -p` 仅选本任务差异）；提交前 `git diff --cached --name-status` + `git diff --cached` 逐文件逐差异核对与清单一致，重命名与删除同样核对。发现他人已暂存或无法区分时暂停并协调，不替他人取消暂存；单会话、微小调整或纯文档任务同样不豁免。
+- 提交前验证已通过且 `TASK.md` 已置 `DONE`。暂存前后各核对一次：先 `git status --short` + `git diff` 确认本任务文件清单，再 `git add -- <文件>` 逐文件暂存（共享文件 `git add -p` 仅选本任务差异）；提交前 `git diff --cached --name-status` + `git diff --cached` 逐文件逐差异核对与清单一致，重命名与删除同样核对。发现他人已暂存或无法区分时暂停并协调，不替他人取消暂存；单会话、微小调整或纯文档任务同样不豁免。共享文件确需构造仅含本任务部分的暂存（`git hash-object` + `git update-index --cacheinfo`）时，构造后不得再对同名文件执行 `git add`（工作区内容会整体覆盖构造好的索引项）；混合清单时整文件 add 与构造索引分两步执行，构造索引放最后。
 - 触及编译型语言（C# 等）代码的提交，先完成全量构建（.NET 为全解决方案 `dotnet build`）且通过，未执行或未通过不得提交；先 `dotnet sln list` 确认触及项目均在解决方案清单内，清单外项目（如独立 Web UI 工程）须显式 `dotnet build <项目>.csproj` 且通过，解决方案构建不可替代。
 - 「全部」「逐页」「逐项」类覆盖面声明先经可复核清单核对（如 grep 目标集合再比对缺失）再下结论，不凭记忆断言。
 - 验证通过后默认提交本任务改动；用户要求暂缓、验证未过或仍有阻塞时不提交；本地提交不自动推送，仅用户明确要求时推送。规则或文档改动回读确认 UTF-8；代码、启动链路和高风险改动按命中子规则补回归或 smoke test；新增环境变量同步示例配置。
