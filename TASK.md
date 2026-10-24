@@ -12,6 +12,7 @@
 
 | ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 | 状态 | 优先级 | 最近更新 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RULE-20261024-SKILL-DEL | 删除 proactive-agent 技能 | 删 skills/agentSkills/proactive-agent 及 manifest 登记、README 段落；升 2.5.4；--check 33 技能、238 测试、基线刷新通过 | 已完成并验证 | Codex | DONE | 中 | 2026-10-24 |
 | RULE-20261024-FEEDBACK | 承接 2026-10-24 三条规则效果反馈 | 修 azrng-efcore 执行时序方向（IStartupFilter 按注册顺序执行）并补 42P01 症状映射；collaboration 补 OutputPath 相对目录限定与构造索引后禁 git add；升 2.5.3 | 已完成并验证：--check 34 样例、238 项测试、基线刷新后全绿 | Codex | DONE | 高 | 2026-10-24 |
 | RULE-20261022-02 | collaboration 规则语言简化 | 8 节 40 条逐条压缩措辞不删约束，5114→4190 字；升版 2.5.2、基线刷新、计划关卡断言随措辞更新；34 组合与 238 测试通过 | 已完成并验证 | Codex | DONE | 高 | 2026-10-22 |
 | RULE-20261022-01 | TASK.md 单元格内容边界约束 | 任务管理节新增名称 ≤25 字、目标 ≤80 字条目，升版 2.5.1 并刷新 emit 基线 | 已完成并验证 | Codex | DONE | 高 | 2026-10-22 |

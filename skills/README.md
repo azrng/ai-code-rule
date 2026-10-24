@@ -124,12 +124,6 @@ GitHub：https://github.com/anthropics/skills/tree/main/skills/skill-creator
 
 在线安装：`npx clawhub@latest install find-skills`
 
-#### proactive-agent
-
-将 Agent 从被动任务执行者扩展为可主动记录、预判、验证和持续改进的协作伙伴。
-
-在线安装：`npx clawhub@latest install proactive-agent`
-
 #### self-improving-agent
 
 记录错误、用户纠正、外部工具失败、知识过期和最佳实践，用于持续改进 Agent 行为。

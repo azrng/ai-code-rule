@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "2.5.3",
+    "version": "2.5.4",
     "last_updated": "2026-10-24"
   },
   "schema_version": 3,
@@ -68,7 +68,6 @@
     { "id": "filter-syntax", "group": "测试", "when": { "backend": "dotnet" } },
     { "id": "find-untested-sources", "group": "测试", "when": { "backend": "dotnet" } },
     { "id": "webapp-testing", "group": "测试", "when": { "frontend": ["react", "vue"] } },
-    { "id": "proactive-agent", "group": "通用工具" },
     { "id": "news-summary", "group": "通用工具" },
     { "id": "xlsx", "group": "办公文档", "when": { "form": ["web", "desktop", "backend-only"] } },
     { "id": "docx", "group": "办公文档", "when": { "form": ["web", "desktop", "backend-only"] } },
