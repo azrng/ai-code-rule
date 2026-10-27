@@ -6,5 +6,6 @@
 - `Common.Cache.Redis`：Redis 缓存封装（基于 `StackExchange.Redis`）
 - Swagger 与内存缓存按需使用对应专项规则，不在核心库清单中重复定义
 - 外部 HTTP 调用默认走 `Common.HttpClients`（`IHttpHelper`，当前核对 4.2.0，按项目锁定的 4.x 版本为准），不为单次调用重复封装 HttpClient；只有需要包未暴露的底层控制时才使用原生 `HttpClient` / `IHttpClientFactory`；无外部调用时不引入该包。
+- 存量例外：既有代码库从未引入 `Common.HttpClients` 且既有外部调用均为原生 `HttpClient`（如静态共享实例 + 显式超时）时，新增同类外部调用沿用仓库现状（原生 `HttpClient`，须有共享实例与超时设置），不强制引包迁移；新仓库或已引入该包的仓库按默认口径执行。两类口径并存时（同仓库既有 `IHttpHelper` 又有裸 `HttpClient`），以仓库主导口径为准并保持一致，不在同一服务内混用。
 - 引入 `Common.HttpClients` 时宿主须在组合根显式调用其 `AddHttpClientService` 注册运行时依赖：包不随工程引用自动注册，Adapter 等调用方编译通过不代表 `IHttpHelper` 运行时已可注入。
 - `IHttpHelper` 默认开启自动重试（`MaxRetryAttempts=3`，重试 5xx / 408 / 超时）：token 换发、委托授权、扣款等**非幂等端点**必须在调用点传 `HttpSendOptions { EnableRetry = false }` 单独关闭（4.2.0+），或为该服务单独注册命名客户端并配 `MaxRetryAttempts = 0`，不得让自动重试放大非幂等请求。

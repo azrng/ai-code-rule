@@ -39,6 +39,7 @@ MudBlazor 开发指南，提供在 .NET Blazor 项目中使用 MudBlazor 组件�
 - 按钮/输入外观没有 `Fill` 参数：一律 `Variant` 枚举（`Text` / `Filled` / `Outlined`）
 - `MudTextField` 默认 Enter/失焦才更新绑定值：搜索框需 `Immediate="true"` 或 `DebounceInterval="300"`
 - `MudSelect` 单选绑 `@bind-Value`、多选绑 `@bind-SelectedValues` + `MultiSelection="true"`；**不存在 `SelectedItem` 参数**
+- **`MudDatePicker`（v9 锚定版本）是非泛型类**（继承 `MudPicker<DateTime?>`）：用户输入的实际绑定参数是 `Date` / `DateChanged`，写 `@bind-Date="_date"`（`DateTime?`）；绑 `@bind-Value` 不报编译错、不告警，但用户输入**静默丢失**（`MudTextField` 等的 bind-Value 惯例在此失效）。不支持 `DateOnly` 泛型（源码 0 命中）。凡「绑了 Value 却收不到用户输入」的静默失效，优先核对组件主参数名
 - `MudDataGrid` 的 `Items` / `ServerData` / `VirtualizeServerData` 三者互斥，同时设置抛 `InvalidOperationException`；`ServerData` 签名是双参 `(GridState<T> state, CancellationToken token)`，过滤排序需自己执行
 - `TemplateColumn` 内容必须包在 `<CellTemplate>` 内（`context.Item` 取数据），直接放子内容触发 MUD0002 分析器警告且不渲染
 - Dialog 全部是异步 API：`ShowAsync<T>()` / `ShowMessageBoxAsync()`；**同步 `Show()` 在 v9 已移除**；`MudDialog.Close()` 不会触发表单校验，先 `await _form.ValidateAsync()` 再判断 `IsValid`
@@ -72,6 +73,7 @@ MudBlazor 开发指南，提供在 .NET Blazor 项目中使用 MudBlazor 组件�
 | `MudTable` 的 `QuickFilter` / `PagerParams` | `Filter`（委托）；分页经 `PagerContent` + `MudTablePager` |
 | `MudThemeProvider DarkMode=` / `SetTheme()` | `@bind-IsDarkMode` / 换 `Theme` 参数实例 |
 | `MudSelect` 的 `SelectedItem` | `@bind-Value`（单选）/ `@bind-SelectedValues`（多选） |
+| `MudDatePicker` 的 `@bind-Value` / `MudDatePicker<DateOnly>` | 非泛型，`@bind-Date`（`DateTime?`）；绑 Value 静默丢输入，无 DateOnly 泛型 |
 | `MudFileUpload` 的 `FileTypes` | `Accept=".pdf,.png"` |
 | `ChipSet` 的 `MultiSelection="true"` 布尔 | `SelectionMode="SelectionMode.MultiSelection"` 枚举 |
 | `MudFormItem` / `Spacers`（MudForm 上） | 不存在；间距用 `Spacing`，嵌套直接用 `MudForm` |

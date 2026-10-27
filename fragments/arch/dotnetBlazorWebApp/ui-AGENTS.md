@@ -164,6 +164,8 @@ Blazor Web App 属普通 Web 形态：HTML 交互原型即视觉基线，阶段 
 
 <!-- include: shared/ui/pre-commit-regression-web.md -->
 
+<!-- include: shared/ui/browser-walkthrough.md -->
+
 - 影响行为的改动应优先补充或更新测试；未补测试时必须说明原因和风险。
 - 使用 bUnit 或项目既有组件测试方案验证参数、渲染输出、事件和关键状态。
 - Static SSR 至少验证首个请求 HTML、普通导航或表单行为，以及无交互运行时条件下的可用性。

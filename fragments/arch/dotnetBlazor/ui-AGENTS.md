@@ -149,6 +149,8 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 
 <!-- include: shared/ui/pre-commit-regression-web.md -->
 
+<!-- include: shared/ui/browser-walkthrough.md -->
+
 <!-- include: shared/common/general-requirements.md -->
 
 ### Blazor 组件测试
