@@ -30,7 +30,7 @@ public sealed class EmitBaselineTests
                 current[$"{caseItem.Profile}/{file.Output}"] = RecipeRecorder.HashContent(file.Content);
         }
 
-        Assert.Equal(34, manifest.CompatibilityCases.Count);
+        Assert.Equal(36, manifest.CompatibilityCases.Count);
         Assert.True(current.Count > 100, "产物清单异常：兼容样例渲染结果过少");
 
         var baselineJson = File.Exists(BaselinePath)

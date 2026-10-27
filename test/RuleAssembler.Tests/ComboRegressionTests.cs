@@ -357,7 +357,7 @@ public sealed class ComboRegressionTests : IDisposable
     public void Combo_AllCases_DefaultFeatureRenderIsStable()
     {
         // 全量兼容样例：默认能力集渲染、契约校验全部通过
-        Assert.Equal(34, _manifest.CompatibilityCases.Count);
+        Assert.Equal(36, _manifest.CompatibilityCases.Count);
         foreach (var caseItem in _manifest.CompatibilityCases)
         {
             var plan = PlanFor(caseItem.Profile);

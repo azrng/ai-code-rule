@@ -96,10 +96,11 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
-    public void Detect_BlazorWebAppComponentLayout_ConvergesToWebAppFlavor()
+    public void Detect_BlazorWebAppComponentLayout_ConfirmsWebAppFlavor_AwaitsAiChoice()
     {
         // .NET 8+ Blazor Web App 模板：csproj 深度 2（src/<项目>）、razor 在 <项目>/Components 下。
-        // 深度 2 扫不到 razor 时不再误判为纯 API 后端，Components 结构直接确认 webapp 形态
+        // 深度 2 扫不到 razor 时不再误判为纯 API 后端，Components 结构直接确认 webapp 形态；
+        // AI 能力是用户选择而非文件证据，flavor 收敛后仍剩 no / yes 两候选待确认
         Directory.CreateDirectory(Path.Combine(_root, "src", "Demo.Web", "Components", "Pages"));
         File.WriteAllText(
             Path.Combine(_root, "src", "Demo.Web", "Demo.Web.csproj"),
@@ -111,9 +112,12 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.Equal("dotnetBlazorWebApp", result!.SampleProfileId);
-        Assert.Equal("blazor", result.BuildSampleAnswers()["frontend"]);
-        Assert.Equal("webapp", result.BuildSampleAnswers()["blazor-flavor"]);
+        Assert.False(result!.Converged);
+        Assert.Equal("blazor", result.Confirmed["frontend"]);
+        Assert.Equal("webapp", result.Confirmed["blazor-flavor"]);
+        Assert.Contains("ai-capability", result.Unconfirmed);
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazorWebApp");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazorWebApp-ai");
     }
 
     [Fact]
@@ -467,7 +471,11 @@ public sealed class ProjectDetectorTests : IDisposable
         var result = new ProjectDetector(_manifest).Detect(_root);
 
         Assert.NotNull(result);
-        Assert.True(result!.Converged);
-        Assert.Equal("dotnetBlazorWebApp", result.SampleProfileId);
+        // 深度 3 的 csproj / razor 已扫到，flavor 证据收敛为 webapp；
+        // AI 能力无文件证据，no / yes 两候选保留待确认（不再收敛到单一样例）
+        Assert.False(result!.Converged);
+        Assert.Equal("webapp", result.Confirmed["blazor-flavor"]);
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazorWebApp");
+        Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazorWebApp-ai");
     }
 }

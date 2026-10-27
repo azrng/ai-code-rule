@@ -119,7 +119,7 @@ public class SelectionEngineTests
         Assert.Equal(new[] { "dotnet-backend-layered" }, plan.ComponentIds);
     }
     [Fact]
-    public void WebBlazor路径_提问blazor_flavor_映射dotnetBlazorWebApp()
+    public void WebBlazor路径_提问blazor_flavor_追问AI能力_映射dotnetBlazorWebApp()
     {
         var manifest = LoadManifest();
         var engine = CreateEngine(manifest);
@@ -131,13 +131,20 @@ public class SelectionEngineTests
         Assert.Contains(frontend.Options, option => option.Value == "blazor");
         selection.Dimensions["frontend"] = "blazor";
 
-        // blazor 下 backend=dotnet、shell=none、ai-capability=no 唯一，自动推导；形态仍有分歧
+        // blazor 下 backend=dotnet、shell=none 唯一自动推导；形态仍有分歧
         var flavor = engine.NextQuestion(selection);
         Assert.Equal("blazor-flavor", flavor!.Trait);
         Assert.Contains(flavor.Options, option => option.Value == "traditional");
         Assert.Contains(flavor.Options, option => option.Value == "webapp");
         selection.Dimensions["blazor-flavor"] = "webapp";
 
+        // Blazor 两形态已接入 AI 能力：无 AI 锚点组件与 capability 组件并存，必须追问
+        var aiQuestion = engine.NextQuestion(selection);
+        Assert.Equal("ai-capability", aiQuestion!.Trait);
+        Assert.Contains(aiQuestion.Options, option => option.Value == "no");
+        Assert.Contains(aiQuestion.Options, option => option.Value == "yes");
+
+        selection.Dimensions["ai-capability"] = "no";
         var derived = new List<(string Trait, string Value)>();
         Assert.Null(engine.NextQuestion(selection, derived));
         Assert.Equal("dotnet", selection.Dimensions["backend"]);
@@ -147,6 +154,14 @@ public class SelectionEngineTests
         var plan = new CompositionPlanner(manifest).Plan(selection);
         Assert.Contains(plan.ComponentIds, id => id == "web-frontend-blazor-webapp");
         Assert.Contains(plan.ComponentIds, id => id == "web-backend-blazor");
+        Assert.Contains(plan.ComponentIds, id => id == "web-blazor-ai-off");
+
+        // 改选 AI：同一形态解析为独立的 AI 样例
+        selection.Dimensions["ai-capability"] = "yes";
+        var aiMatches = SelectionEngine.MatchCompatibilityCases(manifest, selection);
+        Assert.Equal(new[] { "dotnetBlazorWebApp-ai" }, aiMatches);
+        var aiPlan = new CompositionPlanner(manifest).Plan(selection);
+        Assert.Contains(aiPlan.ComponentIds, id => id == "web-ai-capability-dotnet");
     }
 
     [Fact]

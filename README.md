@@ -115,7 +115,7 @@ fragments/
 └── ...                    # design-system 等能力片段
 ```
 
-组合内核：manifest 的 `components` / `constraints` / `compatibilityCases` 节点是维度组合的唯一事实来源（schema 3，`profiles` 节点与旧渲染路径已退役），`CompositionPlanner` 把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并渲染产物；34 个组合全部注册为兼容样例（携带 label / desc / family 展示元数据，经典入口、检测候选展示与配方三件套都按样例取值），其中 `reactLinkdotNet-ai` 已拆为「.NET AI Web 壳 + React AI 前端 + 单项目 .NET 后端 + AI capability/module」，其他组合按复用价值逐步收敛。组件还可以声明 `moduleIds`，组合始终从 `core` 开始按组件顺序合并模块；同一输出支持一个 `replace` 基底和多个按顺序拼接的 `append` 贡献，能力过滤与槽位替换逐项执行，重复基底或缺少基底会显式报错。`--check` 对每个样例做组合口径的输出契约校验（声明 vs 产物）、组件问答决策树仿真与内置技能校验；`constraints` 承载壳 / 形态 / 前端 / 后端的钳制关系（如 tauri→rust、wails→go、electron 仅 dotnet/主进程、纯后端无前端），问答剪枝先过钳制约束，再做结构锚定校验（已回答维度必须仍被存续组件表达），违反钳制或缺组件锚定的组合在问答与 `--plan` 中直接拒绝。新增技术类型 = 扩展组件而非复制整套组合。
+组合内核：manifest 的 `components` / `constraints` / `compatibilityCases` 节点是维度组合的唯一事实来源（schema 3，`profiles` 节点与旧渲染路径已退役），`CompositionPlanner` 把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并渲染产物；36 个组合全部注册为兼容样例（携带 label / desc / family 展示元数据，经典入口、检测候选展示与配方三件套都按样例取值；AI 能力已覆盖 .NET Web 全系——React 分离、Blazor Server / Blazor Web App 两形态与纯前端 AI 站点），其中 `reactLinkdotNet-ai` 已拆为「.NET AI Web 壳 + React AI 前端 + 单项目 .NET 后端 + AI capability/module」，其他组合按复用价值逐步收敛。组件还可以声明 `moduleIds`，组合始终从 `core` 开始按组件顺序合并模块；同一输出支持一个 `replace` 基底和多个按顺序拼接的 `append` 贡献，能力过滤与槽位替换逐项执行，重复基底或缺少基底会显式报错。`--check` 对每个样例做组合口径的输出契约校验（声明 vs 产物）、组件问答决策树仿真与内置技能校验；`constraints` 承载壳 / 形态 / 前端 / 后端的钳制关系（如 tauri→rust、wails→go、electron 仅 dotnet/主进程、纯后端无前端），问答剪枝先过钳制约束，再做结构锚定校验（已回答维度必须仍被存续组件表达），违反钳制或缺组件锚定的组合在问答与 `--plan` 中直接拒绝。新增技术类型 = 扩展组件而非复制整套组合。
 
 ## 使用方式
 

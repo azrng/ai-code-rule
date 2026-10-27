@@ -68,10 +68,12 @@ public class CompositionPlannerTests
     }
 
     [Fact]
-    public void DotnetAI组合钳制到React单项目()
+    public void DotnetAI组合须由实际界面承接_Blazor形态可选AI()
     {
         var planner = new CompositionPlanner(LoadManifest());
-        var selection = FromDimensions(new Dictionary<string, string>
+
+        // vue + .NET + AI：AI 能力没有 vue 变体组件，frontend=vue 失去锚定，显式报错而非隐式补位
+        var vue = FromDimensions(new Dictionary<string, string>
         {
             ["form"] = "web",
             ["frontend"] = "vue",
@@ -81,10 +83,37 @@ public class CompositionPlannerTests
             ["blazor-flavor"] = "none",
             ["ai-capability"] = "yes"
         });
+        var vueEx = Assert.Throws<InvalidOperationException>(() => planner.Plan(vue));
+        Assert.Contains("未被任何选中组件表达", vueEx.Message);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => planner.Plan(selection));
-        Assert.Contains("组合违反约束", ex.Message);
-        Assert.Contains("frontend=react", ex.Message);
+        // .NET 后端 + AI 且无前端：AI 能力须由实际界面承接，约束显式禁止
+        var noFrontend = FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["frontend"] = "none",
+            ["backend"] = "dotnet",
+            ["shell"] = "none",
+            ["arch-style"] = "single",
+            ["blazor-flavor"] = "none",
+            ["ai-capability"] = "yes"
+        });
+        var forbidEx = Assert.Throws<InvalidOperationException>(() => planner.Plan(noFrontend));
+        Assert.Contains("组合违反约束", forbidEx.Message);
+
+        // Blazor Web App + AI：可解析，AI capability 组件与 ai-AGENTS.md 进入计划
+        var blazorAi = FromDimensions(new Dictionary<string, string>
+        {
+            ["form"] = "web",
+            ["frontend"] = "blazor",
+            ["backend"] = "dotnet",
+            ["shell"] = "none",
+            ["blazor-flavor"] = "webapp",
+            ["ai-capability"] = "yes"
+        });
+        var plan = planner.Plan(blazorAi);
+        Assert.Contains(plan.ComponentIds, id => id == "web-ai-capability-dotnet");
+        // ai-AGENTS.md 经 capability 组件的 moduleIds（ai-capability 模块）提供，不在组件 files 里
+        Assert.Contains(plan.ModuleIds, id => id == "ai-capability");
     }
 
     [Fact]

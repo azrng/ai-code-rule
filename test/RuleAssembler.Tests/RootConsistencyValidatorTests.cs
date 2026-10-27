@@ -30,7 +30,7 @@ public sealed class RootConsistencyValidatorTests
     public void Validate_AllCompositionPlans_ContractMatchesRenderedFiles()
     {
         // 每个兼容样例经组合渲染后，契约声明与实际产物一致（与 --check 契约段同口径）
-        Assert.Equal(34, _manifest.CompatibilityCases.Count);
+        Assert.Equal(36, _manifest.CompatibilityCases.Count);
         foreach (var caseItem in _manifest.CompatibilityCases)
         {
             var (plan, features) = PlanForProfile(caseItem.Profile);

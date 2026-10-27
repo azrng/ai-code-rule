@@ -8,7 +8,7 @@ public sealed class ManifestLoaderTests
         var manifest = new ManifestLoader(new ResourceStore()).Load();
 
         Assert.Equal(3, manifest.SchemaVersion);
-        Assert.Equal(34, manifest.CompatibilityCases.Count);
+        Assert.Equal(36, manifest.CompatibilityCases.Count);
         Assert.Contains(
             manifest.Modules.SelectMany(module => module.Pointers),
             pointer => pointer.Equals("GROK.md", StringComparison.OrdinalIgnoreCase));

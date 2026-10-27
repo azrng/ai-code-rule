@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "2.7.0",
+    "version": "2.8.0",
     "last_updated": "2026-10-27"
   },
   "schema_version": 3,
@@ -31,7 +31,7 @@
   "skills": [
     { "id": "dotnet-best-practices", "group": ".NET 后端", "when": { "backend": "dotnet" } },
     { "id": "aspnet-core", "group": ".NET 后端", "when": { "backend": "dotnet" } },
-    { "id": "console-di", "group": ".NET 后端", "when": { "backend": "dotnet" } },
+    { "id": "console-di", "group": ".NET 后端", "when": [{ "backend": "dotnet", "shell": "electron" }, { "frontend": "console" }] },
     { "id": "onion-architecture", "group": ".NET 后端", "when": { "backend": "dotnet", "arch-style": "layered" } },
     { "id": "azrng-efcore", "group": ".NET 后端", "when": { "backend": "dotnet" } },
     { "id": "maf", "group": ".NET 后端", "when": [{ "backend": "dotnet", "ai-capability": "yes" }] },
@@ -39,12 +39,12 @@
     { "id": "bootstrap-blazor", "group": ".NET 后端", "when": { "frontend": "blazor" } },
     { "id": "avalonia", "group": ".NET 桌面", "when": { "frontend": "avalonia" } },
     { "id": "frontend-design", "group": "前端 / UI", "when": { "form": ["web", "desktop"] } },
-    { "id": "design-taste-frontend", "group": "前端 / UI", "when": { "form": ["web", "desktop"] } },
+    { "id": "design-taste-frontend", "group": "前端 / UI" },
     { "id": "ui-ux-pro-max", "group": "前端 / UI", "when": { "form": ["web", "desktop"] } },
     { "id": "design-mobile-apps", "group": "前端 / UI", "when": { "form": "mobile" } },
-    { "id": "redesign-existing-projects", "group": "前端 / UI", "when": { "form": ["web", "desktop", "mobile"] } },
-    { "id": "redesign-skill", "group": "前端 / UI", "when": { "form": ["web", "desktop", "mobile"] } },
-    { "id": "taste-skill", "group": "前端 / UI", "when": { "form": ["web", "desktop", "mobile"] } },
+    { "id": "redesign-existing-projects", "group": "前端 / UI" },
+    { "id": "redesign-skill", "group": "前端 / UI" },
+    { "id": "taste-skill", "group": "前端 / UI" },
     { "id": "min-web-search", "group": "通用工具" },
     { "id": "flutter-implementation", "group": "Flutter", "when": { "frontend": "flutter" } },
     { "id": "flutter-add-widget-test", "group": "Flutter", "when": { "frontend": "flutter" } },
@@ -59,23 +59,23 @@
     { "id": "github", "group": "通用工具" },
     { "id": "web-access", "group": "通用工具" },
     { "id": "tavily-search", "group": "通用工具" },
-    { "id": "run-tests", "group": "测试", "when": { "backend": ["dotnet", "python", "go", "rust", "node"] } },
-    { "id": "test-tagging", "group": "测试", "when": { "backend": "dotnet" } },
-    { "id": "test-gap-analysis", "group": "测试", "when": { "backend": "dotnet" } },
-    { "id": "test-anti-patterns", "group": "测试", "when": { "backend": "dotnet" } },
-    { "id": "test-analysis-extensions", "group": "测试", "when": { "backend": "dotnet" } },
-    { "id": "platform-detection", "group": "测试", "when": { "backend": "dotnet" } },
-    { "id": "filter-syntax", "group": "测试", "when": { "backend": "dotnet" } },
-    { "id": "find-untested-sources", "group": "测试", "when": { "backend": "dotnet" } },
+    { "id": "run-tests", "group": "测试", "when": [{ "backend": "dotnet" }, { "frontend": "console" }] },
+    { "id": "test-tagging", "group": "测试" },
+    { "id": "test-gap-analysis", "group": "测试" },
+    { "id": "test-anti-patterns", "group": "测试" },
+    { "id": "test-analysis-extensions", "group": "测试" },
+    { "id": "platform-detection", "group": "测试" },
+    { "id": "filter-syntax", "group": "测试" },
+    { "id": "find-untested-sources", "group": "测试" },
     { "id": "webapp-testing", "group": "测试", "when": { "frontend": ["react", "vue"] } },
     { "id": "browser-walkthrough", "group": "测试", "when": { "frontend": "blazor" } },
     { "id": "python-backend-howto", "group": "Python 后端", "when": { "backend": "python" } },
     { "id": "news-summary", "group": "通用工具" },
-    { "id": "xlsx", "group": "办公文档", "when": { "form": ["web", "desktop", "backend-only"] } },
-    { "id": "docx", "group": "办公文档", "when": { "form": ["web", "desktop", "backend-only"] } },
-    { "id": "pptx", "group": "办公文档", "when": { "form": ["web", "desktop", "backend-only"] } },
-    { "id": "pdf", "group": "办公文档", "when": { "form": ["web", "desktop", "backend-only"] } },
-    { "id": "csv-pipeline", "group": "办公文档", "when": { "form": ["web", "desktop", "backend-only"] } },
+    { "id": "xlsx", "group": "办公文档" },
+    { "id": "docx", "group": "办公文档" },
+    { "id": "pptx", "group": "办公文档" },
+    { "id": "pdf", "group": "办公文档" },
+    { "id": "csv-pipeline", "group": "办公文档" },
     { "id": "tailored-resume-generator", "group": "办公文档" },
     { "id": "wechat-ui-sender", "group": "通用工具" },
     { "id": "weather-advisor", "group": "通用工具" }
@@ -2909,7 +2909,6 @@
         "backend": "dotnet",
         "frontend": "blazor",
         "shell": "none",
-        "ai-capability": "no",
         "blazor-flavor": "traditional"
       },
       "family": "web-fullstack",
@@ -2919,6 +2918,12 @@
           "| --- | --- | --- |",
           "| `ui-AGENTS.md` | Razor 页面、布局、组件、交互、样式、界面 smoke test | 涉及界面实现与交互时 |",
           "| `backend-AGENTS.md` | 服务、数据访问、鉴权、状态流转、服务端测试 | 涉及服务实现、数据链路或后端逻辑时 |",
+          {
+            "line": "| `ai-AGENTS.md` | 模型调用、Agent、工具 / Skills、Prompt、流式、向量与记忆等可选能力 | 涉及任何 AI / Agent / 模型对接时 |",
+            "features": [
+              "ai-capability"
+            ]
+          },
           {
             "when": [
               {
@@ -3016,7 +3021,6 @@
         "backend": "dotnet",
         "frontend": "blazor",
         "shell": "none",
-        "ai-capability": "no",
         "blazor-flavor": "webapp"
       },
       "family": "web-fullstack",
@@ -3026,6 +3030,12 @@
           "| --- | --- | --- |",
           "| `ui-AGENTS.md` | Razor Components、渲染模式、预渲染、状态、断线恢复、JS interop 与界面测试 | 涉及页面、组件或交互执行位置时 |",
           "| `backend-AGENTS.md` | 服务、数据访问、业务逻辑、鉴权与后端测试 | 涉及服务端实现、API 或安全边界时 |",
+          {
+            "line": "| `ai-AGENTS.md` | 模型调用、Agent、工具 / Skills、Prompt、流式、向量与记忆等可选能力 | 涉及任何 AI / Agent / 模型对接时 |",
+            "features": [
+              "ai-capability"
+            ]
+          },
           {
             "line": "| `infra-AGENTS.md` | 端口、环境变量、Docker、构建发布链路 | 涉及配置、部署、容量或交付时 |",
             "features": [
@@ -3079,8 +3089,7 @@
         "form": "web",
         "backend": "dotnet",
         "frontend": "blazor",
-        "shell": "none",
-        "ai-capability": "no"
+        "shell": "none"
       },
       "family": "web-fullstack",
       "files": [
@@ -3099,6 +3108,20 @@
           "feature": "doc"
         }
       ]
+    },
+    {
+      "id": "web-blazor-ai-off",
+      "kind": "capability",
+      "label": "Blazor 无 AI 锚点",
+      "desc": "为 Blazor 组合的 AI 能力问答提供「不需要」取值锚点，不贡献产物文件",
+      "when": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "blazor",
+        "shell": "none",
+        "ai-capability": "no"
+      },
+      "family": "web-fullstack"
     },
     {
       "id": "mauiMobile",
@@ -3805,10 +3828,8 @@
         "backend": "dotnet",
         "ai-capability": "yes"
       },
-      "require": {
-        "frontend": "react",
-        "arch-style": "single",
-        "shell": "none"
+      "forbid": {
+        "frontend": "none"
       }
     }
   ],
@@ -4051,6 +4072,36 @@
         "arch-style": "single",
         "blazor-flavor": "webapp",
         "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "dotnetBlazor-ai",
+      "label": "Blazor Server（传统）+ AI 能力",
+      "desc": "传统 Blazor Server 应用 + AI 产品能力模块（模型调用 / Agent / 流式）",
+      "family": "web-fullstack",
+      "selection": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "blazor",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "traditional",
+        "ai-capability": "yes"
+      }
+    },
+    {
+      "profile": "dotnetBlazorWebApp-ai",
+      "label": "Blazor Web App + AI 能力",
+      "desc": "Blazor Web App（多渲染模式）+ AI 产品能力模块（模型调用 / Agent / 流式）",
+      "family": "web-fullstack",
+      "selection": {
+        "form": "web",
+        "backend": "dotnet",
+        "frontend": "blazor",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "webapp",
+        "ai-capability": "yes"
       }
     },
     {
