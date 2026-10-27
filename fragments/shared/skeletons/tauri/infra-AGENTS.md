@@ -80,4 +80,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/no-test-fallback.md -->
 
+<!-- include: shared/application/anti-patterns.md -->
+
 ---

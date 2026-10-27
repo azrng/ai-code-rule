@@ -58,7 +58,7 @@ dependencies: [agents-root, ai-agents]
 
 ### 模型相关环境变量（AI 产品核心配置）
 - 模型密钥、端点、模型名一律通过环境变量注入，不得入库、不得入镜像、不得下发前端
-- 建议变量命名（实际以 `appsettings` 与 `AIOptions` 为准）：
+- 变量命名（实际以 `appsettings` 与 `AIOptions` 为准）：
 
 | 变量名（示例） | 作用 | 是否必填 |
 | -------------- | ---- | -------- |

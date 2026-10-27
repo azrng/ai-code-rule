@@ -226,6 +226,10 @@ src/
 
 <!-- include: shared/common/general-requirements.md -->
 
+<!-- include: shared/backend/logging-rules.md -->
+
+<!-- include: shared/backend/server-side-authorization.md -->
+
 ### 后端测试
 - 测试框架：xUnit + Moq
 - Controller 测试：验证状态码、响应结构、参数校验

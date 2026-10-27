@@ -134,3 +134,5 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 <!-- include: shared/frontend/frontend-testing-minimal.md -->
 
 <!-- include: shared/no-test-fallback.md -->
+
+<!-- include: shared/application/anti-patterns.md -->

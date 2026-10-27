@@ -85,11 +85,17 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/general-requirements.md -->
 
+<!-- include: shared/backend/logging-rules.md -->
+
+<!-- include: shared/backend/server-side-authorization.md -->
+
 ### Go 后端测试（可选）
 - 使用标准 `testing` 包
 - Service 层测试 mock Repository
 - Repository 层测试使用 SQLite 内存数据库
 
 <!-- include: shared/no-test-fallback.md -->
+
+<!-- include: shared/application/anti-patterns.md -->
 
 ---

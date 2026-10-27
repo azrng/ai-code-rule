@@ -7,12 +7,6 @@ description: 'Ensure .NET/C# code meets best practices for the solution/project.
 
 Your task is to ensure .NET/C# code in ${selection} meets the best practices specific to this solution/project. This includes:
 
-## Documentation & Structure
-
-- Create comprehensive XML documentation comments for all public classes, interfaces, methods, and properties
-- Include parameter descriptions and return value descriptions in XML comments
-- Follow the established namespace structure: {Core|Console|App|Service}.{Feature}
-
 ## Design Patterns & Architecture
 
 - Use primary constructor syntax for dependency injection (e.g., `public class MyClass(IDependency dependency)`)
@@ -27,12 +21,6 @@ Your task is to ensure .NET/C# code in ${selection} meets the best practices spe
 - Use Microsoft.Extensions.DependencyInjection patterns
 - Implement service interfaces for testability
 
-## Resource Management & Localization
-
-- Use ResourceManager for localized messages and error strings
-- Separate LogMessages and ErrorMessages resource files
-- Access resources via `_resourceManager.GetString("MessageKey")`
-
 ## Async/Await Patterns
 
 - Use async/await for all I/O operations and long-running tasks
@@ -42,7 +30,6 @@ Your task is to ensure .NET/C# code in ${selection} meets the best practices spe
 
 ## Testing Standards
 
-- Use MSTest framework with FluentAssertions for assertions
 - Follow AAA pattern (Arrange, Act, Assert)
 - Use Moq for mocking dependencies
 - Test both success and failure scenarios
@@ -54,13 +41,6 @@ Your task is to ensure .NET/C# code in ${selection} meets the best practices spe
 - Implement validation attributes (Required, NotEmptyOrWhitespace)
 - Use IConfiguration binding for settings
 - Support appsettings.json configuration files
-
-## Semantic Kernel & AI Integration
-
-- Use Microsoft.SemanticKernel for AI operations
-- Implement proper kernel configuration and service registration
-- Handle AI model settings (ChatCompletion, Embedding, etc.)
-- Use structured output patterns for reliable AI responses
 
 ## Error Handling & Logging
 

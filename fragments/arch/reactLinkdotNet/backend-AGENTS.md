@@ -109,6 +109,10 @@ backend/
 
 <!-- include: shared/common/general-requirements.md -->
 
+<!-- include: shared/backend/logging-rules.md -->
+
+<!-- include: shared/backend/server-side-authorization.md -->
+
 <!-- include: shared/backend/backend-testing.md -->
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->

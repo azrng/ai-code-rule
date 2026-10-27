@@ -15,3 +15,5 @@
 <!-- include: shared/infra/pre-commit-regression.md -->
 
 <!-- include: shared/no-test-fallback.md -->
+
+<!-- include: shared/application/anti-patterns.md -->

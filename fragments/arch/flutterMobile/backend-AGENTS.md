@@ -41,17 +41,6 @@ dependencies: [agents-root]
   - `family`：带参数的 Provider
 - 服务注册通过 Provider 声明，不需要集中注册文件
 
-```dart
-// 推荐的 Provider 定义方式
-final itemRepositoryProvider = Provider<ItemRepository>((ref) {
-  return ItemRepositoryImpl(database: ref.watch(databaseProvider));
-});
-
-final itemListProvider = AsyncNotifierProvider.autoDispose<ItemListNotifier, List<Item>>(() {
-  return ItemListNotifier();
-});
-```
-
 <!-- include: shared/backend/advisory.md -->
 ---
 

@@ -122,16 +122,6 @@ project-root/
 - 必须为每个命令和选项提供描述（用于自动生成帮助信息）
 - 必要参数设为必填，可选参数提供合理默认值
 - 参数校验失败时输出清晰的错误提示和用法示例
-- 示例结构：
-  ```csharp
-  var rootCommand = new RootCommand("应用描述");
-  var command = new Command("action", "执行操作");
-  var option = new Option<string>("--name", "名称") { IsRequired = true };
-  command.AddOption(option);
-  command.SetHandler(async (name) => { /* 调用 Service */ }, option);
-  rootCommand.AddCommand(command);
-  return await rootCommand.InvokeAsync(args);
-  ```
 
 ### Service 规则
 - 服务类实现接口，接口定义在 `Services/Interfaces/` 目录
@@ -167,14 +157,6 @@ project-root/
 
 ### 日志规范
 - 使用 `Microsoft.Extensions.Logging` 抽象，配合 Serilog 实现
-- Program.cs 启动时配置 Serilog：
-  ```csharp
-  Log.Logger = new LoggerConfiguration()
-      .ReadFrom.Configuration(configuration)
-      .WriteTo.Console()
-      .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day)
-      .CreateLogger();
-  ```
 - 日志级别：Verbose > Debug > Information > Warning > Error > Fatal
 - 正常业务流程使用 `Information` 级别
 - 可预期的业务异常使用 `Warning` 级别
@@ -188,24 +170,6 @@ project-root/
   - 0：成功
   - 1：一般错误
   - 2：参数错误
-- 示例：
-  ```csharp
-  try
-  {
-      await service.DoWorkAsync();
-      return 0;
-  }
-  catch (ParameterException ex)
-  {
-      logger.LogWarning(ex, "参数错误");
-      return 2;
-  }
-  catch (Exception ex)
-  {
-      logger.LogError(ex, "执行失败");
-      return 1;
-  }
-  ```
 
 ### 依赖注入规范
 - 服务类必须实现以下接口之一：

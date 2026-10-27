@@ -1,6 +1,6 @@
 ### Swagger 规范
 - 使用 `Azrng.Swashbuckle` 包，禁止直接引用 `Swashbuckle.AspNetCore`。
-- 服务注册：`services.AddDefaultSwaggerGen(title: "项目名称", showJwtToken: ...)`——`showJwtToken` 仅在认证方案就绪（已注册 JWT 认证并配置授权策略）后才传 `true`；无认证服务保持默认 `false`，开启会向 OpenAPI 文档声明全局 Bearer 安全要求、改变接口契约，且必须与认证中间件及授权策略一起验证。`AddDefaultSwaggerGen` / `UseDefaultSwagger` 签名按锁定包版本核实（当前基线 Azrng.Swashbuckle 0.4.0），示例版本漂移时以锁定版本公开 API 与编译结果为准
+- 服务注册：`services.AddDefaultSwaggerGen(title: "项目名称", showJwtToken: ...)`——`showJwtToken` 仅在认证方案就绪（已注册 JWT 认证并配置授权策略）后才传 `true`，无认证服务保持默认 `false`。`AddDefaultSwaggerGen` / `UseDefaultSwagger` 签名按锁定包版本核实（当前基线 Azrng.Swashbuckle 0.4.0），示例版本漂移时以锁定版本公开 API 与编译结果为准
 - 中间件启用：`app.UseDefaultSwagger(onlyDevelopmentEnabled: true)`。
 - 项目必须启用 XML 文档生成：`<GenerateDocumentationFile>true</GenerateDocumentationFile>`。
 - Controller 和公开方法必须添加 XML 注释，Swagger 会自动展示；XML 注释内容统一使用中文。

@@ -316,50 +316,8 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 - 动效使用 CSS transition / animation，保持流畅自然
 
 ### CSS 变量命名
-```css
-:root {
-    /* 主品牌色 */
-    --app-primary: #1A90FF;
-    --app-primary-hover: #0078E0;
-    --app-primary-active: #0052CC;
-    --app-primary-light: #EEF4FF;
-
-    /* 语义色 */
-    --app-success: #10B981;
-    --app-warning: #F59E0B;
-    --app-error: #EF4444;
-    --app-info: #1A90FF;
-
-    /* 中性色 */
-    --app-gray-50: #FAFBFC;
-    --app-gray-100: #F3F4F6;
-    --app-gray-200: #E5E7EB;
-    --app-gray-300: #D1D5DB;
-    --app-gray-400: #9CA3AF;
-    --app-gray-500: #6B7280;
-    --app-gray-600: #4B5563;
-    --app-gray-700: #374151;
-    --app-gray-800: #1F2937;
-    --app-gray-900: #111827;
-
-    /* 间距 */
-    --app-spacing-xs: 4px;
-    --app-spacing-sm: 8px;
-    --app-spacing-md: 16px;
-    --app-spacing-lg: 24px;
-    --app-spacing-xl: 32px;
-
-    /* 圆角 */
-    --app-radius-sm: 4px;
-    --app-radius-md: 8px;
-    --app-radius-lg: 12px;
-
-    /* 阴影 */
-    --app-shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.08);
-    --app-shadow-md: 0 4px 8px -2px rgba(0,0,0,0.10);
-    --app-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.10);
-}
-```
+- 全部设计 token（颜色 / 间距 / 圆角 / 阴影）统一在 `css/variables.css` 以 `--app-*` 前缀定义，取值以 `design-system.yaml` 的 `tokens` 为唯一事实源，不在规则或页面层维护第二份值清单
+- 新增变量先补进 `design-system.yaml` 再落地 `css/variables.css`，两处不一致时以 `design-system.yaml` 为准并当场修正
 
 ---
 
@@ -415,6 +373,8 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 - 图表、弹窗、表单、导航等关键交互应有验证
 
 <!-- include: shared/no-test-fallback.md -->
+
+<!-- include: shared/application/anti-patterns.md -->
 
 ## Git 与提交流程
 

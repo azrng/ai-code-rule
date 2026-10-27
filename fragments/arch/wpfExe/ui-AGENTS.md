@@ -27,8 +27,7 @@ dependencies: [agents-root]
 
 ### WPF-UI (Wpf.Ui)
 - NuGet 包：`WPF-UI`（最新稳定版；程序集与 C# 命名空间为 `Wpf.Ui`）
-- 提供 Fluent Design 风格控件：NavigationView、FluentWindow、Dialog、Snackbar、Card 等
-- 内置浅色/深色主题切换支持
+- 提供 Fluent Design 风格控件库与内置浅色 / 深色主题切换，具体控件清单以所引包版本文档为准
 - 控件前缀命名空间：`xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"`；以所引用包程序集 XmlnsDefinition 实际注册的 URI 为准（4.x 为 2022/xaml），禁止凭记忆改写年份段
 
 ### 依赖注入规范

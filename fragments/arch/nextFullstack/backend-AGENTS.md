@@ -121,6 +121,10 @@ Route Handler / Server Action
 
 <!-- include: shared/backend/pre-commit-regression.md -->
 
+<!-- include: shared/backend/logging-rules.md -->
+
+<!-- include: shared/backend/server-side-authorization.md -->
+
 ### 服务端测试
 - Service 测试：验证业务规则、权限校验、状态流转
 - Route Handler / Server Action 测试：验证输入、输出、状态码与异常分支
@@ -129,5 +133,7 @@ Route Handler / Server Action
 <!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
+
+<!-- include: shared/application/anti-patterns.md -->
 
 ---

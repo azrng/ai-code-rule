@@ -76,3 +76,5 @@ dependencies: [agents-root]
 <!-- include: shared/infra/pre-commit-regression-desktop.md -->
 
 <!-- include: shared/no-test-fallback.md -->
+
+<!-- include: shared/application/anti-patterns.md -->

@@ -80,6 +80,8 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 
 <!-- include: shared/frontend/code-organization.md -->
 
+<!-- include: shared/application/anti-patterns.md -->
+
 ---
 
 <!-- include: shared/frontend/test-guidance.md -->

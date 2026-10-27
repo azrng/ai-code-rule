@@ -46,21 +46,7 @@ dependencies: [agents-root]
 
 ### 包管理
 
-使用 **uv** 作为包管理工具（替代 pip），统一管理依赖和虚拟环境。
-
-```bash
-# 初始化项目
-uv init
-
-# 添加依赖
-uv add fastapi uvicorn sqlalchemy alembic
-
-# 添加开发依赖
-uv add --dev pytest pytest-asyncio ruff
-
-# 安装所有依赖
-uv sync
-```
+使用 **uv** 作为包管理工具（替代 pip），统一管理依赖和虚拟环境；常用命令（init / add / add --dev / sync）见 python-backend-howto 技能，未导入技能时按 uv 官方文档执行。
 
 ### 数据库支持（可选）
 
@@ -185,44 +171,13 @@ project/
 - 通过 `Depends` 注入服务层
 - 使用 Pydantic 模型进行请求体验证
 
-```python
-from fastapi import APIRouter, Depends
-from app.schemas.base import ResultResponse
-from app.schemas.requests import CreateUserRequest
-from app.schemas.responses import UserResponse
-from app.services.interfaces.user_service import IUserService
-from app.api.deps import get_user_service
-
-router = APIRouter(prefix="/users", tags=["用户管理"])
-
-@router.post("", response_model=ResultResponse[UserResponse])
-async def create_user(
-    request: CreateUserRequest,
-    service: IUserService = Depends(get_user_service),
-):
-    user = await service.create(request)
-    return ResultResponse.success(data=user)
-```
-
 ### 服务层（Service）
 
 - **职责**：承载核心业务逻辑
 - 使用 `Protocol` 定义服务接口（Python 的结构化子类型）
 - 所有方法必须为 `async`
 - 数据传输使用 Pydantic Schema（DTO），不直接暴露 ORM 模型
-- 异常使用自定义业务异常类
-
-```python
-from typing import Protocol
-from app.schemas.requests import CreateUserRequest
-from app.schemas.responses import UserResponse
-
-class IUserService(Protocol):
-    async def create(self, request: CreateUserRequest) -> UserResponse: ...
-    async def get_by_id(self, user_id: int) -> UserResponse: ...
-    async def update(self, user_id: int, request: UpdateUserRequest) -> UserResponse: ...
-    async def delete(self, user_id: int) -> None: ...
-```
+- 各层代码模板（路由 / Protocol / ORM / Schema / Repository / ResultResponse / 异常 handler / RedisProvider）见 python-backend-howto 技能；未导入技能时按上述约束与 FastAPI / SQLAlchemy 官方文档实现
 
 ### 数据模型（Model）
 
@@ -233,44 +188,12 @@ class IUserService(Protocol):
 - 使用 `Mapped` 类型注解
 - 表名使用 snake_case
 
-```python
-from datetime import datetime
-from sqlalchemy import String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
-from app.models.base import Base
-
-class User(Base):
-    __tablename__ = "users"
-
-    username: Mapped[str] = mapped_column(String(50), unique=True)
-    email: Mapped[str] = mapped_column(String(100))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-```
-
 #### Pydantic Schema（DTO）
 
 按用途分离 Schema：
 - `*Request` — 请求模型（创建/更新/查询参数）
 - `*Response` — 响应模型（返回给前端的数据）
 - `*Filter` — 查询过滤条件
-
-```python
-from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
-
-class CreateUserRequest(BaseModel):
-    username: str = Field(..., min_length=2, max_length=50)
-    email: EmailStr
-
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    email: str
-    is_active: bool
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-```
 
 ### 数据访问层（Repository，可选）
 
@@ -279,49 +202,8 @@ class UserResponse(BaseModel):
 - 支持软删除（`is_deleted` 字段 + 查询过滤）
 - 通用 Repository 封装基础 CRUD，特定 Repository 继承扩展
 
-```python
-from typing import TypeVar, Generic
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-ModelType = TypeVar("ModelType")
-
-class BaseRepository(Generic[ModelType]):
-    def __init__(self, model: type[ModelType], session: AsyncSession):
-        self.model = model
-        self.session = session
-
-    async def get_by_id(self, id: int) -> ModelType | None:
-        result = await self.session.execute(
-            select(self.model).where(
-                self.model.id == id,
-                self.model.is_deleted == False
-            )
-        )
-        return result.scalar_one_or_none()
-```
-
 ### 统一响应格式
-
-```python
-from typing import TypeVar, Generic
-from pydantic import BaseModel
-
-T = TypeVar("T")
-
-class ResultResponse(BaseModel, Generic[T]):
-    code: int = 200
-    message: str = "success"
-    data: T | None = None
-
-    @classmethod
-    def success(cls, data: T = None, message: str = "success") -> "ResultResponse[T]":
-        return cls(code=200, message=message, data=data)
-
-    @classmethod
-    def failure(cls, message: str, code: int = 400) -> "ResultResponse[T]":
-        return cls(code=code, message=message, data=None)
-```
+- 所有响应统一 `ResultResponse[T]`（code / message / data），成功失败均经同一模型返回；实现模板见 python-backend-howto 技能
 
 ### 异常处理
 
@@ -335,40 +217,11 @@ class ResultResponse(BaseModel, Generic[T]):
 | `ForbiddenException` | 403 | 权限不足 |
 | `InternalServerException` | 500 | 服务器内部错误 |
 
-```python
-from fastapi import Request
-from fastapi.responses import JSONResponse
-from app.exceptions import BusinessException
-
-async def business_exception_handler(request: Request, exc: BusinessException) -> JSONResponse:
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"code": exc.error_code, "message": exc.message, "data": None}
-    )
-```
-
 ### 缓存
 
 - **分布式缓存**：使用 `redis.asyncio` 封装 `RedisProvider`
 - **本地缓存**：使用 `cachetools` 的 `TTLCache`
 - **两级缓存**：先查本地缓存，未命中再查 Redis
-
-```python
-from redis.asyncio import Redis
-
-class RedisProvider:
-    def __init__(self, redis: Redis):
-        self.redis = redis
-
-    async def get(self, key: str) -> str | None:
-        return await self.redis.get(key)
-
-    async def set(self, key: str, value: str, expire: int = 300) -> None:
-        await self.redis.setex(key, expire, value)
-
-    async def delete(self, key: str) -> None:
-        await self.redis.delete(key)
-```
 
 ### 数据库迁移（可选）
 
@@ -376,17 +229,6 @@ class RedisProvider:
 - 迁移脚本自动生成后必须检查并确认
 - 每个迁移必须包含 **upgrade** 和 **downgrade**
 - 生产环境执行迁移前必须备份数据库
-
-```bash
-# 生成迁移脚本
-alembic revision --autogenerate -m "描述"
-
-# 执行迁移
-alembic upgrade head
-
-# 回滚迁移
-alembic downgrade -1
-```
 
 ### API 文档
 
@@ -424,6 +266,10 @@ FastAPI 自带 Swagger UI 和 ReDoc，确保：
 
 <!-- include: shared/backend/pre-commit-regression.md -->
 
+<!-- include: shared/backend/logging-rules.md -->
+
+<!-- include: shared/backend/server-side-authorization.md -->
+
 ### 测试框架
 
 - **pytest** + **pytest-asyncio** 作为测试框架
@@ -444,27 +290,7 @@ FastAPI 自带 Swagger UI 和 ReDoc，确保：
 - 测试函数命名：`test_<功能>_<场景>_<预期结果>`
 - 每个测试独立，不依赖执行顺序
 - 使用 `fixtures`（conftest.py）管理测试数据
-- **禁止**在测试中调用真实第三方服务（使用 mock 或录制回放）
-- 覆盖率目标：核心业务逻辑 ≥ 80%
-
-```python
-import pytest
-from httpx import AsyncClient, ASGITransport
-from app.main import app
-
-@pytest.fixture
-async def client():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
-
-async def test_create_user_success(client):
-    response = await client.post("/api/v1/users", json={"username": "test", "email": "test@example.com"})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["code"] == 200
-    assert data["data"]["username"] == "test"
-```
+- 覆盖率目标：核心业务逻辑 ≥ 80%；pytest fixture 与 API 测试示例见 python-backend-howto 技能
 
 ### 验证命令
 
@@ -474,5 +300,7 @@ Python 验证优先使用 uv 的临时依赖执行方式，不要求预装开发
 - 代码质量检查：`uv run --with ruff ruff check ...`
 
 <!-- include: shared/no-test-fallback.md -->
+
+<!-- include: shared/application/anti-patterns.md -->
 
 ---

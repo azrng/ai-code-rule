@@ -1,9 +1,9 @@
 ### 反模式与修根因清单
-- 这是根 `AGENTS.md`「修 Bug 必须定位根因」在 .NET 中的具体禁止项，禁止用下列方式掩盖问题：
+- 这是根 `AGENTS.md`「修 Bug 必须定位根因」的具体禁止项，禁止用下列方式掩盖问题：
   - 空 `catch` 或 `catch (Exception)` 吞异常后静默继续
-  - 用 `!`（null-forgiving）压制可空告警而非真正处理 null
+  - 用 `!`（null-forgiving）压制可空告警而非真正处理 null；`as any`、`@ts-ignore`、`@ts-expect-error` 等类型系统规避同罪
   - 在异步上下文用 `.Result` / `.Wait()` 同步阻塞
-  - `#pragma warning disable` 关闭编译 / 分析器告警掩盖问题
+  - `#pragma warning disable`、关闭 lint / 分析器告警掩盖问题
   - 删除或注释测试让构建通过
   - 用一层抽象重写掩盖原始复杂度，而不是简化它
 - 实现复杂度或理解成本上升时，先回退并简化，再检查是否针对根因修复。

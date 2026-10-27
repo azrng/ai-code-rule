@@ -175,4 +175,6 @@ class Failure<T> extends Result<T> {
 
 <!-- include: shared/no-test-fallback.md -->
 
+<!-- include: shared/application/anti-patterns.md -->
+
 ---
