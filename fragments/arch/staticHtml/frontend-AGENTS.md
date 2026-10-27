@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/frontend/scope.md -->
 
-<!-- include: shared/frontend/common-tasks.md -->
-
 ---
 
 ## 技术栈
@@ -409,7 +407,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 - localStorage、图表、组件封装改动：至少补一次真实数据链路或等价验证，确认刷新后状态仍正确
 - 仅样式或文案微调：至少确认受影响页面的关键状态、布局与主要交互未回退
 
-<!-- include: shared/common/general-requirements.md -->
+<!-- include: shared/frontend/general-requirements.md -->
 
 ### 前端测试
 - 关键页面至少完成一次手工 smoke test

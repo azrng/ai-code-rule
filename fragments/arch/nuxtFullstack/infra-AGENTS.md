@@ -30,10 +30,6 @@ dependencies: [agents-root]
 <!-- include: shared/skeletons/web-node/infra-common-controls.md -->
 - 外部服务地址、数据库连接串、鉴权密钥等必须通过环境变量配置；可下发浏览器的变量统一加 `NUXT_PUBLIC_` 前缀。
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 <!-- include: shared/skeletons/web-node/infra-advisory.md -->
 
 ---

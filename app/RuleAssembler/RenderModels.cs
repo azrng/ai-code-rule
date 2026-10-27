@@ -140,9 +140,6 @@ internal static class RootLineExtensions
 
 internal sealed class RootVariables
 {
-    [JsonPropertyName("target-list")]
-    public List<RootLine> TargetList { get; set; } = new();
-
     [JsonPropertyName("subrule-index")]
     public List<RootLine> SubruleIndex { get; set; } = new();
 
@@ -220,7 +217,6 @@ internal sealed class RootVariables
     {
         return new RootVariables
         {
-            TargetList = TargetList.Select(line => line.Clone()).ToList(),
             SubruleIndex = SubruleIndex.Select(line => line.Clone()).ToList(),
             DevStage = DevStage.Select(line => line.Clone()).ToList(),
             UnderstandingChecklist = UnderstandingChecklist.Select(line => line.Clone()).ToList(),

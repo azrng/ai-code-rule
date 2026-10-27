@@ -53,9 +53,7 @@ dependencies: [agents-root]
 - 本地运行，无需 Docker
 - 支持发布为单文件（`dotnet publish -c Release`）
 
-<!-- include: shared/application/tech-choice.md -->
-
----
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/application/advisory.md -->
 - 发现可以复用既有命令、配置或日志封装时，应优先建议复用，不引入平行体系

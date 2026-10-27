@@ -46,8 +46,6 @@ dependencies: [agents-root]
   - 需要对接必须通过 HTTP 语义运行的第三方模块
   - 已证明子进程 IPC 无法满足能力要求
 
-<!-- include: shared/application/tech-choice.md -->
-
 ### JSON-RPC 路由与契约
 - 渲染进程到主进程优先维护单一通用 IPC 通道（如 `sidecar:invoke`），以 `method + params` 转发；不要为每个 sidecar 方法平铺注册独立的 `ipcMain.handle`。
 - .NET sidecar 的 method 分发使用显式路由注册表（`method -> RpcRoute / Handler`），按完整 method 精确匹配并在启动时校验重复项；不要维护随业务域增长的 `if` / `StartsWith` 分发链。
@@ -218,6 +216,8 @@ IPC Handler / Event（JSON-RPC method）
 - Repository 测试：验证查询条件、分页、排序、事务或数据库映射
 - Handler 测试：验证输入输出结构和错误分支
 - 涉及文件系统或系统能力时，优先通过可控临时目录和测试替身验证
+
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

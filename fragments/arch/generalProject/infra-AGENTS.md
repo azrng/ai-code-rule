@@ -22,10 +22,6 @@ dependencies: [agents-root]
 - 若项目存在端口约定、服务发现、网关入口或安装路径，应在文档中明确记录
 - 外部服务地址、数据库连接串、鉴权密钥等必须通过环境变量或项目约定的安全配置方式管理
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 <!-- include: shared/infra/advisory-cicd.md -->
 
 ---

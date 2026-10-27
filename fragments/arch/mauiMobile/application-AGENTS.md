@@ -22,10 +22,6 @@ dependencies: [agents-root]
 - `CommunityToolkit.Maui`：移动端扩展能力（弹窗、转换器、动画等）
 - `Azrng.Core`（如项目已使用则沿用）
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 <!-- include: shared/application/advisory.md -->
 
 ---
@@ -106,6 +102,8 @@ src/AppName/
 <!-- include: shared/common/general-requirements.md -->
 
 <!-- include: shared/application/application-layer-testing.md -->
+
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/desktop/external-dependencies.md -->
 

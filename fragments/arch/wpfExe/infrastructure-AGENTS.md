@@ -17,10 +17,6 @@ dependencies: [agents-root]
 
 ---
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 <!-- include: shared/infrastructure/advisory.md -->
 
 ---

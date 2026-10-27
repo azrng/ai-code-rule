@@ -100,7 +100,6 @@ internal sealed class ManifestValidator
 
         var lists = new (string Name, List<RootLine> Lines)[]
         {
-            ("target-list", root.TargetList),
             ("subrule-index", root.SubruleIndex),
             ("dev-stage", root.DevStage),
             ("understanding-checklist", root.UnderstandingChecklist),

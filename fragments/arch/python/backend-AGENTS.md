@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/scope.md -->
 
-<!-- include: shared/backend/common-tasks.md -->
-
 ---
 
 <!-- include: shared/application/tech-choice.md -->

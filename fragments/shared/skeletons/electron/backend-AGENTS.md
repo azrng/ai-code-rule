@@ -46,8 +46,6 @@ dependencies: [agents-root]
   - 需要对接必须通过 HTTP 语义运行的第三方模块
   - 已证明 IPC 无法满足能力要求
 
-<!-- include: shared/application/tech-choice.md -->
-
 ### IPC 通道与契约
 - IPC channel 名称使用 `域:动作` 命名（如 `project:open`、`task:list`），语义明确，不使用模糊缩写
 - channel 注册统一收敛在 `main/ipc/`（或等价目录），按业务域拆分注册模块，不在主进程入口平铺堆积

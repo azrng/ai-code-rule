@@ -1,4 +1,4 @@
-### Controller 层规则（如提供 API 接口）
+### Controller 层规则
 - Controller 只负责 HTTP 处理，不包含业务逻辑
 - 使用 `[ApiController]` 特性，自动处理 400 响应
 - 使用 `[Route("api/[controller]")]` 统一路由前缀

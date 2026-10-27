@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/frontend/scope.md -->
 
-<!-- include: shared/frontend/common-tasks.md -->
-
 ---
 
 ## 技术栈
@@ -121,7 +119,7 @@ project-root/
 
 <!-- include: shared/frontend/pre-commit-regression.md -->
 
-<!-- include: shared/common/general-requirements.md -->
+<!-- include: shared/frontend/general-requirements.md -->
 
 <!-- include: shared/frontend/frontend-testing-minimal.md -->
 

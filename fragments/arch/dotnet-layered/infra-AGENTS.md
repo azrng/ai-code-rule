@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/infra/scope.md -->
 
-<!-- include: shared/infra/common-tasks.md -->
-
 ---
 
 ## 部署方式
@@ -18,10 +16,6 @@ dependencies: [agents-root]
 - 默认部署方式：Docker + Docker Compose
 - 生产镜像优先采用多阶段构建
 - 部署链路要可追踪，可定位到镜像版本和配置来源
-
-<!-- include: shared/application/tech-choice.md -->
-
----
 
 <!-- include: shared/infra/advisory-docker.md -->
 

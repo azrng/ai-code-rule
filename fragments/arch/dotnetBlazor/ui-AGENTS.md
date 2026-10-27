@@ -151,7 +151,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 
 <!-- include: shared/ui/browser-walkthrough.md -->
 
-<!-- include: shared/common/general-requirements.md -->
+<!-- include: shared/frontend/general-requirements.md -->
 
 ### Blazor 组件测试
 - 使用 bUnit 进行组件测试（如需要）。

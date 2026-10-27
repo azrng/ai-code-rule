@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/scope.md -->
 
-<!-- include: shared/backend/common-tasks.md -->
-
 ---
 
 ## 技术栈
@@ -56,7 +54,7 @@ src/
 
 | 类型 | 所在层 / 目录 | 命名约定 |
 | --- | --- | --- |
-| Controller（如提供 API） | `Web/Controllers/` | `{资源}Controller.cs` |
+| Controller | `Web/Controllers/` | `{资源}Controller.cs` |
 | Razor 组件 / 页面 | `Web/Pages/`、`Web/Components/`（UI 细节见 `ui-AGENTS.md`） | `{名称}.razor` |
 | 应用服务接口 | `Application/Interfaces/` | `I{业务域}Service.cs` |
 | 应用层 DTO | `Application/DTOs/{业务域}/` | `CreateOrderRequest.cs`、`OrderDetailResponse.cs` |
@@ -156,6 +154,8 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 <!-- include: shared/backend/general-requirements.md -->
 
 <!-- include: shared/backend/backend-testing.md -->
+
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

@@ -14,9 +14,6 @@ dependencies: [agents-root]
 - 作用域：前端实现、页面、组件、路由、状态、样式与前端测试
 - 触发场景：涉及页面、布局、组件、交互、样式、流式展示、前端 smoke test 时阅读
 
-<!-- include: shared/frontend/common-tasks.md -->
-- 做 Agent 对话 / 流式输出展示：先看流式展示规则与组件组织
-
 ---
 
 ## 技术栈
@@ -91,8 +88,6 @@ frontend/
 
 ### 阶段 1 — 前端实现（前端实现角色主导）
 
-**触发条件**：用户发出「开始前端开发」指令
-
 **入场要求**：阶段 0 设计文档已由用户确认；原型已经用户确认，或本次改动命中原型跳过条件
 
 HTML 原型即视觉基线，实现需逐页对照原型。
@@ -164,7 +159,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 <!-- include: shared/frontend/pre-commit-regression.md -->
 - 流式展示改动：按交互改动口径补一次流式渲染与内容呈现的 smoke test
 
-<!-- include: shared/common/general-requirements.md -->
+<!-- include: shared/frontend/general-requirements.md -->
 
 ### 前端测试
 - 鼓励用 AI 辅助生成关键交互与组件的单元测试（Vitest + React Testing Library）；样板与边缘用例也可借助 AI 生成

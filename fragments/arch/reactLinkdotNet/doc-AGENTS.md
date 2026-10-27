@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/scope.md -->
 
-<!-- include: shared/doc/common-tasks.md -->
-
 ---
 
 <!-- include: shared/doc/advisory.md -->

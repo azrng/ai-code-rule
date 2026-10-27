@@ -40,10 +40,6 @@ dependencies: [agents-root]
   - `Scoped`：MAUI 根容器没有天然页面 / 窗口作用域，直接注册的 Scoped 服务行为等同 Singleton；确需作用域时通过 `IServiceScopeFactory.CreateScope()` 显式创建并管理释放
   - `Singleton`：全局唯一服务（如配置、日志、HTTP 客户端）
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 ## 主动建议规则
 - 发现 Repository、数据访问、依赖注入、配置、迁移脚本、构建脚本、发布链路或平台服务存在不一致、不可复现或文档缺失时，应主动提醒
 <!-- include: shared/infrastructure/advisory-core.md -->

@@ -9,12 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/infra/scope.md -->
 
-<!-- include: shared/infra/common-tasks.md -->
-
----
-
-<!-- include: shared/application/tech-choice.md -->
-
 ---
 
 ## 主动建议规则
@@ -29,6 +23,6 @@ dependencies: [agents-root]
 
 ### 部署
 - Docker + Docker Compose
-- 数据库：PostgreSQL
+- 数据库：PostgreSQL（基线默认；存量项目以仓库现有 Provider 为准，不改写既有连接）
 
 ---

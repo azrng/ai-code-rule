@@ -327,7 +327,6 @@ internal sealed class CompositionPlanner
         RootVariables target, RootVariables source, string componentId,
         ISet<string> componentOwned, ICollection<string> errors)
     {
-        ReplaceLines(target.TargetList, source.TargetList, componentId, "target-list", componentOwned, errors);
         ReplaceLines(target.SubruleIndex, source.SubruleIndex, componentId, "subrule-index", componentOwned, errors);
         ReplaceLines(target.DevStage, source.DevStage, componentId, "dev-stage", componentOwned, errors);
         ReplaceLines(target.UnderstandingChecklist, source.UnderstandingChecklist, componentId, "understanding-checklist", componentOwned, errors);
@@ -505,8 +504,7 @@ internal sealed class CompositionPlanner
 
     private static IEnumerable<RootLine> AllLines(RootVariables root)
     {
-        return root.TargetList
-            .Concat(root.SubruleIndex)
+        return root.SubruleIndex
             .Concat(root.DevStage)
             .Concat(root.UnderstandingChecklist)
             .Concat(root.ReadingOrder)

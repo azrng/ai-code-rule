@@ -33,10 +33,6 @@ dependencies: [agents-root]
 <!-- include: shared/infrastructure/di-azrng-desktop.md -->
 - 应用入口为 `Program.cs`
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 <!-- include: shared/infrastructure/advisory.md -->
 
 ---

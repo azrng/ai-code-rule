@@ -373,7 +373,7 @@ do:
   - "为新增页面补齐 loading、empty、error、no-permission 状态"
 
 dont:
-  - "不要写 React、Tailwind、ECharts、Zustand、lucide-react 相关规则"
+  - "不要写 React、ECharts、Zustand、lucide-react 相关规则"
   - "不要在 XAML 控件属性中硬编码颜色、间距、圆角"
   - "不要在 ViewModel 中直接操作 View 或写导航细节"
   - "不要用假的删除、新增、编辑交互冒充真实业务逻辑"

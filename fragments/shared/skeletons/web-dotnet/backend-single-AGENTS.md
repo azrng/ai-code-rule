@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/scope.md -->
 
-<!-- include: shared/backend/common-tasks.md -->
-
 ---
 
 ## 技术栈
@@ -124,6 +122,8 @@ backend/
 <!-- include: shared/common/general-requirements.md -->
 
 <!-- include: shared/backend/backend-testing.md -->
+
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

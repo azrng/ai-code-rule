@@ -305,7 +305,6 @@ internal sealed class RuleRenderer
         {
             ["{{version}}"] = manifest.Vars.Version,
             ["{{last_updated}}"] = manifest.Vars.LastUpdated,
-            ["{{target-list}}"] = RenderLines(root.TargetList, features),
             ["{{subrule-index}}"] = RenderLines(root.SubruleIndex, features),
             ["{{dev-stage}}"] = RenderLines(root.DevStage, features),
             ["{{understanding-checklist}}"] = RenderLines(root.UnderstandingChecklist, features),

@@ -52,10 +52,6 @@ final itemListProvider = AsyncNotifierProvider.autoDispose<ItemListNotifier, Lis
 });
 ```
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 <!-- include: shared/backend/advisory.md -->
 ---
 

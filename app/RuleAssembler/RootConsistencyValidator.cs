@@ -2,7 +2,7 @@ namespace RuleAssembler;
 
 // 结构化输出契约与 RuleRenderer.Plan 实际产物的一致性校验。
 // 契约的事实来源是 manifest 的结构化声明（片段 output、指针、designSystem、显式 outputs、全局 referenced-existing），
-// 根文件中的 target-list / subrule-index Markdown 仅作展示，本类不做任何自然语言解析。
+// 根文件中的 subrule-index Markdown 仅作展示，本类不做任何自然语言解析。
 // 声明推导的遍历顺序与 RuleRenderer.Plan 保持一致：根文件 → 模块文件 → 子规则/组件文件 → 指针 → design-system。
 internal sealed class RootConsistencyValidator
 {

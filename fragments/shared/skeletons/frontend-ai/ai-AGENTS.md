@@ -165,7 +165,7 @@ src/
 - Prompt 改动：至少验证关键输出格式与边界（空输入、超长输入、异常输入）
 - 交互组件改动：流式渲染、错误态、重试至少完成一次等价验证
 
-<!-- include: shared/common/general-requirements.md -->
+<!-- include: shared/frontend/general-requirements.md -->
 
 ### AI 测试
 - 单元 / 组件测试统一 mock 模型接口与流式事件，不真实调用第三方模型服务（避免成本、不稳定与隐私问题）

@@ -20,10 +20,6 @@ dependencies: [agents-root]
 <!-- include: shared/application/stack-mvvm.md -->
 - `Azrng.Core.Json`：基于 `System.Text.Json` 的 JSON 序列化
 
-<!-- include: shared/application/tech-choice.md -->
-
----
-
 <!-- include: shared/application/advisory.md -->
 
 ---
@@ -101,6 +97,8 @@ src/AppName/
 <!-- include: shared/common/general-requirements.md -->
 
 <!-- include: shared/application/application-layer-testing.md -->
+
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/desktop/external-dependencies.md -->
 

@@ -14,10 +14,6 @@ dependencies: [agents-root, ai-agents]
 - 作用域：需求文档、设计文档、契约说明、设计系统、AI 产品交互补充与开发文档维护
 - 触发场景：涉及阶段 0 设计、契约说明、Agent 交互流程、`doc/index.md`、`doc/requirements/` 或 `doc/design/` 时阅读
 
-<!-- include: shared/doc/common-tasks.md -->
-- 新增或改动 Agent 交互流程：先看 AI 产品交互补充
-- 更新流式事件结构：先看契约说明规范的流式 / Agent 契约补充
-
 ---
 
 <!-- include: shared/doc/advisory.md -->

@@ -24,7 +24,6 @@ dependencies: [agents-root, ai-agents]
 ---
 
 ## 技术选择原则
-<!-- include: shared/application/tech-choice.md -->
 第一版优先保证本地零依赖可跑通；生产级基础设施（PostgreSQL、Redis、对象存储等）按需引入，不在 MVP 强加。
 
 ---

@@ -12,8 +12,6 @@ dependencies: [agents-root]
 - 作用域：界面、页面、视图、组件、交互、样式与前端测试
 - 触发场景：涉及任何用户可见界面、前端交互、客户端状态、组件拆分、界面回归时阅读
 
-<!-- include: shared/frontend/common-tasks.md -->
-
 ---
 
 ## 技术栈

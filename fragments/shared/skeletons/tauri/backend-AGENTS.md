@@ -42,8 +42,6 @@ dependencies: [agents-root]
   - 需要对接必须通过 HTTP 语义运行的第三方模块
   - 已证明 Command / plugin 无法满足能力要求
 
-<!-- include: shared/application/tech-choice.md -->
-
 ## 主动建议规则
 - 发现 Tauri Command 与 Rust 服务职责混杂、SQLite 访问封装不一致或错误处理缺失时，应主动提醒
 - 发现接口契约、绑定结构体、SQLite 表结构或状态流转可能影响历史数据、兼容性或权限安全时，必须先说明风险，不得直接扩大修改

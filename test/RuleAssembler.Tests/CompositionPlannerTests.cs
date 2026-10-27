@@ -241,8 +241,7 @@ public class CompositionPlannerTests
             ["backend"] = "none"
         }));
 
-        var texts = plan.Root.TargetList
-            .Concat(plan.Root.SubruleIndex)
+        var texts = plan.Root.SubruleIndex
             .Concat(plan.Root.DevStage)
             .Concat(plan.Root.UnderstandingChecklist)
             .Select(line => line.Text)
@@ -253,7 +252,7 @@ public class CompositionPlannerTests
         // 槽位替换后应还原对应味道的文案
         Assert.Contains("类型 / schema", plan.Root.SearchNouns);
         Assert.DoesNotContain("DTO / schema", plan.Root.SearchNouns);
-        Assert.Contains(plan.Root.TargetList.Select(line => line.Text), text => text.Contains("主进程服务"));
+        Assert.Contains(plan.Root.SubruleIndex.Select(line => line.Text), text => text.Contains("主进程服务"));
     }
 
     [Fact]

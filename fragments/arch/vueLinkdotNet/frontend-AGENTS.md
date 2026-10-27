@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/frontend/scope.md -->
 
-<!-- include: shared/frontend/common-tasks.md -->
-
 ---
 
 ## 技术栈
@@ -77,8 +75,6 @@ project-root/
 
 ### 阶段 1 — 前端实现（前端实现角色主导）
 
-**触发条件**：用户发出「开始前端开发」指令
-
 **入场要求**：阶段 0 设计文档已由用户确认；原型已经用户确认，或本次改动命中原型跳过条件
 
 HTML 原型即视觉基线，实现需逐页对照原型。
@@ -132,7 +128,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 
 <!-- include: shared/frontend/pre-commit-regression.md -->
 
-<!-- include: shared/common/general-requirements.md -->
+<!-- include: shared/frontend/general-requirements.md -->
 
 <!-- include: shared/frontend/frontend-testing-minimal.md -->
 

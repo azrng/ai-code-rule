@@ -43,7 +43,6 @@ dependencies: [agents-root]
 - **唯一来源**：`Application/{业务域}/Dto/` 下的 DTO、AppService 接口与 Controller 公开接口定义。
 - **验证方式**：通过 Swagger UI 展示和验证契约，不把 Swagger 文档本身当作手工维护源。
 - **变更规则**：接口契约变更时，必须先修改 DTO 或接口定义，再同步修改 AppService、数据映射、测试与相关文档。
-- **回退规则**：后续阶段发现契约缺口时，按 `collaboration-AGENTS.md`「纠错、回退与重构」回到契约变更流程，不在实现层绕过契约。
 - **文件结构建议**：按业务域拆分 DTO，避免将全部请求和响应堆叠在单个文件中。
 
 ---

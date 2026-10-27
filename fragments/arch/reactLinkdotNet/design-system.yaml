@@ -54,8 +54,8 @@ product:
 
 # ============================================================
 # 颜色 Token
-# 对应 Tailwind 配置中的自定义颜色（tailwind.config.ts）
-# 使用方式：className="bg-primary-500 text-error-600"
+# 实现资源：src/config/antd-theme.ts 的 Design Token 映射
+# 使用方式：经 ConfigProvider theme token 或 CSS Modules 变量引用，禁止硬编码
 # ============================================================
 tokens:
   colors:
@@ -188,48 +188,48 @@ tokens:
 
   spacing:
     base_unit: "4px"
-    # 使用 Tailwind 间距工具类，禁止硬编码数值
+    # 通过 spacing token 引用，禁止硬编码数值
     scale:
-      0.5: "2px" # 0.5
-      1: "4px" # p-1, m-1
-      1.5: "6px" # p-1.5
-      2: "8px" # p-2
-      2.5: "10px" # p-2.5
-      3: "12px" # p-3
-      3.5: "14px" # p-3.5
-      4: "16px" # p-4
-      5: "20px" # p-5
-      6: "24px" # p-6
-      7: "28px" # p-7
-      8: "32px" # p-8
-      10: "40px" # p-10
-      12: "48px" # p-12
-      14: "56px" # p-14
-      16: "64px" # p-16
+      0.5: "2px"
+      1: "4px"
+      1.5: "6px"
+      2: "8px"
+      2.5: "10px"
+      3: "12px"
+      3.5: "14px"
+      4: "16px"
+      5: "20px"
+      6: "24px"
+      7: "28px"
+      8: "32px"
+      10: "40px"
+      12: "48px"
+      14: "56px"
+      16: "64px"
 
   radius:
     none: "0"
-    xs: "2px" # rounded-sm（2px）
-    sm: "4px" # rounded（4px）
-    md: "6px" # rounded-md
-    lg: "8px" # rounded-lg（标准）
-    xl: "12px" # rounded-xl
-    2xl: "16px" # rounded-2xl
-    full: "9999px" # rounded-full
+    xs: "2px"
+    sm: "4px"
+    md: "6px"
+    lg: "8px"
+    xl: "12px"
+    2xl: "16px"
+    full: "9999px"
 
   shadow:
-    none: "none" # shadow-none
-    xs: "0 1px 2px 0 rgba(0,0,0,0.04)" # shadow-xs
-    sm: "0 1px 3px 0 rgba(0,0,0,0.08)" # shadow-sm
-    md: "0 4px 8px -2px rgba(0,0,0,0.10), 0 2px 4px -2px rgba(0,0,0,0.06)" # shadow-md
-    lg: "0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05)" # shadow-lg
-    xl: "0 20px 25px -5px rgba(0,0,0,0.10), 0 10px 10px -5px rgba(0,0,0,0.04)" # shadow-xl
+    none: "none"
+    xs: "0 1px 2px 0 rgba(0,0,0,0.04)"
+    sm: "0 1px 3px 0 rgba(0,0,0,0.08)"
+    md: "0 4px 8px -2px rgba(0,0,0,0.10), 0 2px 4px -2px rgba(0,0,0,0.06)"
+    lg: "0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05)"
+    xl: "0 20px 25px -5px rgba(0,0,0,0.10), 0 10px 10px -5px rgba(0,0,0,0.04)"
 
   transitions:
-    fast: "100ms" # duration-100
-    base: "200ms" # duration-200（标准）
-    slow: "300ms" # duration-300
-    slower: "500ms" # duration-500
+    fast: "100ms"
+    base: "200ms"
+    slow: "300ms"
+    slower: "500ms"
 
   breakpoints:
     xs: "320px"
@@ -344,7 +344,7 @@ page_states:
     loading:
       description: "数据加载中"
       implementation: "列表/表格用骨架屏（Skeleton 效果），按钮操作用 disabled + spinner"
-      tailwind_example: "animate-pulse bg-gray-200 rounded"
+      skeleton_example: "CSS Modules 中以 colors token 组合实现骨架屏背景"
     empty:
       description: "无数据"
       implementation: "展示空状态图示 + 简短说明 + 引导操作按钮"
@@ -609,7 +609,7 @@ component_specs:
 
   datepicker:
     description: "日期与时间选择器"
-    library: "react-datepicker，样式通过 Tailwind 自定义覆盖，禁止引入其默认 CSS"
+    library: "react-datepicker，样式经 CSS Modules 以 token 覆盖，禁止引入其默认 CSS"
     trigger:
       style: "同 Input md 尺寸规范，左侧 Calendar 图标 size=16 text-gray-400"
       placeholder: "text-gray-400，格式提示如 YYYY-MM-DD"
@@ -635,7 +635,7 @@ component_specs:
       position: "popup 左侧面板或顶部，常用：今天、昨天、最近7天、最近30天、本月、上月"
       style: "text-sm text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg cursor-pointer"
     rules:
-      - "禁止引入 react-datepicker 的默认 CSS，全量使用 Tailwind 覆盖"
+      - "禁止引入 react-datepicker 的默认 CSS，样式全部经 CSS Modules 以 token 覆盖"
       - "日期范围选择时，结束日期不能早于开始日期，需校验并提示"
       - "时区处理统一由业务层负责，组件只处理本地展示"
 
@@ -702,7 +702,7 @@ component_specs:
         checkbox_col: "表头全选 + 每行 Checkbox，宽度 w-12"
         bulk_action_bar: "选中后顶部浮现操作栏，bg-primary-50 border border-primary-200 rounded-lg px-4 py-2"
     empty_state: "td colspan=全列数，py-16 text-center，使用 Empty 组件"
-    loading_state: "tbody 替换为骨架行，3-5 行，animate-pulse"
+    loading_state: "tbody 替换为骨架行，3-5 行，以 colors token 组合实现骨架背景与 pulse 动画"
     rules:
       - "操作列固定在最右侧"
       - "表格必须处理 loading、empty、error 三种状态"
@@ -818,7 +818,7 @@ component_specs:
     with_label:
       percentage: "text-xs text-gray-500 text-right mb-1"
       inline: "进度条右侧 ml-3 text-sm text-gray-600 w-10 text-right"
-    striped_animated: "bg-stripes animate-pulse，用于不确定进度的长时任务"
+    striped_animated: "条纹背景叠加 pulse 动画（CSS Modules 实现），用于不确定进度的长时任务"
     rules:
       - "进度值范围 0-100，超出范围自动 clamp"
       - "超过 100% 的情况（如超额完成）用 success 色展示并截断在 100% 宽度"
@@ -1112,7 +1112,7 @@ component_specs:
 
   skeleton:
     description: "骨架屏，内容加载时的占位动画"
-    base: "animate-pulse bg-gray-200 rounded"
+    base: "以 colors token 组合实现骨架屏背景，CSS Modules 实现 pulse 动画"
     variants:
       text_line: "h-4 rounded w-full（可指定宽度百分比）"
       text_short: "h-4 rounded w-3/5"

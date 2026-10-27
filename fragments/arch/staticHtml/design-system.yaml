@@ -694,7 +694,7 @@ animations:
   custom_animations:
     fade_in: "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }"
     slide_up: "@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }"
-    pulse: "Bootstrap animate-pulse 或自定义 pulse 动画"
+    pulse: "自定义 pulse 动画（或使用 placeholder-glow 模拟）"
 
 # ============================================================
 # Do / Don't 规则
@@ -713,7 +713,7 @@ do:
 
 dont:
   - "不要使用 style 属性硬编码颜色值（如 style='color: #1A90FF'）"
-  - "不要使用 Tailwind CSS、Sass、Less 等 Bootstrap 以外的样式方案"
+  - "不要使用 Sass、Less 等 Bootstrap 以外的样式方案"
   - "不要硬编码间距数值（如 style='padding: 20px'）"
   - "不要使用 Chart.js 以外的图表库（ECharts、D3.js、Recharts 等）"
   - "不要使用 React、Vue、Angular、jQuery 等前端框架"

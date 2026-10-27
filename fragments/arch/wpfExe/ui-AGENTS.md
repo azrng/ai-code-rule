@@ -198,7 +198,7 @@ project-root/
 ## 测试规则
 
 <!-- include: shared/ui/pre-commit-regression.md -->
-<!-- include: shared/common/general-requirements.md -->
+<!-- include: shared/frontend/general-requirements.md -->
 
 <!-- include: shared/application/view-layer-testing.md -->
 

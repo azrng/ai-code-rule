@@ -9,10 +9,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/frontend/scope.md -->
 
-<!-- include: shared/frontend/common-tasks.md -->
-
 ---
-
 ## 技术栈
 
 <!-- include: shared/frontend/stack-vue-element.md -->

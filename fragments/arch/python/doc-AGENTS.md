@@ -32,7 +32,6 @@ dependencies: [agents-root]
 - **唯一来源**：`app/schemas/` 下的 Pydantic Schema（请求 / 响应 / 查询模型）与 `app/services/interfaces/` 下的服务接口定义。
 - **验证方式**：通过 FastAPI 自带的 Swagger UI（`/docs`）展示和验证契约，不把 Swagger 文档本身当作手工维护源。
 - **变更规则**：接口契约变更时，必须先修改 Schema 或服务接口定义，再同步修改服务实现、数据访问映射、测试与相关文档。
-- **回退规则**：后续阶段发现契约缺口时，按 `collaboration-AGENTS.md`「纠错、回退与重构」回到契约变更流程，不在实现层绕过契约。
 - **文件结构建议**：按业务域拆分 Schema 和接口定义（`schemas/requests/`、`schemas/responses/`），避免将全部契约堆叠在单个文件中。
 
 ---

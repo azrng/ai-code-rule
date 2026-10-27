@@ -56,7 +56,6 @@ public class CompositionDeterminismTests
     private static void AssertRootEqual(RootVariables first, RootVariables second)
     {
         // RootLine 未重写 Equals（两份计划持有各自的深拷贝实例），按值投影比较
-        Assert.Equal(DescribeLines(first.TargetList), DescribeLines(second.TargetList));
         Assert.Equal(DescribeLines(first.SubruleIndex), DescribeLines(second.SubruleIndex));
         Assert.Equal(DescribeLines(first.DevStage), DescribeLines(second.DevStage));
         Assert.Equal(DescribeLines(first.UnderstandingChecklist), DescribeLines(second.UnderstandingChecklist));

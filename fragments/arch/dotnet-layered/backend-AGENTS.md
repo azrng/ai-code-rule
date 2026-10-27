@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/backend/scope.md -->
 
-<!-- include: shared/backend/common-tasks.md -->
-
 ---
 
 ## 技术栈
@@ -235,6 +233,8 @@ src/
 - Domain 测试：验证核心业务规则，使用 mock 隔离外部依赖
 - 数据访问测试：使用 In-Memory 数据库或 Testcontainers
 - 集成测试：使用 `WebApplicationFactory` 测试完整请求管道
+
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

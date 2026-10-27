@@ -9,12 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/infra/scope.md -->
 
-<!-- include: shared/infra/common-tasks.md -->
-
----
-
-<!-- include: shared/application/tech-choice.md -->
-
 ---
 
 <!-- include: shared/infra/advisory-docker.md -->

@@ -2,6 +2,8 @@
 以下内容发生变化时，必须同步更新相关文档：
 <!-- include: shared/doc/doc-update-core.md -->
 
+### 文档维护原则
+
 - 优先更新对应业务模块/功能的已有需求、设计和契约文档，不新增重复说明。
 - 新增功能时，先定位或创建 `doc/requirements/<module>/<feature>.md`，再创建对应的 `doc/design/<module>/<feature>.md`；两者使用稳定 ID 互相引用，并同步更新 `doc/index.md`、`doc/requirements/index.md` 和 `doc/design/index.md`。
 - 需求文档发生业务规则、范围、权限或验收标准变化时，必须检查对应设计文档和实现是否需要同步调整；设计变更不得反向覆盖未经确认的需求事实。
