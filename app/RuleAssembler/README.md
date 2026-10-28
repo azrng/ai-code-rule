@@ -55,7 +55,7 @@ manifest 的 `components` / `constraints` / `compatibilityCases` 节点承载组
 
 - `features` 注册能力 ID（doc / infra / ai-capability / design-system）；片段 `output` 可声明 `feature`（能力归属）与 `merge`（replace / append），同一输出允许一个 replace 基底和多个 append 贡献，全局 `outputs.referenced-existing` 维护「根规则提到但生成器不创建」的文件（如 TASK.md）。
 - `RootConsistencyValidator` 按 `RuleRenderer.Plan` 同序遍历推导声明，与实际产物三向比对（声明未生成 / 实际未声明 / referenced-existing 被生成），`--check` 集成该校验。
-- 根导航条目（target-list / subrule-index / dev-stage / reading-order / extra-sections）支持三种形态：纯文本、`{ "line": "...", "features": ["doc"] }`（能力条件）、`{ "when": [多档文案] }`（按启用能力取档）；reading-order 中连续的「1. 」编号行在能力行移除后自动重排。根模板支持行尾 `<!-- if-feature: doc -->` 行级条件。
+- 根导航条目（subrule-index / dev-stage / reading-order / extra-sections）支持三种形态：纯文本、`{ "line": "...", "features": ["doc"] }`（能力条件）、`{ "when": [多档文案] }`（按启用能力取档）；reading-order 中连续的「1. 」编号行在能力行移除后自动重排。根模板支持行尾 `<!-- if-feature: doc -->` 行级条件。
 - `FeatureSelection` 从输出声明推导每个组合的可用能力与默认勾选集；关闭能力后产物与导航联动收敛，根入口不会引用不存在的子规则文件。
 
 ### 新增模块清单

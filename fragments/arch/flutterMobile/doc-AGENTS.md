@@ -9,11 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/scope.md -->
 
-### 常见任务入口
-- 新增功能方案：先看阶段 0 设计文档
-- 更新字段、接口、Model 或 schema：先看契约说明规范
-- 更新设计系统或通用说明：先看设计系统文件规范与文档目录约定
-
 ---
 
 <!-- include: shared/doc/advisory.md -->

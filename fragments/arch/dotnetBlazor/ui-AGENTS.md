@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/ui/scope-web.md -->
 
-<!-- include: shared/ui/common-tasks-web.md -->
-
 ---
 
 ## 技术栈

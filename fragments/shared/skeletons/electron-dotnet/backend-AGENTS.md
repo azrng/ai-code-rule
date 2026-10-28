@@ -12,13 +12,6 @@ dependencies: [agents-root]
 - 作用域：IPC handler、.NET 服务、数据访问、本地系统能力与后端测试
 - 触发场景：涉及 `src-dotnet/`、子进程 IPC、SQLite、文件系统、系统权限、异常处理或测试时阅读
 
-### 常见任务入口
-- 改前后端调用契约：先看 IPC Handler 规则与前后端契约规则
-- 改业务流程或状态流转：先看 Service 规则与异常处理规范
-- 改本地数据库、文件、配置读写：先看 Repository / 数据访问规则与本地能力规则
-- 改子进程启动、健康检查或关闭行为：先看进程生命周期规则
-- 补 .NET 回归：先看 `提交前最小回归` 与测试规则
-
 ---
 
 ## 技术栈
@@ -216,6 +209,8 @@ IPC Handler / Event（JSON-RPC method）
 - Repository 测试：验证查询条件、分页、排序、事务或数据库映射
 - Handler 测试：验证输入输出结构和错误分支
 - 涉及文件系统或系统能力时，优先通过可控临时目录和测试替身验证
+
+<!-- include: shared/backend/logging-rules.md -->
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
 

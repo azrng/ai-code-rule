@@ -9,8 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/application/scope.md -->
 
-<!-- include: shared/application/common-tasks.md -->
-
 ---
 
 ## 技术栈

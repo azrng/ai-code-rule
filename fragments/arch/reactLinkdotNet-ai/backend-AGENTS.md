@@ -14,13 +14,6 @@ dependencies: [agents-root, ai-agents]
 - 作用域：单项目整洁架构、服务端实现、接口、服务、数据访问、异常处理与后端测试
 - 触发场景：涉及接口、Service、Repository、异常处理、AI 集成边界或测试时阅读
 
-### 常见任务入口
-- 改接口响应或状态码：先看接口 / 路由规则与异常处理规范
-- 改业务流程或状态流转：先看 Application 规则与权限约束
-- 改查询、分页、迁移、切换数据库：先看数据访问规则与数据库切换规范
-- 涉及模型调用或 Agent：先读 `ai-AGENTS.md`，再回到本文件确认分层边界
-- 补服务端回归：先看 `提交前最小回归` 与测试规则
-
 ---
 
 ## 技术栈
@@ -193,6 +186,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 
 <!-- include: shared/backend/backend-testing.md -->
 - AI 测试：mock `IChatClient`，不真实调用模型服务；Repository 测试注意 SQLite In-Memory 与 PostgreSQL 的行为差异
+
+<!-- include: shared/backend/dotnet-build-isolation.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

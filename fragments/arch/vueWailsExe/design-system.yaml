@@ -412,12 +412,12 @@ component_rules:
 form_rules:
   layout:
     label_position: "标签在输入框上方（top），企业表单标准布局"
-    label_style: "text-sm font-medium text-gray-700"
+    label_style: "字号 14px、字重 500，颜色取文本次级色 token"
     required_mark: "标签后紧跟红色星号 *"
-    helper_text: "输入框下方，text-xs text-gray-500"
-    error_text: "输入框下方，text-xs text-danger-600，替换 helper_text 位置"
-    field_gap: "垂直间距 mb-4（16px），分组间距 mb-6（24px）"
-    section_gap: "表单分区间距 mb-8（32px）"
+    helper_text: "输入框下方，字号 12px，颜色取辅助文本色 token"
+    error_text: "输入框下方，字号 12px，颜色取危险色 token（danger.600），替换 helper_text 位置"
+    field_gap: "垂直间距 16px，分组间距 24px"
+    section_gap: "表单分区间距 32px"
   sizes:
     sm:
       description: "紧凑型，用于筛选栏、内联表单"

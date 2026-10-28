@@ -188,9 +188,6 @@ internal sealed class RootVariables
     [JsonPropertyName("reading-order")]
     public List<RootLine> ReadingOrder { get; set; } = new();
 
-    [JsonPropertyName("intro-quote")]
-    public string IntroQuote { get; set; } = "";
-
     [JsonPropertyName("checklist-infra")]
     public string ChecklistInfra { get; set; } = "- 涉及基础设施时，已查看 Docker、环境变量、端口、启动命令、发布脚本和部署文档";
 
@@ -233,7 +230,6 @@ internal sealed class RootVariables
             DestructiveNouns = DestructiveNouns,
             ContractErrorLine = ContractErrorLine,
             ReadingOrder = ReadingOrder.Select(line => line.Clone()).ToList(),
-            IntroQuote = IntroQuote,
             ChecklistInfra = ChecklistInfra,
             ModelBehaviorExtra = ModelBehaviorExtra,
             VerifyNouns = VerifyNouns,

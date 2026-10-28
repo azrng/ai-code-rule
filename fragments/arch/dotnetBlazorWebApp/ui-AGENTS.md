@@ -9,12 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/ui/scope-web.md -->
 
-### 常见任务入口
-- 新增页面或交互：先看渲染模式选择，明确组件执行位置
-- 改组件、状态或数据流：先看组件与状态规则与 JS interop 约束
-- 改样式与视觉：先看设计系统，并遵循 `design-system.yaml`
-- 补界面回归：先看 `提交前最小回归`
-
 ---
 
 ## 技术栈与适用范围
@@ -156,8 +150,6 @@ Blazor Web App 属普通 Web 形态：HTML 交互原型即视觉基线，阶段 
 
 <!-- include: shared/ui/pre-commit-regression-web.md -->
 
-<!-- include: shared/ui/browser-walkthrough.md -->
-
 - 影响行为的改动应优先补充或更新测试；未补测试时必须说明原因和风险。
 - 使用 bUnit 或项目既有组件测试方案验证参数、渲染输出、事件和关键状态。
 - Static SSR 至少验证首个请求 HTML、普通导航或表单行为，以及无交互运行时条件下的可用性。
@@ -166,6 +158,9 @@ Blazor Web App 属普通 Web 形态：HTML 交互原型即视觉基线，阶段 
 - Interactive Auto 必须分别验证首次服务器交互和缓存后 WebAssembly 执行，不能只测试其中一种路径。
 - 启用预渲染时验证重复生命周期不会产生重复写入，并验证交互启动前不会执行浏览器专属 JS interop。
 - 关键页面执行 smoke test，确认页面可访问、主要交互可触发、核心状态和渲染模式符合设计。
+
+<!-- include: shared/ui/browser-walkthrough.md -->
+
 <!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->

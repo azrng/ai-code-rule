@@ -9,11 +9,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/infra/scope.md -->
 
-### 常见任务入口
-- 改容器镜像或启动命令：先看 Docker 规范（Dockerfile / Docker Compose）
-- 改端口、环境变量或连接串：先看默认端口与 Docker 规范，并同步 `.env.example` 与文档
-- 补基础设施或交付回归：先看 `提交前最小回归`
-
 ---
 
 <!-- include: shared/infra/advisory-docker.md -->

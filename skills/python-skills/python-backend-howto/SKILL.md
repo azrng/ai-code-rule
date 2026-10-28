@@ -50,7 +50,7 @@ async def create_user(
 
 ```python
 from typing import Protocol
-from app.schemas.requests import CreateUserRequest
+from app.schemas.requests import CreateUserRequest, UpdateUserRequest
 from app.schemas.responses import UserResponse
 
 class IUserService(Protocol):
@@ -134,7 +134,7 @@ class ResultResponse(BaseModel, Generic[T]):
     data: T | None = None
 
     @classmethod
-    def success(cls, data: T = None, message: str = "success") -> "ResultResponse[T]":
+    def success(cls, data: T | None = None, message: str = "success") -> "ResultResponse[T]":
         return cls(code=200, message=message, data=data)
 
     @classmethod
@@ -192,15 +192,19 @@ alembic downgrade -1
 
 ```python
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 
-@pytest.fixture
+# async fixture 必须用 pytest_asyncio.fixture；同步测试不能消费 async fixture
+@pytest_asyncio.fixture
 async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
+# 项目未配置 asyncio_mode = "auto" 时，async 测试必须显式加标记
+@pytest.mark.asyncio
 async def test_create_user_success(client):
     response = await client.post("/api/v1/users", json={"username": "test", "email": "test@example.com"})
     assert response.status_code == 200

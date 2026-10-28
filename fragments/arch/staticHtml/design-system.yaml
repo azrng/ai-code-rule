@@ -396,7 +396,7 @@ component_rules:
 form_rules:
   layout:
     label_position: "标签在输入框上方（top），企业表单标准布局"
-    label_style: "form-label，text-sm font-medium"
+    label_style: "form-label，字号 14px、字重 500"
     required_mark: "标签后紧跟红色星号 *，使用 text-danger"
     helper_text: "form-text，text-muted"
     error_text: "invalid-feedback"

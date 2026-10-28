@@ -12,12 +12,6 @@ dependencies: [agents-root]
 - 作用域：Route Handlers、Server Actions、Service、Repository、Prisma、缓存、鉴权与服务端测试
 - 触发场景：涉及服务端逻辑、数据库、缓存、权限、异常处理时阅读
 
-### 常见任务入口
-- 改接口响应或状态码：先看 `Route Handler 规则`、`异常处理规范`
-- 改表单提交或状态切换：先看 `Server Action 规则`、`缓存与重验证规则`
-- 改业务逻辑或权限：先看 `Service 层规则`、`鉴权与权限规则`
-- 改查询、分页、Prisma：先看 `Repository / Prisma 规则`、`提交前最小回归`
-
 ---
 
 ## 技术栈

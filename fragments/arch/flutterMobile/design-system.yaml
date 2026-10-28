@@ -379,7 +379,7 @@ chart_styles:
     border_radius: "12"
     border: "none"
     shadow: "0 10px 25px -5px rgba(0,0,0,0.1)"
-    text_style: "text-sm, gray-700"
+    text_style: "fontSize 14，颜色取灰阶 700 文本色 token"
 
   usage_rules:
     - "图表颜色统一引用 chart_styles.color_palette，不在 option 中硬编码颜色"

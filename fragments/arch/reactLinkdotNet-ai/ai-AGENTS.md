@@ -14,14 +14,6 @@ dependencies: [agents-root]
 - 作用域：模型调用、Agent、Function Calling、Skills、Prompt、流式输出、向量与记忆等可选能力、AI 相关测试
 - 触发场景：涉及任何模型对接、Agent 运行、工具调用、Prompt 编写或流式交互时阅读
 
-### 常见任务入口
-- 接入或切换模型（DeepSeek / Azure OpenAI / GitHub Models / 本地模型）：先看模型调用规范
-- 新建一个 Agent 或扩展多步能力：先看 Agent 规范
-- 让模型调用业务方法或外部能力：先看工具 / Skills 规范
-- 调输出格式或行为：先看 Prompt 规范
-- 做打字机效果或长任务进度：先看流式与长任务规范
-- 引入知识检索或长期记忆：先看可选扩展能力
-
 ---
 
 ## 核心 vs 可选（务必先读）

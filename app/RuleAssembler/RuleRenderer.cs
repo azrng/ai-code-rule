@@ -6,7 +6,6 @@ internal sealed class RuleRenderer
 {
     private static readonly string[] OptionalSlots =
     {
-        "{{intro-quote}}",
         "{{extra-sections}}",
         "{{model-behavior-extra}}",
         "{{verify-quote}}"
@@ -322,7 +321,6 @@ internal sealed class RuleRenderer
             ["{{reading-order}}"] = root.ReadingOrder.Count > 0
                 ? RenderLines(root.ReadingOrder, features)
                 : "先读本文件确认全局规则与任务阶段 → 按任务类型命中对应子规则 → 再读相关模块与现有实现，确认复用点后动手。",
-            ["{{intro-quote}}"] = root.IntroQuote,
             ["{{checklist-infra}}"] = root.ChecklistInfra,
             ["{{model-behavior-extra}}"] = root.ModelBehaviorExtra,
             ["{{verify-nouns}}"] = root.VerifyNouns,

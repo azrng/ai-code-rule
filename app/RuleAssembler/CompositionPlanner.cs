@@ -367,8 +367,6 @@ internal sealed class CompositionPlanner
             value => target.RollbackScope = value);
         MergeScalar(target.BoundaryNouns, source.BoundaryNouns, componentId, "boundary-nouns", componentOwned, errors,
             value => target.BoundaryNouns = value);
-        MergeScalar(target.IntroQuote, source.IntroQuote, componentId, "intro-quote", componentOwned, errors,
-            value => target.IntroQuote = value);
         MergeScalar(target.PersistenceLine, source.PersistenceLine, componentId, "persistence-line", componentOwned, errors,
             value => target.PersistenceLine = value);
     }
@@ -411,7 +409,6 @@ internal sealed class CompositionPlanner
         Strip(() => result.VerifyQuote, value => result.VerifyQuote = value, "verify-quote", classDefaults.VerifyQuote);
         Strip(() => result.RollbackScope, value => result.RollbackScope = value, "rollback-scope", classDefaults.RollbackScope);
         Strip(() => result.BoundaryNouns, value => result.BoundaryNouns = value, "boundary-nouns", classDefaults.BoundaryNouns);
-        Strip(() => result.IntroQuote, value => result.IntroQuote = value, "intro-quote", classDefaults.IntroQuote);
         Strip(() => result.PersistenceLine, value => result.PersistenceLine = value, "persistence-line", classDefaults.PersistenceLine);
         return result;
     }
@@ -530,7 +527,6 @@ internal sealed class CompositionPlanner
         yield return ("verify-quote", root.VerifyQuote, value => root.VerifyQuote = value);
         yield return ("rollback-scope", root.RollbackScope, value => root.RollbackScope = value);
         yield return ("boundary-nouns", root.BoundaryNouns, value => root.BoundaryNouns = value);
-        yield return ("intro-quote", root.IntroQuote, value => root.IntroQuote = value);
         yield return ("persistence-line", root.PersistenceLine, value => root.PersistenceLine = value);
     }
 
