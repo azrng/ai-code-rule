@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # 构建并发布 use-ai-rule 生成器（Linux/mac 入口，供 CI 与非 Windows 本机使用）。
-# 同时打包 merged 内容包（fragments + skills，manifest.vars.version 作包版本）：
+# 同时打包 merged 内容包（fragments + skills，manifest.vars.version 作统一版本）：
 #   dist/ai-rule-pack.zip             —— 内容包（pack.json + manifest.json + fragments/ + skills/）
-#   dist/latest.json                  —— 更新检查清单（版本 + zip SHA-256），随 Release 上传
-# exe 启动时拉 latest.json 比对本地缓存版本，新版本自动下载校验；无网络回退内嵌资源。
+#   dist/latest.json                  —— 更新检查清单（统一版本 + exe / zip SHA-256），随 Release 上传
+# 统一版本口径：exe 与内容包共用 manifest.vars.version，exe 侧经 InformationalVersion 注入；
+# 交互启动时拉 latest.json 一次，统一版本同时对照 exe 与生效内容两个基准，发现更新弹确认（默认更新），下载校验后落位；无网络回退内嵌资源。
 # 用法：
 #   ./publish.sh [rid ...]                         默认 win-x64 linux-x64 osx-x64
 #   ./publish.sh --framework-dependent [rid ...]   退回框架相关发布（目标机需自装 .NET 10 运行时）
@@ -31,6 +32,12 @@ repo_root="$(cd "$here/../.." && pwd)"
 dist_directory="$repo_root/dist"
 mkdir -p "$dist_directory"
 
+# 统一版本：exe 与内容包共用 manifest.vars.version，构建前先读出以注入 InformationalVersion
+version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$repo_root/fragments/manifest.json" | head -1)"
+if [ -z "$version" ]; then
+  echo "manifest.vars.version 为空，无法确定发布版本" >&2
+  exit 1
+fi
 publish_args=()
 if $framework_dependent; then
   publish_args+=(--self-contained false)
@@ -41,10 +48,12 @@ fi
 published=()
 for rid in "${rids[@]}"; do
   echo ""
-  echo "发布 $rid（单文件，self-contained）..."
+  echo "发布 $rid（单文件，self-contained，版本 $version）..."
   dotnet publish -c Release -r "$rid" "${publish_args[@]}" \
     -p:PublishSingleFile=true \
-    -p:IncludeNativeLibrariesForSelfExtract=true
+    -p:IncludeNativeLibrariesForSelfExtract=true \
+    -p:IncludeSourceRevisionInInformationalVersion=false \
+    -p:InformationalVersion="$version"
 
   binary_name="use-ai-rule"
   case "$rid" in
@@ -73,11 +82,6 @@ done
 
 # ── merged 内容包：fragments + skills 打 zip，pack.json 记录版本与逐文件 SHA-256 ──
 if [ "$skip_pack" = false ]; then
-  version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$repo_root/fragments/manifest.json" | head -1)"
-  if [ -z "$version" ]; then
-    echo "manifest.vars.version 为空，无法确定内容包版本" >&2
-    exit 1
-  fi
 
   stage_directory="$repo_root/dist/pack-stage"
   rm -rf "$stage_directory"
@@ -109,7 +113,9 @@ PYEOF
   rm -f "$pack_zip"
   (cd "$stage_directory" && zip -q -r -X "$pack_zip" .)
   win_exe_sha256="$(sha256sum "$dist_directory/use-ai-rule.exe" | cut -d' ' -f1)"
-  printf '{\n  "version": "%s",\n  "engine_sha256": "%s",\n  "sha256": "%s"\n}\n' "$version" "$win_exe_sha256" "$zip_sha256" > "$dist_directory/latest.json"
+  zip_sha256="$(sha256sum "$pack_zip" | cut -d' ' -f1)"
+  # engine_version 是旧版 exe（2.x 引擎轨道）的兼容字段，写同值助其一次性迁移到新 exe
+  printf '{\n  "version": "%s",\n  "engine_version": "%s",\n  "engine_sha256": "%s",\n  "sha256": "%s"\n}\n' "$version" "$version" "$win_exe_sha256" "$zip_sha256" > "$dist_directory/latest.json"
 
   rm -rf "$stage_directory"
   echo ""

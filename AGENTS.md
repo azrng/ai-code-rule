@@ -20,7 +20,7 @@
 
 其中技能（skills）类条目直接修改 `skills/` 对应技能目录并核对内容（对照上游官方源或实战项目），无需 emit 基线刷新；但由于内容包随发布统一携带版本号，技能变更后发内容包时同样递增 `vars.version`（emit 基线仍只在 fragments 变更时刷新），修正后由目标项目重新导入或 `--upgrade` 重放同步（同名技能先删后写），回执口径与规则条目一致。
 
-发布形态为「exe 引擎 + merged 内容包」分离，由 `.github/workflows/release.yml` 在推送 master 时自动发布：引擎版本 `2.<run_number>` 由 CI 按流水线号自动递增（tag = v2.x，exe 只是生成器程序本身）；内容包版本取 `fragments/manifest.json` 的 `vars.version`（改 fragments / skills 必须升版，emit 基线仍只在规则变更时刷新）。`latest.json` 同时携带两个版本，旧版 exe 更新检查只认内容包版本字段。仅生成器代码（`app/RuleAssembler/`）变更直接推 master 即可，CI 自动出新 exe；内容包随每次发布全量重打。exe 启动时经 PackResolver 决定内容来源：`--pack` 指定包 → `--offline` 本地缓存 → 交互模式更新检查（latest.json，失败降级）→ 程序集内嵌资源兜底，单 exe 无网络永远可用。
+发布形态为「exe + merged 内容包」双产物统一版本：由 `.github/workflows/release.yml` 在推送 master 时自动发布，版本唯一事实源是 `fragments/manifest.json` 的 `vars.version`（`x.y.z`），exe（InformationalVersion 注入）、内容包、Release tag（v<版本>）、latest.json 同源；改 fragments / skills / 生成器代码都必须升版（emit 基线仍只在规则内容变更时刷新），CI 对 push 触发的发布校验版本严格大于已发布最高 tag，不升版直接失败。latest.json 的 `engine_version` 是旧版 exe（2.x 引擎轨道口径）的兼容字段、写同值，助其一次性迁移到新 exe；新 exe 更新检查把统一版本同时对照 exe 与生效内容两个基准，任一落后即确认后一起更新（内容包下载校验落位 + exe 按 engine_sha256 校验原子替换），任一安装成功自动重启进程生效，部分失败的版本差下次启动自动补齐。仅生成器代码（`app/RuleAssembler/`）变更同样升版推 master，CI 自动出新 exe；内容包随每次发布全量重打。exe 启动时经 PackResolver 决定内容来源：`--pack` 指定包 → `--offline` 本地缓存 → 程序集内嵌资源兜底（缓存与内嵌谁新用谁，无条件比较），交互模式启动时另做一次性更新检查（latest.json，失败降级），单 exe 无网络永远可用。
 
 其中「冗余」反馈的判定、证据门槛与候选规则维护在 `doc/规则退役清单.md`，不得凭单次体验删除规则。
 

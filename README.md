@@ -173,24 +173,23 @@ fragments/
 推送 `master` 后 GitHub Actions（`.github/workflows/release.yml`）自动完成发布，产物：
 
 ```text
-GitHub Release（tag = v<引擎版本>，如 v2.17）
-├── use-ai-rule.exe          # 引擎，win-x64 框架依赖单文件（需自装 .NET 10 运行时）
+GitHub Release（tag = v<统一版本>，如 v3.0.0）
+├── use-ai-rule.exe          # win-x64 框架依赖单文件（需自装 .NET 10 运行时），版本经 InformationalVersion 注入
 ├── ai-rule-pack.zip         # 内容包：pack.json（版本 + 逐文件 SHA-256）+ manifest.json + fragments/ + skills/
-└── latest.json              # 更新检查清单：version（内容包版本）+ engine_version + engine_sha256 + zip SHA-256
+└── latest.json              # 更新检查清单：version（统一版本）+ engine_version（旧 exe 兼容字段，同值）+ engine_sha256 + zip SHA-256
 ```
 
-双版本口径，各自独立演进：
+统一版本口径：exe、内容包、Release tag、latest.json 共用同一个版本号，事实源是
+`fragments/manifest.json` 的 `vars.version`。改 fragments / skills / 生成器代码都必须升版
+（emit 基线仍只在规则内容变更时刷）；CI 对 push 触发的发布校验版本严格大于已发布最高 tag，
+不升版直接失败——每次发布都产出新用户可检测到的更新。版本号用 `x.y.z`：规则 / 技能内容演进
+递增次版本或补丁位，生成器代码变更同样升版（同一版本 = 同一套完整能力）。
 
-| 版本 | 事实源 | 递增时机 |
-|---|---|---|
-| 引擎版本（如 `2.17`） | CI 生成 `2.<run_number>`，随每次发布自动 +1 | 每次推送 master |
-| 内容包版本（如 `1.95.0`） | `fragments/manifest.json` 的 `vars.version` | 改 fragments / skills 时手动升版（emit 基线仍只在规则变更时刷） |
-
-exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需升内容包版本并推送，CI 自动发新内容包：
+exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需升版并推送，CI 自动发新版本：
 
 1. `--pack <zip|目录>`：显式指定内容包（zip 或已解包目录），SHA-256 校验失败直接报错退出；
 2. `--offline`：跳过网络检查，用本地缓存（`%LOCALAPPDATA%\use-ai-rule\packs\<版本>\`），无缓存则内嵌资源；
-3. 交互模式（无参数启动）：启动时拉取 Release 的 `latest.json`（3 秒超时），发现新引擎**直接下载替换**当前 exe（下载后按 `engine_sha256` 做 SHA-256 校验，不匹配 / 字段缺失拒绝替换），下次启动生效，本次会话继续用旧引擎；选定会用到内容包的操作后再询问一次内容包更新，同意后下载、整包 + 逐文件双重 SHA-256 校验、原子落盘切版本指针，**安装成功后自动重启生成器**（新进程从缓存加载新内容包即时生效，与引擎「重启生效」同一口径；重启后版本一致不再提示），避免继续用启动时加载的旧内容生成、把配方版本回写降级；
+3. 交互模式（无参数启动）：显示「检查更新中…」加载动画并拉取 Release 的 `latest.json` 一次（3 秒超时），统一版本同时对照 exe 与生效内容两个基准，任一落后即弹一次确认（默认更新，说明会动什么）：内容包下载后做整包 + 逐文件双重 SHA-256 校验、原子落盘切版本指针；exe 下载后按 `engine_sha256` 校验并原子替换当前 exe（字段缺失 / 校验不匹配拒绝替换）。任一安装成功后**自动重启生成器**（新进程 = 新 exe + 缓存新内容包即时生效；重启后版本一致不再提示），避免继续用启动时加载的旧内容生成、把配方版本回写降级；上次更新部分失败留下的版本差（如 exe 已换、内容包没下成），下次启动检查只补齐仍落后的一方；本地缓存与内嵌资源的「谁新用谁」比较在来源解析时无条件完成，与是否联网更新无关，拒绝更新后直接用当前生效来源；
 4. 命令行模式（带参数启动）：不做网络检查，直接用本地缓存或内嵌资源；
 5. 程序集内嵌资源：编译期固化的兜底，单 exe 无网络永远可用。
 

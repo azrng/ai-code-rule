@@ -115,4 +115,8 @@ internal sealed class PlainConsoleUi : IConsoleUi
         foreach (var file in files)
             Console.WriteLine($"  - {file}");
     }
+
+    // 纯文本 / 管道场景不做动画：直接执行（stdout 是日志与编号交互流，插帧只会污染它）
+    public T WithProgress<T>(string label, Func<T> action)
+        => action();
 }

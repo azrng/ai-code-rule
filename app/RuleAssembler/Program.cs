@@ -22,8 +22,8 @@ internal static class Program
                 PackResolver.CleanupEngineUpdateResidue(currentExe);
 
 
-            // 内容包解析只决定来源（--pack / 缓存 / 内嵌兜底），绝不产生网络副作用；
-            // 更新检查是惰性的：交互模式选定「会用到内容包的操作」后才检查（见 RunInteractive）
+            // 内容包解析只决定来源（--pack / 缓存 / 内嵌兜底，缓存与内嵌谁新用谁），绝不产生网络副作用；
+            // 更新检查在交互模式启动时统一做一次（见 TryCheckUpdates）
             var packArgs = args;
             var resolution = PackResolver.Resolve(packArgs);
             foreach (var line in resolution.Logs)
@@ -32,9 +32,10 @@ internal static class Program
             var resources = new ResourceStore(resolution.Provider);
             var manifest = new ManifestLoader(resources).Load();
 
-            // 双版本口径：引擎版本（CI 发布经 USE_AI_RULE_ENGINE_VERSION 注入；未注入时回退
-            // 程序集 InformationalVersion，本地开发为空则显示 dev）与内容包版本
-            // （manifest.vars，规则与技能的事实源）分开展示，各自独立演进
+            // 统一版本口径：exe 版本与内容包版本同源（manifest.vars.version，CI 构建经
+            // InformationalVersion 注入）。程序内读回：CI 产物 = 发布版本；本地开发构建未注入
+            // 时为空显示 dev（dev 解析失败视为不比任何远端版本新，不触发自更新）；
+            // USE_AI_RULE_ENGINE_VERSION 仅供本地调试覆盖显示
             var engineVersion = Environment.GetEnvironmentVariable("USE_AI_RULE_ENGINE_VERSION");
             if (string.IsNullOrWhiteSpace(engineVersion))
             {
@@ -43,31 +44,63 @@ internal static class Program
                 engineVersion = string.IsNullOrWhiteSpace(informational) ? "dev" : informational;
             }
 
-            Console.WriteLine($"use-ai-rule 引擎 {engineVersion}（内容包 {manifest.Vars.Version}，{manifest.Vars.LastUpdated}）");
+            // 正常状态两个版本相等只显一个；不等说明上次更新只部分生效（如引擎已换、内容包
+            // 下载失败），此时如实展示双版本——启动更新检查会自动把落后的一方补齐
+            Console.WriteLine(engineVersion == manifest.Vars.Version
+                ? $"use-ai-rule {engineVersion}（{manifest.Vars.LastUpdated}）"
+                : $"use-ai-rule {engineVersion}（内容包 {manifest.Vars.Version}，{manifest.Vars.LastUpdated}，版本不一致：启动更新检查将尝试补齐）");
 
             // 带参模式走命令行分发（--check / --emit / --plan / --detect / --upgrade / --recipe 等），
-            // 不做交互与引擎更新，避免脚本调用出网络副作用
+            // 不做交互与更新检查，避免脚本调用出网络副作用
             if (StripPackArgs(ref packArgs))
             {
                 var skills = new SkillsStore(resolution.Provider);
                 return RunCommand(packArgs, manifest, resources, skills);
             }
 
-            // 引擎在线自更新：交互模式启动时静默查一次引擎版本（带参模式不查，避免脚本调用出网络副作用；
-            // --pack 指定包模式同理）。发现新引擎直接下载并原子替换 exe，下次启动生效，本次会话继续用旧引擎；
-            // 查版本 / 下载任何失败都只告警降级，旧引擎配合缓存 / 内嵌内容照常可用
+            // 启动统一更新检查（仅交互模式；带参命令与 --offline / --pack 模式绝不联网）：
+            // 一次 latest.json 拉取，统一版本同时对照 exe 与生效内容两个基准，弹一次确认（默认更新）。
+            // 安装成功后自动重启生成器——exe 已原子替换落位、内容包已切缓存指针，
+            // 重启拉起的进程即刻用上新程序与新内容，避免继续按启动时加载的旧内容生成、
+            // 把配方版本回写降级；重启后版本一致不再提示，天然防循环。
+            // stdin 重定向（管道冒烟 / CI）只报告不更新：自动化场景不弹窗、不下载、不重启
             if (!args.Contains("--offline", StringComparer.OrdinalIgnoreCase) && resolution.Source != "pack")
             {
-                var latestEngine = PackResolver.TryFetchLatestEngineVersion();
-                if (latestEngine is not null && PackResolver.IsEngineNewer(latestEngine.Value.Version, engineVersion))
+                // 检查包一层转圈：latest.json 拉取最多阻塞 3 秒，无反馈时启动看起来像卡死；
+                // 降级说明（[pack] 更新检查超时…）在动画收尾后输出，纯文本场景不插帧
+                IConsoleUi startupUi = CreateUi();
+                var updateLogs = new List<string>();
+                var offer = startupUi.WithProgress(
+                    "检查更新中…",
+                    () => PackResolver.TryFetchUpdateOffer(engineVersion, manifest.Vars.Version, updateLogs));
+                foreach (var line in updateLogs)
+                    Console.WriteLine(line);
+
+                if (offer is { HasAnyUpdate: true })
                 {
-                    PackResolver.TryUpdateEngine(engineVersion, latestEngine.Value.Version, latestEngine.Value.Sha256);
+                    if (Console.IsInputRedirected)
+                    {
+                        Console.WriteLine($"[update] 检测到更新：{offer.Describe()}（非交互输入，跳过更新）");
+                    }
+                    else
+                    {
+                        var installed = PackResolver.ApplyUpdates(
+                            offer,
+                            o => AnsiConsole.Confirm(
+                                $"发现更新：{o.Describe()}，是否更新？",
+                                defaultValue: true));
+                        if (installed)
+                        {
+                            Console.WriteLine("[update] 更新完成，即将自动重启生成器（重启后直接继续操作）…");
+                            RestartSelf();
+                        }
+                    }
                 }
             }
 
 
             var interactiveSkills = new SkillsStore(resolution.Provider);
-            return RunInteractive(manifest, resources, interactiveSkills, engineVersion);
+            return RunInteractive(manifest, resources, interactiveSkills);
         }
         catch (Exception ex)
         {
@@ -141,9 +174,9 @@ internal static class Program
 
     // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染；
     // 旧 Profile 渲染路径与 profiles 节点已整体退役，组合内核是唯一渲染路径。
-    // 内容包更新检查是惰性的：只有选定「生成规则 / 仅导入 Skills」这类真正用到内容包的
-    // 操作后才检查一次（仅查看检测不查，避免不干活也出网络请求）
-    private static int RunInteractive(Manifest manifest, ResourceStore resources, SkillsStore skillsStore, string engineVersion)
+    // 更新检查已在 Main 启动阶段统一完成（一次 latest.json 对照 exe 与生效内容两个基准），
+    // 本流程不再产生网络请求
+    private static int RunInteractive(Manifest manifest, ResourceStore resources, SkillsStore skillsStore)
     {
         Console.WriteLine(Banner);
         Console.WriteLine($"当前目录：{Environment.CurrentDirectory}");
@@ -175,21 +208,6 @@ internal static class Program
         if (mode == 1)
             return DetectInteractive(manifest, ui, Environment.CurrentDirectory);
 
-        // 进入真正用到内容包的路径：此刻才做内容包更新检查（失败静默降级）。
-        // 安装成功返回新包解析结果：必须重启进程重新 Resolve，让新内容（与新引擎）即时生效；
-        // 若继续用启动时加载的旧 manifest，会静默按旧版生成并把配方版本回写降级。
-        // 重启后 IsNewer 不再成立，天然防循环；与引擎自更新「落位后重启生效」同一口径
-        if (mode == 0 || mode == 2)
-        {
-            var refreshed = PackResolver.CheckForUpdates(
-                manifest.Vars.Version,
-                version => AnsiConsole.Confirm($"发现内容包新版本 {version}，是否更新？（当前 {manifest.Vars.Version}）", defaultValue: true));
-            if (refreshed is not null)
-            {
-                Console.WriteLine($"[pack] 内容包已生效，即将自动重启生成器（重启后无更新提示，直接继续操作）…");
-                RestartSelf();
-            }
-        }
 
         if (mode == 2)
             return ImportSkillsOnly(ui, skillsStore, manifest);

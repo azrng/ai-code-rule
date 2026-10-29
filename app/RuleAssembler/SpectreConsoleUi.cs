@@ -95,6 +95,13 @@ internal sealed class SpectreConsoleUi : IConsoleUi
     // Spectre.Console 要求 PageSize >= 3：选项行数不足 3（如汇总确认只有 1 项 + 取消）时取下限，超长列表封顶 12
     internal static int PageBudget(int rowCount) => Math.Clamp(rowCount, 3, 12);
 
+    // Status 动画（转圈）包裹阻塞操作；网络失败等异常直接向外传播，动画由 using 正常收尾
+    public T WithProgress<T>(string label, Func<T> action)
+        => AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .SpinnerStyle(Style.Parse("grey"))
+            .Start(label, _ => action());
+
     public void Head(string text)
     {
         AnsiConsole.MarkupLine($"[bold cyan]{Markup.Escape(text)}[/]");

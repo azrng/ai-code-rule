@@ -46,6 +46,10 @@ internal sealed class ScriptedConsoleUi : IConsoleUi
         return selected.ToList();
     }
 
+    // 脚本化实现不做动画：直接执行
+    public T WithProgress<T>(string label, Func<T> action)
+        => action();
+
     public void Head(string text) => Lines.Add(text);
 
     public void Line(string text) => Lines.Add(text);

@@ -2,10 +2,12 @@
 # 目标机需自装 .NET 10 运行时（https://dotnet.microsoft.com/download/dotnet/10.0）。
 # 产物：
 #   dist/use-ai-rule.exe              —— win-x64 framework-dependent 单文件（体积小，跟随运行时更新）
-# 同时打包 merged 内容包（fragments + skills，manifest.vars.version 作包版本）：
+# 同时打包 merged 内容包（fragments + skills，manifest.vars.version 作统一版本）：
 #   dist/ai-rule-pack.zip             —— 内容包（pack.json + manifest.json + fragments/ + skills/）
-#   dist/latest.json                  —— 更新检查清单（版本 + zip SHA-256），随 Release 上传
-# exe 启动时拉 latest.json 比对本地缓存版本，新版本自动下载校验；无网络回退内嵌资源。
+#   dist/latest.json                  —— 更新检查清单（统一版本 + exe / zip SHA-256），随 Release 上传
+# 统一版本口径：exe 与内容包共用 manifest.vars.version，exe 侧经 InformationalVersion 注入，
+# banner 与更新检查基准都读它；交互启动时拉 latest.json 一次，统一版本同时对照 exe 与生效内容
+# 两个基准，发现更新弹确认（默认更新），下载校验后落位；无网络回退内嵌资源。
 # 参数：
 #   -SkipPack                   只发布 exe，不重打内容包
 param(
@@ -35,12 +37,21 @@ function Get-Sha256 {
 $distDirectory = Join-Path $repoRoot 'dist'
 New-Item -ItemType Directory -Path $distDirectory -Force | Out-Null
 
-Write-Host "发布 win-x64（框架依赖，单文件）..."
+# 统一版本：exe 与内容包共用 manifest.vars.version，构建 exe 前先读出以注入 InformationalVersion
+$manifestPath = Join-Path $repoRoot 'fragments/manifest.json'
+# 显式 UTF8：PS 5.1 对无 BOM 文件默认按系统 ANSI 解码，中文乱码会导致 ConvertFrom-Json 失败
+$manifestJson = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$version = $manifestJson.vars.version
+if (-not $version) { throw 'manifest.vars.version 为空，无法确定发布版本' }
+
+Write-Host "发布 win-x64（框架依赖，单文件，版本 $version）..."
 dotnet publish app/RuleAssembler/RuleAssembler.csproj -c Release `
   -r win-x64 `
   --self-contained false `
   -p:PublishSingleFile=true `
-  -p:IncludeNativeLibrariesForSelfExtract=true
+  -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:IncludeSourceRevisionInInformationalVersion=false `
+  -p:InformationalVersion=$version
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish win-x64 失败，退出码：$LASTEXITCODE"
 }
@@ -54,12 +65,6 @@ Copy-Item -LiteralPath $publishedBinary -Destination $distBinary -Force
 
 # ── merged 内容包：fragments + skills 打 zip，pack.json 记录版本与逐文件 SHA-256 ──
 if (-not $SkipPack) {
-    $manifestPath = Join-Path $repoRoot 'fragments/manifest.json'
-    # 显式 UTF8：PS 5.1 对无 BOM 文件默认按系统 ANSI 解码，中文乱码会导致 ConvertFrom-Json 失败
-    $manifestJson = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $version = $manifestJson.vars.version
-    if (-not $version) { throw "manifest.vars.version 为空，无法确定内容包版本" }
-
     $stageDirectory = Join-Path $repoRoot 'dist/pack-stage'
     if (Test-Path $stageDirectory) { Remove-Item -Recurse -Force $stageDirectory }
     New-Item -ItemType Directory -Path $stageDirectory | Out-Null
@@ -90,8 +95,12 @@ if (-not $SkipPack) {
     if (Test-Path $packZip) { Remove-Item -Force $packZip }
     Compress-Archive -Path (Join-Path $stageDirectory '*') -DestinationPath $packZip -CompressionLevel Optimal
 
+    # latest.json（统一版本）：version 同时是 exe 与内容包的目标版本；
+    # engine_sha256 供确认后自更新做下载完整性校验（缺省则跳过引擎替换）；
+    # engine_version 是旧版 exe（2.x 引擎轨道）的兼容字段，写同值助其一次性迁移到新 exe
     $latest = [ordered]@{
         version = $version
+        engine_version = $version
         engine_sha256 = Get-Sha256 $distBinary
         sha256 = Get-Sha256 $packZip
     }
@@ -113,4 +122,4 @@ if (-not $SkipPack) {
 }
 
 Write-Host ""
-Write-Host "发布完成：$distBinary（win-x64）"
+Write-Host "发布完成：$distBinary（win-x64，版本 $version）"
