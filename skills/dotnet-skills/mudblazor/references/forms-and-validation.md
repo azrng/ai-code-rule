@@ -67,7 +67,7 @@
 - **MudForm 内禁用 `ButtonType.Submit` 按钮**（官方 FormPage.razor 明确警告）；MudForm 没有 `OnValidSubmit`，提交逻辑自己写（按钮 `OnClick` → `ValidateAsync()` → 判 `IsValid`）
 - 想 Enter 触发：`MudForm.OnEnterPressed` 事件
 - `MudFormItem` 组件在 v9 **不存在**；嵌套表单直接放 `<MudForm>`
-- 表单级 `Validation` 只作用于带 `For` 的子控件；无 `For` 的子控件必须各自设 `Validation`
+- **表单级 `Validation` 委托只分发给设置了 `For` 的子控件**：子控件只有 `@bind-Value` 没有 `For` 时校验**静默不触发**（不报错、不显示错误，空值直接通过），长期靠后端兜底才暴露。仅做必填校验时直接用字段级 `Required="true" RequiredError="..."`，不要手搓表单级委托；要用表单级委托（如 FluentValidation 集成）必须确认每个待校验控件都设了 `For`
 - 错误列表属性叫 `ValidationErrors`（控件级，`List<string>`）；表单级叫 `Errors`
 - `MudTextField` 默认 Enter/失焦才更新绑定值；`Immediate="true"` 或 `DebounceInterval>0`（隐式启用即时）才逐键更新，配合 `ValidationDelay` 防抖
 

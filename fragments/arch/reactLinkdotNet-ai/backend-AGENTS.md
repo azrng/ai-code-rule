@@ -188,6 +188,7 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - AI 测试：mock `IChatClient`，不真实调用模型服务；Repository 测试注意 SQLite In-Memory 与 PostgreSQL 的行为差异
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
+<!-- include: shared/backend/background-write-races.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

@@ -102,6 +102,7 @@ src/AppName/
 <!-- include: shared/application/application-layer-testing.md -->
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
+<!-- include: shared/backend/background-write-races.md -->
 
 <!-- include: shared/desktop/external-dependencies.md -->
 

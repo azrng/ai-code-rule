@@ -12,6 +12,8 @@
 
 | ID | 任务名称 | 任务目标 | 当前阶段 | 负责人 | 状态 | 优先级 | 最近更新 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RULE-20261103-FEEDBACK-02 | 承接 2026-11-02 五条反馈 + 两条追加 | dotnet-build-isolation 补冒烟环境变量隔离不可靠；local-data-safety 补口令试错风险；新建 background-write-races（fire-and-forget 竞态）挂 12 处；backend-testing + 两内联小节补 slnx 登记核对；browser-walkthrough 技能补受控输入同轮次；mudblazor 补 MudForm For 警示；S3Store 核实 1.2.0 已由包侧落实；升 3.0.2 | 已完成并验证：--check 36 样例、240 测试与基线全绿、干净缓存 emit 传导面逐一核对（slnx 11 组合、竞态/隔离 17 组合） | Codex | DONE | 高 | 2026-11-03 |
+| RULE-20261103-FEEDBACK | 承接 2026-11-01 NotFound 反馈 | dotnetBlazorWebApp/ui#预渲染与生命周期：404 规则拆两类——路由兜底三件配齐（带路由 NotFound 页 + NotFoundPage + UseStatusCodePagesWithReExecute）、组件内数据判定 404 才调 NotFound() 且紧跟 return，NotFound 页内禁调 NotFound()（re-execute 重入空 body）；升 3.0.1 | 已完成并验证：--check 36 样例、240 测试与基线刷新全绿、emit 传导仅两 Blazor WebApp 组合受影响 | Codex | DONE | 高 | 2026-11-03 |
 | RULE-20261028-REVIEW-FIX | 审查修复批（v2.8.2） | 修 WebApp 走查错挂小节；-ai 补构建隔离、三桌面骨架补 logging-rules；pytest 示例改 pytest_asyncio；antd/Element yaml 口径；常见任务入口 38 处收敛、触发条件 12 处删除；intro-quote 全链清理 | 已完成并验证：238 测试与基线全绿、--check 36 样例通过、emit 传导抽查通过 | ZCode | DONE | 高 | 2026-10-28 |
 | RULE-20261027-SIMPLIFY | 规则体系复杂度精简 | 全删 target-list 机制；.NET 并行隔离下沉 .NET 载体片段；契约回退、POC 门控、暂存禁令、dev-stage 原型行去重瘦身；删 2 死 infra 文件；升 2.6.0 | 已完成并验证：238 项测试与基线全绿、--check 34 样例通过、emit 产物抽查口径正确 | Codex | DONE | 高 | 2026-10-27 |
 | RULE-20261027-FEEDBACK | 承接 2026-10-27 六条规则效果反馈 | collaboration#Git、验证与交付：构造索引底稿取编辑后工作区（编辑前快照仅归因）；#并行会话隔离：check-ignore 排查静默忽略、隔离仅改 OutputPath 不动 obj；core-libs 存量例外（未引 Common.HttpClients 沿用原生 HttpClient）；ui 新增 browser-walkthrough 片段接两个 ui-AGENTS；mudblazor skill 补 MudDatePicker @bind-Date 陷阱；升 2.5.5 | 已完成并验证：--check 34 样例、238 项测试、基线刷新全绿、产物传导抽查通过 | Codex | DONE | 高 | 2026-10-27 |

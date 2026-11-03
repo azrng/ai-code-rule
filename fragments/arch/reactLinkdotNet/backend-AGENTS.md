@@ -116,6 +116,7 @@ backend/
 <!-- include: shared/backend/backend-testing.md -->
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
+<!-- include: shared/backend/background-write-races.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

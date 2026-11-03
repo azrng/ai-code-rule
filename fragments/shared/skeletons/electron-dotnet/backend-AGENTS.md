@@ -213,6 +213,7 @@ IPC Handler / Event（JSON-RPC method）
 <!-- include: shared/backend/logging-rules.md -->
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
+<!-- include: shared/backend/background-write-races.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 
