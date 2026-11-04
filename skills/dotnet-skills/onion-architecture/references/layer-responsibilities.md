@@ -540,8 +540,16 @@ public sealed class Startup
     public void RegisterServices(IServiceCollection services)
     {
         services.AddControllers();
+
+        // 成功路径包装（Swagger 等前缀不包装）
         services.AddMvcResultPackFilter("/swagger");
+        // 模型校验失败统一结果
         services.AddMvcModelVerifyFilter();
+
+        services.AddEntityFramework<AppDbContext>(options =>
+        {
+            options.ConnectionString = _configuration.GetConnectionString("DefaultConnection")!;
+        });
         services.RegisterBusinessServices("YourProject.*.dll");
 
         // CORS：默认放开任意来源（仅开发联调，开箱即用）；生产按需改 AddCorsByOrigins 读配置白名单
@@ -577,7 +585,44 @@ public sealed class Startup
 
 > 控制器直接转发 AppService 返回的 `Task<T>`，无需 `Ok()` 包装——`CustomResultPackFilter` 自动把 `Task<T>` 的结果包成 `ResultModel<T>`（含 isSuccess/isFailure/code/message/data/errors）。错误路径在 AppService 里 `throw new ParameterException(msg)`，由 `app.UseGlobalException()` 兜底。
 
-Service 中如需提供 `wwwroot/index.html` 联调页，在 `MapControllers()` 前调用 `app.UseDefaultFiles()` 和 `app.UseStaticFiles()`。SQL 迁移脚本放在 `Service/wwwroot/MigrationSql/`，代码通过 `ContentRootPath` 组合出绝对路径。文件下载 action 返回 `FileResult` 时包装过滤器会自动跳过；如果返回其它原始 `IActionResult`，可使用 `Azrng.AspNetCore.Core.Filter.NoWrapperAttribute`。
+Service 中如需提供 `wwwroot/index.html` 联调页，在 `MapControllers()` 前调用 `app.UseDefaultFiles()` 和 `app.UseStaticFiles()`。SQL 迁移脚本放在 `Service/wwwroot/MigrationSql/`，代码通过 `ContentRootPath` 组合出绝对路径。
+
+### Swagger 与静态文件装配
+
+Swagger 注册用 `services.AddDefaultSwaggerGen(title: "项目名称", showJwtToken: ...)`（Azrng.Swashbuckle，禁止直接引 Swashbuckle.AspNetCore；签名以锁定版本为准，当前基线 0.4.0，源码核实）。`showJwtToken` 默认 `false`：开启会向 OpenAPI 文档声明全局 Bearer 安全要求（`AddSecurityRequirement`）、改变接口契约——**仅在认证方案就绪（已注册 JWT 认证 + 授权策略）后传 `true`**，并与 `app.UseAuthentication()` / `app.UseAuthorization()` 一起验证；无认证的服务保持默认，不要提前开启。
+
+当前 `UseDefaultSwagger` 行为（0.4.0 源码核实）：`onlyDevelopmentEnabled: true` 时仅当 `ASPNETCORE_ENVIRONMENT` 为 `Development` 才注册 Swagger；传 `false`（默认值）时所有环境都注册。默认不传自定义 UI 配置时，UI 的 `RoutePrefix` 为空，即访问根路径 `/`；JSON 端点是 `/swagger/v1/swagger.json`。
+
+需要把 UI 放到 `/swagger` 时显式设置路由前缀：
+
+```csharp
+app.UseDefaultSwagger(
+    onlyDevelopmentEnabled: false,
+    action: options =>
+    {
+        options.RoutePrefix = "swagger";
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "App API v1");
+    });
+```
+
+生产环境不需要开放 Swagger 时使用 `onlyDevelopmentEnabled: true`，不要依赖约定中的 `SwaggerAPI` 路径。
+
+### 文件下载与原始响应
+
+`NoWrapperAttribute` 位于 `Azrng.AspNetCore.Core.Filter`。包装过滤器本身会自动跳过 `FileResult`，因此 `return File(...)` 通常不需要 `[NoWrapper]`；如果 action 返回的是其它原始 `IActionResult`，可以显式加 `[NoWrapper]` 作为保护。
+
+```csharp
+using Azrng.AspNetCore.Core.Filter;
+using Microsoft.AspNetCore.Mvc;
+
+[HttpGet("download/{id:long}")]
+[NoWrapper]
+public async Task<IActionResult> Download(long id)
+{
+    var (originalName, content) = await _materialAppService.DownloadAsync(id);
+    return File(content, "application/octet-stream", originalName);
+}
+```
 
 ---
 
