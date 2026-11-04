@@ -154,7 +154,7 @@ src/
 - 数据访问默认直接注入 `Common.EFCore` 提供的 `IBaseRepository<T>`，不为每个实体创建自定义仓储；仅当查询逻辑复杂、需要封装复用时才定义 `I{实体名}Repository`（接口放 `IDomain/{业务域}/`，实现放 `EntityFramework/Repositories/`）。
 - 使用 LINQ 查询，避免原生 SQL。
 - 多步原子写操作优先使用 `IUnitOfWork` 事务，不直接操作 `IDbContextTransaction`。
-- 读查询默认不包事务：单语句读（含 join / 子查询 / GROUP BY）在 READ COMMITTED 下自带一致快照；需要跨语句一致时优先折进单语句表达，其次靠写侧 CAS + 唯一约束 + 重读复检栅栏。事务级快照（RepeatableRead / Serializable）仅用于「多条语句必须互相一致且不一致会引发错误行为」的场景，隔离级别说不出对应不变量就不包；NEVER 把外部调用（SSO / HTTP / 第三方）圈进读事务，NEVER 把重读栅栏的首读与复检放进同一个快照事务。
+<!-- include: shared/backend/read-transaction-rules.md -->
 - 软删除统一使用实体基类的 `Deleted` 字段；包不自动做全局过滤，默认在查询中显式过滤 `!x.Deleted`，或在实体配置类中统一配置查询过滤器。
 - EF Core 实体配置类（`{实体名}Etc.cs`）在此层定义，DbContext 通过 `ApplyConfigurationsFromAssembly` 扫描应用。
 - 新增实体必须三处同步：实体类、DbContext 的 `DbSet<{实体名}>`、`{实体名}Etc.cs` 配置类；表名以配置类的 `ToTable` 为准，迁移 SQL 的表名必须与之一致——只登记 DbSet 不建配置类时 EF 模型缺失，运行期才暴露。
@@ -165,6 +165,7 @@ src/
 - 封装第三方 SDK 集成。
 - 提供统一的错误处理和重试机制。
 - 外部服务响应与内部模型转换在此层完成。
+- 红线：Ho 不得离开 Adapter——`I{X}Adapter` 接口签名与 Adapter 对外返回值一律用业务对象 Bo（`IDomain/Adapter/Bo/{外部系统}/`），Ho 定义在 `Adapter/Ho/{外部系统}/`，Bo↔Ho 转换只在 Adapter 实现内完成；Ho 出现在 Adapter 之外（IDomain / Domain / Application 引用 Ho 类型）即依赖方向违规，外部协议变更会波及业务层。
 
 ### Core（基础层）规则
 - 提供全局共享的 DTO、枚举、常量。
