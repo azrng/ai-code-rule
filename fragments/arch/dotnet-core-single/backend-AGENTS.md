@@ -174,6 +174,7 @@ Controllers → Application → Domain ← Infrastructure
 - 数据访问默认直接注入 `Common.EFCore` 提供的 `IBaseRepository<T>`，不自建仓储层；只读查询优先使用 `EntitiesNoTacking`。
 - 使用 LINQ 查询，避免原生 SQL。
 - 多步原子写操作优先使用 `IUnitOfWork` 事务，不直接操作 `IDbContextTransaction`。
+- 读查询默认不包事务：单语句读（含 join / 子查询 / GROUP BY）在 READ COMMITTED 下自带一致快照；需要跨语句一致时优先折进单语句表达，其次靠写侧 CAS + 唯一约束 + 重读复检栅栏。事务级快照（RepeatableRead / Serializable）仅用于「多条语句必须互相一致且不一致会引发错误行为」的场景，隔离级别说不出对应不变量就不包；NEVER 把外部调用（SSO / HTTP / 第三方）圈进读事务，NEVER 把重读栅栏的首读与复检放进同一个快照事务。
 - 分页列表查询使用 `GetPageRequest` + `ToPageListAsync` + `GetQueryPageResult<T>`，不手写 `CountAsync()` + `Skip().Take()`。
 - 软删除统一使用实体基类的 `Deleted` 字段；包不自动做全局过滤，默认在查询中显式过滤 `!x.Deleted`，或在实体配置类中统一配置查询过滤器。
 - DbContext 与 EF Core 实体配置类（`{实体名}Etc.cs`）放 `Infrastructure/Data/`，DbContext 通过 `ApplyConfigurationsFromAssembly` 扫描应用配置。

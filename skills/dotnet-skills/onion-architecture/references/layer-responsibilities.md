@@ -89,25 +89,6 @@ public class Product : IdentityOperatorStatusEntity   // Id + 审计 + 软删除
 }
 ```
 
-#### 外部存储契约
-
-文件或对象存储属于可替换的外部适配能力。面向业务的接口放在 `IDomain`（例如 `IDomain/Storage/IMaterialStorage.cs`），接口只表达保存、读取、删除等领域语义，不出现 `IFormFile`、`HttpContext` 或具体磁盘路径；本地磁盘、对象存储等实现放在 `Storage` 项目。
-
-```csharp
-// 文件：IDomain/Storage/IMaterialStorage.cs
-namespace App.IDomain.Storage;
-
-public interface IMaterialStorage
-{
-    string GenerateStorageName(string extension);
-    Task<string> SaveAsync(string storageName, Stream content);
-    Task<Stream?> OpenReadAsync(string storageName);
-    Task DeleteAsync(string storageName);
-}
-```
-
-`Storage.csproj` 依赖 `Core + IDomain`，Service 组合根注册 `IMaterialStorage` 的具体实现；Application 只依赖 `IDomain` 中的接口。
-
 ### IApplication（应用契约层）
 **放**：`I*AppService` 接口 + 本业务域的 DTO/Request/Response（`{业务域}/Dto/`，一类一文件）。是控制器唯一依赖的契约，接口签名只出现本业务域 DTO 或跨业务域通用 DTO。
 **不放**：实现、仓储、实体直接暴露（接口参数/返回一律 DTO）。
@@ -641,7 +622,7 @@ Application       → IApplication, Domain
 EntityFramework   → Core, IDomain
 Service           → Application, EntityFramework, Storage
 Adapter           → Core, IDomain                         ← 可选
-Storage           → Core, IDomain                          ← 可选
+Storage           → Core                                   ← 可选
 ```
 
 对应 `<ProjectReference>` 示例（Application.csproj，`App` 替换成实际解决方案名）：

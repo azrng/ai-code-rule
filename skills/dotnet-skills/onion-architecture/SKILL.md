@@ -40,7 +40,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
 | **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ 适配实现（`Adapter/Services/`）+ 可选 HTTP 客户端包装（`Adapter/HttpClients/`），屏蔽 HTTP/SDK 细节（可选） |
-| **Storage** | 存储适配 | Core、IDomain | 文件/对象存储实现（可选）；存储接口放 `IDomain` 或真正通用时放 `Core` |
+| **Storage** | 存储适配 | Core | 文件/对象存储实现（可选）；存储能力接口定义在 `Core`（Storage 仅依赖 Core），实现放 Storage 项目 |
 
 > **接口/实现结对**：`I*` 项目只有抽象，对应无前缀项目是实现。`IApplication`/`Application`、`IDomain`/`Domain` 总是成对出现。控制器永远只依赖 `I*AppService`，不依赖实现。
 
@@ -400,7 +400,7 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 应用层和领域契约层不接受 `IFormFile`、`HttpContext` 等 ASP.NET 类型。文件上传时，在 `IApplication/{业务域}/Dto/` 定义只包含业务数据的 Command（例如 `FileName`、`Size`、`Stream`；仅本业务域使用，不放 `Core/Models`），由 Controller 把 `IFormFile` 适配后再调用 AppService。
 
-存储接口放在 `IDomain`（例如 `IDomain/Storage/IMaterialStorage.cs`），本地磁盘或对象存储实现放在 `Storage` 项目。`Storage` 可以依赖 `Core + IDomain`，Service 组合根负责注册实现；Application 只依赖 `IDomain` 中的接口。
+存储能力接口定义在 `Core`（例如 `Core/Storage/IMaterialStorage.cs`；Storage 仅依赖 Core，接口放 Core 后 Application / Domain 通过 Core 中的接口使用存储能力），本地磁盘或对象存储实现放在 `Storage` 项目。Service 组合根负责注册实现；禁止 Controller 绕过业务层直接调用存储实现。
 
 ```csharp
 // 文件：IApplication/Material/Dto/MaterialUploadCommand.cs —— 仅 Material 业务域使用，非跨域通用，不放 Core/Models
@@ -438,7 +438,7 @@ public Task<MaterialDto> Upload(IFormFile file)
 ### 关键点
 
 - **接口放 IDomain/Adapter/（不放 Core）**：这样 AppService/DomainService 只依赖 IDomain 就能用 Adapter，而 HttpClient/SDK 等**实现细节留在 Adapter 项目**，依赖方向正确（外层 Adapter 实现内层 IDomain 接口；IDomain 不依赖 Adapter）。`Adapter.csproj` 的项目引用只依赖 `IDomain`，外部 HTTP 所需 NuGet 包按需引用在 Adapter。
-- **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 `IDomain/Adapter/Bo/{外部系统}/`；`Ho`（HTTP 传输对象）在 `Adapter/Ho/{外部系统}/`。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。
+- **Bo vs Ho**：`Bo`（业务对象，接口签名用）在 `IDomain/Adapter/Bo/{外部系统}/`；`Ho`（HTTP 传输对象）在 `Adapter/Ho/{外部系统}/`。Adapter 实现里做 Bo↔Ho 转换——外部协议/字段变了只改 Adapter，不波及业务层。**红线：Ho 不得离开 Adapter 项目**——`I{X}Adapter` 接口签名与 Adapter 对外返回值一律用 Bo，Ho 出现在 Adapter 之外（IDomain / Domain / Application 引用 `Adapter/Ho/` 类型）即依赖方向违规，协议变更就会波及业务层。
 - **HTTP 默认走 `IHttpHelper`**（`Common.HttpClients`）：不为单次调用包装 HttpClient，命名客户端、超时、重试等客户端策略在 Service 组合根配置（`AddHttpClientService` / `IHttpHelperFactory`）；只有需要包未暴露的底层控制时才在 Adapter 内使用原生 `HttpClient` / `IHttpClientFactory`，HTTP 细节不向业务层暴露。
 
 > 完整代码示例与 `IHttpHelper` 用法细则（`IHttpResult` 处理、`SendAsync`、版本核对）见 `references/layer-responsibilities.md → Adapter 层`。
@@ -489,6 +489,9 @@ services.AddControllers().AddJsonOptions(options =>
 | 实体 | 单数 `{Entity}` | IDomain/Entities |
 | 配置类 | `{Entity}Etc` | EntityFramework |
 | DbContext | `{Solution}DbContext` | EntityFramework |
+| 私有依赖字段 | 携带依赖类型语义：领域服务 `_{域}Domain`、应用服务 `_{域}AppService`、仓储用实体复数名（`IToolInfoRepository _tools`）、通用基础件 `_logger`/`_unitOfWork` | 各类内部 |
+
+> **私有依赖字段禁止泛称**：`_domain` / `_service` / `_sso` / `_helper` 只说架构角色不说依赖对象，跨文件同名异指（`_domain` 可指任意 DomainService），新代码无从推断风格。字段名从类型来：`ITrialDomainService _trialDomain`、`ITrialAppService _trialAppService`。存量文件已有风格时先对齐所在文件，不混用。
 
 > **实体名与模块命名空间同名时必须消歧**：AppService 实现放 `HotelManagement.Application.User` 这类模块命名空间后，同文件内裸引用实体 `User` 会被解析为命名空间（CS0118）。消歧任选其一：① `using UserEntity = HotelManagement.IDomain.Entities.User;` 别名后用 `UserEntity`；② 模块名复数化（`Application.Users`），实体保持单数。推荐②，一劳永逸。
 
@@ -499,7 +502,8 @@ services.AddControllers().AddJsonOptions(options =>
 - **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数纯 CRUD 项目初期 Domain/Adapter/Storage 可空，出现对应需求（复用操作 / 外部调用 / 文件存储）再建。
 - **全新解决方案按标准清单建项，同仓库其他项目不构成豁免**：在同一仓库看到其他项目用了简化分层（如四层 Domain/Application/Infrastructure/Web）时，那只是该项目自身的现状，不是本架构的替代结构。新建解决方案一律按上表标准项目清单建项；「以现有实现为准」只适用于对该项目自身做增量改动。
 - **读取用 `Entities` 还是 `EntitiesNoTacking`？** 只读查询默认 `EntitiesNoTacking`（不带追踪、更快）；读出来还要改并回写才用 `Entities`。
-- **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
+- **读查询要不要包事务？** 默认**不包**。① 单语句读（含 join / 相关子查询 / GROUP BY）不需要事务——READ COMMITTED 下每条语句自带一致快照，包事务只是白钉连接；② 需要跨语句一致的读，优先折进单语句表达（把第二批读做成 join / 子查询），其次靠写侧 CAS + 唯一约束 + 「读 → 外部调用 → 重读复检」栅栏——快照追不上"展示之后"的世界，不是权威防线；③ 事务级快照（RepeatableRead / Serializable）仅用于「多条语句结果必须互相一致、不一致会引发错误行为」的场景，隔离级别必须能说出对应不变量，说不出不包；④ NEVER 把外部调用（SSO / HTTP / 第三方）圈进读事务，NEVER 把重读栅栏的首读与复检放进同一个 RR 快照（复检会命中同一旧快照，栅栏失效——两次复检必须在两个独立事务）；⑤ 写路径默认 ReadCommitted + 唯一键/检查约束冲突翻译成业务文案，SERIALIZABLE 仅显式 SSI 需求点。
+- **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。目标仓库已有统一事务助手（含并发冲突 → 业务异常翻译）时一律走助手，不手写 Begin/Commit、不逐处自捕 `23505`/`40001`。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
 - **控制器能不能调多个 AppService？** 可以，但要警惕——若一个请求要协调多个服务完成一个事务，说明该把编排逻辑下沉到一个 AppService（用 `IUnitOfWork` 包事务），控制器只调这一个。
 
 ## 依赖注入与中间件装配（Startup）

@@ -46,7 +46,7 @@ dependencies: [agents-root]
 ## Git、验证与交付
 - 提交信息用 Conventional Commits，标题 `<type>(<scope>): <中文简述>`；非微小调整的正文含任务、原因、变更、风险，风险只写真实影响。
 - Windows / PowerShell 提交：经 `git commit -m` 或 UTF-8 文件配合 `git commit -F <file>` 传中文，禁止标准输入；提交后回读确认中文未乱码。
-- 提交前验证已通过且 `TASK.md` 已置 `DONE`。暂存前后各核对一次：先 `git status --short` + `git diff` 确认本任务文件清单，再 `git add -- <文件>` 逐文件暂存；提交前 `git diff --cached --name-status` + `git diff --cached` 逐文件逐差异核对与清单一致，重命名与删除同样核对；单会话、微小调整或纯文档任务同样不豁免。
+- 提交前验证已通过且 `TASK.md` 已置 `DONE`。基线（`HEAD` / 目标分支）本身存在失败测试或失败检查时，「全量通过」不可达，以基线对照作为等价交付门：用基线工作区（如 `git worktree` 检出基线）复跑同一测试 / 检查集合，证明本次改动未新增失败，交付说明列出既有失败清单与对照结果；既有失败不豁免任何验证项，也不得顺手修复混入本任务提交。暂存前后各核对一次：先 `git status --short` + `git diff` 确认本任务文件清单，再 `git add -- <文件>` 逐文件暂存；提交前 `git diff --cached --name-status` + `git diff --cached` 逐文件逐差异核对与清单一致，重命名与删除同样核对；单会话、微小调整或纯文档任务同样不豁免。
 - 共享文件仅暂存本任务差异：优先 `git add -p` 逐块选择；无法可靠区分时暂停并协调，不替他人取消暂存。
 - 共享文件确需构造仅含本任务部分的暂存时（`git hash-object` + `git update-index --cacheinfo`）：
   1. 用于减法的底稿必须取自本任务编辑完成后的工作区状态（或直接从工作区文件反减他人差异），编辑前留存的基线快照只做归因参考，不得作为构造输入
