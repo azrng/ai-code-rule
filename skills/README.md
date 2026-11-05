@@ -92,6 +92,12 @@ ASP.NET Core Web 应用构建、审查、重构与架构设计规则，覆盖 Bl
 
 GitHub：https://github.com/openai/skills/blob/main/skills/.curated/aspnet-core/SKILL.md
 
+#### wpf
+
+WPF Windows 桌面与上位机（HMI）开发指南：XAML 布局、绑定与 MVVM、DependencyProperty 自定义控件、Dispatcher 线程模型，以及串口、西门子 S7netplus、三菱 MX Component 三类设备接入；另含 .NET 10 + CommunityToolkit.Mvvm + WPF-UI 的生产基线装配。
+
+GitHub：https://github.com/dotnet/wpf
+
 #### github
 
 通过 `gh` CLI 操作 GitHub issues、PR、CI runs 和 GitHub API。
