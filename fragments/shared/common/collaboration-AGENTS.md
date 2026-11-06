@@ -44,7 +44,7 @@ dependencies: [agents-root]
 - `git status` 干净但构建内容与 `HEAD` 不一致（如「本机不可编译、新 clone 可编译」的暗裂）时，先 `git check-ignore -v <路径>` 排查静默忽略再怀疑并行会话：仓库套仓库时外层 `.gitignore` 宽通配规则（如 `Backup*/`）会整体吞掉源码子目录且 `git status` 永不显示。调整排除类通配规则或新增源码目录时，用 `git status --ignored` 反向比对确认没有源码路径被吞。
 
 ## Git、验证与交付
-- 提交信息用 Conventional Commits，标题 `<type>(<scope>): <中文简述>`；非微小调整的正文含任务、原因、变更、风险，风险只写真实影响。
+- 提交信息用 Conventional Commits，标题 `<type>(<scope>): <中文简述>`：冒号后一行不超过 30 字，只说改了什么一句话；变更点枚举、实现细节、测试修复一律写进正文，不堆进标题。非微小调整的正文含任务、原因、变更、风险，风险只写真实影响。
 - Windows / PowerShell 提交：经 `git commit -m` 或 UTF-8 文件配合 `git commit -F <file>` 传中文，禁止标准输入；提交后回读确认中文未乱码。
 - 提交前验证已通过且 `TASK.md` 已置 `DONE`。基线（`HEAD` / 目标分支）本身存在失败测试或失败检查时，「全量通过」不可达，以基线对照作为等价交付门：用基线工作区（如 `git worktree` 检出基线）复跑同一测试 / 检查集合，证明本次改动未新增失败，交付说明列出既有失败清单与对照结果；既有失败不豁免任何验证项，也不得顺手修复混入本任务提交。暂存前后各核对一次：先 `git status --short` + `git diff` 确认本任务文件清单，再 `git add -- <文件>` 逐文件暂存；提交前 `git diff --cached --name-status` + `git diff --cached` 逐文件逐差异核对与清单一致，重命名与删除同样核对；单会话、微小调整或纯文档任务同样不豁免。
 - 共享文件仅暂存本任务差异：优先 `git add -p` 逐块选择；无法可靠区分时暂停并协调，不替他人取消暂存。
