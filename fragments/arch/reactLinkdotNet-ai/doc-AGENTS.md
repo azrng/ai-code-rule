@@ -86,35 +86,20 @@ Agent 产品的前端不能只是一个聊天框。设计 Agent 交互时，必�
 
 ---
 
-## 设计系统文件规范
-`design-system.yaml` 是唯一设计系统文件，包含：
-- 品牌与产品风格意图
-- 语义化颜色 token（落地为 Tailwind 主题与 shadcn CSS 变量）
-- 排版 token
-- 间距、圆角、阴影 token
-- 布局与断点规则
-- shadcn / Tailwind 主题映射
-- 页面状态规范（含 streaming）
-- 组件使用规则
-- 明确的 `do / dont` 规则
+<!-- include: shared/doc/design-system-file-web.md -->
+- 主题配置映射按 Tailwind 主题与 shadcn CSS 变量落地；页面状态规范含 streaming
 
 ---
 
 ## 文档更新要求
 以下内容发生变化时，必须同步更新相关文档：
-- 命令、脚本或启动方式
-- 环境变量（含模型密钥、Base URL、模型名）
-- 配置项
-- 构建、发布或部署流程
-- 数据库结构、迁移或初始化方式、数据库切换（SQLite ↔ PostgreSQL）
+- 环境变量（含模型密钥、Base URL、模型名）；数据库切换（SQLite ↔ PostgreSQL）需注明适用场景
 - 模型对接方式、Agent 职责、工具 / Skills 清单、Prompt 关键约束
 - 流式事件结构或对外接口约定
+<!-- include: shared/doc/doc-update-core.md -->
 
-文档同步是命中上述清单的任务的完成前置条件：置 `DONE` 前先比对本次改动，命中则在同一任务内更新文档，不得跨任务事后补录；AI 相关变化同步 `ai-AGENTS.md` 对应小节。
+AI 相关变化同步 `ai-AGENTS.md` 对应小节；优先更新已有文档，不新增重复说明。
 
-优先更新已有文档，不新增重复说明。
-
-<!-- include: shared/doc/contract-lifecycle.md -->
 
 <!-- include: shared/doc/doc-directory.md -->
 

@@ -178,12 +178,9 @@ IPC Handler / Event（ipcMain.handle / webContents.send）
 - 必须补 TSDoc / JSDoc 注释的位置：
   - IPC handler 处理函数（前端可见契约）：说明 channel 用途、关键参数、返回结果。
   - Service 导出方法：说明该能力做什么，不写实现细节。
-- 接口或类型已注释时，实现处不重复注释；只有未被类型定义说明的自有核心方法才需要补注释。
-- 默认不写 `@remarks` / 实现说明块：多为实现细节，按“不写实现细节”原则省略。
   - 例外：IPC handler 需要向渲染进程说明调用约定、参数格式、错误码等对外契约信息时，可保留精简后的说明，但不写内部实现细节。
-- 优先补行内注释的位置：权限校验、状态流转、事务边界、超时 / 重试 / 幂等等复杂分支，说明“为什么这样做”——包括 fail fast 的原因、为什么跳过某类输入、为什么保留某一步骤。
-- 不要补的注释：简单赋值、简单 `if` / `return`、“返回结果”这类复述代码的低价值注释。
-- 注释统一使用中文，不使用纯英文注释；不在注释里泄露密钥、token、连接串或真实生产地址。
+
+<!-- include: shared/application/comment-discipline.md -->
 
 <!-- include: shared/application/anti-patterns.md -->
 

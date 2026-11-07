@@ -36,24 +36,16 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-### 核心层（包名与类型已对照官方源码核对）
-- 模型调用抽象：`Microsoft.Extensions.AI`（`IChatClient`、`IEmbeddingGenerator` 等）
-- OpenAI 兼容接入：`Microsoft.Extensions.AI.OpenAI`（DeepSeek、OpenAI、GitHub Models 等 OpenAI 兼容接口统一走此通道，产出 `IChatClient`）
-- Agent 框架：Microsoft Agent Framework，.NET 包根 `Microsoft.Agents.AI.*`
-  - 核心包 `Microsoft.Agents.AI`：`AIAgent`（抽象基类）、`ChatClientAgent`（基于 `IChatClient` 的具体 Agent，**本项目主用**）、`AIAgentBuilder`
-  - Skills：`AgentSkillsProvider` + `AgentSkillsProviderBuilder`
-  - 运行：`agent.RunAsync(...)`（非流式）、`agent.RunStreamingAsync(...)`（流式，`IAsyncEnumerable`）
-  - 工具：`Microsoft.Extensions.AI` 的 `AIFunctionFactory.Create(...)`，方法用 `[Description]`（`System.ComponentModel`）标注语义
-- 依赖注入：通过 `Microsoft.Extensions.AI` 的 DI 扩展注册 `IChatClient`，再由 `ChatClientAgent` 等消费；Agent 注册到 DI，业务层注入抽象
+### 核心层
+- 模型调用抽象：`Microsoft.Extensions.AI`（`IChatClient`），OpenAI 兼容端点统一经 `Microsoft.Extensions.AI.OpenAI` 接入产出 `IChatClient`
+- Agent 框架：Microsoft Agent Framework（.NET 包根 `Microsoft.Agents.AI.*`），本项目主用基于 `IChatClient` 的 `ChatClientAgent`，从单 Agent 起步
+- 工具：`Microsoft.Extensions.AI` 的 `AIFunctionFactory.Create(...)`，方法与参数用 `[Description]` 标注语义
+- 依赖注入：`IChatClient` 与 Agent 均注册到 DI，业务层注入抽象
 
 ### 可选层（按需）
-- 向量存储 / 检索：`Microsoft.Extensions.VectorData` + 任意向量库实现
-- 记忆：Agent Framework 提供的记忆能力（参考源码 samples `04_memory` / `Hosted-MemoryAgent`）
-- 多 Agent / 工作流：`Microsoft.Agents.AI.Workflows`（多 Agent 编排，参考 `05_first_workflow`）
-- MCP：`Microsoft.Agents.AI.Mcp`（MCP 工具与 Skills 接入）
-- 托管 / 持久化：`Microsoft.Agents.AI.Hosting.AspNetCore`、`Microsoft.Agents.AI.DurableTask`、`Microsoft.Agents.AI.CosmosNoSql` / `Valkey`
+- 向量存储 / 检索：`Microsoft.Extensions.VectorData`；记忆：Agent Framework 记忆能力；多 Agent / 工作流：`Microsoft.Agents.AI.Workflows`；MCP：`Microsoft.Agents.AI.Mcp`
 
-> 上述包名与类型已对照官方源码（Microsoft Agent Framework，`dotnet/src`）核对。仍以项目锁定的 `*.csproj` 版本为准；类型随版本可能有调整，落地时按官方文档校准，禁止凭记忆写死 API。
+> 包名、类型与 API 形态以项目锁定 `*.csproj` 版本为准，调用前按官方文档与 samples 校准，禁止凭记忆写死 API；包选型、安装与参考实现索引见 `maf` 技能（Microsoft Agent Framework）。
 
 <!-- include: shared/application/tech-choice.md -->
 
@@ -118,31 +110,9 @@ backend/src/YourProject/
 - 不要一上来就搭复杂 Workflow 引擎或多 Agent 网络
 
 ### 创建与注册
-- 本项目主用 `ChatClientAgent`（基于 `IChatClient` 的具体 Agent），构造签名：`new ChatClientAgent(IChatClient chatClient, string? instructions = null, string? name = null, string? description = null, IList<AITool>? tools = null, ...)`
-- Agent 注册到 DI，业务层注入抽象，不直接 `new` 具体实现
+- 本项目主用基于 `IChatClient` 的 `ChatClientAgent`，经 DI 注册后由业务层注入抽象，不直接 `new` 具体实现
+- 构造签名、`RunAsync` / `RunStreamingAsync` 调用形态以项目锁定版本的官方 get-started 为准（或查 `maf` 技能 `references/dotnet.md`），禁止凭记忆写死 API
 - 一个 Agent 职责单一；职责膨胀时再拆分，而不是把所有能力塞进一个 Agent
-
-### 最小示例（API 形态核对自官方 get-started 样例）
-```csharp
-using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
-
-// 1. IChatClient（OpenAI 兼容端点，如 DeepSeek / GitHub Models / 本地）由 DI 注入
-// 2. 创建基于 IChatClient 的 Agent
-AIAgent agent = new ChatClientAgent(
-    chatClient,
-    instructions: "你是一个写作助手，输出 JSON。",
-    name: "WritingAgent");
-
-// 3. 非流式调用
-string reply = await agent.RunAsync("帮我列三个选题。");
-
-// 4. 流式调用（前端打字机）
-await foreach (var update in agent.RunStreamingAsync("帮我列三个选题。"))
-{
-    // 增量输出 update
-}
-```
 
 ### 工具 / Skills 挂载
 - 工具用 `AIFunctionFactory.Create(...)` 包装，方法与参数用 `[Description]`（`System.ComponentModel`）清晰描述语义；描述质量直接影响模型调用准确度
@@ -220,10 +190,8 @@ await foreach (var update in agent.RunStreamingAsync("帮我列三个选题。")
 - Agent 测试覆盖：工具选择、多步执行、异常分支、流式中断
 - 真实模型验证作为补充手段，不计入自动化回归；调用真实模型时注意密钥与数据安全
 
-### 外部依赖与数据
-- 测试中不要真实调用第三方服务，统一使用 mock
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态或真实密钥
+<!-- include: shared/external-dependencies.md -->
+- 模型接口同属第三方服务：测试统一 mock，不真实调用（含本地 / 免费端点）
 
 <!-- include: shared/no-test-fallback.md -->
 

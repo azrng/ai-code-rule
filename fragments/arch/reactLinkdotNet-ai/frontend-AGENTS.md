@@ -165,10 +165,8 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 - 鼓励用 AI 辅助生成关键交互与组件的单元测试（Vitest + React Testing Library）；样板与边缘用例也可借助 AI 生成
 - 仍必须以手动 smoke test 兜底核心功能（含 Agent 输出与流式展示的关键路径）
 
-### 外部依赖与数据
-- 测试中不要真实调用第三方服务（含真实模型接口），统一使用 mock
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态
+<!-- include: shared/external-dependencies.md -->
+- 真实模型接口同属第三方服务，测试统一 mock（见「AI 测试」口径）
 
 <!-- include: shared/no-test-fallback.md -->
 

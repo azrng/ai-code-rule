@@ -99,19 +99,9 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 
 <!-- include: shared/frontend/pinia.md -->
 
-### 数据获取与状态管理
-- 异步数据默认优先使用 TanStack Query（Vue 版）
-- Query Key 使用稳定命名，禁止在组件内部临时拼字符串做缓存键
-- 写操作优先封装成 mutation，再由 mutation 触发刷新或失效处理
-- Pinia 仅用于主题、窗口状态、轻量全局筛选、全局通知、临时会话上下文等纯客户端状态
-- 禁止把“可由 Query 管理的服务端 / 本地命令数据”长期放进 Pinia
+<!-- include: shared/frontend/desktop-query-state.md -->
 
-### Tauri 前端调用规范
-- 所有 Tauri 调用统一收敛在 `lib/tauri/` 或按业务域封装，不直接散落在页面组件中
-- 优先使用 `invoke`、event、plugin API 的封装层，不在页面里直接拼 command 名称
-- Command 参数与返回值应先经过 TypeScript 类型与 Zod schema 约束
-- 除非明确需要，否则不要在 Tauri 桌面应用里再额外引入本地 HTTP 服务作为前后端桥接层
-- 若确实需要流式处理、WebSocket、嵌入式代理等能力，再单独论证是否引入额外服务层
+<!-- include: shared/skeletons/tauri/frontend-invoke.md -->
 
 ### 表单规则
 - 表单优先使用 VeeValidate + `schemas/` 中的 Zod schema 校验

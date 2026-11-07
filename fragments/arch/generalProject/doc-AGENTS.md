@@ -35,15 +35,8 @@ dependencies: [agents-root]
 
 ---
 
-## 设计系统文件规范
-`design-system.yaml` 是唯一设计系统文件，包含：
-- 品牌与产品风格意图
-- 颜色、排版、间距、圆角、阴影等 token
-- 布局与断点规则
-- 页面状态规范
-- 表单与反馈组件规则
-- 明确的 `do / dont`
-- 若项目不含界面层，可省略或简化本文件
+<!-- include: shared/doc/design-system-file.md -->
+- 若项目不含界面层，可省略或简化该文件
 
 ---
 

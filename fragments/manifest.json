@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "3.0.7",
+    "version": "3.0.8",
     "last_updated": "2026-11-07"
   },
   "schema_version": 3,
@@ -1014,7 +1014,7 @@
         ],
         "extra-sections": [
           "{{slot:fsai-extr-0}}",
-          "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆多模型路由、本地向量、复杂编排等基础设施。\n2. **核心 vs 可选**：统一封装 + 网关接入 + 流式是核心；结构化输出、RAG、多模态、多模型路由都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：接入方式与流式契约文档化、组件边界清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。托管网关可平滑升级为 BFF，封装层接口保持框架无关，本地存储可替换为真实服务。\n5. **先做闭环，再做扩张**：先把\"用户输入 → 模型 → 流式展示 → 用户确认 → 下一步\"跑通，再补 Prompt 优化、会话持久化与可选能力。"
+          "## AI 产品选型理念（贯穿全规则）\n\n- 选最稳的起点：第一版优先降低不确定性，不堆多模型路由、本地向量、复杂编排等基础设施。\n- 核心先闭环：统一封装 + 网关接入 + 流式跑通\"输入 → 模型 → 流式展示 → 确认\"，结构化输出、RAG、多模态、多模型路由一律按需引入；核心 vs 可选清单见 `ai-AGENTS.md`。\n- AI Coding 友好且可演进：接入方式与流式契约文档化、组件边界清晰、反馈循环短；托管网关可平滑升级为 BFF，封装层接口保持框架无关。"
         ],
         "contract-error-line": "阶段 0 输出的数据口径、流式契约、字段说明或设计规范在阶段 1 发现缺口时，应先回到口径变更流程，修改数据口径 / 流式事件定义 / 类型定义后同步页面实现、封装层与本地存储结构和相关文档，再继续实现；不得绕过口径直接补临时字段",
         "boundary-nouns": "页面、封装层与数据层职责",
@@ -2838,7 +2838,7 @@
       "root": {
         "extra-sections": [
           "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
-          "## AI 产品选型理念（贯穿全规则）\n\n这套规范在工程纪律之外，额外遵循以下原则：\n\n1. **选最稳的起点，而不是最先进**：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n2. **核心 vs 可选**：`IChatClient` + Agent Framework 是核心；向量库、记忆、多 Agent、MCP、Redis、PostgreSQL 都是可选，按需引入，不在第一版强加。\n3. **AI Coding 友好**：技术栈文档与示例要充分、项目结构边界要清晰、反馈循环要短、抽象层次不要过多。\n4. **可演进**：简单 ≠ 一次性代码。SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程、本地运行可上云。\n5. **先做闭环，再做扩张**：先把\"用户输入 → Agent 运行 → 结果展示 → 用户确认 → 下一步\"跑通，再补 Skills / Memory / Middleware。"
+          "## AI 产品选型理念（贯穿全规则）\n\n- 选最稳的起点：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n- 核心先闭环：`IChatClient` + 最小 Agent 跑通\"输入 → 运行 → 展示 → 确认\"，向量库、记忆、多 Agent、MCP 等一律按需引入；核心 vs 可选清单见 `ai-AGENTS.md`。\n- AI Coding 友好且可演进：结构边界清晰、反馈循环短、抽象不过度；SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程。"
         ]
       },
       "files": [

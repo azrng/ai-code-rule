@@ -45,17 +45,8 @@ dependencies: [agents-root]
 
 ---
 
-## 设计系统文件规范
-`design-system.yaml` 是唯一设计系统文件，包含：
-- 品牌与产品风格意图
-- 语义化颜色 token
-- 排版 token
-- 间距、圆角、阴影 token
-- 布局与断点规则
-- 所选组件库主题配置映射（BootstrapBlazor 或 MudBlazor，以项目实际引用为准）
-- 页面状态规范
-- 组件使用规则
-- 明确的 `do / dont` 规则
+<!-- include: shared/doc/design-system-file-web.md -->
+- 主题配置映射按项目实际引用的组件库落地（BootstrapBlazor 或 MudBlazor，以后端 / 前端子规则选型为准）
 
 ---
 

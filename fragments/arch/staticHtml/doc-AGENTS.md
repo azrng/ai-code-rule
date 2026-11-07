@@ -15,17 +15,8 @@ dependencies: [agents-root]
 
 ---
 
-## 设计系统文件规范
-`design-system.yaml` 是唯一设计系统文件，包含：
-- 品牌与产品风格意图
-- 语义化颜色 token
-- 排版 token
-- 间距、圆角、阴影 token
-- 布局与断点规则
-- Bootstrap 主题配置映射
-- 页面状态规范
-- 组件使用规则
-- 明确的 `do / dont` 规则
+<!-- include: shared/doc/design-system-file-web.md -->
+- 主题配置映射按 Bootstrap 5 落地（CDN 版本以 `cdn_versions` 为唯一事实源）
 
 ---
 

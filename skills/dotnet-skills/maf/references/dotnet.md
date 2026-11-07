@@ -29,6 +29,20 @@ var session = await agent.CreateSessionAsync();
 var result = await agent.RunAsync("...", session);
 ```
 
+`ChatClientAgent` 形态（团队主用，基于 `IChatClient` 的具体 Agent；非流式 / 流式双态）：
+
+```csharp
+AIAgent agent = new ChatClientAgent(
+    chatClient,                              // DI 注入的 IChatClient
+    instructions: "你是一个写作助手，输出 JSON。",
+    name: "WritingAgent");
+
+string reply = await agent.RunAsync("帮我列三个选题。");            // 非流式
+await foreach (var update in agent.RunStreamingAsync("帮我列三个选题。")) { /* 增量输出 */ }  // 流式（前端打字机）
+```
+
+> 构造参数（instructions / name / description / tools 等）以锁定版本的官方 get-started 为准，preview 期可能有调整（见 `breaking-changes.md`）。
+
 - 其他 provider 包：`Microsoft.Agents.AI.Foundry`（官方 get-started 示例路径，配 `Azure.AI.Projects` + `Azure.Identity`）、`Microsoft.Agents.AI.Anthropic`、`Microsoft.Agents.AI.AzureAI` 等，完整选型见 `packages.md`。
 - 多后端用 keyed services：`AddKeyedChatClient("name", client)`，见 `pitfalls.md`。
 - Samples 当前目标框架为 `net10.0`。

@@ -13,7 +13,7 @@ dependencies: [agents-root]
 ## 技术栈
 
 <!-- include: shared/frontend/stack-vue-element.md -->
-- Axios 仅用于外部 API 调用，与 Go 后端的交互走 Wails 绑定
+<!-- include: shared/skeletons/wails/frontend-binding.md -->
 
 <!-- include: shared/frontend/design-system-usage-element-plus.md -->
 <!-- include: shared/ui/design-system-liveness.md -->
@@ -85,9 +85,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 2. 数据层使用 mock（静态 mock 数据），不依赖真实 Go 后端绑定
 3. 同步输出接口需求说明，供 Go 后端开发参考
 
-**产物**：
-- 可在浏览器中运行的前端页面（通过 `wails dev` 预览）
-- 接口需求说明（用于 Go 后端开发）
+**产物**：见「Wails 前端调用纪律」的阶段 1 产物口径
 
 **门控规则**：
 - 用户确认视图页面符合设计文档预期
@@ -115,7 +113,7 @@ HTML 原型即视觉基线，实现需逐页对照原型。
 - 优先使用 Element Plus 组件内置样式和 class
 - 自定义样式使用 SCSS，变量来自 `design-system.yaml`
 - 禁止 inline style，禁止硬编码颜色值（如 `#1A90FF`）
-- 以桌面窗口为主要目标，不强制移动端响应式；窗口是否可调整以项目配置为准，可调窗口需处理窄宽度下的布局
+- 桌面窗口口径见「Wails 前端调用纪律」
 
 <!-- include: shared/frontend/component-rules.md -->
 
