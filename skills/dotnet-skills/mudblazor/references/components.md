@@ -86,6 +86,14 @@
 - `Strict`(false)：true=值必须在选项内；`SelectAll`(false)：多选全选行；`MaxHeight`(300)
 - `MudSelectItem` 的 T 必须与 `MudSelect<T>` 一致
 
+## 输入组件 DOM 结构与视觉审计口径
+
+走查 / UI 审计时的宽度、标签、弹层判定事实，防止把组件标准形态误报为缺陷：
+
+- **宽度对齐判据是外壳，不是内层 `<input>`**：`MudInput` 在字段内部渲染 `MudInputAdornment`（本地源码 `MudInput.razor:9-18`），Adornment 图标会挤窄内层 `<input>`——密码「显示口令」图标约 44px、下拉箭头约 24px 的占位是标准结构，不是「输入框宽度不齐」。宽度对齐以最外层外壳 `.mud-input-control`（`MudInputControl.razor.cs:13`）为准。
+- **浮动标签的标准形态不算「标签重叠」**：Text 变体——标签位于值上方；Outlined 变体——标签嵌在顶边缺口内；Filled 变体——标签嵌在上边线。这些是设计态，走查不得据此上报「标签重叠」。
+- **Select 弹层结构与关闭机制**：选项列表是 `MudPopover`（本地源码 `MudSelect.razor:107`），外部点击关闭靠同组件渲染的 `MudOverlay`（`:153`）。`document.body.click()` 与 Escape 都关不掉弹层；连续操作多个 Select（含自动化走查）必须先点 `.mud-overlay` 关闭上一个，并确认页面只剩 1 个 `.mud-popover-open` 再操作下一个——否则选择器会命中旧弹层的选项，选择落在错误的下拉上。走查操作细节见 browser-walkthrough 技能。
+
 ## MudAutocomplete\<T\>
 
 ```razor
