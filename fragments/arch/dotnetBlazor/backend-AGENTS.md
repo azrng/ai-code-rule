@@ -137,6 +137,8 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 - 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本。
 - 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式。
 
+<!-- include: shared/backend/field-naming.md -->
+
 <!-- include: shared/backend/comment-rules.md -->
 
 <!-- include: shared/backend/time-contract-rules.md -->

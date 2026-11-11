@@ -41,11 +41,6 @@ dependencies: [agents-root]
 3. 涉及数据库结构变更时，使用 Azrng.SqlMigration 生成迁移脚本
 4. 每个接口必须可通过 Swagger 或 Postman 独立验证
 
-**字段命名约定**：
-- C# 属性：PascalCase
-- JSON 输出：camelCase（通过 System.Text.Json 配置自动转换）
-- 数据库字段：snake_case（通过 EF Core 命名约定配置）
-
 **门控规则**：
 - 核心接口独立测试（Swagger / Postman）通过后，才允许进入阶段 3
 
@@ -93,6 +88,8 @@ dependencies: [agents-root]
 <!-- include: shared/backend/redis-cache.md -->
 
 <!-- include: shared/backend/db-migration.md -->
+
+<!-- include: shared/backend/field-naming.md -->
 
 <!-- include: shared/backend/comment-rules.md -->
 

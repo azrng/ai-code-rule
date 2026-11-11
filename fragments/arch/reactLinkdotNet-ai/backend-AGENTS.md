@@ -162,6 +162,8 @@ Endpoints → Application → Domain ← Infrastructure / AI
 - EF Core Migrations 通过 `dotnet ef migrations add` 生成，注意 SQLite 与 PostgreSQL 的 Provider 差异（大小写敏感、JSON、并发等）
 - 应用启动时自动执行迁移（可选配置）；默认 SQLite 需注意文件锁与并发限制，生产场景再评估是否切 PostgreSQL
 
+<!-- include: shared/backend/field-naming.md -->
+
 <!-- include: shared/backend/comment-rules.md -->
 
 <!-- include: shared/backend/time-contract-rules.md -->
