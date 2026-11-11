@@ -1,6 +1,6 @@
 ---
 name: onion-architecture
-description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, and the cross-cutting AppService conventions — global result-packing and paged queries. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration, wiring DI/middleware through Service Startup, or placing business logic vs data-access vs DTOs. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询."
+description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, background tasks (BackgroundService workers), and the cross-cutting AppService conventions — global result-packing and paged queries. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration/BackgroundService worker, wiring DI/middleware through Service Startup, placing business logic vs data-access vs DTOs, or implementing scheduled scan / lifecycle-advance background tasks. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询, 后台任务, BackgroundService, Worker, 定时扫描, 多实例."
 ---
 
 # 洋葱架构（Onion / Clean Architecture）分层指南
@@ -38,7 +38,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | **Domain** | 领域实现层 | IDomain, Adapter, EntityFramework | 领域服务实现（`{X}DomainService`）：封装可复用公共领域操作，可注入 IBaseRepository 写库；纯 CRUD 可空 |
 | **Application** | 应用实现层 | IApplication, Domain | AppService 实现（`*AppService`）：用例编排、实体↔DTO 映射、调用 DomainService/仓储/适配器 |
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
-| **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、配置 |
+| **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`HostedServices`（BackgroundService 后台任务，仅调度，见「后台任务 Worker」）、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ 适配实现（`Adapter/Services/`）+ 可选 HTTP 客户端包装（`Adapter/HttpClients/`），屏蔽 HTTP/SDK 细节（可选） |
 | **Storage** | 存储适配 | Core | 文件/对象存储实现（可选）；存储能力接口定义在 `Core`（Storage 仅依赖 Core），实现放 Storage 项目 |
 
@@ -264,6 +264,15 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 - **拆分信号**：单个 DomainService 注入仓储数量持续膨胀（如 5+ 个）或开始横跨多个子域职责（校验 + 额度 + 台账 + 通知混居一类），按职责拆成多个 DomainService；`partial` 拆文件只是给巨型类续命，不算拆职责——文件变小了，类还是那个类。
 
 > 完整代码示例（接口/实现/AppService 调用三方结对）见 `references/layer-responsibilities.md → Domain 层`。
+
+## 后台任务 Worker（BackgroundService 定时扫描 / 生命周期推进）
+
+定时扫描、生命周期推进、到期清理这类需求按固定模式落地（完整 Worker + CAS 代码见 `references/layer-responsibilities.md → 后台任务（Worker）`）：
+
+- **归属**：`BackgroundService` 实现放 `Service` 项目（`Service/HostedServices/`，命名 `{业务域}Worker.cs`），在 `Startup.RegisterServices` 里 `services.AddHostedService<XxxWorker>()` 注册；Worker 只负责调度（周期 / 延迟 / 批次），业务编排调 `IApplication` 接口（DI 在 scope 内解析 `I*AppService`），**禁止**在 Worker 里写 EF 查询与业务规则。
+- **scope 粒度**：Worker 是单例、AppService / 仓储是 scoped——每个处理单元 `CreateScope()` 后解析、完成即释放；**禁止**把 scoped 服务注进 Worker 构造函数、禁止跨处理单元复用（一次失败的脏上下文会传染后续轮次）。
+- **多实例幂等**：多实例部署时状态机必须在数据库侧——领取 / 推进用 CAS 条件更新（`UPDATE ... WHERE status = 旧值`）、防重复领取用部分唯一索引；**禁止**靠 `lock`、`SemaphoreSlim` 或内存字典去挡另一个进程。
+- **启动时序**：首轮等待让启动迁移完成（初始延迟或 `IHostedService.StartedAsync`），验证按 backend-testing「空库真实启动冒烟」。
 
 ## 文件上传与外部存储
 

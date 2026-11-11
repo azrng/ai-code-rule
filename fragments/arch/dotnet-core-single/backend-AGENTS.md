@@ -64,6 +64,7 @@ project-root/
 │       │   ├── Adapters/              # 外部服务适配器实现（按需）
 │       │   └── Storage/               # 文件 / 对象存储封装（按需）
 │       ├── Controllers/               # 宿主入口：API 控制器
+│       ├── Workers/                   # 后台任务（BackgroundService，仅调度；按需）
 │       ├── Middleware/                # 中间件（按需）
 │       ├── Extensions/                # 扩展方法、DI 注册扩展
 │       ├── MigrationSql/              # SQL 迁移脚本（Azrng.SqlMigration）
@@ -91,6 +92,7 @@ project-root/
 | `Infrastructure/Adapters/` | 适配器实现（HTTP 调用、第三方 SDK 封装） | `{名称}Adapter.cs` |
 | `Infrastructure/Storage/` | 文件 / 对象存储封装 | `{名称}Storage.cs` |
 | `Controllers/` | API 控制器，仅做 HTTP 编排，不含业务逻辑 | `{资源}Controller.cs` |
+| `Workers/` | 后台任务（BackgroundService），仅调度、编排走 AppService，口径见「后台任务（Worker）基线」 | `{业务域}Worker.cs` |
 | `Middleware/` | 中间件 | `{名称}Middleware.cs` |
 | `Extensions/` | 扩展方法、DI 注册扩展 | `{类型}Extensions.cs` |
 | `MigrationSql/` | SQL 迁移脚本 | `版本号.sql` / `版本号.txt`（如 `1.0.0.sql`、`1.1.0.txt`，不含描述文字） |
@@ -231,6 +233,7 @@ Controllers → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
 <!-- include: shared/backend/background-write-races.md -->
+<!-- include: shared/backend/background-worker-rules.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

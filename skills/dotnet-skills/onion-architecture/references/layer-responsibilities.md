@@ -434,7 +434,7 @@ public class AppDbContext : DbContext
 ```
 
 ### Service（入口/组装层）
-**放**：`Controllers`、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、`appsettings`、`wwwroot/index.html`、`wwwroot/MigrationSql/`、安全/过滤器。
+**放**：`Controllers`、`HostedServices/`（BackgroundService 后台任务，仅调度）、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、`appsettings`、`wwwroot/index.html`、`wwwroot/MigrationSql/`、安全/过滤器。
 **不放**：EF 查询、业务校验、`IBaseRepository` 注入。
 **依赖**：Application、EntityFramework、Storage。Service 是组合根，负责注册存储实现、数据库、迁移、Swagger 和中间件。
 
@@ -469,6 +469,57 @@ public class ProductController(IProductAppService productAppService) : Controlle
         => productAppService.DeleteAsync(id);
 }
 ```
+
+### 后台任务（Worker）
+
+定时扫描 / 生命周期推进类后台任务的完整落地模式（调度在 Worker、编排在 AppService、领取靠 DB CAS）：
+
+```csharp
+// 文件：Service/HostedServices/TrialLifecycleWorker.cs
+// 要点：① 只做调度，业务编排在 IApplication；② 每个处理单元独立 scope；③ 首轮等待启动迁移完成
+public sealed class TrialLifecycleWorker : BackgroundService
+{
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<TrialLifecycleWorker> _logger;
+
+    public TrialLifecycleWorker(IServiceScopeFactory scopeFactory, ILogger<TrialLifecycleWorker> logger)
+    {
+        _scopeFactory = scopeFactory;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);   // 首轮等待：让启动迁移先完成
+
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        while (await timer.WaitForNextTickAsync(stoppingToken))
+        {
+            try
+            {
+                // 每轮独立 scope：本轮失败不回滚上下文传染下一轮
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var appService = scope.ServiceProvider.GetRequiredService<ITrialAppService>();
+                await appService.AdvanceLifecycleAsync(stoppingToken);   // 编排在 Application 层
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "生命周期推进本轮失败，等待下一轮重试");
+            }
+        }
+    }
+}
+```
+
+```csharp
+// 文件：Application/Trial/TrialAppService.cs —— 推进用 CAS 条件更新，天然多实例安全
+// affected == 0 = 已被其它实例领取，本轮直接跳过，不抛错
+var affected = await _trials.Entities
+    .Where(t => t.Status == TrialStatus.Active && t.ExpireTime <= now)
+    .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, TrialStatus.Expired));
+```
+
+注册在 `Startup.RegisterServices`：`services.AddHostedService<TrialLifecycleWorker>();`。多实例部署时除 CAS 外，防重复领取靠部分唯一索引（如 `UNIQUE ... WHERE status = 'Processing'`）；`lock` / `SemaphoreSlim` / 内存字典只挡本进程，多实例下无效。
 
 ### 默认健康检查控制器
 

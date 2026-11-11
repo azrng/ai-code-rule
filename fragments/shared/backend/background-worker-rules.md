@@ -1,0 +1,7 @@
+#### 后台任务（Worker）基线
+
+- 仅在引入进程内后台任务（`BackgroundService` / `IHostedService`、定时扫描、生命周期循环等）时适用以下口径。
+- **编排归属**：Worker 类本体放宿主 / Service 层，只负责调度（触发、节奏、重试）；业务编排 MUST 经应用层服务接口（洋葱架构：`IApplication` 接口）完成，NEVER 在 Worker 内直接查询 EF / 数据库或写业务规则。
+- **scope 粒度**：Worker 是单例、活在整个进程生命周期；每个处理单元（每轮 / 每条记录）MUST 用 `IServiceScopeFactory.CreateScope()` 创建独立 DI scope 并在完成后立即释放，NEVER 持有长生命周期 scope 或跨处理单元复用同一个 scope——单次失败不得拖垮整个循环的回滚上下文。
+- **多实例幂等**：同一服务可能多实例部署 / 并行运行时，幂等与并发安全 MUST 依赖数据库侧（CAS 条件更新 `UPDATE ... WHERE status = 期望值`、部分唯一索引、唯一键抢占），NEVER 依赖进程内锁、内存状态或 `lock` 裁决跨进程互斥——跨进程锁不存在。
+- **启动时序**：依赖已迁移表的后台任务 MUST 推迟到启动迁移完成后才首轮扫描（初始等待，或 `IHostedService.StartedAsync`），NEVER 假定迁移与 Worker 顺序自然正确；时序是否成立按 backend-testing 的「空库真实启动冒烟」验证。

@@ -66,7 +66,7 @@ src/
 | 应用接口 | IApplication | 应用服务接口定义、CQRS 请求 / 响应 | Core, IDomain | 禁止依赖 Domain / Application |
 | 应用实现 | Application | 应用服务实现、业务流程编排 | IApplication, Domain | 禁止依赖 Service |
 | 存储 | Storage | 文件上传下载、对象存储操作 | Core | 禁止依赖 Application / Service |
-| 宿主层 | Service | Controller、中间件、DI 注册、配置 | Application, Storage | 禁止包含业务逻辑 |
+| 宿主层 | Service | Controller、后台任务（BackgroundService）调度入口、中间件、DI 注册、配置 | Application, Storage | 禁止包含业务逻辑（Worker 内的业务编排同样禁止，编排走应用层接口） |
 
 - Storage 的能力接口定义在 Core（Storage 仅依赖 Core），实现放在 Storage 项目；Application / Domain 通过 Core 中的接口使用存储能力，Service 只负责装配。禁止 Controller 绕过业务层直接调用存储实现。
 
@@ -89,6 +89,7 @@ src/
 | 领域业务对象 Bo（领域服务 / 适配器接口签名用） | `IDomain/{业务域}/Bo/`；Adapter 的 Bo 在 `IDomain/Adapter/Bo/{外部系统}/` | `SendSessionMessageBo.cs` |
 | 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
 | Controller / 中间件 / DI 注册 | `Service/` | `{资源}Controller.cs` 等 |
+| 后台任务（定时扫描 / 生命周期推进，仅调度、编排走应用层接口，口径见「后台任务（Worker）基线」） | `Service/HostedServices/` | `{业务域}Worker.cs` |
 
 ---
 
@@ -240,6 +241,7 @@ src/
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
 <!-- include: shared/backend/background-write-races.md -->
+<!-- include: shared/backend/background-worker-rules.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

@@ -364,3 +364,4 @@ app/RuleAssembler/obj/
 /dist/
 .workflow/profile-validation
 .zcode
+build

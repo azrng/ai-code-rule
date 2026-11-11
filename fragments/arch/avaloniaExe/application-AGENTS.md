@@ -98,6 +98,7 @@ src/AppName/
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
 <!-- include: shared/backend/background-write-races.md -->
+<!-- include: shared/backend/background-worker-rules.md -->
 
 <!-- include: shared/desktop/external-dependencies.md -->
 
