@@ -271,7 +271,8 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 - **归属**：`BackgroundService` 实现放 `Service` 项目（`Service/HostedServices/`，命名 `{业务域}Worker.cs`），在 `Startup.RegisterServices` 里 `services.AddHostedService<XxxWorker>()` 注册；Worker 只负责调度（周期 / 延迟 / 批次），业务编排调 `IApplication` 接口（DI 在 scope 内解析 `I*AppService`），**禁止**在 Worker 里写 EF 查询与业务规则。
 - **scope 粒度**：Worker 是单例、AppService / 仓储是 scoped——每个处理单元 `CreateScope()` 后解析、完成即释放；**禁止**把 scoped 服务注进 Worker 构造函数、禁止跨处理单元复用（一次失败的脏上下文会传染后续轮次）。
-- **多实例幂等**：多实例部署时状态机必须在数据库侧——领取 / 推进用 CAS 条件更新（`UPDATE ... WHERE status = 旧值`）、防重复领取用部分唯一索引；**禁止**靠 `lock`、`SemaphoreSlim` 或内存字典去挡另一个进程。
+- **多实例幂等**：多实例部署时记录级领取 / 状态推进的最终裁决必须在数据库侧——CAS 条件更新（`UPDATE ... WHERE status = 旧值`，以影响行数判定争抢成败）、防重复领取用部分唯一索引；**禁止**靠 `lock`、`SemaphoreSlim` 或内存字典去挡另一个进程。
+- **作业级互斥**：整个任务不允许跨实例并行的（报表生成、对外推送、批处理作业），用分布式锁做作业级互斥——这是该场景的正解，CAS 替代不了；但锁只降低碰撞概率不消除碰撞（双持锁失效模式与租约写法见 references 后台任务节），有外部副作用的作业锁内仍须留数据库侧幂等断言（CAS / 批次唯一键）兜底。
 - **启动时序**：首轮等待让启动迁移完成（初始延迟或 `IHostedService.StartedAsync`），验证按 backend-testing「空库真实启动冒烟」。
 
 ## 文件上传与外部存储

@@ -521,6 +521,8 @@ var affected = await _trials.Entities
 
 注册在 `Startup.RegisterServices`：`services.AddHostedService<TrialLifecycleWorker>();`。多实例部署时除 CAS 外，防重复领取靠部分唯一索引（如 `UNIQUE ... WHERE status = 'Processing'`）；`lock` / `SemaphoreSlim` / 内存字典只挡本进程，多实例下无效。
 
+作业级互斥（整跑不允许跨实例并行的任务）用锁包拿租约：`AcquireAsync(key, ttl)` 拿不到直接跳过本轮，执行期按 `ttl/3` 周期续期，释放 MUST 校验持有者（比对 token 后删，避免删掉别人的锁）。锁会漏的三种情形——执行时间超过租约且续期失败、节点时钟漂移、Redis 主从异步复制下主节点宕机切主——都会让两个实例同时自认持锁，所以锁只降低碰撞概率；有外部副作用（推送 / 扣款 / 调外部写接口）的作业，锁内仍要用 CAS 影响行数或本轮批次唯一键（如 `UNIQUE(job_name, batch_date)`）检出重入。
+
 ### 默认健康检查控制器
 
 Service 项目默认提供 `HealthController`，供容器编排、负载均衡和运维探针使用。`alive` 只表示进程仍能响应，`ready` 表示服务已完成启动；如果 `ready` 还需要核对数据库或其它依赖，应在该端点中接入对应检查，不要让 `alive` 依赖外部服务。两个探针必须使用 `[NoWrapper]` 返回裸 JSON，避免被全局结果包装器改写。
