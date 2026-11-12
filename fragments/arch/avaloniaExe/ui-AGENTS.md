@@ -103,11 +103,12 @@ Avalonia 项目默认沉淀型真栈原型：页面直接在正式工程内实�
 - 所有间距使用统一的资源或样式类，禁止硬编码数值。
 - 响应式设计遵循窗口大小变化，必须在不同窗口尺寸下测试。
 
-### 组件规则
+### 本栈组件与图标
 - 优先复用 `src/AppName/Views/Controls/` 下已有组件，禁止重复创建
-<!-- include: shared/ui/component-rules-core.md -->
 - 使用 Ursa.Avalonia 控件库优先，必要时使用 Avalonia 官方控件
 - 图标统一使用 Avalonia 官方图形能力、Ursa 组件能力或仓库既有素材
+
+<!-- include: shared/frontend/component-rules.md -->
 
 <!-- include: shared/ui/mvvm-rules.md -->
 
@@ -138,7 +139,7 @@ Avalonia 项目默认沉淀型真栈原型：页面直接在正式工程内实�
 <!-- include: shared/application/view-layer-testing.md -->
 - 推荐使用 Avalonia Headless 或项目既有 UI 测试方案
 
-<!-- include: shared/desktop/external-dependencies.md -->
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

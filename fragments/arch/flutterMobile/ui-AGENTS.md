@@ -229,7 +229,7 @@ Flutter 项目默认沉淀型真栈原型：页面直接在正式工程内实现
 - 若涉及数据请求、筛选、提交等关键路径，应验证主要交互结果
 - 推荐使用 `flutter_test` + `mocktail`
 
-<!-- include: shared/desktop/external-dependencies.md -->
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

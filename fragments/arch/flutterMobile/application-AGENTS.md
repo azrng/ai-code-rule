@@ -165,7 +165,7 @@ class Failure<T> extends Result<T> {
 - Service 层业务逻辑、数据转换、异常处理发生变化时，应补充对应测试
 - 推荐使用 `flutter_test` + `mocktail` / `mockito`
 
-<!-- include: shared/desktop/external-dependencies.md -->
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

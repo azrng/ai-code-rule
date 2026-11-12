@@ -11,7 +11,7 @@ dependencies: [agents-root]
 
 ---
 
-<!-- include: shared/doc/advisory-layered.md -->
+<!-- include: shared/doc/advisory.md -->
 
 ---
 

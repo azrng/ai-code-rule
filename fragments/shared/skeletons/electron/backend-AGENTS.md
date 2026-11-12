@@ -184,7 +184,6 @@ IPC Handler / Event（ipcMain.handle / webContents.send）
 
 <!-- include: shared/application/anti-patterns.md -->
 
-<!-- include: shared/application/maintainability-check.md -->
 
 ---
 

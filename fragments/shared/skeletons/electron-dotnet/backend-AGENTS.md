@@ -187,7 +187,6 @@ IPC Handler / Event（JSON-RPC method）
 
 <!-- include: shared/application/anti-patterns.md -->
 
-<!-- include: shared/application/maintainability-check.md -->
 
 ---
 

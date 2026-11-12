@@ -71,7 +71,6 @@ dependencies: [agents-root]
 
 <!-- include: shared/application/anti-patterns.md -->
 
-<!-- include: shared/application/maintainability-check.md -->
 
 ---
 
@@ -91,7 +90,7 @@ dependencies: [agents-root]
 <!-- include: shared/backend/background-write-races.md -->
 <!-- include: shared/backend/background-worker-rules.md -->
 
-<!-- include: shared/desktop/external-dependencies.md -->
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

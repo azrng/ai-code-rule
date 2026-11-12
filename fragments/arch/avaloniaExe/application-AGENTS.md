@@ -13,7 +13,6 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-<!-- include: shared/application/layered-arch.md -->
 
 <!-- include: shared/application/stack-mvvm.md -->
 - `Azrng.Core.Json`：基于 `System.Text.Json` 的 JSON 序列化
@@ -84,7 +83,6 @@ src/AppName/
 
 <!-- include: shared/application/anti-patterns.md -->
 
-<!-- include: shared/application/maintainability-check.md -->
 
 ---
 
@@ -100,7 +98,7 @@ src/AppName/
 <!-- include: shared/backend/background-write-races.md -->
 <!-- include: shared/backend/background-worker-rules.md -->
 
-<!-- include: shared/desktop/external-dependencies.md -->
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

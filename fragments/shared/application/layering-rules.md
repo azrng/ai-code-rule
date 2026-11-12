@@ -1,4 +1,5 @@
 ### 分层边界规则
+- `View → ViewModel → Service → Repository → Model`：View 负责展示，ViewModel 负责状态与命令编排，Service 负责业务逻辑，Repository 负责数据访问边界，Model 负责领域数据表达
 - View 只负责展示，不承载业务逻辑
 - ViewModel 负责状态管理、命令触发、调用 Service 与处理用户可见结果
 - Service 负责业务逻辑、流程编排和规则校验，不直接操作 View

@@ -119,11 +119,12 @@ MAUI 项目默认沉淀型真栈原型：页面直接在正式工程内实现，
 - 手势操作（滑动删除、捏合缩放）使用 MAUI 内置手势识别器
 - 键盘遮挡输入框时使用 `SoftInputExtensions` 自动调整
 
-### 组件规则
+### 本栈组件与图标
 - 优先复用 `src/AppName/Controls/` 下已有控件，禁止重复创建
-<!-- include: shared/ui/component-rules-core.md -->
 - 优先使用 Syncfusion.Maui.Toolkit 控件，不满足需求时再使用 MAUI 内置控件或自定义控件
 - 图标使用 MAUI 内置图形能力（`FontImageSource`）或项目既有素材
+
+<!-- include: shared/frontend/component-rules.md -->
 
 <!-- include: shared/ui/mvvm-rules.md -->
 
@@ -165,7 +166,7 @@ MAUI 项目默认沉淀型真栈原型：页面直接在正式工程内实现，
 <!-- include: shared/application/view-layer-testing.md -->
 - 推荐使用 xUnit + 项目既有 UI 测试方案
 
-<!-- include: shared/desktop/external-dependencies.md -->
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

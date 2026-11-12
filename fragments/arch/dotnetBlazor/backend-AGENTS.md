@@ -145,7 +145,6 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 
 <!-- include: shared/application/anti-patterns.md -->
 
-<!-- include: shared/application/maintainability-check.md -->
 
 ---
 

@@ -207,7 +207,7 @@ WPF 项目默认沉淀型真栈原型：页面直接在正式工程内实现，�
 - Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试
 - 使用 xUnit 作为测试框架
 
-<!-- include: shared/desktop/external-dependencies.md -->
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 
