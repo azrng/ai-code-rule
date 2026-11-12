@@ -66,12 +66,11 @@ public enum OrderStatus
 ### IDomain（领域契约层）
 **放**：实体（继承 `IdentityOperatorStatusEntity`）。**EFCore 配置类不在这层——放 EntityFramework 层**（见下）。
 **不放**：DbContext、业务逻辑、DTO、EFCore 配置类。
-**包引用**：`Common.EFCore`（取实体基类 + `IdHelper`）。
+**包引用**：`Common.EFCore`（取实体基类；雪花 ID 经其传递引用 `Azrng.Core.Helpers.Snowflake` 可达）。
 
 实体示例：
 ```csharp
 using Azrng.EFCore.Entities;
-using Coldairarrow.Util;
 
 namespace App.IDomain.Entities;
 
@@ -79,7 +78,7 @@ public class Product : IdentityOperatorStatusEntity   // Id + 审计 + 软删除
 {
     public Product()
     {
-        Id = IdHelper.GetLongId();
+        // Id 由基类自动 Snowflake.NewId()，不必显式写
         SetCreator("system");
     }
 

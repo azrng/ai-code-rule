@@ -84,7 +84,7 @@ builder.Services.AddEntityFramework<AppDbContext>("test-db");
 
 需要 `IUnitOfWork<TDbContext>` 时追加 `.AddUnitOfWork<TDbContext>()`（来自 `Azrng.EFCore` 基础包）。
 
-> 非内存 provider 的 `AddEntityFramework<TDbContext>` 默认使用 `EfCoreConnectOption` 的节点号和蛇形命名策略，并据最终的 `config.WorkId` 内部初始化 `IdHelper`。不要在普通注册示例中把 `WorkId` 固定为 `1`；只有已经明确节点号分配策略时才显式设置。只有独立于 EF 注册的 Console 或工具程序，才需要额外调用基础包提供的 `AddIdHelper(workId)`。
+> 非内存 provider 的 `AddEntityFramework<TDbContext>` 默认使用 `EfCoreConnectOption` 的节点号和蛇形命名策略，并据最终的 `config.WorkId` 内部调 `Snowflake.ConfigureWorkerId`（Common.EFCore 1.7.1+ 起 ID 生成器是 `Azrng.Core.Helpers.Snowflake`，不再是旧 `IdHelper` 包）。`config.WorkId` 默认由 Snowflake 按本机标识 + 进程 Id 自动派生（不保证唯一）；不要在普通注册示例中把 `WorkId` 固定为 `1`，只有已经明确节点号分配策略时才显式设置。只有独立于 EF 注册的 Console 或工具程序，才需要额外调用基础包提供的 `AddIdHelper(workId)`（保留兼容 API，内部等价 `Snowflake.ConfigureWorkerId`）。
 
 ## 各 provider 的 DbTypeId（影响时间列类型）
 

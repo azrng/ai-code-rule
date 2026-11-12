@@ -107,7 +107,7 @@ YourProject/
 | 业务场景 | 抛什么（`Azrng.Core.Exceptions`） | HTTP 状态码 | ErrorCode |
 |---|---|---|---|
 | 参数错误 / 业务校验失败 | `throw new ParameterException(msg)` | 400 | `"400"` |
-| 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"500"`（见下） |
+| 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"400"` |
 | 资源不存在（按 id 查不到） | `if (entity is null) throw new NotFoundException("记录不存在")` | 404 | `"404"` |
 | 未认证（未登录或凭证无效） | `throw new UnauthorizedException(msg)` | 401 | `"401"` |
 | 已认证但无权限 | `throw new ForbiddenException(msg)` | 403 | `"403"` |
@@ -116,9 +116,9 @@ YourProject/
 
 > 默认按真实 HTTP 状态码返回（400/401/403/404/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
 
-> **`LogicBusinessException` 的结果码版本差异**（Azrng.Core 1.20.0 实测）：中间件把它映射为 HTTP 400，但 `ResultModel.code` 取自异常的 `ErrorCode`；`LogicBusinessException(string message)` 构造走 `BaseException(string)`，`ErrorCode` 为 `"500"`，只有无参构造才是 `"400"`。因此需要 code 与 HTTP 400 一致时优先用 `ParameterException(msg)`；用 `LogicBusinessException` 时前端按 `isSuccess=false` 判错，不要依赖 code。
+> **异常 ErrorCode 口径（Azrng.Core 2.0.0 起，NuGet 已发布）**：`LogicBusinessException`/`ParameterException` 全构造 400、`ForbiddenException` 全构造 403、`NotFoundException` 全构造 404，上表按此成立。**注意实际生效版本**：NuGet 上 `Common.EFCore 1.7.1` 的传递依赖是 `Azrng.Core 1.20.1`（传递版本只是下限），只引 EFCore 家族不显式引 Core 时生效的是 1.20.1——需要 2.0.0 口径必须显式 `PackageReference Azrng.Core ≥ 2.0.0`（新项目骨架清单第 1 条已要求 Core.csproj 显式引用，按 2.0.0+ 锁版本）。**旧版（< 2.0.0）差异**：`LogicBusinessException(string message)` 走 `BaseException(string)`，`ResultModel.code` 为 `"500"`（HTTP 仍是 400）；`ForbiddenException` 无参构造的 `ErrorCode` 是 `"401"`——存量项目锁旧版时按旧版实测值处理，不要按上表预期旧版行为；无论哪个版本，前端判错统一按 `isSuccess=false`，不要依赖 code。
 
-> 当前 `CustomExceptionMiddleware` 对 `ForbiddenException` 写入 HTTP 403 和结果码 `403`；部分 `Azrng.Core` 版本的 `ForbiddenException.ErrorCode` 构造值仍是 `401`，这是包内历史兼容问题，不应据此把“已认证但无权限”文档化为 401。
+> **成功包装保留 action 状态码（Azrng.AspNetCore.Core ≥ 1.6.0）**：`CustomResultPackFilter` 只替换响应体为统一外壳，不再把 `CreatedAtAction`(201)/`Accepted`(202)/`StatusCode(...)` 强制改成 200——但外壳内 `code` 仍是 `"200"`，前端判成功按 `isSuccess`，不要按 `code` 推断 HTTP 状态。
 
 > `AddMvcResultPackFilter` 的忽略前缀按 URI 路径匹配，传值应以 `/` 开头，例如 `/swagger`。传入 `swagger` 可能不影响启动，但在首个结果过滤请求时才抛参数异常。
 
@@ -136,6 +136,7 @@ CORS 优先用 `Azrng.AspNetCore.Core` 内置扩展，不要手写原生 `AddCor
 - **生产按需改**：`services.AddCorsByOrigins(string[] allowedOrigins)`——来源白名单走配置（`appsettings.json` 的 `Cors:AllowedOrigins` 节，生产用环境变量 `Cors__AllowedOrigins__N` 覆盖）；空列表 / 含空白项启动即抛 `ArgumentException`，防漏配；`allowCredentials: true` 仅 SignalR / 携带凭证场景。
 - **管道**：`app.UseCorsPolicy()`（默认策略名 `DefaultCors`，两种注册方式通用），放在异常处理 / Swagger / 静态文件之后、`UseAuthentication` / `UseAuthorization` / `MapControllers` 之前。
 - **禁忌**：未注册 CORS 服务就写 `app.UseCors()`，首个跨域请求直接 500；`AddAnyCors` 不得用于生产；`allowCredentials: true` 不得与 `AllowAnyOrigin` 组合。纯后端 / 无跨域需求的项目整体删掉注册与中间件两行，不是必装项。
+- **版本提示**：`Azrng.AspNetCore.Core` 1.5.0 起移除了 `AddCorsPolicy()`（与框架原生 `services.AddCors(o => o.AddPolicy(...))` 完全等价）——高级自定义策略直接用原生 `AddCors` 注册，策略名与 `app.UseCorsPolicy(策略名)` 对齐即可；存量模板里仍见 `AddCorsPolicy` 说明包版本 < 1.5.0，升级时按原生写法迁移。
 
 ### Swagger 与静态文件装配
 

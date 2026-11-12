@@ -56,7 +56,7 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 // .AddUnitOfWork<AppDbContext>();
 ```
 
-> PostgreSQL provider 的配置参数类型是 `Azrng.EFCore.EfCoreConnectOption`，定义在基础包 `Common.EFCore`，不是 `Azrng.EFCore.PostgresSql`。`AddEntityFramework<TDbContext>` 扩展方法位于 `Microsoft.Extensions.DependencyInjection`。`WorkId` 默认使用包内置的节点号策略，`IsSnakeCaseNaming` 默认是 `true`；除非已经明确设计节点号或命名策略，否则不要显式覆盖这两个默认值。该注册过程会按最终的 `WorkId` 初始化 `IdHelper`，使用实体基类或直接调用 `IdHelper.GetLongId()` 时，通常不需要再单独调用 `AddIdHelper`。
+> PostgreSQL provider 的配置参数类型是 `Azrng.EFCore.EfCoreConnectOption`，定义在基础包 `Common.EFCore`，不是 `Azrng.EFCore.PostgresSql`。`AddEntityFramework<TDbContext>` 扩展方法位于 `Microsoft.Extensions.DependencyInjection`。`WorkId` 默认由 `Snowflake` 按本机标识（非回环 IPv4，无则机器名）稳定哈希 + 进程 Id 自动派生——只降低多机/多进程撞号概率、不保证唯一，`IsSnakeCaseNaming` 默认是 `true`；除非已经明确设计节点号或命名策略，否则不要显式覆盖这两个默认值（分布式部署有节点号分配方案时才设 `config.WorkId`）。该注册过程会按最终的 `WorkId` 调 `Snowflake.ConfigureWorkerId`（Common.EFCore 1.7.1+ 已用 `Azrng.Core.Helpers.Snowflake` 替换 `IdHelper` 包），使用实体基类或直接调用 `Snowflake.NewId()` 时，通常不需要再单独调用 `AddIdHelper`（该 API 保留兼容，内部等价 `Snowflake.ConfigureWorkerId`）。
 >
 > **该注册还携带两个隐藏副作用（1.7.x 源码核实），脱离它单独构建 DbContext 模型会失真**：①写入全局静态 `EfCoreGlobalConfig.SetConfig(DatabaseType.PostgresSql, ...)`——包配置基类里的 `IsUnTimeZoneDateTime(DbType == PostgresSql)` 靠它才真正生效，跳过注册时基类不配时间类型（详见 references/postgres-time-pitfall.md 场景 1 的路径条件）；②`IsSnakeCaseNaming = true` 时在 options 管道挂 `UseSnakeCaseNamingConvention`——蛇形列名仅存在于经注册构建的模型，临时工程核对 DDL 必须复刻同一管道（见「迁移脚本与 EF 模型核对」）。
 
@@ -64,12 +64,12 @@ builder.Services.AddEntityFramework<AppDbContext>(config =>
 
 ### 3. 定义实体
 
-优先用包提供的基类，自动带主键（long，IdHelper 雪花 ID）和审计字段。基类无参构造函数已自动 `Id = IdHelper.GetLongId()`，业务实体只需在构造函数里 `SetCreator` 填审计信息：
+优先用包提供的基类，自动带主键（long，`Azrng.Core.Helpers.Snowflake` 雪花 ID）和审计字段。基类无参构造函数已自动 `Id = Snowflake.NewId()`，业务实体只需在构造函数里 `SetCreator` 填审计信息：
 
 ```csharp
 using Azrng.EFCore.Entities;
-using Coldairarrow.Util;        // IdHelper
 using Azrng.Core.Extension;    // ToUnspecifiedDateTime
+// 手工生成 Id 才需要 using Azrng.Core.Helpers;  // Snowflake.NewId()
 
 public class User : IdentityOperatorStatusEntity   // Id+审计+软删除/禁用
 {
@@ -77,8 +77,7 @@ public class User : IdentityOperatorStatusEntity   // Id+审计+软删除/禁用
 
     public User()
     {
-        Id = IdHelper.GetLongId();   // 可省略（基类已设），显式写更清晰
-        SetCreator("system");
+        SetCreator("system");   // Id 由基类自动 Snowflake.NewId()，不必显式写
     }
 
     public User(string account) : this()   // 链式调无参构造
@@ -214,13 +213,13 @@ builder.Services.AddSqlMigrationService("default", config =>
 
 > **执行时序与迁移后补数据**：迁移在 `RunAsync()` 内由启动过滤器执行——晚于 Program 顶层语句、早于 Kestrel 监听。迁移完成后要跑 C# 逻辑（种子数据、缓存预热等）时，用自定义 `IStartupFilter` 挂接：ASP.NET Core 宿主对 `IStartupFilter` 集合按注册顺序依次包裹，先注册者位于最外层、先执行（实际执行顺序与注册顺序一致）。因此迁移后补数据的自定义过滤器须在 `.AddAutoMigration()` **之后**注册才会后于迁移运行；注册在之前会先于迁移执行，此时查询迁移才创建的表（如种子数据查业务表）会直接报 `42P01 relation does not exist` 导致宿主启动失败。
 
-**SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，**文件名必须是三段式（四段式）数字版本**：`1.0.0.sql`、`1.1.0.txt`（或 `1.0.0.1.sql`），升级按数字递增（如 `1.0.0` → `1.0.1`）。版本号解析器（0.5.0 实测）只接受以 `.` 分隔的三段或四段数字：`1.sql`、`1.0.sql` 等段数不足的文件名会解析失败——该失败被记为错误日志（`获取版本号异常...不支持的版本格式`）并返回版本 0，脚本被静默跳过，应用正常启动但表没建。如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`。不要在版本号后追加 `_init`、`_add_user_phone` 等描述文字，解析器会把描述一起当成版本号。
+**SQL 脚本约定**：放 `Service/wwwroot/MigrationSql/`，**文件名必须是三段式（四段式）数字版本**：`1.0.0.sql`、`1.1.0.txt`（或 `1.0.0.1.sql`），每段是 `0-999` 的整数，升级按数字递增（如 `1.0.0` → `1.0.1`）。版本号解析器（0.6.0+ fail-fast）只接受以 `.` 分隔的三段或四段数字：`1.sql`、`1.0.sql`（段数不足）、`1000.0.0`（段越界）、`1.0.0_init`（混入非数字，描述会被一起当版本号）都会抛 `InvalidOperationException` 使**迁移启动失败**——0.5.x 及以前是记错误日志返回版本 0、脚本被静默跳过（应用照常启动但表没建），升级后这类隐藏失败会变成显式启动失败，目录里混入的非脚本 `.sql`/`.txt` 文件必须清走。如果设置了非空 `VersionPrefix`，文件名必须以该前缀开头，例如默认配置对应 `version1.0.0.sql`；`VersionPrefix` 设为 `string.Empty` 时扫描目录下**全部** `.sql`/`.txt` 文件，任何一个命名非法都会拖垮启动。
 
-> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在、前缀不匹配或文件名版本解析失败时，服务可能只记录信息/错误日志并保持旧版本，不会把配置错误直接抛到启动流程。启动后应核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志。启动过滤器报 `42P01 relation does not exist` 时，先核对过滤器注册顺序（迁移后补数据的自定义过滤器应晚于 `.AddAutoMigration()` 注册）与迁移日志确认已实际执行，再排查其他原因。
+> **迁移启动自检**：`VersionPrefix` 默认值是 `"version"`，纯版本文件名必须显式设置为 `string.Empty`；`SqlRootPath` 应使用 `Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "MigrationSql")` 等方式得到绝对路径。目录不存在只记信息日志并保持旧版本；前缀不匹配时文件根本不被扫描，同样静默保持旧版本——这两类配置错误不会抛到启动流程，必须启动后核对迁移日志中的最新版本（默认表为 `app_version_log`）和 `SQL迁移脚本执行成功` 日志才能发现（0.6.0+ 文件名版本解析非法才会显式抛 `InvalidOperationException`）。启动过滤器报 `42P01 relation does not exist` 时，先核对过滤器注册顺序（迁移后补数据的自定义过滤器应晚于 `.AddAutoMigration()` 注册）与迁移日志确认已实际执行，再排查其他原因。
 
 > 已应用的脚本**不可修改**（版本日志已记录其版本）——改结构就新增一个更高版本的脚本。多库场景调多次 `AddSqlMigrationService(不同名字, ...)`，各自独立版本管理。
 
-> **历史库中途接入**：为已在线的存量库补迁移脚本时，脚本可安全重放（幂等：`IF NOT EXISTS` / `ON CONFLICT` 等）的场景不需要 `IInitVersionSetter`——版本日志表首次执行自动创建，存量脚本从零顺序跑一遍即可；仅当存量脚本不可安全重放时，才用 `IInitVersionSetter` 预置初始版本、避免存量脚本重放。
+> **历史库中途接入**：为已在线的存量库补迁移脚本时，脚本可安全重放（幂等：`IF NOT EXISTS` / `ON CONFLICT` 等）的场景不需要 `IInitVersionSetter`——版本日志表首次执行自动创建，存量脚本从零顺序跑一遍即可；仅当存量脚本不可安全重放时，才用 `IInitVersionSetter` 预置初始版本、避免存量脚本重放。0.6.0+ 基线版本会幂等写入版本日志表（已存在同版本不重复写），版本表能看到基线行、不再每次启动重复探测。
 
 ## 决策指引（AI 必读）
 
