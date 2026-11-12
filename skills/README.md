@@ -34,6 +34,12 @@ GitHub：https://github.com/anthropics/skills/tree/main/skills/xlsx
 
 GitHub：https://github.com/anthropics/skills/tree/main/skills/frontend-design
 
+#### smyw
+
+show me you want：做会改动页面、交互流程或前后端接口的功能时，按 JSON spec 生成单文件 HTML「变更预览」——按真实界面绘制每整屏线框、改动模块按编号画框（黄=修改、绿=新增、红=删除），支持流程泳道与后端模块前后对比；用户可在页面里直接拖动、批注并复制结构化反馈交回 Agent，用于写代码前的原型确认与实现后回顾。
+
+GitHub：https://github.com/nishuzumi/show-me-you-want-skill
+
 #### ui-ux-pro-max
 
 高质量 UI/UX 设计辅助 skill，用于提升界面设计、交互体验和视觉表达。
