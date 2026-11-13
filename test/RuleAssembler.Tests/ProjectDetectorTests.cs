@@ -478,4 +478,30 @@ public sealed class ProjectDetectorTests : IDisposable
         Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazorWebApp");
         Assert.Contains(result.Candidates, candidate => candidate.SampleProfileId == "dotnetBlazorWebApp-ai");
     }
+
+    [Fact]
+    public void Detect_PackageLibraryRepo_RecommendsDotnetNugetLibrary()
+    {
+        // 打包类库工程多于 Web 宿主工程：形态收敛为类库 / 包仓库，示例宿主不再声明 form 证据
+        Directory.CreateDirectory(Path.Combine(_root, "src", "Shared"));
+        foreach (var name in new[] { "Common.Core", "Common.Json" })
+        {
+            File.WriteAllText(
+                Path.Combine(_root, "src", "Shared", name + ".csproj"),
+                "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><PackageId>"
+                + name + "</PackageId><Version>1.0.0</Version></PropertyGroup></Project>");
+        }
+
+        Directory.CreateDirectory(Path.Combine(_root, "src", "Services", "DemoHost"));
+        File.WriteAllText(
+            Path.Combine(_root, "src", "Services", "DemoHost", "DemoHost.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"></Project>");
+        File.WriteAllText(Path.Combine(_root, "PackPackages.slnx"), "<Solution></Solution>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("dotnet-nuget-library", result!.SampleProfileId);
+        Assert.Contains(result.Reasons, reason => reason.Contains("NuGet 打包"));
+    }
 }

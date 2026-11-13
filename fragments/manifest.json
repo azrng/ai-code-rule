@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "3.4.1",
+    "version": "3.5.0",
     "last_updated": "2026-11-13"
   },
   "schema_version": 3,
@@ -51,7 +51,7 @@
     { "id": "flutter-add-widget-test", "group": "Flutter", "when": { "frontend": "flutter" } },
     { "id": "flutter-improve-design", "group": "Flutter", "when": { "frontend": "flutter" } },
     { "id": "flutter-motion", "group": "Flutter", "when": { "frontend": "flutter" } },
-    { "id": "grill-me", "group": "通用工具", "when": { "form": ["backend-only", "web", "desktop", "mobile", "static", "general"] } },
+    { "id": "grill-me", "group": "通用工具", "when": { "form": ["backend-only", "library", "web", "desktop", "mobile", "static", "general"] } },
     { "id": "systematic-debugging", "group": "通用工具" },
     { "id": "brainstorming", "group": "通用工具" },
     { "id": "skill-creator", "group": "通用工具" },
@@ -182,6 +182,11 @@
           }
         ]
       }
+    },
+    {
+      "id": "dotnet-package",
+      "label": ".NET 包仓库",
+      "desc": "多包类库仓库：NuGet 打包、逐包契约与发布纪律"
     },
     {
       "id": "python-backend",
@@ -388,6 +393,10 @@
         "backend-only": {
           "label": "纯后端服务",
           "desc": "只提供 API 服务，没有界面"
+        },
+        "library": {
+          "label": "类库 / 包仓库",
+          "desc": "多个类库工程打包发布（NuGet 包源），无对外服务界面"
         },
         "web": {
           "label": "Web 应用",
@@ -2386,6 +2395,99 @@
       ]
     },
     {
+      "id": "dotnet-nuget-library",
+      "kind": "backend",
+      "label": ".NET NuGet 包仓库",
+      "desc": "类库 / 包仓库 + .NET 组合的包实现组件（dotnet-nuget-library）",
+      "when": {
+        "form": "library",
+        "backend": "dotnet",
+        "arch-style": "single"
+      },
+      "family": "dotnet-package",
+      "root": {
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `backend-AGENTS.md` | 包实现、公开 API 契约、示例宿主、数据访问与逐包测试 | 涉及包公开 API、包实现、示例宿主或测试时 |",
+          {
+            "line": "| `doc-AGENTS.md` | 包契约说明、README / CHANGELOG / ARCHITECTURE 与文档站 | 涉及包文档、版本记录或 API 契约说明时 |",
+            "features": [
+              "doc"
+            ]
+          },
+          {
+            "line": "| `infra-AGENTS.md` | 打包与发布链路、CI、环境变量、版本号纪律 | 涉及打包、发布、版本号、CI 或交付链路时 |",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "dev-stage": [
+          "### 三个阶段",
+          "",
+          "```text",
+          "阶段 0            阶段 1                  阶段 2",
+          "包 API 设计   →   包实现与逐包测试     →   打包、发布与交付验证",
+          "（用户确认）      （包实现角色）           （交付验证角色）",
+          "```",
+          "",
+          "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+          "  - Bug 修复",
+          "  - 不动公开 API 的实现调整或性能优化",
+          "  - 文档、示例、版本号或发布配置调整",
+          "- 除上述场景外（新增包、新增 / 变更公开 API、行为语义变化），各阶段必须满足入场条件后方可进入下一阶段",
+          "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+          "",
+          "### 阶段职责",
+          {
+            "line": "- 阶段 0：包 API 设计、公开契约说明与版本影响评估，细则见 `doc-AGENTS.md`「接口契约规范」",
+            "features": [
+              "doc"
+            ]
+          },
+          "- 阶段 1：包实现、逐包测试与示例宿主同步，细则见 `backend-AGENTS.md`",
+          {
+            "line": "- 阶段 2：打包验证、发布与交付核对，结合当前文件与 `infra-AGENTS.md`",
+            "features": [
+              "infra"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及包实现时，已查看目标包的公开 API 面、Options、DI 扩展、包间依赖与对应测试工程",
+          "- 涉及示例宿主时，已查看示例的注册入口与调用点"
+        ],
+        "contract-error-line": "阶段 0 输出的公开 API 设计或契约说明在阶段 1 发现缺口时，应先回到契约变更流程，修改公开接口 / Options / 扩展方法定义后同步实现、测试、示例与版本影响评估，再继续实现；不得绕过契约直接补临时公开成员",
+        "search-nouns": "包公开 API、Options、扩展方法、示例宿主调用点和逐包测试实现",
+        "task-kind-nouns": "包实现、文档还是发布链路",
+        "root-scope-nouns": "包实现、文档、发布链路",
+        "context-scope-nouns": "包实现 / 文档 / 发布链路",
+        "high-risk-nouns": "公开 API 破坏性变更、版本号、发布、环境变量",
+        "destructive-nouns": "删除包 / 测试工程、环境清理",
+        "boundary-nouns": "跨包职责",
+        "extra-sections": [
+          "## 包版本与变更记录\n- 包目录 `README.md` 只保留项目定位、安装方式、主要用法和当前版本的简要变更；版本历史持续增长、明显影响使用说明阅读时，将历史记录迁移到同目录的 `CHANGELOG.md`，迁移保留原有条目，不改写发布事实\n- `CHANGELOG.md` 按版本号倒序维护，每个版本独立成节；README 指向变更记录的链接使用绝对仓库 HTTPS 地址，确保包源页面渲染后可直接访问\n- 发布或升版前核对三处一致：csproj `<Version>`、README 安装示例 `--version`、README / CHANGELOG 最新版本号；细则见 `doc-AGENTS.md`「包文档结构与版本记录」与 `infra-AGENTS.md`「发布纪律」"
+        ]
+      },
+      "files": [
+        {
+          "source": "arch/dotnet-nuget-library/backend-AGENTS.md",
+          "output": "backend-AGENTS.md"
+        },
+        {
+          "source": "arch/dotnet-nuget-library/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "source": "arch/dotnet-nuget-library/infra-AGENTS.md",
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
+        }
+      ]
+    },
+    {
       "id": "python",
       "kind": "backend",
       "label": "Python FastAPI 后端",
@@ -3680,6 +3782,17 @@
     },
     {
       "when": {
+        "form": "library"
+      },
+      "require": {
+        "backend": "dotnet",
+        "frontend": "none",
+        "shell": "none",
+        "arch-style": "single"
+      }
+    },
+    {
+      "when": {
         "form": "web"
       },
       "require": {
@@ -3856,6 +3969,21 @@
       "family": "dotnet-backend",
       "selection": {
         "form": "backend-only",
+        "backend": "dotnet",
+        "frontend": "none",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "dotnet-nuget-library",
+      "label": ".NET NuGet 包仓库",
+      "desc": "多包类库 monorepo：多个 NuGet 打包工程 + 逐包测试 + CI 发布包源，无对外服务界面",
+      "family": "dotnet-package",
+      "selection": {
+        "form": "library",
         "backend": "dotnet",
         "frontend": "none",
         "shell": "none",
