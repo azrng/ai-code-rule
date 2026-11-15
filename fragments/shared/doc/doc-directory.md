@@ -12,7 +12,7 @@ doc/
 │   ├── index.md                     # 设计索引
 │   ├── architecture.md              # 跨模块架构设计
 │   ├── <module>/<feature>.md        # 功能设计
-│   └── prototype/                   # 界面原型目录，按 prototype-workflow.md 启用原型时创建
+│   └── prototype/                   # 原型目录，放多方案对比稿与验证型工程；沉淀型原型在正式工程内不占本目录
 └── contracts/
     ├── <module>.md                  # 可选的跨模块契约索引
     └── <module>/<feature>.md        # 新契约草案或契约补充说明
@@ -24,7 +24,7 @@ doc/
 - `doc/design/index.md`：维护设计文档导航和整体设计状态
 - `doc/design/architecture.md`：只记录跨模块架构、公共数据流、公共技术决策和跨模块约束
 - `doc/design/<module>/<feature>.md`：只描述对应需求的实现方案、模块职责、数据流、状态、交互、异常和技术决策；通过需求 ID 引用需求，不重复粘贴完整需求
-- `doc/design/prototype/`：按 prototype-workflow.md 规则启用原型时必建，「可选」仅指新功能是否启用原型专项，不指存量原型可滞后——已存在的原型文件必须与实现保持同步，任何界面变更先改原型再改实现；未启用时仍使用设计文档内的 ASCII 线框图；存放 HTML 交互原型与 HTML 快稿（桌面/移动端复杂交互可用最小可运行验证工程），按 `<module>/<feature>.html` 与功能设计文档对应，并在对应设计文档中互相链接；沉淀型真栈原型直接落在正式工程内、不占用本目录，其页面路径与确认状态在设计文档中登记。原型确认后归档保留，目录内不得混入真实业务代码或真实接口调用。共享样式与静态资源放 `prototype/assets/`，页面以相对路径引用，不在每个页面内联重复
+- `doc/design/prototype/`：仅多方案发散比对（对比稿）或专项验证（验证型工程）时创建，默认沉淀型原型不使用本目录；「可选」仅指本次是否需要对比或验证，不指存量原型可滞后——已存在的原型（含沉淀型页面）必须与实现保持同步，任何界面变更先改原型再改实现。对比稿按 `<module>/<feature>-compare/<方案名>/` 每方案一个自包含工程组织，验证型放 `<module>/<feature>-proto/`，均须自包含、不得注册进正式解决方案 / 工作区 / 构建清单，并与功能设计文档互相链接；方向确定 / 验证完成后归档或删除，不直接搬进正式工程。沉淀型真栈原型直接落在正式工程内、不占用本目录，其页面路径与确认状态在设计文档中登记；目录内不得混入真实业务代码或真实接口调用
 - `doc/contracts/<module>.md`：仅在需要给多个模块提供契约索引或补充说明时使用；`doc/contracts/<module>/<feature>.md` 用于阶段 0 的新契约草案。DTO、Schema、公开接口定义仍以代码或共享 Schema 为最终事实来源
 - 新文档在 YAML front matter 中至少标注 `doc_id`、`doc_type`、`module`、`status`、`last_updated` 和关联文档路径；需求文档使用 `REQ-` ID，设计文档使用 `DES-` ID，契约草案使用 `CON-` ID
 - `status` 统一使用 `draft`、`in-review`、`approved`、`superseded`；只有对应需求、设计和新增契约草案均为 `approved` 时，才允许进入阶段 1。已批准文档发生业务或技术变更时，先改为 `in-review`，确认后再恢复为 `approved`
