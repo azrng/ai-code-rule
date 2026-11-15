@@ -262,6 +262,17 @@ internal sealed class ProjectDetector
             || signals.HasTauriConf
             || electronSignal;
 
+        // 打包类库工程与 Web 宿主工程的数量对比：启用 NuGet 打包的类库工程占多数时，
+        // 本仓库是「类库 / 包仓库」，Web 宿主只是示例 / 演示工程，
+        // 不再声明 form / arch-style 方案级证据（与 uiFormDefined 同一守卫思路）
+        var packLibraryCount = signals.CsprojContents
+            .Zip(kinds)
+            .Count(pair => pair.Second == DotnetProjectKind.Plain
+                && (pair.First.Contains("<PackageId", StringComparison.OrdinalIgnoreCase)
+                    || pair.First.Contains("GeneratePackageOnBuild", StringComparison.OrdinalIgnoreCase)));
+        var webServiceCount = kinds.Count(kind => kind == DotnetProjectKind.WebService);
+        var packageRepoDominant = packLibraryCount >= 2 && packLibraryCount > webServiceCount;
+
         foreach (var (content, kind) in signals.CsprojContents.Zip(kinds))
         {
             switch (kind)
@@ -299,7 +310,7 @@ internal sealed class ProjectDetector
                     // 传统 / Web App 之争证据不足时交给补答确认（detect-default 已随旧引擎退役）
                     continue;
                 case DotnetProjectKind.WebService:
-                    if (uiFormDefined)
+                    if (uiFormDefined || packageRepoDominant)
                         continue;
                     // Web 工程伴随前端框架依赖时按前后端分离处理，避免与 frontend 证据组合出无匹配候选
                     var hasJsFrontend = signals.ReactInPackageJson || signals.VueInPackageJson || signals.NextInPackageJson;
@@ -318,6 +329,16 @@ internal sealed class ProjectDetector
                 default:
                     continue;
             }
+        }
+
+        if (packageRepoDominant && !uiFormDefined)
+        {
+            evidence.Add(new(
+                "form",
+                "library",
+                $"发现 {packLibraryCount} 个启用 NuGet 打包的类库工程（PackageId / GeneratePackageOnBuild），多于 Web 宿主工程"));
+            if (!evidence.Any(item => item.Trait == "backend" && item.Value == "dotnet"))
+                evidence.Add(new("backend", "dotnet", "发现 .NET 工程（csproj）"));
         }
 
         // fastapi 是强信号（理由更具体）；仅有 pyproject/requirements 时是弱信号，也要给 python 指向，
@@ -416,12 +437,22 @@ internal sealed class ProjectDetector
             signals.HasSln = true;
 
         // csproj 深度取 4：常见解决方案布局（<方案>/<src>/<项目>/<项目>.csproj，如 CinemaHub/src/CinemaHub.Web）
-        // 项目文件在深度 3，多仓子项目（根/<子项目>/src/...）更深一层；目录只降文件读，不影响双击启动的瞬时性
+        // 项目文件在深度 3，多仓子项目（根/<子项目>/src/...）更深一层；目录只降文件读，不影响双击启动的瞬时性。
+        // 全树只数个数（无文件读）；内容采样优先 src/：超过采样上限的大仓库里 test/ 往往先被遍历，
+        // 先读 src/ 才能采到方案形态证据（如打包类库工程的 PackageId / GeneratePackageOnBuild 标记）
         foreach (var file in EnumerateShallow(root, new[] { "*.csproj" }, 4))
-        {
             signals.CsprojCount++;
-            if (signals.CsprojContents.Count < 20)
+        var sampled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var sampleRoot in new[] { Path.Combine(root, "src"), root })
+        {
+            if (!Directory.Exists(sampleRoot))
+                continue;
+            foreach (var file in EnumerateShallow(sampleRoot, new[] { "*.csproj" }, 4))
             {
+                if (signals.CsprojContents.Count >= 20)
+                    break;
+                if (!sampled.Add(Path.GetFullPath(file)))
+                    continue;
                 try
                 {
                     signals.CsprojContents.Add(File.ReadAllText(file));
