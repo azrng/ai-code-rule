@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "3.7.1",
+    "version": "3.8.0",
     "last_updated": "2026-11-15"
   },
   "schema_version": 3,
@@ -654,7 +654,7 @@
         "bk-fr-3": "└── ipc/                      # 子进程拉起与 IPC 转发（→ .NET sidecar）",
         "bk-fr-4": "- sidecar 调用优先复用单一通用 IPC 通道和生成的 method 常量 / 类型化 SDK；页面和业务封装不得手写 JSON-RPC method 字符串。",
         "bk-fr-5": "- 渲染进程禁止直接使用 Node 能力或直接 `child_process`；涉及原生能力的调用一律经主进程转发到 .NET sidecar",
-        "bk-dr-1": "# 技术栈：React + Tailwind CSS + Radix Primitive + cva + Electron + .NET (self-contained)",
+        "bk-dr-1": "# 技术栈：React + Tailwind CSS 4 + Radix Primitive + cva + Electron + .NET (self-contained)",
         "bk-dr-2": "    local_bridge: \"Electron IPC + .NET sidecar (stdio JSON-RPC)\"",
         "bk-dr-3": "  - \"通过 window.ipc（contextBridge）与主进程 / .NET sidecar 通信\""
       }
@@ -721,7 +721,7 @@
         "bk-fr-3": "└── ipc/                      # IPC handler 注册与本地能力",
         "bk-fr-4": "- IPC 调用优先复用统一的类型化封装与 channel 常量；页面和业务封装不得手写 channel 字符串。",
         "bk-fr-5": "- 渲染进程禁止直接使用 Node 能力或直接 `child_process`；涉及原生能力的调用一律交由主进程处理",
-        "bk-dr-1": "# 技术栈：React + Tailwind CSS + Radix Primitive + cva + Electron",
+        "bk-dr-1": "# 技术栈：React + Tailwind CSS 4 + Radix Primitive + cva + Electron",
         "bk-dr-2": "    local_bridge: \"Electron IPC (ipcMain.handle + contextBridge)\"",
         "bk-dr-3": "  - \"通过 window.ipc（contextBridge）与主进程通信\""
       }
@@ -1057,7 +1057,7 @@
         "ai-capability": "yes"
       },
       "slots": {
-        "fsai-extr-0": "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 前端框架 | React 19 + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Ant Design 5 | 快速形成统一视觉与组件 |\n| 状态 | Zustand | 用户信息与 AI 会话等跨组件状态 |\n| 模型接入 | 托管网关 / 服务端代理 + 统一封装（`src/ai/`） | 密钥不下发浏览器，调用收敛单一入口 |\n| 流式 | SSE / ReadableStream + Hook 订阅 | 打字机与长文本生成 |\n| 数据 | 本地存储 / 第三方 API | 无独立后端的数据口径 |\n| 部署 | Vite 构建产物 + 静态托管 | 平台托管或容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。"
+        "fsai-extr-0": "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 前端框架 | React 19 + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS 4 + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 | lucide-react | 统一基础视觉 |\n| 状态 | Zustand | 用户信息与 AI 会话等跨组件状态 |\n| 模型接入 | 托管网关 / 服务端代理 + 统一封装（`src/ai/`） | 密钥不下发浏览器，调用收敛单一入口 |\n| 流式 | SSE / ReadableStream + Hook 订阅 | 打字机与长文本生成 |\n| 数据 | 本地存储 / 第三方 API | 无独立后端的数据口径 |\n| 图表 | 仅实际需要时引入（recharts） | 主题接入 design-system token |\n| 部署 | Vite 构建产物 + 静态托管 | 平台托管或容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。"
       },
       "files": [
         {
@@ -2940,7 +2940,7 @@
       },
       "root": {
         "extra-sections": [
-          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表可选） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
+          "## 技术栈总览（速查）\n\n| 层次 | 选择 | 第一版作用 |\n| --- | --- | --- |\n| 后端框架 | .NET + ASP.NET Core | 暴露 Agent 与业务接口 |\n| 后端架构 | 单项目整洁架构（1 个 .csproj，文件夹按依赖方向分层） | 少仪式、快试错，可演进为多工程 |\n| 模型调用 | `Microsoft.Extensions.AI`（`IChatClient`）+ `Microsoft.Extensions.AI.OpenAI`（OpenAI 兼容） | 统一模型调用，便于替换 / mock |\n| Agent | Microsoft Agent Framework（包 `Microsoft.Agents.AI.*`，`AIAgent` / `ChatClientAgent`） | 组织工具、Skills、运行时（核心） |\n| ORM | EF Core | 数据访问 |\n| 数据库 | SQLite 默认，PostgreSQL 可选 | 零依赖起步，按需升级 |\n| 缓存 | 无（Redis 可选，非默认） | MVP 不强加基础设施 |\n| 前端 | React + TypeScript + Vite | 承接交互与状态展示 |\n| UI | Tailwind CSS 4 + shadcn/ui | 快速形成统一视觉与组件 |\n| 图标 / 图表 | lucide-react / recharts（图表仅实际需要时引入） | 统一基础视觉 |\n| 部署 | Docker + Docker Compose | 容器化交付 |\n\n> 各层细节与规则见对应子规则文件；AI 相关全部以 `ai-AGENTS.md` 为准。",
           "## AI 产品选型理念（贯穿全规则）\n\n- 选最稳的起点：第一版优先降低不确定性，不堆 K8s / 微服务 / 向量库 / 复杂权限等基础设施。\n- 核心先闭环：`IChatClient` + 最小 Agent 跑通\"输入 → 运行 → 展示 → 确认\"，向量库、记忆、多 Agent、MCP 等一律按需引入；核心 vs 可选清单见 `ai-AGENTS.md`。\n- AI Coding 友好且可演进：结构边界清晰、反馈循环短、抽象不过度；SQLite 可迁 PostgreSQL、单 Agent 可拆多 Agent、单项目可拆多工程。"
         ]
       },

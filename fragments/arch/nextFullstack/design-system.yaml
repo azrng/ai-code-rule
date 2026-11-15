@@ -2,11 +2,11 @@
 # 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
 # status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
-# 技术栈：Next.js + React + TypeScript + Tailwind CSS + shadcn/ui + lucide-react
+# 技术栈：Next.js + React + TypeScript + Tailwind CSS 4 + shadcn/ui + lucide-react
 
 meta:
   name: "Next.js 通用管理系统设计系统"
-  version: "1.0.0"
+  version: "1.1.0"
   status: "基线待定制"
   owners:
     - "design"
@@ -14,7 +14,7 @@ meta:
     - "fullstack"
   tech_stack:
     framework: "Next.js App Router"
-    styling: "Tailwind CSS（唯一样式引擎）"
+    styling: "Tailwind CSS 4（唯一样式引擎）"
     typography: "next/font（统一字体接入）"
     icons: "lucide-react（唯一图标库，尺寸 18-24px）"
     ui: "shadcn/ui（如项目已使用则沿用）"
@@ -32,7 +32,7 @@ meta:
     read_order:
       - "先阅读 AGENTS.md，按根规则命中前端子规则"
       - "命中 frontend-AGENTS.md 后再阅读本文件"
-      - "然后查看现有布局、ui 组件、tailwind 配置和字体配置"
+      - "然后查看现有布局、ui 组件、globals.css（@theme）和字体配置"
     principles:
       - "优先复用已有布局、组件和 token"
       - "优先使用语义化 token，不直接写视觉常量"

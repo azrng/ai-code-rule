@@ -2,20 +2,21 @@
 # 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
 # status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
-# 技术栈：React（版本以仓库锁定为准）+ TypeScript + Ant Design 5 + ECharts + Zustand
+# 技术栈：React（版本以仓库锁定为准）+ TypeScript + Tailwind CSS 4 + shadcn/ui + Zustand；图表仅在实际需要时启用
 # 注意：Wails 桌面应用，无 HTTP 后端，前后端通过 Wails 绑定通信
 
 meta:
   name: "企业级应用设计系统"
-  version: "2.2.0"
+  version: "2.3.0"
   status: "基线待定制"
   owners:
     - "design"
     - "frontend"
   tech_stack:
-    styling: "Ant Design 5 Design Token + CSS Modules（唯一样式引擎）"
-    icons: "@ant-design/icons（唯一图标库，尺寸 16-24px）"
-    charts: "ECharts + echarts-for-react（唯一图表库）"
+    styling: "Tailwind CSS 4 + shadcn CSS 变量（唯一样式引擎）"
+    ui_kit: "shadcn/ui（Radix Primitive 复制式组件，落在 src/components/ui/）"
+    icons: "lucide-react（唯一图标库，尺寸 16-24px）"
+    charts: "默认不安装；实际存在图表需求时引入（推荐 ECharts），主题接入本文件 token"
     state_global: "Zustand（跨组件全局状态）"
     state_local: "React Hooks（组件本地状态）"
   communication:
@@ -25,14 +26,14 @@ meta:
   usage:
     read_order:
       - "在进行任何 UI 改动前阅读本文件"
-      - "然后查看 src/config/antd-theme.ts Ant Design 主题配置"
-      - "然后查看 src/config/echarts-theme.ts 图表主题配置"
+      - "然后查看 src/styles/globals.css（Tailwind CSS 4 @theme 与 shadcn CSS 变量）"
+      - "启用图表时再查看图表主题配置"
       - "然后再查看现有页面与组件实现"
     principles:
       - "优先复用，而不是重新发明"
-      - "优先使用 Ant Design 组件和 Design Token，而不是硬编码视觉值"
+      - "优先使用 shadcn/ui 组件、Tailwind 工具类和本文件 token，而不是硬编码视觉值"
       - "优先使用已有项目组件，而不是先写自定义组件"
-      - "图表颜色统一来自 echarts-theme，不在页面层硬编码"
+      - "启用图表后，图表颜色统一来自图表主题，不在页面层硬编码"
       - "以桌面窗口为主，不强制移动端响应式；窗口可调性以项目配置为准"
 
 product:
@@ -49,18 +50,18 @@ product:
 
 # ============================================================
 # 颜色 Token
-# 对应 Ant Design 5 Design Token 体系
+# 实现资源：src/styles/globals.css 的 @theme token 注册
 # ============================================================
 tokens:
   colors:
-    # 主品牌色 - Ant Design 蓝
+    # 主品牌色 - 品牌蓝
     primary:
       50: "#E6F4FF"
       100: "#BAE0FF"
       200: "#91CAFF"
       300: "#69B1FF"
       400: "#4096FF"
-      500: "#1677FF" # Ant Design 默认主色，用于主按钮、链接、激活态
+      500: "#1677FF" # 默认主色，用于主按钮、链接、激活态
       600: "#0958D9" # hover 态
       700: "#003EB3" # active 态
       800: "#002C8C"
@@ -127,35 +128,35 @@ tokens:
       900: "#111827"
 
   # ============================================================
-  # 语义化颜色映射（使用 Ant Design Design Token）
-  # 优先使用 ConfigProvider theme token，而非硬编码颜色
+  # 语义化颜色映射（Tailwind 工具类 + shadcn CSS 变量）
+  # 优先使用语义化类（bg-card / text-muted-foreground 等），而非硬编码颜色
   # ============================================================
   semantic:
     text:
-      primary: "colorText" # Ant Design token: colorText
-      secondary: "colorTextSecondary"
-      disabled: "colorTextDisabled"
-      inverse: "colorTextLightSolid"
-      link: "colorPrimary"
-      link_hover: "colorPrimaryHover"
+      primary: "text-foreground" # shadcn CSS 变量 --foreground
+      secondary: "text-muted-foreground" # --muted-foreground
+      disabled: "text-muted-foreground/60"
+      inverse: "text-primary-foreground" # 深色背景上的文本
+      link: "text-primary" # --primary
+      link_hover: "text-primary/80"
     background:
-      page: "colorBgLayout"
-      container: "colorBgContainer"
-      subtle: "colorBgContainer"
-      active: "colorPrimaryBg"
+      page: "bg-background" # --background
+      container: "bg-card" # --card
+      subtle: "bg-muted" # --muted
+      active: "bg-accent" # --accent
     border:
-      default: "colorBorderSecondary"
-      strong: "colorBorder"
-      focus: "colorPrimary"
+      default: "border-border" # --border
+      strong: "border-input" # --input
+      focus: "border-ring ring-2 ring-ring/20" # --ring
     status:
-      success_bg: "colorSuccessBg"
-      success_text: "colorSuccess"
-      warning_bg: "colorWarningBg"
-      warning_text: "colorWarning"
-      error_bg: "colorErrorBg"
-      error_text: "colorError"
-      info_bg: "colorInfoBg"
-      info_text: "colorInfo"
+      success_bg: "bg-success-50"
+      success_text: "text-success-700"
+      warning_bg: "bg-warning-50"
+      warning_text: "text-warning-700"
+      error_bg: "bg-error-50"
+      error_text: "text-error-700"
+      info_bg: "bg-info-50"
+      info_text: "text-info-700"
 
   typography:
     font_family:
@@ -225,8 +226,8 @@ tokens:
     slower: "500ms"
 
 # ============================================================
-# ECharts 图表主题配置
-# 具体实现文件：src/config/echarts-theme.ts
+# ECharts 图表主题配置（仅在实际需要图表时启用，默认不引入图表库）
+# 具体实现文件：src/styles/echarts-theme.ts
 # ============================================================
 echarts:
   theme_name: "enterprise"
@@ -256,6 +257,7 @@ echarts:
     legend: 13
     title: 14
   usage_rules:
+    - "图表库仅在实际存在图表需求时引入，默认不安装；引入后在 src/components/charts/ 统一封装"
     - "所有图表通过 src/components/charts/ 下封装的组件使用，禁止页面直接使用 echarts-for-react"
     - "图表颜色统一引用 echarts-theme，禁止在 option 中硬编码颜色"
     - "图表容器必须设置明确的高度（className='h-64' 或 h-80 等）"
@@ -263,27 +265,28 @@ echarts:
     - "tooltip、legend、axis 样式统一来自主题，不单独覆盖"
 
 # ============================================================
-# Ant Design 主题配置映射
-# 通过 ConfigProvider theme token 统一管理
+# Tailwind CSS 4 + shadcn/ui 主题配置映射
+# CSS-first 配置：@theme 注册 token，shadcn CSS 变量定义在 :root 与 .dark
 # ============================================================
-ant_design:
+tailwind_shadcn:
   theme_config:
-    location: "src/config/antd-theme.ts"
-    description: "通过 ConfigProvider 的 theme.token 属性自定义主题"
+    location: "src/styles/globals.css"
+    description: "Tailwind CSS 4 的 @theme 注册色彩 / 间距 / 圆角 token，shadcn 语义变量（--primary 等）按亮 / 暗双套定义"
     token_mapping:
-      colorPrimary: "tokens.colors.primary.500 (#1677FF)"
-      colorSuccess: "tokens.colors.success.500"
-      colorWarning: "tokens.colors.warning.500"
-      colorError: "tokens.colors.danger.500"
-      colorInfo: "tokens.colors.info.500"
-      colorBgLayout: "tokens.colors.gray.50"
-      colorBgContainer: "tokens.colors.gray.50 (white)"
-      borderRadius: "tokens.radius.md (6px)"
-      fontSize: "tokens.typography.font_size.base (14px)"
+      primary: "tokens.colors.primary.500 → @theme --color-primary-500"
+      success: "tokens.colors.success.500 → @theme --color-success-500"
+      warning: "tokens.colors.warning.500 → @theme --color-warning-500"
+      error: "tokens.colors.error.500 → @theme --color-error-500"
+      info: "tokens.colors.info.500 → @theme --color-info-500"
+      background: "tokens.colors.gray.50 → shadcn --background"
+      card: "白色容器 → shadcn --card"
+      radius: "tokens.radius.md → shadcn --radius"
+      font_size: "tokens.typography.font_size.base → @theme --text-base"
   usage_rules:
-    - "主题定制统一通过 ConfigProvider theme.token 配置"
-    - "组件中使用 theme.useToken() 获取 token 值，禁止硬编码颜色"
-    - "间距统一使用 Ant Design Space 组件或 token.marginXXS ~ token.marginXL"
+    - "主题定制统一通过 globals.css 的 @theme 与 shadcn CSS 变量配置，不新建 tailwind.config.js"
+    - "基础组件优先用 shadcn/ui（CLI 拉取到 src/components/ui/）后按需定制，不手写已被覆盖的基础组件"
+    - "组件变体统一用 class-variance-authority，类名合并统一用 cn()（clsx + tailwind-merge）"
+    - "间距统一使用 Tailwind 间距工具类（p-* / gap-* / m-*）"
     - "禁止使用 style={{}} 硬编码样式"
 
 # ============================================================
@@ -359,8 +362,8 @@ component_rules:
         - "PageContainer（页面容器，统一 padding）"
         - "SectionCard（分区卡片）"
     ui:
-      description: "优先使用 Ant Design 组件，不重复造轮子"
-      location: "src/components/common/"
+      description: "基础 UI 组件（shadcn/ui 优先：CLI 拉取到 src/components/ui/，再按需定制）"
+      location: "src/components/ui/"
       examples:
         - "Button（主/次/幽灵/危险变体）"
         - "Badge（状态标签）"
@@ -394,7 +397,7 @@ component_rules:
         - "Spin（加载中）"
         - "Empty（空状态）"
     charts:
-      description: "ECharts 封装图表组件"
+      description: "ECharts 封装图表组件（仅实际需要图表时创建）"
       location: "src/components/charts/"
       examples:
         - "BarChartCard（柱状图卡片）"
@@ -412,157 +415,160 @@ component_rules:
 form_rules:
   layout:
     label_position: "标签在输入框上方（top），企业表单标准布局"
-    label_style: "字号 14px、字重 500，颜色取文本次级色 token"
-    required_mark: "标签后紧跟红色星号 *"
-    helper_text: "输入框下方，字号 12px，颜色取辅助文本色 token"
-    error_text: "输入框下方，字号 12px，颜色取错误色 token（error.600），替换 helper_text 位置"
-    field_gap: "垂直间距 16px，分组间距 24px"
-    section_gap: "表单分区间距 32px"
+    label_style: "text-sm font-medium text-gray-700"
+    required_mark: "标签后紧跟红色星号 *，使用 text-error-500"
+    helper_text: "输入框下方，text-xs text-gray-500"
+    error_text: "输入框下方，text-xs text-error-600，替换 helper_text 位置"
+    field_gap: "垂直间距 gap-4（16px），分组间距 gap-6（24px）"
+    section_gap: "表单分区间距 gap-8（32px）"
   sizes:
     sm:
+      height: "h-8"
+      padding: "px-3 py-1.5"
+      text: "text-sm"
       description: "紧凑型，用于筛选栏、内联表单"
-      antd_size: "small"
     md:
+      height: "h-10"
+      padding: "px-3 py-2"
+      text: "text-sm"
       description: "默认尺寸，企业表单标准"
-      antd_size: "middle"
     lg:
+      height: "h-12"
+      padding: "px-4 py-3"
+      text: "text-base"
       description: "宽松型，用于登录、注册等关键表单"
-      antd_size: "large"
   validation:
     trigger: "onBlur 失焦校验为主，提交时全量校验"
-    error_border: "Ant Design Form 自动处理 validateStatus 和 help"
-    success_border: "Ant Design Form 自动处理 validateStatus"
+    error_border: "border-error-500 focus:border-error-500 focus:ring-error-100"
+    success_border: "border-success-500"
   submit_behavior:
-    loading_state: "提交按钮 disabled + loading spinner，防止重复提交"
+    loading_state: "提交按钮 disabled + Loader2 旋转图标，防止重复提交"
     reset_policy: "提交成功后根据业务场景决定是否重置，不强制"
 
 # ============================================================
-# 组件详细规范（Ant Design 组件配置规范）
+# 组件详细规范（shadcn/ui + Tailwind 口径）
+# 基础组件优先用 shadcn/ui（CLI 拉取到 src/components/ui/ 后按需定制）；
+# 下方条目为本项目的定制口径，工具类对应 token 已在 globals.css @theme 注册
 # ============================================================
 component_specs:
   input:
-    description: "Ant Design Input 文本输入框"
-    library: "Ant Design Input"
+    description: "文本输入框（shadcn/ui Input 定制口径）"
+    sizes:
+      sm: "h-8 px-3 text-sm"
+      md: "h-10 px-3 text-sm" # 默认
+      lg: "h-12 px-4 text-base"
+    states:
+      default: "border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400"
+      focus: "border-primary-500 ring-2 ring-primary-100 outline-none"
+      error: "border-error-500 ring-2 ring-error-100"
     variants:
       default: "单行文本输入"
-      textarea: "Input.TextArea，autoSize={{ minRows: 3 }}"
-      password: "Input.Password，自带切换可见图标"
-      search: "Input.Search，自带搜索按钮和清除功能"
-      number: "InputNumber，数字输入"
+      textarea: "多行文本，min-h-[80px]，可 resize-y"
+      password: "type=password，右侧切换可见图标（Eye/EyeOff，size=16）"
+      search: "左侧 Search 图标（size=16），右侧可清除按钮"
     rules:
-      - "使用 Form.Item 的 rules 进行校验"
-      - "错误状态由 Form 自动管理（validateStatus + help）"
+      - "错误状态不依赖颜色单独传达，需同时展示错误文字"
 
   select:
-    description: "Ant Design Select 下拉选择器"
-    library: "Ant Design Select"
+    description: "下拉选择器（shadcn/ui Select / Combobox）"
     variants:
-      single: "默认单选，allowClear 可清除"
-      multiple: "mode=\"multiple\"，选中项以 Tag 展示"
-      searchable: "showSearch={true}，启用搜索"
-      group: "OptGroup 分组"
+      single: "默认单选，右侧 ChevronDown 图标，支持清除"
+      multiple: "多选，选中项以 Tag 形式展示在 trigger 内"
+      searchable: "trigger 内嵌 input 过滤选项"
     rules:
-      - "超过 5 个选项时建议启用 showSearch"
-      - "选项过多（>50）时使用 virtual 模式"
+      - "超过 5 个选项时建议启用搜索模式"
+      - "选项过多（>50）时使用虚拟滚动"
 
   table:
-    description: "Ant Design Table 数据表格"
-    library: "Ant Design Table"
+    description: "数据表格，企业应用核心组件（原生 table + Tailwind 或 TanStack Table 封装）"
+    structure:
+      wrapper: "w-full overflow-x-auto"
+      thead: "bg-gray-50 border-b border-gray-200"
+      th: "px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+      td: "px-4 py-3 text-sm text-gray-700 whitespace-nowrap"
     features:
-      sortable: "sorter 属性"
-      fixed_column: "fixed=\"right\" / fixed=\"left\""
-      expandable: "expandable 配置"
-      row_selection: "rowSelection 配置"
+      sortable: "ChevronsUpDown 图标（激活态 text-primary-500），th 加 cursor-pointer select-none"
+      fixed_column: "sticky 定位 + 阴影分层"
+      row_selection: "表头全选 + 每行 Checkbox，宽度 w-12"
     rules:
-      - "操作列固定在最右侧 fixed=\"right\""
+      - "操作列固定在最右侧"
       - "必须处理 loading、empty、error 三种状态"
-      - "超长文本使用 ellipsis={{ showTitle: false }} + Tooltip"
+      - "超长文本使用 truncate 截断，配合 Tooltip 展示完整内容"
 
   modal:
-    description: "Ant Design Modal 弹窗"
-    library: "Ant Design Modal"
+    description: "弹窗（shadcn/ui Dialog）"
     sizes:
-      sm: "width={400}"
-      md: "width={520}"
-      lg: "width={720}"
-      xl: "width={960}"
+      sm: "max-w-sm" # 确认框
+      md: "max-w-lg" # 默认，表单弹窗
+      lg: "max-w-2xl" # 复杂表单
+      xl: "max-w-4xl" # 详情查看
     rules:
       - "弹窗层级不超过 2 层"
       - "表单弹窗提交按钮须有 loading 态"
-      - "危险操作使用 danger 类型确认按钮"
+      - "危险操作使用 error 色确认按钮"
 
   drawer:
-    description: "Ant Design Drawer 抽屉"
-    library: "Ant Design Drawer"
+    description: "抽屉（shadcn/ui Sheet），适合详情查看、筛选配置"
     sizes:
-      sm: "width={320}"
-      md: "width={384}"
-      lg: "width={512}"
-      xl: "width={640}"
+      sm: "w-80"
+      md: "w-96" # 默认
+      lg: "w-[512px]"
     rules:
       - "详情查看/编辑用 Drawer，需用户聚焦决策用 Modal"
 
   alert:
-    description: "Ant Design Alert 内联提示"
-    library: "Ant Design Alert"
+    description: "内联提示（shadcn/ui Alert）"
     variants:
-      info: "type=\"info\""
-      success: "type=\"success\""
-      warning: "type=\"warning\""
-      error: "type=\"error\""
+      info: "bg-info-50 border-info-100 text-info-700"
+      success: "bg-success-50 border-success-100 text-success-700"
+      warning: "bg-warning-50 border-warning-100 text-warning-700"
+      error: "bg-error-50 border-error-100 text-error-700"
     rules:
-      - "Alert 用于页面级持久提示，message 用于操作结果短暂反馈"
+      - "Alert 用于页面级持久提示，Toast 用于操作结果短暂反馈"
 
   toast:
-    description: "Ant Design message / notification"
-    library: "Ant Design message（轻提示）/ notification（通知）"
+    description: "轻提示（sonner / shadcn/ui Toast）"
     rules:
-      - "成功操作使用 message.success()"
-      - "失败操作使用 message.error()"
+      - "成功操作使用 success，失败使用 error，不混用"
       - "文案简洁，15 字以内"
 
   tabs:
-    description: "Ant Design Tabs 标签页"
-    library: "Ant Design Tabs"
+    description: "标签页（shadcn/ui Tabs）"
     rules:
       - "禁止超过 8 个 Tab，超出用 Select 代替"
 
   menu:
-    description: "Ant Design Menu 侧边导航菜单"
-    library: "Ant Design Menu"
+    description: "侧边导航菜单，企业桌面应用主导航"
     rules:
       - "多级菜单最多 2 层，禁止 3 层嵌套"
       - "折叠模式下通过 Tooltip 展示菜单名称"
 
   pagination:
-    description: "Ant Design Pagination 分页器"
-    library: "Ant Design Pagination"
+    description: "分页器（shadcn/ui Pagination）"
     rules:
       - "每页条数变更时重置到第 1 页"
       - "总数为 0 时不展示分页器"
 
   skeleton:
-    description: "Ant Design Skeleton 骨架屏"
-    library: "Ant Design Skeleton"
+    description: "骨架屏（bg-gray-200 + animate-pulse）"
     rules:
-      - "表格 loading 用骨架行替换，不用全页 Spin 遮罩"
+      - "表格 loading 用骨架行替换，不用全页遮罩"
 
   empty:
-    description: "Ant Design Empty 空状态"
-    library: "Ant Design Empty"
+    description: "空状态（图标 + 文案 + 引导操作）"
     rules:
       - "空状态描述需根据具体场景定制"
 
 icons:
-  library: "@ant-design/icons"
+  library: "lucide-react"
   sizes:
     default: 18
     medium: 20
     large: 24
   usage_rules:
-    - "统一从 @ant-design/icons 导入，禁止自定义 SVG 或其他图标库"
-    - "尺寸统一用 style={{ fontSize: 20 }}"
-    - "颜色通过 style 控制：style={{ fontSize: 20, color: token.colorPrimary }}"
+    - "统一从 lucide-react 导入，禁止自定义 SVG 或其他图标库"
+    - "尺寸统一用 size 属性：`<Plus size={20} />`"
+    - "颜色通过 Tailwind 类控制：`<Plus size={20} className='text-primary-500' />`"
     - "禁止使用 <img src='icon.svg' /> 或 <i className='fa-...' />"
 
 # ============================================================
@@ -577,12 +583,12 @@ responsive:
 # ============================================================
 do:
   - "优先复用现有组件和页面模式"
-  - "优先使用 Ant Design 组件和 Design Token（token.colorPrimary 而非硬编码颜色）"
+  - "优先使用 shadcn/ui 组件与 Tailwind 工具类（token 经 @theme 注册，不硬编码颜色）"
   - "保持完整的页面状态反馈（loading/empty/error/no-permission）"
-  - "图表颜色统一来自 echarts-theme 配置文件"
+  - "图表仅在实际需要时引入；启用后颜色统一来自图表主题配置"
   - "全局状态使用 Zustand store，本地状态使用 React Hooks"
-  - "图标统一使用 @ant-design/icons"
-  - "主题定制统一通过 ConfigProvider theme token 配置"
+  - "图标统一使用 lucide-react"
+  - "主题定制统一通过 globals.css 的 @theme 与 shadcn CSS 变量配置"
   - "通过 Wails 绑定调用 Go 后端，禁止 HTTP 请求"
   - "Wails 绑定调用封装在 hooks 或 store 中"
 
@@ -590,19 +596,20 @@ dont:
   - "不要使用 style={{}} 属性硬编码样式"
   - "不要硬编码颜色值（如 #1677ff）"
   - "不要硬编码间距数值（如 padding: '20px'）"
-  - "不要使用 ECharts 以外的图表库（Recharts、Chart.js 等）"
-  - "不要在图表 option 中硬编码颜色，必须引用 echarts-theme"
+  - "不要在未确认图表需求前引入图表库（默认不安装）；同一项目只保留一种图表库"
+  - "不要在图表 option 中硬编码颜色，必须引用图表主题"
   - "不要使用 Redux、MobX、Recoil"
   - "不要在组件中直接调用后端 API，统一通过 src/api/ 封装（外部服务）或 Wails 绑定（本地 Go）"
   - "不要交付缺少 loading、empty、error 状态的页面"
   - "不要再创建新的设计 token 文件或平行配置体系"
-  - "不要使用 @ant-design/icons 以外的图标库"
+  - "不要使用 lucide-react 以外的图标库"
   - "不要在没有充分复用价值的情况下创建新共享组件"
   - "不要在 Tooltip 内放置可交互元素（按钮/链接），应使用 Popover"
   - "不要嵌套超过 2 层弹窗（Modal/Drawer）"
+  - "不要与 shadcn / Tailwind 并存第二套组件库或样式体系"
   - "不要超过 8 个 Tab，超出用 Select 代替"
   - "不要在侧边导航菜单中嵌套超过 2 层菜单"
-  - "不要在表格/列表数据加载时使用全页 Spin 遮罩，应使用 Skeleton"
+  - "不要在表格/列表数据加载时使用全页遮罩，应使用 Skeleton"
   - "不要使用 class 组件，必须使用函数组件 + Hooks"
   - "不要使用 HTTP 请求与 Go 后端通信，必须通过 Wails 绑定"
   - "不要手动修改 src/bindings/ 下的自动生成文件"

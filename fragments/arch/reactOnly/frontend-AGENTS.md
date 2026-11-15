@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.41.0
-last_updated: 2026-09-02
+version: 1.42.0
+last_updated: 2026-11-15
 dependencies: [agents-root]
 ---
 
@@ -13,7 +13,7 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-<!-- include: shared/frontend/stack-react-antd.md -->
+<!-- include: shared/frontend/stack-react-tailwind.md -->
 - Axios 仅用于第三方 / 远端 API，同站数据无后端可调
 
 ### 数据来源
@@ -21,8 +21,8 @@ dependencies: [agents-root]
 
 ### 设计系统
 <!-- include: shared/ui/design-system-liveness.md -->
-- 使用 Ant Design 主题系统（ConfigProvider + Design Token），所有视觉规范在 `design-system.yaml` 中定义
-- 优先使用 Ant Design 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
+- 使用 Tailwind CSS 4 + shadcn/ui 体系：所有视觉规范在 `design-system.yaml` 中定义，落地为 `src/styles/globals.css` 的 `@theme` token 与 shadcn CSS 变量
+- 优先复用 `src/components/ui/` 下 shadcn 组件与 Radix 能力，再考虑自定义组件；禁止 inline style，禁止硬编码颜色/间距/圆角
 
 <!-- include: shared/ui/spec-lock.md -->
 
@@ -66,6 +66,7 @@ project-root/
 ├── src/
 │   ├── api/               # 按业务域拆分的请求模块（第三方 / 远端 API）
 │   ├── components/
+│   │   ├── ui/            # shadcn/ui 组件（复制进来，可定制）
 │   │   ├── common/        # 通用业务组件
 │   │   └── layout/        # 布局组件
 │   ├── pages/             # 页面级组件（按业务域拆分）
@@ -75,11 +76,12 @@ project-root/
 │   ├── stores/            # Zustand stores（按业务域拆分）
 │   ├── hooks/             # 自定义 Hooks（useXxx）
 │   ├── types/             # TypeScript 类型定义
-│   ├── utils/             # 纯工具函数
-│   ├── config/
-│   │   └── antd-theme.ts  # Ant Design 主题配置
+│   ├── utils/             # 纯工具函数（含 cn 类名合并）
+│   ├── styles/
+│   │   └── globals.css    # Tailwind CSS 4 @theme + shadcn CSS 变量
 │   ├── App.tsx
 │   └── main.tsx
+├── components.json        # shadcn 配置
 ├── index.html
 ├── package.json
 ├── vite.config.ts
@@ -99,11 +101,12 @@ project-root/
 <!-- include: shared/frontend/zustand.md -->
 
 ### 样式规则
-- 优先使用 Ant Design 组件内置样式和 Design Token
-- 自定义样式使用 CSS Modules 或全局 CSS，变量来自 `design-system.yaml`
+- 唯一样式引擎为 Tailwind CSS 4；颜色、间距、圆角、阴影统一使用 Tailwind 工具类或 shadcn CSS 变量，禁止硬编码
+- 组件变体统一用 `class-variance-authority`，类名合并统一用 `cn()`（clsx + tailwind-merge）
+- 确需全局或复杂样式时写进 `globals.css`，变量来自 `design-system.yaml`
 - 禁止 inline style，禁止硬编码颜色值（如 `#1677ff`）
-- 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
-- 响应式设计遵循移动优先原则，使用 Ant Design 的 Grid 系统（Row / Col）；存量样式文件已是桌面优先写法（max-width 查询）时，增量改动沿用该文件既有约定，不整体重写扩大 diff，新增文件仍遵循移动优先
+- 主题定制统一通过 `globals.css` 的 `@theme` token 与 shadcn CSS 变量配置
+- 响应式设计遵循移动优先原则，使用 Tailwind 断点（`sm:` / `md:` / `lg:` ...）；存量样式文件已是桌面优先写法（max-width 查询）时，增量改动沿用该文件既有约定，不整体重写扩大 diff，新增文件仍遵循移动优先
 
 <!-- include: shared/frontend/component-rules.md -->
 

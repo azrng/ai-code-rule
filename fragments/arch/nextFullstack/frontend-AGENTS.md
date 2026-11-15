@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.15.0
-last_updated: 2026-08-28
+version: 1.16.0
+last_updated: 2026-11-15
 dependencies: [agents-root]
 ---
 
@@ -18,7 +18,7 @@ dependencies: [agents-root]
 
 ### 前端
 - Next.js（App Router）+ React + TypeScript
-- Tailwind CSS（唯一样式体系）
+- Tailwind CSS 4（唯一样式体系：CSS-first 配置，主题 token 集中在 `globals.css` 的 `@theme`）
 - `next/font`（统一字体接入）
 - shadcn/ui + Radix UI（如仓库已使用则沿用）
 - lucide-react（唯一图标库）

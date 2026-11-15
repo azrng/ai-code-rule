@@ -1,13 +1,13 @@
 ---
 rule_id: frontend-agents
-version: 1.21.0
-last_updated: 2026-08-31
+version: 1.22.0
+last_updated: 2026-11-15
 dependencies: [agents-root]
 ---
 
 # 前端规则
 
-> 本规则 UI 采用 **Tailwind CSS + shadcn/ui**；图标用 **lucide-react**；图表为 **recharts（可选）**。更契合 AI Agent 产品中"自定义结果卡、流式输出、非标准交互"的场景，且 AI Coding 对这套组合高度熟悉。
+> 本规则 UI 采用 **Tailwind CSS 4 + shadcn/ui**；图标用 **lucide-react**；图表为 **recharts（仅实际需要时启用）**。更契合 AI Agent 产品中"自定义结果卡、流式输出、非标准交互"的场景，且 AI Coding 对这套组合高度熟悉。
 
 ## 适用范围
 
@@ -20,7 +20,7 @@ dependencies: [agents-root]
 
 ### 前端
 - React 19 + TypeScript + Vite
-- Tailwind CSS（原子化样式，唯一样式引擎）
+- Tailwind CSS 4（原子化样式，唯一样式引擎：CSS-first 配置，主题 token 集中在 `src/styles/globals.css` 的 `@theme`）
 - shadcn/ui（基于 Radix UI 的复制式组件，不是 npm 安装的组件库，组件代码落在 `src/components/ui/`）
 - lucide-react（唯一图标库）
 - React Router 6（路由管理）
@@ -30,7 +30,7 @@ dependencies: [agents-root]
 
 ### 设计系统
 <!-- include: shared/ui/design-system-liveness.md -->
-- 视觉 token 定义在 `design-system.yaml`，落地为 Tailwind 主题（`tailwind.config.ts`）与 shadcn 的 CSS 变量（`src/styles/globals.css`）
+- 视觉 token 定义在 `design-system.yaml`，落地为 Tailwind CSS 4 主题（`globals.css` 的 `@theme`）与 shadcn 的 CSS 变量（`src/styles/globals.css`）
 - 优先复用 `src/components/ui/` 下 shadcn 组件与 Radix 能力，再考虑自定义组件
 - 禁止 inline style 硬编码颜色 / 间距 / 圆角；颜色统一走语义化 Tailwind 类或 shadcn CSS 变量
 
@@ -77,7 +77,6 @@ frontend/
 │   ├── App.tsx
 │   └── main.tsx
 ├── components.json        # shadcn 配置
-├── tailwind.config.ts
 ├── Dockerfile
 ├── package.json
 ├── vite.config.ts

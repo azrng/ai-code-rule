@@ -1,5 +1,5 @@
 # 设计与组件规则的唯一事实来源。
-# 技术栈：React + TypeScript + Tailwind CSS + Radix UI Primitive + Electron
+# 技术栈：React + TypeScript + Tailwind CSS 4 + Radix UI Primitive + Electron；图表仅在实际需要时启用
 # 颜色、主题、字体、风格关键词当前为内置基线值：首次界面任务前按产品品牌定制，完成后把 meta.status 改为「已定制」
 # status 为「已定制」后 use-ai-rule 重新生成不再覆盖本文件；结构契约与定制流程见界面子规则的设计系统小节
 # 该文件面向人和 AI 共同使用：可读、可解析、非可执行、易于比对。
@@ -7,14 +7,14 @@
 
 meta:
   name: "桌面效率工具设计系统"
-  version: "1.0.0"
+  version: "1.1.0"
   status: "基线待定制"
   owners:
     - "design"
     - "frontend"
     - "desktop"
   tech_stack:
-    styling: "Tailwind CSS（唯一样式体系）"
+    styling: "Tailwind CSS 4（唯一样式体系）"
     primitives: "Radix UI Primitive"
     variants: "class-variance-authority + clsx + tailwind-merge"
     forms: "React Hook Form + Zod"

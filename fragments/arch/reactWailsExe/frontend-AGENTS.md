@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.34.0
-last_updated: 2026-09-02
+version: 1.35.0
+last_updated: 2026-11-15
 dependencies: [agents-root]
 ---
 
@@ -16,14 +16,14 @@ dependencies: [agents-root]
 
 ## 技术栈
 
-<!-- include: shared/frontend/stack-react-antd.md -->
-- ECharts + echarts-for-react（图表，主题与使用规则见 `design-system.yaml`）
+<!-- include: shared/frontend/stack-react-tailwind.md -->
+- 图表需求出现时优先选 ECharts + echarts-for-react，主题与使用规则见 `design-system.yaml`
 <!-- include: shared/skeletons/wails/frontend-binding.md -->
 
 ### 设计系统
 <!-- include: shared/ui/design-system-liveness.md -->
-- 使用 Ant Design 主题系统（ConfigProvider + Design Token），所有视觉规范在 `design-system.yaml` 中定义
-- 优先使用 Ant Design 组件和样式，禁止 inline style，禁止硬编码颜色/间距/圆角
+- 使用 Tailwind CSS 4 + shadcn/ui 体系：所有视觉规范在 `design-system.yaml` 中定义，落地为 `src/styles/globals.css` 的 `@theme` token 与 shadcn CSS 变量
+- 优先复用 `src/components/ui/` 下 shadcn 组件与 Radix 能力，再考虑自定义组件；禁止 inline style，禁止硬编码颜色/间距/圆角
 
 <!-- include: shared/ui/spec-lock.md -->
 
@@ -44,6 +44,7 @@ project-root/
 │   ├── src/
 │   │   ├── api/               # 外部 API 请求模块（仅用于外部服务调用）
 │   │   ├── components/
+│   │   │   ├── ui/            # shadcn/ui 组件（复制进来，可定制）
 │   │   │   ├── common/        # 通用业务组件
 │   │   │   └── layout/        # 布局组件
 │   │   ├── pages/             # 页面级组件（按业务域拆分）
@@ -53,11 +54,11 @@ project-root/
 │   │   ├── stores/            # Zustand stores（按业务域拆分）
 │   │   ├── hooks/             # 自定义 Hooks（useXxx）
 │   │   ├── types/             # TypeScript 类型定义
-│   │   ├── utils/             # 纯工具函数
+│   │   ├── utils/             # 纯工具函数（含 cn 类名合并）
 │   │   ├── bindings/          # Wails 自动生成的 Go 绑定类型声明
-│   │   ├── config/
-│   │   │   ├── antd-theme.ts   # Ant Design 主题配置
-│   │   │   └── echarts-theme.ts # ECharts 图表主题配置
+│   │   ├── styles/
+│   │   │   ├── globals.css     # Tailwind CSS 4 @theme + shadcn CSS 变量
+│   │   │   └── echarts-theme.ts # ECharts 图表主题配置（仅引入图表时）
 │   │   ├── App.tsx
 │   │   └── main.tsx
 │   ├── package.json
@@ -89,7 +90,7 @@ project-root/
 <!-- include: shared/ui/mock-boundary.md -->
 
 **工作内容**：
-1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 和 Ant Design 规范
+1. 按设计文档实现页面和组件，遵循 `design-system.yaml` 和 Tailwind + shadcn/ui 规范
 2. 数据层使用 mock（静态 mock 数据），不依赖真实 Go 后端绑定
 3. 同步输出接口需求说明，供 Go 后端开发参考
 
@@ -118,10 +119,11 @@ project-root/
 <!-- include: shared/frontend/wails-binding-call.md -->
 
 ### 样式规则
-- 优先使用 Ant Design 组件内置样式和 Design Token
-- 自定义样式使用 CSS Modules 或全局 CSS，变量来自 `design-system.yaml`
+- 唯一样式引擎为 Tailwind CSS 4；颜色、间距、圆角、阴影统一使用 Tailwind 工具类或 shadcn CSS 变量，禁止硬编码
+- 组件变体统一用 `class-variance-authority`，类名合并统一用 `cn()`（clsx + tailwind-merge）
+- 确需全局或复杂样式时写进 `globals.css`，变量来自 `design-system.yaml`
 - 禁止 inline style，禁止硬编码颜色值（如 `#1677ff`）
-- 主题定制统一通过 `ConfigProvider` 的 `theme` 属性配置
+- 主题定制统一通过 `globals.css` 的 `@theme` token 与 shadcn CSS 变量配置
 - 桌面窗口口径见「Wails 前端调用纪律」
 
 <!-- include: shared/frontend/component-rules.md -->
