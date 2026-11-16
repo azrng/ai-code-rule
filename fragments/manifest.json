@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "3.8.0",
+    "version": "3.8.1",
     "last_updated": "2026-11-15"
   },
   "schema_version": 3,
@@ -42,6 +42,7 @@
     { "id": "frontend-design", "group": "前端 / UI", "when": { "form": ["web", "desktop"] } },
     { "id": "design-taste-frontend", "group": "前端 / UI" },
     { "id": "ui-ux-pro-max", "group": "前端 / UI", "when": { "form": ["web", "desktop"] } },
+    { "id": "hallmark", "group": "前端 / UI", "when": { "form": ["web", "desktop", "static"] } },
     { "id": "design-mobile-apps", "group": "前端 / UI", "when": { "form": "mobile" } },
     { "id": "redesign-existing-projects", "group": "前端 / UI" },
     { "id": "redesign-skill", "group": "前端 / UI" },

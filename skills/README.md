@@ -40,6 +40,12 @@ show me you want：做会改动页面、交互流程或前后端接口的功能�
 
 GitHub：https://github.com/nishuzumi/show-me-you-want-skill
 
+#### hallmark
+
+Hallmark：新建网站 / 新页面的设计技能，目标是让 AI 生成的界面「像设计的，不像生成的」——一层不可豁免的硬性下限（token 化颜色字体、禁止 `transition: all`、禁止紫色渐变 / 卡中卡 / emoji 图标、hero 首屏可见等），发牌式主题（约 50 个材质主题随机轮换，避免连续构建趋同）、按访客任务组织页面解剖结构，构建后用 sloplint 在真实浏览器里跑反 AI 味检查；仅限新建设计，改动既有页面需显式点名 `/hallmark redesign <path>`。
+
+GitHub：https://github.com/nutlope/hallmark
+
 #### ui-ux-pro-max
 
 高质量 UI/UX 设计辅助 skill，用于提升界面设计、交互体验和视觉表达。
