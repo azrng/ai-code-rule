@@ -31,4 +31,7 @@ internal interface IConsoleUi
     // 包裹一段耗时操作并显示加载指示（转圈 + 文案）：交互终端渲染动画，纯文本实现直接执行。
     // 当前用于启动更新检查（latest.json 拉取最多阻塞 3 秒，不给反馈看起来像卡死）
     T WithProgress<T>(string label, Func<T> action);
+
+    // 是非确认（更新安装、覆盖确认等）：交互终端走 y/n 按键，纯文本实现按行读取 y/n；回车取默认值
+    bool Confirm(string prompt, bool defaultValue);
 }

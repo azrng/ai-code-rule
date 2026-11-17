@@ -119,4 +119,22 @@ internal sealed class PlainConsoleUi : IConsoleUi
     // 纯文本 / 管道场景不做动画：直接执行（stdout 是日志与编号交互流，插帧只会污染它）
     public T WithProgress<T>(string label, Func<T> action)
         => action();
+
+    // 纯文本是非确认：按行读取 y/n（大小写不敏感，yes/no 亦可），空输入（含流末尾）取默认值
+    public bool Confirm(string prompt, bool defaultValue)
+    {
+        var hint = defaultValue ? "Y/n" : "y/N";
+        Console.Write($"{prompt} [{hint}]：");
+        while (true)
+        {
+            var input = Console.ReadLine()?.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(input))
+                return defaultValue;
+            if (input is "y" or "yes")
+                return true;
+            if (input is "n" or "no")
+                return false;
+            Console.Write($"输入无效，请输入 y 或 n（回车取 {hint}）：");
+        }
+    }
 }

@@ -84,9 +84,10 @@ internal static class Program
                     }
                     else
                     {
+                        // 确认走统一 UI 抽象：非 ANSI 终端（CreateUi 已回退纯文本）不再被 Spectre 直连渲染叠屏
                         var installed = PackResolver.ApplyUpdates(
                             offer,
-                            o => AnsiConsole.Confirm(
+                            o => startupUi.Confirm(
                                 $"发现更新：{o.Describe()}，是否更新？",
                                 defaultValue: true));
                         if (installed)
@@ -231,7 +232,7 @@ internal static class Program
                 return 0;
             }
             if (replayChoice == 0)
-                return RunUpgrade(manifest, resources, skillsStore, Environment.CurrentDirectory, force: false, interactive: true);
+                return RunUpgrade(manifest, resources, skillsStore, ui, Environment.CurrentDirectory, force: false, interactive: true);
         }
 
         while (true)
@@ -339,9 +340,10 @@ internal static class Program
     }
 
     // 配方升级共享实现：--upgrade 命令行与交互模式「按配方重放」周同一口径，
-    // 避免两条入口各自演化导致行为漂移；interactive=true 时写入前再确认一次
+    // 避免两条入口各自演化导致行为漂移；ui 由调用方传入（交互模式共享方向键 UI，
+    // 命令行模式传纯文本实现——interactive=false 不触发确认，仅作兜底）；interactive=true 时写入前再确认一次
     private static int RunUpgrade(
-        Manifest manifest, ResourceStore resources, SkillsStore skillsStore,
+        Manifest manifest, ResourceStore resources, SkillsStore skillsStore, IConsoleUi ui,
         string targetDirectory, bool force, bool interactive)
     {
         var recipePath = Path.Combine(targetDirectory, RecipeRecorder.RecordFileName);
@@ -387,7 +389,7 @@ internal static class Program
             if (plan.SkippedFiles.Count > 0)
             {
                 // 有被跳过的本地修改文件时给用户二次选择：目标项目有 git 兜底时可直接覆盖，不行再撤回
-                var overwrite = new PlainConsoleUi().Choose(
+                var overwrite = ui.Choose(
                     $"检测到 {plan.SkippedFiles.Count} 个本地修改过的文件将被保留（跳过可能导致规则停留在旧版）：",
                     "取消，不写入",
                     new List<UiChoice>
@@ -408,7 +410,7 @@ internal static class Program
             }
             else
             {
-                var confirm = new PlainConsoleUi().Choose(
+                var confirm = ui.Choose(
                     $"确认写入 {plan.FilesToWrite.Count} 个文件到 {targetDirectory}？",
                     "取消",
                     new List<UiChoice> { new("开始升级", "按配方重放并写入最新版规则") });
@@ -542,7 +544,8 @@ internal static class Program
             var recipeUpgradePath = Path.Combine(targetDirectory, RecipeRecorder.RecordFileName);
             if (!File.Exists(recipeUpgradePath))
                 throw new IOException($"未找到配方记录 {recipeUpgradePath}：升级需要此前由生成器写入的配方文件，首次生成请直接运行生成器或使用 --recipe。");
-            return RunUpgrade(manifest, resources, skillsStore, targetDirectory, force, interactive: false);
+            // 命令行模式不触发交互确认（interactive=false），传入纯文本实现仅作兜底
+            return RunUpgrade(manifest, resources, skillsStore, new PlainConsoleUi(), targetDirectory, force, interactive: false);
         }
 
         if (args.Length is 2 or 3 && args[0].Equals("--recipe", StringComparison.OrdinalIgnoreCase))

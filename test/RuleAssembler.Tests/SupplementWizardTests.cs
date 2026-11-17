@@ -50,6 +50,10 @@ internal sealed class ScriptedConsoleUi : IConsoleUi
     public T WithProgress<T>(string label, Func<T> action)
         => action();
 
+    // 脚本化是非确认：默认取默认值（需要断言确认交互的测试再扩展脚本语义）
+    public bool Confirm(string prompt, bool defaultValue)
+        => defaultValue;
+
     public void Head(string text) => Lines.Add(text);
 
     public void Line(string text) => Lines.Add(text);
