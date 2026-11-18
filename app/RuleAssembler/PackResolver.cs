@@ -20,6 +20,7 @@ internal static class PackResolver
     private const string LatestFile = "latest.json";
     private const string PointerFile = "current.json";
     private const string PackAsset = "ai-rule-pack.zip";
+    private const string EngineAsset = "use-ai-rule.exe";
 
     // 默认发布源：GitHub Release latest 端点；环境变量 USE_AI_RULE_PACK_URL 可整体替换（gitee 镜像等）
     private static string BaseUrl =>
@@ -185,10 +186,11 @@ internal static class PackResolver
 
         return installed;
     }
-    // 引擎在线自更新：下载新 exe → SHA-256 校验 → 「运行中 exe 改名 .old + 新 exe 落位」原子替换，
-    // 重新运行后生效。确认安装路径上哈希校验是唯一完整性防线：远端资产缺失 / 被代理替换 /
-    // 下载截断时拒绝落位，当前 exe 保持不动。latest.json 未携带 engine_sha256（旧发布源）视为
-    // 校验不可用，同样拒绝替换并提示手动下载——落位的二进制绝不接受未校验字节。
+    // 引擎在线自更新：共享缓存命中直接取、未命中下载 → SHA-256 校验 → 「运行中 exe 改名 .old +
+    // 新 exe 落位」原子替换，重新运行后生效。确认安装路径上哈希校验是唯一完整性防线：远端资产缺失 /
+    // 被代理替换 / 下载截断时拒绝落位，当前 exe 保持不动；缓存命中同样以 latest.json 的 engine_sha256
+    // 回验，损坏缓存删除后回退下载。latest.json 未携带 engine_sha256（旧发布源）视为校验不可用，
+    // 同样拒绝替换并提示手动下载——落位的二进制绝不接受未校验字节。
     // Windows 对正在运行的 exe 只锁写不锁删/改名；改名失败（占用异常）清理半成品并回退提示手动下载。
     // expectedVersion / expectedSha256 传入调用方刚查到的远端统一版本与哈希，避免二次网络请求
     public static bool TryUpdateEngine(string expectedVersion, string? expectedSha256)
@@ -209,13 +211,27 @@ internal static class PackResolver
 
         try
         {
-            Console.WriteLine($"[engine] 下载新程序 {expectedVersion} …");
-            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(300) };
-            var exeBytes = client.GetByteArrayAsync($"{BaseUrl}/use-ai-rule.exe").GetAwaiter().GetResult();
+            // 同机目录副本共享一份已校验 exe：第一个目录下载落缓存，其余目录哈希命中免下载；
+            // 缓存以 expectedSha256 回验，等价于“已下载并校验过的字节”，不另设信任边界
+            var cachedBytes = TryReadCachedEngine(CacheRoot, expectedVersion, expectedSha256);
+            byte[] exeBytes;
+            if (cachedBytes is not null)
+            {
+                Console.WriteLine($"[engine] 本机缓存命中 {expectedVersion}，跳过下载");
+                exeBytes = cachedBytes;
+            }
+            else
+            {
+                Console.WriteLine($"[engine] 下载新程序 {expectedVersion} …");
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(300) };
+                exeBytes = client.GetByteArrayAsync($"{BaseUrl}/{EngineAsset}").GetAwaiter().GetResult();
 
-            var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(exeBytes));
-            if (!actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"SHA-256 不匹配（期望 {expectedSha256[..Math.Min(16, expectedSha256.Length)]}…，实际 {actual[..16]}…）");
+                var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(exeBytes));
+                if (!actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException($"SHA-256 不匹配（期望 {expectedSha256[..Math.Min(16, expectedSha256.Length)]}…，实际 {actual[..16]}…）");
+
+                TryStoreCachedEngine(CacheRoot, expectedVersion, exeBytes);
+            }
 
             var tempExe = currentExe + ".new";
             File.WriteAllBytes(tempExe, exeBytes);
@@ -235,6 +251,54 @@ internal static class PackResolver
             Console.WriteLine($"[engine] 告警：引擎更新失败（{ex.Message}），请到 Release 页手动下载");
             Console.WriteLine($"[engine] {BaseUrl.Replace("/releases/latest/download", "/releases/latest")}");
             return false;
+        }
+    }
+
+    // 引擎共享缓存：同机所有目录副本共用 <缓存根>\engine\<版本>\use-ai-rule.exe，
+    // 与内容包缓存同根（USE_AI_RULE_PACK_CACHE 一并隔离测试）。回读以 latest.json 的
+    // engine_sha256 逐字节回验：命中 = 已下载并校验过的等价字节，损坏（写入中断 / 被改动）
+    // 删除后按未命中回退下载；读写任何失败都只降级不阻塞本次更新
+    internal static string EngineCachePath(string cacheRoot, string version)
+        => Path.Combine(cacheRoot, "engine", version, EngineAsset);
+
+    internal static byte[]? TryReadCachedEngine(string cacheRoot, string version, string expectedSha256)
+    {
+        try
+        {
+            var path = EngineCachePath(cacheRoot, version);
+            if (!File.Exists(path))
+                return null;
+
+            var bytes = File.ReadAllBytes(path);
+            var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+            if (!actual.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(path);
+                return null;
+            }
+
+            return bytes;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    // 校验通过的字节落共享缓存（temp + 原子改名，避免并发读到半截文件）；失败静默，其余目录副本走下载
+    internal static void TryStoreCachedEngine(string cacheRoot, string version, byte[] exeBytes)
+    {
+        try
+        {
+            var target = EngineCachePath(cacheRoot, version);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            var temp = target + ".tmp";
+            File.WriteAllBytes(temp, exeBytes);
+            File.Move(temp, target, overwrite: true);
+        }
+        catch (Exception)
+        {
+            // 缓存落盘失败（磁盘 / 权限 / 并发占用）不影响本次更新
         }
     }
 
