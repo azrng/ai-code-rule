@@ -2,10 +2,9 @@ using System.Text.Json;
 
 namespace RuleAssembler;
 
-// 目标项目技术栈检测：扫描目录中的特征文件（sln/csproj/package.json/wails.json/tauri/pubspec 等），
-// 产出维度证据（DetectionModels），再按兼容样例收敛候选（组件口径：候选来源是 compatibilityCases
-// 而非 Profile traits，样例未携带的维度视为通配），保证推荐的一定是可生成的组合。
-// 只做浅层扫描（深度 ≤2，跳过 node_modules/bin/obj 等），双击启动时也要保持瞬时完成。
+// 目标项目技术栈检测：扫描特征文件产出维度证据，再按兼容样例收敛候选
+// （候选来源是 compatibilityCases，样例未携带的维度视为通配），保证推荐的一定是可生成的组合。
+// 只做浅层扫描（跳过 node_modules/bin/obj 等），双击启动时也要保持瞬时完成。
 internal sealed class ProjectDetector
 {
     private static readonly string[] SkipDirectories =
@@ -244,12 +243,9 @@ internal sealed class ProjectDetector
             evidence.Add(new("frontend", "flutter", "发现 pubspec.yaml（Flutter 界面技术）"));
         }
 
-        // 先把每个工程归到唯一类别（分支优先级与旧 continue 链一致），再统一发证据。
-        // MAUI / WPF / Avalonia / ElectronNET / Blazor 是能独立定义方案形态的 UI 工程；
         // 方案形态已被 UI 工程或桌面壳（Wails / Tauri / Electron）定义时，
-        // Microsoft.NET.Sdk.Web 工程视为辅助工程（tests/tools 下的测试 API、Mock 服务等），
-        // 不再声明 form / backend / arch-style 这类方案级证据——
-        // 否则桌面方案携带测试 API 时形态证据互相冲突，候选只剩通配的通用 Profile 兜底
+        // Microsoft.NET.Sdk.Web 工程视为辅助工程（tests/tools 下的测试 API、Mock 等），
+        // 不声明方案级证据——否则桌面方案携带测试 API 时形态证据互相冲突，候选只剩通配兜底
         var kinds = signals.CsprojContents
             .Select(content => ClassifyDotnetProject(content, signals.HasRazorFiles))
             .ToList();
@@ -436,10 +432,9 @@ internal sealed class ProjectDetector
         foreach (var file in EnumerateShallow(root, new[] { "*.sln", "*.slnx" }, 3))
             signals.HasSln = true;
 
-        // csproj 深度取 4：常见解决方案布局（<方案>/<src>/<项目>/<项目>.csproj，如 CinemaHub/src/CinemaHub.Web）
-        // 项目文件在深度 3，多仓子项目（根/<子项目>/src/...）更深一层；目录只降文件读，不影响双击启动的瞬时性。
-        // 全树只数个数（无文件读）；内容采样优先 src/：超过采样上限的大仓库里 test/ 往往先被遍历，
-        // 先读 src/ 才能采到方案形态证据（如打包类库工程的 PackageId / GeneratePackageOnBuild 标记）
+        // csproj 深度取 4：常见方案布局项目文件在深度 3，多仓子项目更深一层；目录只降文件读，保瞬时启动。
+        // 全树只数个数（无文件读）；内容采样优先 src/：大仓库 test/ 往往先被遍历，
+        // 先读 src/ 才能采到方案形态证据
         foreach (var file in EnumerateShallow(root, new[] { "*.csproj" }, 4))
             signals.CsprojCount++;
         var sampled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

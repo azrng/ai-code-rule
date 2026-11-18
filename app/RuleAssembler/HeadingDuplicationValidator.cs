@@ -2,8 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace RuleAssembler;
 
-// 产物级重复标题校验：同一输出文件内 ## / ### 标题重复出现即缺陷——它是 include 叠加
-// （骨架与 arch 残留双份内容、本地标题与片段自带标题并用）的直接症状。
+// 产物级重复标题校验：同一输出文件内 ## / ### 标题重复即缺陷，是 include 叠加（双份内容 / 双份标题）的直接症状。
 // 只查二、三级标题：# 是文件主标题天然唯一，四级及以下是跨节复用的细粒度小节。
 // fenced code block（``` 围栏）内的 # 行是文本不是标题，跳过。
 internal static class HeadingDuplicationValidator

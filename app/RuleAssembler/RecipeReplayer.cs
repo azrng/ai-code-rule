@@ -2,9 +2,8 @@ using System.Text.Json;
 
 namespace RuleAssembler;
 
-// P2 阶段 4：按配方记录（.ai-rule-profile.json）重放生成。
-// 配方是可复现输入的唯一事实来源：selection 重建组合选择（旧配方仅有 profile_id 时经兼容样例反查），
-// 组件集合必须与当前 manifest 解析结果一致（不一致说明规则演进过，需人工确认而不是静默生成），
+// 按配方记录（.ai-rule-profile.json）重放生成：配方是可复现输入的唯一事实来源（selection 重建组合选择）。
+// 组件集合必须与当前 manifest 解析结果一致，不一致说明规则演进过，需人工确认而不是静默生成。
 // 能力开关按配方重放（空 = 当前默认集）；design-system 的「已定制保留」语义与交互路径一致。
 internal sealed class RecipeReplayer
 {

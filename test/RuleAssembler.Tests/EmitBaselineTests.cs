@@ -2,9 +2,7 @@ using System.Text.Json;
 
 namespace RuleAssembler.Tests;
 
-// 产物回归基线：全部兼容样例经组合路径渲染的产物 SHA-256 清单，
-// 是旧路径等价比对退役后的跨版本漂移守卫——组合内核自洽由契约校验与确定性测试保证，
-// 内容层的意外漂移（改错片段、include 叠加、传导面遗漏）由本基线拦截。
+// 产物回归基线：全部兼容样例经组合路径渲染的产物 SHA-256 清单，拦截内容层意外漂移（改错片段、include 叠加、传导面遗漏）。
 // 规则内容升版时刷新基线：UPDATE_EMIT_BASELINE=1 dotnet test --filter EmitBaseline，
 // 基线文件的 diff 即本次内容变更的产物审查清单，随变更一起提交
 public sealed class EmitBaselineTests

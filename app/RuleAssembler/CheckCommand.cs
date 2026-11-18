@@ -79,10 +79,9 @@ internal static class CheckCommand
         return 0;
     }
 
-    // --check 的技能资源校验：发现数 > 0、ID 不冲突（忽略大小写，目录名跨平台大小写不敏感）、
-    // 每个 SKILL.md 有 frontmatter description；manifest.Skills 登记必须与可发现技能对得上：
-    // 登记的 ID 必须存在、group 不能为空、when 引用的维度与取值必须可被问答/检测表达，
-    // 保证分组多选与推荐预选在任何机器上都不会因登记漂移而静默失效
+    // --check 的技能资源校验：manifest.Skills 登记必须与可发现技能对得上
+    // （ID 存在、group 非空、when 维度取值可被问答/检测表达），
+    // 防止分组多选与推荐预选因登记漂移而静默失效
     private static List<string> ValidateSkills(Manifest manifest, SkillsStore skillsStore)
     {
         var errors = new List<string>();

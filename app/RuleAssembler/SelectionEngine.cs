@@ -7,8 +7,7 @@ internal sealed record WizardOptionView(
     string Label,
     string Desc);
 
-// 组件驱动的 Selection 问答引擎（P2 阶段 3）：候选不是 Profile 列表，而是 manifest.components。
-// 存续组件 = when 与当前已回答维度全部命中（未回答维度不参与判断）；
+// 组件驱动的 Selection 问答引擎：候选是 manifest.components 而非 Profile 列表。
 // 只提问「存续组件之间仍有分歧」的维度，唯一取值自动推导（记录来源 derived），不问不猜。
 // 问题顺序与选项文案沿用 manifest.wizard.steps / options，前端先于后端的口径不变。
 internal sealed record SelectionQuestion(
@@ -67,10 +66,9 @@ internal sealed class SelectionEngine
         }
     }
 
-    // 下一问：先自动推导存续组件取值唯一的维度（写入 selection 并记录到 derivedLog），
-    // 再返回第一个仍有分歧维度的问题；返回 null 表示选择已完备，可交 CompositionPlanner 解析。
+    // 下一问：先自动推导存续组件取值唯一的维度，再返回第一个仍有分歧维度的问题；返回 null 表示选择已完备。
     // 选项经可行性剪枝：取值后不违反钳制约束、已回答的非标记维度仍被存续组件锚定，
-    // 保证交互路径不会走进死组合（与旧引擎「选项从 Profile 推导所以永不变死」的保证对齐）
+    // 保证交互路径不会走进死组合
     public SelectionQuestion? NextQuestion(Selection selection, List<(string Trait, string Value)>? derivedLog = null)
     {
         while (true)
@@ -153,12 +151,9 @@ internal sealed class SelectionEngine
                 : "";
     }
 
-    // 组件决策树全路径仿真：每条交互可达路径（用户只会在存续组件提供的取值中选择）都必须
-    // 收敛到结构完备的可解析组合（Plan 守卫：约束满足、组件非空、非标记维度锚定），
-    // 映射兼容样例时必须唯一（歧义即错误）；无样例映射的「样例外组合」合法——
-    // 新组件接入后即可达，等价回归只锚定已注册样例；全部样例必须可达。
-    // 用于 --check 与单元测试，防止组件/约束调整后出现死组合、歧义或不可达配方。
-    // 空存续集的分支在交互上不可达（用户拿不到不存在的选项），直接剪枝。
+    // 组件决策树全路径仿真：每条交互可达路径都必须收敛到结构完备的可解析组合，
+    // 映射兼容样例时必须唯一（歧义即错误）；样例外组合合法（新组件接入后即可达），全部样例必须可达。
+    // 用于 --check 与单元测试，防止组件/约束调整后出现死组合、歧义或不可达配方；空存续集分支交互不可达，直接剪枝。
     public List<string> SimulateAll(CompositionPlanner planner)
     {
         var errors = new List<string>();

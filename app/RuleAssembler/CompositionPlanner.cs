@@ -2,10 +2,9 @@ using System.Text.RegularExpressions;
 
 namespace RuleAssembler;
 
-// P2 组合内核：把 Selection 解析为组件集合，合并根变量并产出 CompositionPlan。
-// 解析是确定性的：组件按 kind 固定顺序（form -> shell -> frontend -> backend -> capability）、
-// 同 kind 按 manifest 声明顺序；同一 Selection 与同一版本 manifest 必须得到相同结果。
-// 证据不足时不隐式补组件：组件引用了选择中缺失的维度即视为部分匹配并报错，与检测器口径一致。
+// 组合内核：把 Selection 解析为组件集合，合并根变量并产出 CompositionPlan。
+// 解析是确定性的：组件按 kind 固定顺序、同 kind 按 manifest 声明顺序，同一 Selection 与同一版本 manifest 必须得到相同结果。
+// 证据不足时不隐式补组件：组件引用了选择中缺失的维度即报错，与检测器口径一致。
 internal sealed class CompositionPlanner
 {
     private static readonly string[] KindOrder =
@@ -108,10 +107,9 @@ internal sealed class CompositionPlanner
             throw new InvalidOperationException("组合选择非法：\n- " + string.Join("\n- ", errors));
     }
 
-    // 约束校验：when 全部命中时 require / forbid 只对已回答维度生效（与 SatisfiesConstraints 的
-    // 问答期语义一致）；未回答维度的钳制缺口由组件解析兜底——组合要解析成功必须存在
-    // when 全命中的组件集，组件 when 自身携带维度取值（如 tauri-backend-rust 要求 backend=rust），
-    // 不存在「require 未满足但组合仍解析成功」的漏洞
+    // 约束校验：when 全部命中时 require / forbid 只对已回答维度生效（与 SatisfiesConstraints 的问答期语义一致）；
+    // 未回答维度的钳制缺口由组件解析兜底——组合要解析成功必须存在 when 全命中的组件集，
+    // 组件 when 自身携带维度取值，不存在「require 未满足但组合仍解析成功」的漏洞
     private void ValidateConstraints(Selection selection)
     {
         foreach (var constraint in _manifest.Constraints)
@@ -372,8 +370,7 @@ internal sealed class CompositionPlanner
     }
 
     // 剥离伪声明：RootVariables 反序列化后未声明的标量字段也是非空默认串，不参与组件贡献。
-    // 判断依据是 JSON 真实存在性（ManifestLoader.AnnotateComponentRootPresence 标注）：
-    // 类默认值比对会把「刻意声明且恰好等于类默认值」的覆盖（如回退到通用措辞覆盖 family 基线）误剥掉。
+    // 判断依据是 JSON 真实存在性而非类默认值比对——后者会把「刻意声明且恰好等于类默认值」的覆盖误剥掉。
     // 无存在性标注时（手工构造的组件）退化为类默认值比对
     private static RootVariables SanitizeComponentRoot(ComponentDefinition component)
     {

@@ -10,11 +10,9 @@ internal static class SkillsImportFlow
         IReadOnlyList<SkillTarget> Targets,
         IReadOnlySet<string>? SkipKeys);
 
-    // Skills 导入（可选步骤）：规则文件落盘后追加；技能分组多选（按本次组合预选推荐）→ 目标工具多选（默认全勾）。
-    // 导入是追加语义：目标目录已有同名技能（含 SKILL.md）时先问覆盖还是跳过，未选中的技能一律不动；
-    // 覆盖 = 同名技能目录先删后写、按内置内容整体重写；任何一步取消或零勾选都视为跳过导入，配方不记录技能字段。
-    // confirmEntry = false 供「仅导入 Skills」入口使用：用户已在顶层表达导入意图，跳过入口确认直接进技能多选
-    // context = null（仅导入 Skills 入口）时不做推荐预选：入口菜单没走组合流程，没有可依据的维度选择
+    // Skills 导入（可选步骤）：技能分组多选（按本次组合预选推荐）→ 目标工具多选（默认全勾）。
+    // 同名技能先问覆盖还是跳过，覆盖 = 先删后写按内置内容重写；任何一步取消或零勾选都视为跳过导入，配方不记录技能字段。
+    // confirmEntry = false 跳过入口确认直接进技能多选；context = null 时不做推荐预选（无维度选择可依据）。
     internal static SkillImportSelection? OfferSkillsImport(
         IConsoleUi ui,
         SkillsStore skillsStore,

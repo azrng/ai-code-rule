@@ -1,9 +1,7 @@
 namespace RuleAssembler;
 
-// 目标项目缺失 .gitignore 时按技术栈生成默认忽略规则。
-// 内容精选自 github/gitignore 标准模板（C# 参考仓库内 daily-examples 版本，Python 等参考 mcp_server 版本），
-// 每份保持精简，只覆盖构建产物、本地环境与编辑器目录，末尾统一带 AI rule 忽略块（配方记录、生成器本体、
-// 规则效果反馈记录、AI 工具目录与本地调试产物）。
+// 目标项目缺失 .gitignore 时按技术栈生成默认忽略规则（精选自 github/gitignore 标准模板）。
+// 只覆盖构建产物、本地环境与编辑器目录，末尾统一带 AI rule 忽略块。
 internal static class GitignoreTemplates
 {
     public const string RecipeEntry = ".ai-rule-profile.json";

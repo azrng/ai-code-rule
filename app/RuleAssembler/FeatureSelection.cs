@@ -1,7 +1,6 @@
 namespace RuleAssembler;
 
-// Q5 能力开关的状态推导：能力归属挂在输出声明上（片段 feature 标签 / designSystem 来源），
-// 不靠输出文件名或字符串标签反推。
+// Q5 能力开关的状态推导：能力归属挂在输出声明上（片段 feature 标签 / designSystem 来源），不靠文件名反推。
 // 默认启用 = 组合计划已包含的能力，保证默认生成结果与历史组合基线一致；
 // ai-capability 的启用与否由向导 AI 问答这一唯一事实来源决定，Q5 只展示不调整。
 internal static class FeatureSelection
