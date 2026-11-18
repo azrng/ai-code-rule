@@ -58,11 +58,16 @@ internal static class Program
                 return RunCommand(packArgs, manifest, resources, skills);
             }
 
+            // 交互路径先关 conhost QuickEdit：后续更新确认与全部菜单都是键盘链路，
+            // 鼠标误点进入文本选择会挂起整个控制台输入，菜单表现为卡死
+            QuickEditGuard.Disable();
+
             // 启动统一更新检查（仅交互模式；带参命令与 --offline / --pack 模式绝不联网）：
             // 一次 latest.json 拉取，统一版本同时对照 exe 与生效内容两个基准，弹一次确认（默认更新）。
-            // 安装成功后自动重启生成器——exe 已原子替换落位、内容包已切缓存指针，
-            // 重启拉起的进程即刻用上新程序与新内容，避免继续按启动时加载的旧内容生成、
-            // 把配方版本回写降级；重启后版本一致不再提示，天然防循环。
+            // 安装成功后直接退出并提示重新运行——不做自动拉起：分离出的新进程与终端（PowerShell 等）
+            // 挂同一控制台，父进程一退终端立即抢回前台读键，与新进程的方向键菜单形成两路读入竞争，
+            // 菜单看似卡死；交给用户再触发一次则控制台全程只归生成器。继续按启动时加载的旧内容
+            // 生成会把配方版本回写降级，所以安装成功后绝不落入原交互流程。
             // stdin 重定向（管道冒烟 / CI）只报告不更新：自动化场景不弹窗、不下载、不重启
             if (!args.Contains("--offline", StringComparer.OrdinalIgnoreCase) && resolution.Source != "pack")
             {
@@ -92,8 +97,8 @@ internal static class Program
                                 defaultValue: true));
                         if (installed)
                         {
-                            Console.WriteLine("[update] 更新完成，即将自动重启生成器（重启后直接继续操作）…");
-                            RestartSelf();
+                            Console.WriteLine("[update] 更新完成，本次退出。请重新运行 use-ai-rule 使新程序与新内容生效。");
+                            return 0;
                         }
                     }
                 }
@@ -143,36 +148,6 @@ internal static class Program
         return args.Length > 0;
     }
 
-    // 内容包更新安装成功后的进程自重启：以原 exe 路径、无参数重新拉起交互入口，
-    // 新进程从缓存重新 Resolve（加载刚更新的内容包），随后退出当前进程。
-    // 仅交互模式可达此处（带参模式不联网检查），无需透传命令行参数；
-    // 拉起失败降级为提示用户手动重启，不静默继续旧内容
-    private static void RestartSelf()
-    {
-        var exe = Environment.ProcessPath;
-        if (exe is null || !File.Exists(exe))
-        {
-            Console.WriteLine("[pack] 告警：无法定位生成器可执行文件，请手动重新启动以启用新内容包。");
-            return;
-        }
-
-        try
-        {
-            using var process = System.Diagnostics.Process.Start(
-                new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = exe,
-                    UseShellExecute = false,
-                    WorkingDirectory = Environment.CurrentDirectory
-                });
-            Environment.Exit(0);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[pack] 告警：自动重启失败（{ex.Message}），请手动重新启动以启用新内容包。");
-        }
-    }
-
     // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染；
     // 旧 Profile 渲染路径与 profiles 节点已整体退役，组合内核是唯一渲染路径。
     // 更新检查已在 Main 启动阶段统一完成（一次 latest.json 对照 exe 与生效内容两个基准），
@@ -181,6 +156,7 @@ internal static class Program
     {
         Console.WriteLine(Banner);
         Console.WriteLine($"当前目录：{Environment.CurrentDirectory}");
+        Console.WriteLine("（菜单为键盘交互：方向键 / 编号 + 回车，不支持鼠标点击）");
         Console.WriteLine();
 
         // 交互实现只在入口处决定一次：stdin 重定向（管道冒烟/CI）强制走纯文本编号输入；

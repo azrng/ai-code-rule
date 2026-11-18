@@ -13,7 +13,7 @@ internal sealed record PackResolution(IResourceProvider Provider, string? Versio
 // 因此用户拒绝更新后不需要再额外比较本地内容；
 // 更新检查只在交互模式启动时做一次（TryFetchUpdateOffer → ApplyUpdates，一次 latest.json
 // 拉取，统一版本同时对照 exe 与生效内容两个基准，3 秒超时），命令行 / --offline / --pack 不做网络检查；
-// 更新安装成功后返回 true，交互入口据此重启自身进程让新内容与新引擎即时生效。
+// 更新安装成功后返回 true，交互入口据此退出并提示重新运行，新程序与新内容下次启动生效。
 // 单 exe 无网络永远可用：下载失败、校验失败、超时都只降级不阻塞。
 internal static class PackResolver
 {
@@ -132,7 +132,7 @@ internal static class PackResolver
         {
             var parts = new List<string>();
             if (HasEngineUpdate)
-                parts.Add($"程序 {EngineCurrent} → {Version}（替换 exe，重启后生效）");
+                parts.Add($"程序 {EngineCurrent} → {Version}（替换 exe，重新运行后生效）");
             if (HasPackUpdate)
                 parts.Add($"内容包 {PackCurrent ?? "内嵌"} → {Version}");
             return string.Join("；", parts);
@@ -152,9 +152,9 @@ internal static class PackResolver
     }
 
     // 按已确认的更新结论落地安装：内容包下载校验切指针、引擎下载校验原子替换 exe。
-    // 返回 true = 至少一项安装成功，调用方必须重启进程重新解析内容来源，
+    // 返回 true = 至少一项安装成功，调用方必须退出进程并提示重新运行，
     // 否则会出现「提示已更新、正文却按启动时加载的旧内容生成、配方版本被回写降级」的静默退回；
-    // 引擎安装成功但内容包失败同样返回 true（重启拉起的正是刚落位的新 exe）。
+    // 引擎安装成功但内容包失败同样返回 true（重新运行后启动更新检查会自动补齐落后的内容包）。
     // 任何单项失败只告警，不影响另一项，也不阻塞本次会话
     public static bool ApplyUpdates(UpdateOffer offer, Func<UpdateOffer, bool> confirm)
     {
@@ -186,7 +186,7 @@ internal static class PackResolver
         return installed;
     }
     // 引擎在线自更新：下载新 exe → SHA-256 校验 → 「运行中 exe 改名 .old + 新 exe 落位」原子替换，
-    // 重启后生效。确认安装路径上哈希校验是唯一完整性防线：远端资产缺失 / 被代理替换 /
+    // 重新运行后生效。确认安装路径上哈希校验是唯一完整性防线：远端资产缺失 / 被代理替换 /
     // 下载截断时拒绝落位，当前 exe 保持不动。latest.json 未携带 engine_sha256（旧发布源）视为
     // 校验不可用，同样拒绝替换并提示手动下载——落位的二进制绝不接受未校验字节。
     // Windows 对正在运行的 exe 只锁写不锁删/改名；改名失败（占用异常）清理半成品并回退提示手动下载。
@@ -226,7 +226,7 @@ internal static class PackResolver
             File.Move(currentExe, oldExe);
             File.Move(tempExe, currentExe);
 
-            Console.WriteLine($"[engine] 程序已更新到 {expectedVersion}，重新启动 exe 生效（旧版本将自动清理）");
+            Console.WriteLine($"[engine] 程序已更新到 {expectedVersion}，重新运行 use-ai-rule 生效（旧版本将自动清理）");
             return true;
         }
         catch (Exception ex)
