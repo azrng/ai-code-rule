@@ -1,10 +1,11 @@
 name: release-win-x64
 
 # 推送 master 自动发布。统一版本口径：
-#   版本 = fragments/manifest.json 的 vars.version（如 3.0.0）——exe、内容包、Release tag、
+#   版本 = fragments/manifest.json 的 vars.version（如 3.0.0）——exe、Release tag、
 #   latest.json 共用同一个版本号；改 fragments / skills / 生成器代码都必须升版。
 #   CI 对 push 触发的发布校验版本严格大于已发布最高 tag，不升版直接失败（保证每次发布可被检测）。
 # Release tag = v<版本>，exe 的 InformationalVersion = 同一版本，banner 与更新检查都读它。
+# 规则与技能内容全量打进 exe（程序集内嵌），不再发布独立内容包。
 # engine_version 是旧版 exe（引擎版本 2.x 独立轨道口径）的兼容字段，写入同一版本值：
 # 旧 exe 读到 engine_version 高于自身即自更新到新 exe，一次跳跃完成版本模型迁移。
 on:
@@ -27,7 +28,6 @@ concurrency:
 env:
   PROJECT_PATH: app/RuleAssembler/RuleAssembler.csproj
   PUBLISH_DIR: publish/win-x64
-  PACK_NAME: ai-rule-pack.zip
   MANIFEST_NAME: latest.json
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
         id: release_meta
         shell: pwsh
         run: |
-          # 统一版本：唯一事实源是 manifest.vars.version（exe + 内容包 + tag + latest.json 同源）
+          # 统一版本：唯一事实源是 manifest.vars.version（exe + tag + latest.json 同源）
           $manifest = Get-Content -LiteralPath 'fragments/manifest.json' -Raw | ConvertFrom-Json
           $version = $manifest.vars.version
           if (-not $version) { throw 'manifest.vars.version 为空，无法确定发布版本' }
@@ -80,14 +80,12 @@ jobs:
           $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
           $tag = "v$version"
           $releaseName = "use-ai-rule $version（$timestamp）"
-          $packPath = Join-Path '${{ github.workspace }}' '${{ env.PACK_NAME }}'
           $manifestPath = Join-Path '${{ github.workspace }}' '${{ env.MANIFEST_NAME }}'
           $tagExists = git ls-remote --tags origin "refs/tags/$tag" | Out-String
 
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag_name=$tag" >> $env:GITHUB_OUTPUT
           "release_name=$releaseName" >> $env:GITHUB_OUTPUT
-          "pack_path=$packPath" >> $env:GITHUB_OUTPUT
           "manifest_path=$manifestPath" >> $env:GITHUB_OUTPUT
           "tag_exists=$([bool]($tagExists.Trim()))" >> $env:GITHUB_OUTPUT
 
@@ -113,46 +111,18 @@ jobs:
             -p:InformationalVersion='${{ steps.release_meta.outputs.version }}' `
             -o '${{ env.PUBLISH_DIR }}'
 
-      - name: Build pack and latest.json
+      - name: Build latest.json
         shell: pwsh
         run: |
           $version = '${{ steps.release_meta.outputs.version }}'
-          $stage = 'pack-stage'
-          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
-          New-Item -ItemType Directory -Path $stage | Out-Null
 
-          Copy-Item -Recurse 'fragments' (Join-Path $stage 'fragments')
-          Copy-Item -Recurse 'skills' (Join-Path $stage 'skills')
-          # README.md 是仓库文档不随包发布（口径与 csproj 的 Exclude 一致）
-          $readme = Join-Path $stage 'skills/README.md'
-          if (Test-Path $readme) { Remove-Item -Force $readme }
-
-          # 逐文件 SHA-256 清单（相对路径用 /，哈希小写十六进制）
-          $hashMap = [ordered]@{}
-          foreach ($file in (Get-ChildItem -Recurse -File $stage)) {
-            $relative = ([System.IO.Path]::GetRelativePath($stage, $file.FullName)) -replace '\\', '/'
-            $hashMap[$relative] = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
-          }
-
-          $packManifest = [ordered]@{
-            kind = 'merged'
-            version = $version
-            schema_version = 1
-            files = $hashMap
-          }
-          $packManifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $stage 'pack.json') -Encoding UTF8
-
-          $packZip = '${{ steps.release_meta.outputs.pack_path }}'
-          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $packZip -CompressionLevel Optimal
-
-          # latest.json（统一版本）：version 同时是 exe 与内容包的目标版本；
+          # latest.json（统一版本）：version = exe 注入版本；
           # engine_sha256 供确认后自更新做下载完整性校验（缺省则跳过引擎替换）；
           # engine_version 是旧版 exe（2.x 引擎轨道）的兼容字段，写同值助其一次性迁移到新 exe
           $latest = [ordered]@{
             version = $version
             engine_version = $version
             engine_sha256 = (Get-FileHash -Algorithm SHA256 '${{ env.PUBLISH_DIR }}/use-ai-rule.exe').Hash.ToLowerInvariant()
-            sha256 = (Get-FileHash -Algorithm SHA256 $packZip).Hash.ToLowerInvariant()
           }
           # 必须落盘：release 上传清单引用 manifest_path，漏写会导致 fail_on_unmatched_files 报错
           # 仓库口径 UTF-8 无 BOM：exe 的 JsonSerializer 对 BOM 字符直接解析失败
@@ -175,18 +145,16 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: |
             ${{ env.PUBLISH_DIR }}/use-ai-rule.exe
-            ${{ steps.release_meta.outputs.pack_path }}
             ${{ steps.release_meta.outputs.manifest_path }}
           body: |
             use-ai-rule 自动发布（统一版本 ${{ steps.release_meta.outputs.version }}）
 
             ## 产物
-            - use-ai-rule.exe：win-x64 framework-dependent 单文件（需自装 [.NET 10 运行时](https://dotnet.microsoft.com/download/dotnet/10.0)）
-            - ai-rule-pack.zip：merged 内容包（manifest.json + fragments/ + skills/）
-            - latest.json：更新检查清单（统一版本 + exe / zip SHA-256）
+            - use-ai-rule.exe：win-x64 framework-dependent 单文件（需自装 [.NET 10 运行时](https://dotnet.microsoft.com/download/dotnet/10.0)），规则与技能内容全量内嵌
+            - latest.json：更新检查清单（统一版本 + exe SHA-256）
 
             ## 版本说明
-            - 统一版本 ${{ steps.release_meta.outputs.version }}：exe、内容包、tag 同源，
+            - 统一版本 ${{ steps.release_meta.outputs.version }}：exe、tag 同源，
               事实源 fragments/manifest.json 的 vars.version，改规则 / 技能 / 生成器代码必须升版
           draft: false
           prerelease: false

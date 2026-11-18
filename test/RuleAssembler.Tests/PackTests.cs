@@ -2,15 +2,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.IO.Compression;
 using System.Text.Json;
 
 namespace RuleAssembler.Tests;
 
-// 内容包机制回归：
-// 两个 provider 的来源差异屏蔽（内嵌逻辑名 → fragments//skills/ 统一前缀；目录直读）、
-// pack.json 加载与校验（schema 拒绝、哈希不匹配检出）、PackResolver 的
-// --pack 硬失败语义与 --offline 无缓存回退内嵌
+// 内容机制回归：两个 provider 的来源差异屏蔽（内嵌逻辑名 → fragments//skills/ 统一前缀；目录直读）、
+// pack.json 加载与校验（schema 拒绝、哈希不匹配检出）、PackResolver 的 --pack 硬失败语义与
+// 内嵌兜底、启动统一更新检查的引擎单轨道闸门
 public sealed class PackTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(Path.GetTempPath(), "ruleassembler-pack-tests", Guid.NewGuid().ToString("N"));
@@ -183,7 +181,7 @@ public sealed class PackTests : IDisposable
     // ── PackResolver ──
 
     [Fact]
-    public void Resolve_PackWithZip_PrefersExplicitPack()
+    public void Resolve_PackWithDirectory_PrefersExplicitPack()
     {
         var root = NewDir();
         WriteFile(root, "fragments/manifest.json", "{}");
@@ -208,209 +206,77 @@ public sealed class PackTests : IDisposable
     }
 
     [Fact]
-    public void Resolve_OfflineWithoutCache_FallsBackToEmbedded()
+    public void Resolve_WithoutPack_FallsBackToEmbedded()
     {
-        // cacheRoot 注入隔离目录：测试不依赖也不污染本机 %LOCALAPPDATA% 真实缓存，
-        // 保证「无缓存 → 内嵌兜底」分支在任何开发机上可复现
-        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: NewDir());
+        // 常态唯一来源：exe 内嵌内容（--offline 只影响是否联网检查，不影响解析来源）
+        var resolution = PackResolver.Resolve(new[] { "--offline" });
 
         Assert.Null(resolution.Version);
         Assert.Equal("embedded", resolution.Source);
         Assert.IsType<EmbeddedResourceProvider>(resolution.Provider);
+        Assert.NotNull(new ResourceStore(resolution.Provider).Read("manifest.json"));
     }
 
+    // ── 启动统一更新检查（TryFetchUpdateOffer + ApplyUpdates，唯一轨道：引擎自更新）──
     [Fact]
-    public void Resolve_OfflineWithCache_PrefersCache()
+    public void 统一检查_引擎落后且带哈希_命中更新()
     {
-        // 夹具版本取远高于任何真实内嵌版本的值：该用例验证「缓存命中优先」，
-        // 不应随仓库 manifest 版本增长而反复失效（缓存 ≥ 内嵌时仍走缓存）
-        var cache = NewDir();
-        WriteFile(cache, "999.0.0/pack.json", "{\"version\":\"999.0.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
-        WriteFile(cache, "999.0.0/fragments/manifest.json", "{}");
-        File.WriteAllText(Path.Combine(cache, "current.json"), "{\"version\":\"999.0.0\"}");
-
-        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
-
-        Assert.Equal("999.0.0", resolution.Version);
-        Assert.Equal("cache", resolution.Source);
-    }
-
-    [Fact]
-    public void Resolve_CacheOlderThanEmbedded_UpgradesCache()
-    {
-        // 引擎换代先于内容包发布：缓存版本旧于 exe 内嵌内容时，把内嵌内容落位为
-        // 新缓存并切指针（缓存收敛到内嵌版本），避免旧缓存压掉新特性（技能全归「其他」）
-        var cache = NewDir();
-        WriteFile(cache, "0.1.0/pack.json", "{\"version\":\"0.1.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
-        WriteFile(cache, "current.json", "{\"version\":\"0.1.0\"}");
-
-        var embeddedVersion = new ManifestLoader(new ResourceStore()).Load().Vars.Version;
-
-        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
-
-        Assert.Equal("cache", resolution.Source);
-        Assert.Equal(embeddedVersion, resolution.Version);
-        Assert.Contains(Path.Combine(cache, embeddedVersion), Directory.GetDirectories(cache));
-        Assert.True(File.Exists(Path.Combine(cache, embeddedVersion, "fragments", "manifest.json")));
-        Assert.Equal(embeddedVersion, JsonDocument.Parse(File.ReadAllText(Path.Combine(cache, "current.json"))).RootElement.GetProperty("version").GetString());
-        // 旧缓存目录保留（指针已切换，不再被选中）
-        Assert.True(Directory.Exists(Path.Combine(cache, "0.1.0")));
-    }
-
-    [Fact]
-    public void Resolve_CacheNewerOrEqualEmbedded_KeepsCache()
-    {
-        // 缓存版本高于内嵌（正常更新路径）时维持缓存优先，不被本修复改变
-        var cache = NewDir();
-        WriteFile(cache, "999.0.0/pack.json", "{\"version\":\"999.0.0\",\"kind\":\"merged\",\"schema_version\":1,\"files\":{}}");
-        WriteFile(cache, "current.json", "{\"version\":\"999.0.0\"}");
-
-        var resolution = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
-
-        Assert.Equal("cache", resolution.Source);
-        Assert.Equal("999.0.0", resolution.Version);
-    }
-
-    [Fact]
-    public void Resolve_BareCommandLineArgs_WithoutCache_FallsBackToEmbedded()
-    {
-        // 命令行启动不做网络检查：无缓存直接内嵌
-        var resolution = PackResolver.Resolve(new[] { "--help" }, cacheRoot: NewDir());
-
-        Assert.Equal("embedded", resolution.Source);
-    }
-
-    // ── 启动统一更新检查（TryFetchUpdateOffer + ApplyUpdates）──
-    [Fact]
-    public void 统一检查_确认更新_安装新包并切缓存指针()
-    {
-        // 本地 stub 发布源替代 GitHub Release：验证「一次检查给出统一版本对照结论 → 确认更新 →
-        // 下载校验落位切指针 → 返回 true 要求调用方重启」这条消费者可见行为
-        var cache = NewDir();
-        var packRoot = NewDir();
-        WriteFile(packRoot, "fragments/manifest.json", "{}");
-        WritePackJson(packRoot, "9.8.7", files: new Dictionary<string, string>
-        {
-            ["fragments/manifest.json"] = Sha256Of(packRoot, "fragments/manifest.json")
-        });
-        var zipPath = Path.Combine(_tempDir, "ai-rule-pack.zip");
-        ZipFile.CreateFromDirectory(packRoot, zipPath);
-
+        // 单轨道语义：统一版本对照 exe 版本，engine_sha256 在场才允许替换二进制
+        var cacheRoot = NewDir();
         using var server = new StubReleaseServer(
-            ("latest.json", Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
-            {
-                version = "9.8.7",
-                sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(zipPath))).ToLowerInvariant()
-            }))),
-            ("ai-rule-pack.zip", File.ReadAllBytes(zipPath)));
-        WithPackUrl(server.BaseUrl, cache, () =>
+            ("latest.json", Encoding.UTF8.GetBytes(
+                $"{{\"version\":\"9.8.7\",\"engine_sha256\":\"{new string('a', 64)}\"}}")));
+        WithReleaseUrl(server.BaseUrl, () =>
         {
-            var offer = PackResolver.TryFetchUpdateOffer("1.0.0", "1.0.0", new List<string>());
+            var offer = PackResolver.TryFetchUpdateOffer("2.5", new List<string>());
             Assert.NotNull(offer);
-            Assert.True(offer.HasPackUpdate);
-            Assert.False(offer.HasEngineUpdate); // latest.json 未携带 engine_sha256：引擎轨道不触发
-            Assert.True(PackResolver.ApplyUpdates(offer, _ => true));
+            Assert.True(offer.HasEngineUpdate);
+            Assert.True(offer.HasAnyUpdate);
+            Assert.Contains("程序 2.5 → 9.8.7", offer.Describe());
+            Assert.Contains("重新运行后生效", offer.Describe());
 
-            var restarted = PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache);
-            Assert.Equal("9.8.7", restarted.Version);
-            Assert.Equal("cache", restarted.Source);
-            Assert.NotNull(new ResourceStore(restarted.Provider).Read("manifest.json"));
-            // 缓存已落位并切指针：重启后的 Resolve 离线即可拿到新版本（重启生效语义的事实基础）
-            Assert.Equal(
-                "9.8.7",
-                JsonDocument.Parse(File.ReadAllText(Path.Combine(cache, "current.json")))
-                    .RootElement.GetProperty("version").GetString());
-            Assert.Equal("9.8.7", PackResolver.Resolve(new[] { "--offline" }, cacheRoot: cache).Version);
-        });
-    }
-
-    [Fact]
-    public void 统一检查_用户跳过_不安装不落缓存()
-    {
-        var cache = NewDir();
-        using var server = new StubReleaseServer(
-            ("latest.json", Encoding.UTF8.GetBytes($"{{\"version\":\"9.8.7\",\"sha256\":\"{new string('0', 64)}\"}}")));
-        WithPackUrl(server.BaseUrl, cache, () =>
-        {
-            var offer = PackResolver.TryFetchUpdateOffer("1.0.0", "1.0.0", new List<string>());
-            Assert.NotNull(offer);
+            // 用户拒绝：不安装（TryUpdateEngine 会替换运行中进程自身，测试只驱动确认闸门，
+            // 引擎落位路径由 EngineCacheTests 与人工冒烟覆盖）
             Assert.False(PackResolver.ApplyUpdates(offer, _ => false));
-            Assert.False(File.Exists(Path.Combine(cache, "current.json")));
+        });
+    }
+
+    [Fact]
+    public void 统一检查_缺引擎哈希_视为无更新()
+    {
+        // 旧发布源兼容：latest.json 未携带 engine_sha256 时拒绝静默落位二进制，
+        // 即使版本落后也不触发更新（落位的字节绝不接受未校验）
+        using var server = new StubReleaseServer(
+            ("latest.json", Encoding.UTF8.GetBytes("{\"version\":\"9.8.7\"}")));
+        WithReleaseUrl(server.BaseUrl, () =>
+        {
+            var offer = PackResolver.TryFetchUpdateOffer("2.5", new List<string>());
+            Assert.NotNull(offer);
+            Assert.False(offer.HasEngineUpdate);
+            Assert.False(offer.HasAnyUpdate);
         });
     }
 
     [Fact]
     public void 统一检查_已是最新_不产生更新结论()
     {
-        var cache = NewDir();
         using var server = new StubReleaseServer(
-            ("latest.json", Encoding.UTF8.GetBytes($"{{\"version\":\"1.0.0\",\"sha256\":\"{new string('0', 64)}\"}}")));
-        WithPackUrl(server.BaseUrl, cache, () =>
+            ("latest.json", Encoding.UTF8.GetBytes(
+                $"{{\"version\":\"1.0.0\",\"engine_sha256\":\"{new string('b', 64)}\"}}")));
+        WithReleaseUrl(server.BaseUrl, () =>
         {
-            var offer = PackResolver.TryFetchUpdateOffer("1.0.0", "1.0.0", new List<string>());
+            var offer = PackResolver.TryFetchUpdateOffer("1.0.0", new List<string>());
             Assert.NotNull(offer);
             Assert.False(offer.HasAnyUpdate);
             Assert.False(PackResolver.ApplyUpdates(offer, _ => true));
         });
     }
 
-    [Fact]
-    public void 统一检查_落后版本双轨道同进同退()
-    {
-        // 统一版本语义：exe 与生效内容都落后于远端统一版本且哈希齐备 → 两条轨道同时命中，
-        // 确认文案列出两部分的替换范围
-        var cache = NewDir();
-        using var server = new StubReleaseServer(
-            ("latest.json", Encoding.UTF8.GetBytes(
-                $"{{\"version\":\"9.8.7\",\"sha256\":\"{new string('0', 64)}\",\"engine_sha256\":\"ab\"}}")));
-        WithPackUrl(server.BaseUrl, cache, () =>
-        {
-            var offer = PackResolver.TryFetchUpdateOffer("2.5", "2.5", new List<string>());
-            Assert.NotNull(offer);
-            Assert.True(offer.HasEngineUpdate);
-            Assert.True(offer.HasPackUpdate);
-            var description = offer.Describe();
-            Assert.Contains("程序 2.5 → 9.8.7", description);
-            Assert.Contains("内容包 2.5 → 9.8.7", description);
-        });
-    }
-
-    [Fact]
-    public void 统一检查_部分更新残留_只补齐落后轨道()
-    {
-        // 上次更新部分失败的残留（如引擎已换、内容包下载失败）：统一版本只对照各自基准，
-        // 已追平的一方不再触发，仍落后的一方单独补齐
-        var cache = NewDir();
-        using var server = new StubReleaseServer(
-            ("latest.json", Encoding.UTF8.GetBytes(
-                $"{{\"version\":\"9.8.7\",\"sha256\":\"{new string('0', 64)}\",\"engine_sha256\":\"ab\"}}")));
-        WithPackUrl(server.BaseUrl, cache, () =>
-        {
-            // exe 已最新、内容包落后：引擎轨道不触发，仅补齐内容包
-            var packBehind = PackResolver.TryFetchUpdateOffer("9.8.7", "2.5", new List<string>());
-            Assert.NotNull(packBehind);
-            Assert.False(packBehind.HasEngineUpdate);
-            Assert.True(packBehind.HasPackUpdate);
-
-            // 反向残留：内容包已最新、exe 落后（engine_sha256 在场才允许替换二进制）
-            var engineBehind = PackResolver.TryFetchUpdateOffer("2.5", "9.8.7", new List<string>());
-            Assert.NotNull(engineBehind);
-            Assert.True(engineBehind.HasEngineUpdate);
-            Assert.False(engineBehind.HasPackUpdate);
-            Assert.Contains("程序 2.5 → 9.8.7", engineBehind.Describe());
-        });
-    }
-
-    // 检查期间把发布源指到本地 stub、缓存根指到测试隔离目录，结束后还原，避免污染本机缓存与同进程其他测试；
-    // 隔离目录先清后用，保证断言不受历史残留影响
-    private static void WithPackUrl(string baseUrl, string cacheRoot, Action action)
+    // 检查期间把发布源指到本地 stub，结束后还原，避免污染同进程其他测试
+    private static void WithReleaseUrl(string baseUrl, Action action)
     {
         var original = Environment.GetEnvironmentVariable("USE_AI_RULE_PACK_URL");
-        var originalCache = Environment.GetEnvironmentVariable("USE_AI_RULE_PACK_CACHE");
         Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_URL", baseUrl);
-        if (Directory.Exists(cacheRoot))
-            Directory.Delete(cacheRoot, recursive: true);
-        Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_CACHE", cacheRoot);
         try
         {
             action();
@@ -418,7 +284,6 @@ public sealed class PackTests : IDisposable
         finally
         {
             Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_URL", original);
-            Environment.SetEnvironmentVariable("USE_AI_RULE_PACK_CACHE", originalCache);
         }
     }
 

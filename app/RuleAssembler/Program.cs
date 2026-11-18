@@ -22,8 +22,8 @@ internal static class Program
                 PackResolver.CleanupEngineUpdateResidue(currentExe);
 
 
-            // 内容包解析只决定来源（--pack / 缓存 / 内嵌兜底，缓存与内嵌谁新用谁），绝不产生网络副作用；
-            // 更新检查在交互模式启动时统一做一次（见 TryCheckUpdates）
+            // 内容解析只决定来源（--pack 显式指定 / exe 内嵌兜底），绝不产生网络副作用；
+            // 更新检查在交互模式启动时统一做一次
             var packArgs = args;
             var resolution = PackResolver.Resolve(packArgs);
             foreach (var line in resolution.Logs)
@@ -32,9 +32,8 @@ internal static class Program
             var resources = new ResourceStore(resolution.Provider);
             var manifest = new ManifestLoader(resources).Load();
 
-            // 统一版本口径：exe 版本与内容包版本同源（manifest.vars.version，CI 构建经
-            // InformationalVersion 注入）。程序内读回：CI 产物 = 发布版本；本地开发构建未注入
-            // 时为空显示 dev（dev 解析失败视为不比任何远端版本新，不触发自更新）；
+            // 统一版本：exe 的 InformationalVersion 与内嵌内容同源（manifest.vars.version）；
+            // 本地开发构建未注入时显示 dev（dev 不比任何远端版本新，不触发自更新）；
             // USE_AI_RULE_ENGINE_VERSION 仅供本地调试覆盖显示
             var engineVersion = Environment.GetEnvironmentVariable("USE_AI_RULE_ENGINE_VERSION");
             if (string.IsNullOrWhiteSpace(engineVersion))
@@ -44,11 +43,9 @@ internal static class Program
                 engineVersion = string.IsNullOrWhiteSpace(informational) ? "dev" : informational;
             }
 
-            // 正常状态两个版本相等只显一个；不等说明上次更新只部分生效（如引擎已换、内容包
-            // 下载失败），此时如实展示双版本——启动更新检查会自动把落后的一方补齐
-            Console.WriteLine(engineVersion == manifest.Vars.Version
-                ? $"use-ai-rule {engineVersion}（{manifest.Vars.LastUpdated}）"
-                : $"use-ai-rule {engineVersion}（内容包 {manifest.Vars.Version}，{manifest.Vars.LastUpdated}，版本不一致：启动更新检查将尝试补齐）");
+            // 单一内容源：内容随 exe 内嵌、与 exe 同版本构建发布（--pack 显式指定除外），
+            // 不存在「引擎已换、内容未更」的部分生效状态，横幅恒显单一版本
+            Console.WriteLine($"use-ai-rule {engineVersion}（{manifest.Vars.LastUpdated}）");
 
             // 带参模式走命令行分发（--check / --emit / --plan / --detect / --upgrade / --recipe 等），
             // 不做交互与更新检查，避免脚本调用出网络副作用
@@ -62,13 +59,9 @@ internal static class Program
             // 鼠标误点进入文本选择会挂起整个控制台输入，菜单表现为卡死
             QuickEditGuard.Disable();
 
-            // 启动统一更新检查（仅交互模式；带参命令与 --offline / --pack 模式绝不联网）：
-            // 一次 latest.json 拉取，统一版本同时对照 exe 与生效内容两个基准，弹一次确认（默认更新）。
-            // 安装成功后直接退出并提示重新运行——不做自动拉起：分离出的新进程与终端（PowerShell 等）
-            // 挂同一控制台，父进程一退终端立即抢回前台读键，与新进程的方向键菜单形成两路读入竞争，
-            // 菜单看似卡死；交给用户再触发一次则控制台全程只归生成器。继续按启动时加载的旧内容
-            // 生成会把配方版本回写降级，所以安装成功后绝不落入原交互流程。
-            // stdin 重定向（管道冒烟 / CI）只报告不更新：自动化场景不弹窗、不下载、不重启
+            // 启动统一更新检查（仅交互模式；带参命令与 --offline / --pack 绝不联网）：
+            // 弹一次确认（默认更新），安装成功即退出提示重跑——分离进程会与终端抢同一控制台输入，
+            // 故不自动拉起；带旧内容继续交互会回写降级配方，绝不落入原流程。stdin 重定向只报告不更新
             if (!args.Contains("--offline", StringComparer.OrdinalIgnoreCase) && resolution.Source != "pack")
             {
                 // 检查包一层转圈：latest.json 拉取最多阻塞 3 秒，无反馈时启动看起来像卡死；
@@ -77,7 +70,7 @@ internal static class Program
                 var updateLogs = new List<string>();
                 var offer = startupUi.WithProgress(
                     "检查更新中…",
-                    () => PackResolver.TryFetchUpdateOffer(engineVersion, manifest.Vars.Version, updateLogs));
+                    () => PackResolver.TryFetchUpdateOffer(engineVersion, updateLogs));
                 foreach (var line in updateLogs)
                     Console.WriteLine(line);
 
@@ -148,10 +141,8 @@ internal static class Program
         return args.Length > 0;
     }
 
-    // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染；
-    // 旧 Profile 渲染路径与 profiles 节点已整体退役，组合内核是唯一渲染路径。
-    // 更新检查已在 Main 启动阶段统一完成（一次 latest.json 对照 exe 与生效内容两个基准），
-    // 本流程不再产生网络请求
+    // 交互主流程（组件口径）：问答 / 检测 / 经典大类全部产出 Selection 走组合内核渲染（唯一渲染路径）；
+    // 更新检查已在 Main 启动阶段统一完成，本流程不再产生网络请求
     private static int RunInteractive(Manifest manifest, ResourceStore resources, SkillsStore skillsStore)
     {
         Console.WriteLine(Banner);
@@ -647,7 +638,7 @@ internal static class Program
             Console.WriteLine("--upgrade [目录] [--force]：按目标目录的配方记录升级规则；识别本地修改默认保留，--force 全部覆盖。");
             Console.WriteLine("--emit <目录>：把全部兼容样例的组合路径生成结果输出到指定目录，用于批量预览与产物回归。");
             Console.WriteLine("--pack <内容包.zip|目录>：使用指定内容包（zip 或已解包目录），校验失败直接报错退出。");
-            Console.WriteLine("--offline：跳过网络更新检查，使用本地缓存或内嵌资源。");
+            Console.WriteLine("--offline：跳过网络更新检查（内容随 exe 内嵌，离线永远可用）。");
             Console.WriteLine("--help：显示帮助。");
             return 0;
         }

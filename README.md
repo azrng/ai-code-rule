@@ -134,16 +134,12 @@ fragments/
 仓库附带一个交互式拼接器，免去手动复制：
 
 ```powershell
-# 构建（首次）：发布 win-x64 框架依赖单文件（目标机需自装 .NET 10 运行时），并附带 merged 内容包与 latest.json
+# 构建（首次）：发布 win-x64 框架依赖单文件（目标机需自装 .NET 10 运行时），并生成 latest.json 更新清单
 ./app/RuleAssembler/publish.ps1
 
-# 只出 exe、不重打内容包（自用 / 内部分发，不走 Release 更新链路）：
-./app/RuleAssembler/publish.ps1 -SkipPack
+# Windows 下也可以在仓库根目录双击或执行 build-use-ai-rule.bat
 
-# Windows 下也可以在仓库根目录双击或执行 build-use-ai-rule.bat（只出 exe）；
-# 需要重打内容包（Release 更新资产）时执行不带 -SkipPack 的 publish.ps1
-
-# 产物位于 dist/：use-ai-rule.exe（内嵌全量规则与技能，单文件可用）；ai-rule-pack.zip 与 latest.json 仅发布 Release 时生成
+# 产物位于 dist/：use-ai-rule.exe（内嵌全量规则与技能，单文件可用）+ latest.json（发布 Release 时上传）
 # Windows 产物双击启动（或命令行执行，支持 --check / --emit / --detect 等命令行模式）：
 # 启动时先选模式：生成规则文件（含可选 Skills 导入）、检测当前目录组合（仅查看），或仅导入 Skills（不生成规则文件、不写配方记录，gitignore 按 minimal 处理）。
 # 生成模式：自动检测当前项目并推荐组合（含判断依据）；证据不足时展示待确认维度与候选，
@@ -168,18 +164,17 @@ fragments/
 
 发布产物是 win-x64 框架依赖单文件（目标机需自装 .NET 10 运行时；本机需 .NET SDK 10 构建）。拼接器把公共入口、指针和可复用能力抽成模块，按所选组合填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部组合。后续只维护 `fragments/`，重新构建即可让所有组合生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。
 
-### exe 与内容包分离发布（CI 自动化）
+### exe 单产物发布（CI 自动化）
 
 推送 `master` 后 GitHub Actions（`.github/workflows/release.yml`）自动完成发布，产物：
 
 ```text
 GitHub Release（tag = v<统一版本>，如 v3.0.0）
-├── use-ai-rule.exe          # win-x64 框架依赖单文件（需自装 .NET 10 运行时），版本经 InformationalVersion 注入
-├── ai-rule-pack.zip         # 内容包：pack.json（版本 + 逐文件 SHA-256）+ manifest.json + fragments/ + skills/
-└── latest.json              # 更新检查清单：version（统一版本）+ engine_version（旧 exe 兼容字段，同值）+ engine_sha256 + zip SHA-256
+├── use-ai-rule.exe          # win-x64 框架依赖单文件（需自装 .NET 10 运行时），版本经 InformationalVersion 注入，规则与技能内容全量内嵌
+└── latest.json              # 更新检查清单：version（统一版本）+ engine_version（旧 exe 兼容字段，同值）+ engine_sha256
 ```
 
-统一版本口径：exe、内容包、Release tag、latest.json 共用同一个版本号，事实源是
+统一版本口径：exe、Release tag、latest.json 共用同一个版本号，事实源是
 `fragments/manifest.json` 的 `vars.version`。改 fragments / skills / 生成器代码都必须升版
 （emit 基线仍只在规则内容变更时刷）；CI 对 push 触发的发布校验版本严格大于已发布最高 tag，
 不升版直接失败——每次发布都产出新用户可检测到的更新。版本号用 `x.y.z`：规则 / 技能内容演进
@@ -187,13 +182,12 @@ GitHub Release（tag = v<统一版本>，如 v3.0.0）
 
 exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需升版并推送，CI 自动发新版本：
 
-1. `--pack <zip|目录>`：显式指定内容包（zip 或已解包目录），SHA-256 校验失败直接报错退出；
-2. `--offline`：跳过网络检查，用本地缓存（`%LOCALAPPDATA%\use-ai-rule\packs\<版本>\`），无缓存则内嵌资源；
-3. 交互模式（无参数启动）：显示「检查更新中…」加载动画并拉取 Release 的 `latest.json` 一次（3 秒超时），统一版本同时对照 exe 与生效内容两个基准，任一落后即弹一次确认（默认更新，说明会动什么）：内容包下载后做整包 + 逐文件双重 SHA-256 校验、原子落盘切版本指针；exe 下载后按 `engine_sha256` 校验并原子替换当前 exe（字段缺失 / 校验不匹配拒绝替换）。任一安装成功后**自动重启生成器**（新进程 = 新 exe + 缓存新内容包即时生效；重启后版本一致不再提示），避免继续用启动时加载的旧内容生成、把配方版本回写降级；上次更新部分失败留下的版本差（如 exe 已换、内容包没下成），下次启动检查只补齐仍落后的一方；本地缓存与内嵌资源的「谁新用谁」比较在来源解析时无条件完成，与是否联网更新无关，拒绝更新后直接用当前生效来源；
-4. 命令行模式（带参数启动）：不做网络检查，直接用本地缓存或内嵌资源；
-5. 程序集内嵌资源：编译期固化的兜底，单 exe 无网络永远可用。
+1. `--pack <zip|目录>`：显式指定内容包（zip 或已解包目录，本地验证用），SHA-256 校验失败直接报错退出；
+2. 程序集内嵌资源：常态唯一来源，内容与 exe 同版本构建发布，单 exe 无网络永远可用。
 
-更新失败（网络中断、校验不匹配）只告警降级不阻塞；内容包 `schema_version` 高于 exe 支持版本时回退内嵌并提示升级 exe（这是唯一强制换 exe 的场景，如组合内核结构变更）。环境变量 `USE_AI_RULE_PACK_URL` 可替换发布源（gitee 镜像等），缺省指向 GitHub Release。本地手动发布仍可跑 `publish.ps1`（win-x64 框架依赖 + 内容包），但常规流程无需手动操作。
+更新只在交互模式（无参数启动）发生：显示「检查更新中…」加载动画并拉取 Release 的 `latest.json` 一次（3 秒超时），统一版本对照 exe 版本，落后且携带 `engine_sha256` 即弹一次确认（默认更新，说明会动什么）：同机共享缓存（`%LOCALAPPDATA%\use-ai-rule\engine\<版本>\`，多目录副本复用，命中已校验缓存免下载）或下载新 exe，按 `engine_sha256` 校验后原子替换当前 exe（字段缺失 / 校验不匹配拒绝替换）。安装成功后**退出并提示重新运行**（不做自动拉起：分离进程会与终端抢同一控制台的键盘输入，菜单看似卡死；重新运行后版本一致不再提示），避免继续用启动时加载的旧内容生成、把配方版本回写降级。
+
+命令行模式（带参数启动）与 `--offline` 均不做网络检查。更新失败（网络中断、校验不匹配）只告警降级不阻塞。环境变量 `USE_AI_RULE_PACK_URL` 可替换发布源（gitee 镜像等），缺省指向 GitHub Release；`USE_AI_RULE_CACHE` 可替换引擎缓存根（测试隔离用）。本地手动发布仍可跑 `publish.ps1`，但常规流程无需手动操作。
 
 生成的规则内置效果反馈闭环：AI 在目标项目协作中发现规则被违反、与现实冲突或缺失时，任务收尾把条目记入项目根目录 `.ai-rule-feedback.md`（本地产物，已加入 `.gitignore` 不随项目提交）；把这些反馈回传本仓库，按 `doc/规则效果反馈承接.md` 的口径登记并转化为 `fragments/` 修改，目标项目再通过 `--upgrade` 拿到改进后的规则。
 
