@@ -150,10 +150,49 @@ internal static class PackResolver
         }
         catch (Exception ex)
         {
-            TryCleanupEngineUpdateTemp(currentExe);
+            // 失败收尾走还原语义而非单纯清理：move2 失败时原路径已空缺、.old 是唯一可用副本，
+            // 直接清残留会把用户的 exe 删没
+            if (!TryAbortEngineSwap(currentExe))
+            {
+                Console.WriteLine("[engine] 告警：旧版本滞留为 use-ai-rule.old，请手动去掉 .old 后缀恢复后重试");
+            }
             Console.WriteLine($"[engine] 告警：引擎更新失败（{ex.Message}），请到 Release 页手动下载");
             Console.WriteLine($"[engine] {BaseUrl.Replace("/releases/latest/download", "/releases/latest")}");
             return false;
+        }
+    }
+
+    // 替换中断收尾：原路径空缺（move1 已把运行中 exe 改名 .old）时优先还原，再清 .new 半成品。
+    // 返回 false = .old 还原失败仍滞留且原路径空缺（异常占用），.old 是唯一副本不再删除，留用户手动恢复
+    internal static bool TryAbortEngineSwap(string currentExe)
+    {
+        var oldExe = currentExe + ".old";
+        var newExe = currentExe + ".new";
+        try
+        {
+            if (!File.Exists(currentExe) && File.Exists(oldExe))
+                File.Move(oldExe, currentExe);
+        }
+        catch (Exception)
+        {
+            TryDeleteIfExists(newExe);
+            return false;
+        }
+
+        TryDeleteIfExists(newExe);
+        return true;
+    }
+
+    private static void TryDeleteIfExists(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (Exception)
+        {
+            // 占用中：下次启动清理
         }
     }
 
@@ -189,17 +228,18 @@ internal static class PackResolver
     // 校验通过的字节落共享缓存（temp + 原子改名，避免并发读到半截文件）；失败静默，其余目录副本走下载
     internal static void TryStoreCachedEngine(string cacheRoot, string version, byte[] exeBytes)
     {
+        var temp = EngineCachePath(cacheRoot, version) + ".tmp";
         try
         {
             var target = EngineCachePath(cacheRoot, version);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            var temp = target + ".tmp";
             File.WriteAllBytes(temp, exeBytes);
             File.Move(temp, target, overwrite: true);
         }
         catch (Exception)
         {
-            // 缓存落盘失败（磁盘 / 权限 / 并发占用）不影响本次更新
+            // 缓存落盘失败（磁盘 / 权限 / 并发占用）不影响本次更新，只清半成品防滞留
+            TryDeleteIfExists(temp);
         }
     }
 
@@ -213,17 +253,7 @@ internal static class PackResolver
     private static void TryCleanupEngineUpdateTemp(string currentExe)
     {
         foreach (var stale in new[] { currentExe + ".old", currentExe + ".new" })
-        {
-            try
-            {
-                if (File.Exists(stale))
-                    File.Delete(stale);
-            }
-            catch (Exception)
-            {
-                // 占用中：下下次启动再试
-            }
-        }
+            TryDeleteIfExists(stale);
     }
 
     // 准备包根目录：目录直接用；zip 解到系统临时目录（调用方校验后使用）
@@ -283,7 +313,7 @@ internal static class PackResolver
         }
         catch (Exception)
         {
-            logs.Add("[pack] 更新检查超时，使用本地版本");
+            logs.Add("[update] 更新检查超时，使用本地版本");
             return null;
         }
     }

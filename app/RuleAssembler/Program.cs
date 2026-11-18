@@ -65,7 +65,7 @@ internal static class Program
             if (!args.Contains("--offline", StringComparer.OrdinalIgnoreCase) && resolution.Source != "pack")
             {
                 // 检查包一层转圈：latest.json 拉取最多阻塞 3 秒，无反馈时启动看起来像卡死；
-                // 降级说明（[pack] 更新检查超时…）在动画收尾后输出，纯文本场景不插帧
+                // 降级说明（[update] 更新检查超时…）在动画收尾后输出，纯文本场景不插帧
                 IConsoleUi startupUi = CreateUi();
                 var updateLogs = new List<string>();
                 var offer = startupUi.WithProgress(
