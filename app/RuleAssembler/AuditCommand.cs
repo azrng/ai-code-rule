@@ -50,13 +50,18 @@ internal static class AuditCommand
         ("## 触发式协作规则", null)
     };
 
-    // 跨文件重复检测的内容行过滤：front matter、标题、表格、代码块、列表标记、短行不参与比对
+    // 跨文件重复检测的内容行过滤：front matter、标题、表格、代码块、列表标记、短行、
+    // 目录树结构行（├──/└──/│ 切片是各子规则展示自己视角的设计形态）与指针行不参与比对
     private static bool IsComparableContentLine(string normalized)
     {
         if (normalized.Length < 12)
             return false;
-        if (normalized.StartsWithAny("---", "```", "|", "#", ">", "- ", "* "))
+        // 目录树切片行（含 ├──/└──/│ 或「src/<名>/」形态）是各子规则展示自己视角的设计，不参与比对
+        if (normalized.StartsWithAny("---", "```", "|", "#", ">", "- ", "* ", "├", "└", "│", "src/appname/", "project-root/"))
             return false;
+        if (normalized.EndsWith("/") && !normalized.Contains(' '))
+            return false;
+
         return true;
     }
 

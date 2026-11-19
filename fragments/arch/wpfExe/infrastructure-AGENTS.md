@@ -60,14 +60,11 @@ dependencies: [agents-root]
 <!-- include: shared/common/general-requirements.md -->
 
 ### 基础设施测试
-- Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试
+<!-- include: shared/desktop/repository-regression.md -->
 - 配置绑定、迁移执行、连接初始化等关键基础设施逻辑发生变化时，应补充验证
 - 若无法做自动化测试，至少补充一次可复现的手工验证步骤
 
-### 外部依赖与数据
-- 测试中不要真实调用不可控外部服务，统一使用 mock、stub 或本地替身
-- 测试数据应尽量最小化、可读、可重复执行
-- 不要让测试依赖本地人工状态或手工残留数据库
+<!-- include: shared/external-dependencies.md -->
 
 <!-- include: shared/no-test-fallback.md -->
 

@@ -21,8 +21,7 @@ dependencies: [agents-root]
 ---
 
 ## 技术选择原则
-如果仓库已经有真实实现，以现有代码为准，不要强行重构或替换技术栈。
-技术债务与重构判断遵循 `collaboration-AGENTS.md` 的「纠错、回退与重构」。
+<!-- include: shared/application/tech-choice.md -->
 
 ---
 

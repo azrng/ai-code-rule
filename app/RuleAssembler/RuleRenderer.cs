@@ -68,6 +68,8 @@ internal sealed class RuleRenderer
         if (leftover.Count > 0)
             throw new InvalidOperationException($"{ownerId} 的根模板存在未填充变量：{string.Join("、", leftover)}");
 
+        // 同组合 include 去重会话：生命周期 = 本次渲染，根模板 / 指针 / design-system 不参与（各自唯一）
+        var dedup = new IncludeDeduplication(_expander.Resources);
         var contributions = new List<RenderedContribution>();
         AddContribution(
             contributions,
@@ -79,7 +81,7 @@ internal sealed class RuleRenderer
         foreach (var file in files)
         {
             if (IsFeatureEnabled(features, file.File.Feature))
-                AddRuleFile(contributions, file, manifest, planSlots);
+                AddRuleFile(contributions, file, manifest, planSlots, dedup);
         }
 
         foreach (var pointer in pointers)
@@ -127,9 +129,10 @@ internal sealed class RuleRenderer
         List<RenderedContribution> contributions,
         FileContribution contribution,
         Manifest manifest,
-        IReadOnlyDictionary<string, string>? planSlots = null)
+        IReadOnlyDictionary<string, string>? planSlots = null,
+        IncludeDeduplication? dedup = null)
     {
-        var content = CombineSources(contribution.File, manifest);
+        var content = CombineSources(contribution.File, manifest, dedup, contribution.File.Output);
         content = ApplyFileSlots(content, contribution.File, planSlots);
         AddContribution(
             contributions,
@@ -183,13 +186,17 @@ internal sealed class RuleRenderer
         return replaced;
     }
 
-    // 单源直接展开；多源先去各段尾部空白再以空行拼接，保证文件仍以单个换行结尾
-    internal string CombineSources(Subrule file, Manifest manifest)
+    // 单源直接展开；多源先去各段尾部空白再以空行拼接，保证文件仍以单个换行结尾。
+    // 传 dedup 时同组合内重复 include 的片段以指针行替代（首载宿主承载全文）
+    internal string CombineSources(Subrule file, Manifest manifest, IncludeDeduplication? dedup = null, string? displayOutput = null)
     {
         var sources = file.GetSources();
+        string Read(string source) => dedup is not null
+            ? _expander.Expand(source, dedup, displayOutput ?? file.Output)
+            : ReadRequired(source);
         var content = sources.Count == 1
-            ? ReadRequired(sources[0])
-            : string.Join("\n\n", sources.Select(source => ReadRequired(source).TrimEnd())) + "\n";
+            ? Read(sources[0])
+            : string.Join("\n\n", sources.Select(Read).Select(text => text.TrimEnd())) + "\n";
         return AlignVersion(content, manifest);
     }
 

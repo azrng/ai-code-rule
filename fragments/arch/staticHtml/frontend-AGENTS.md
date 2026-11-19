@@ -45,7 +45,7 @@ dependencies: [agents-root]
 <!-- include: shared/frontend/advisory.md -->
 
 ## 推荐目录结构
-若仓库尚未形成稳定结构，可优先参考以下组织方式；若仓库已有实现，以现状为准，不强制迁移。
+<!-- include: shared/common/structure-preamble.md -->
 
 ```text
 project-root/

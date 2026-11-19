@@ -52,7 +52,7 @@ dependencies: [agents-root]
 <!-- include: shared/ui/advisory.md -->
 - 设计体系基线：WPF 样式资源与 Fluent Design 约束
 ## 推荐目录结构
-若仓库尚未形成稳定结构，可优先参考以下组织方式；若仓库已有实现，以现状为准，不强制迁移。
+<!-- include: shared/common/structure-preamble.md -->
 
 ```text
 project-root/
@@ -201,11 +201,8 @@ WPF 项目默认沉淀型真栈原型：页面直接在正式工程内实现，�
 
 <!-- include: shared/application/view-layer-testing.md -->
 
-### 业务逻辑层测试
-- ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试
-- Service 层业务逻辑、数据转换、异常处理发生变化时，应补充对应测试
-- Repository 层 SQL 查询、数据映射、事务处理发生变化时，应补充对应测试
-- 使用 xUnit 作为测试框架
+<!-- include: shared/application/application-layer-testing.md -->
+<!-- include: shared/desktop/repository-regression.md -->
 
 <!-- include: shared/external-dependencies.md -->
 

@@ -81,10 +81,7 @@ dependencies: [agents-root]
 
 <!-- include: shared/application/view-layer-testing.md -->
 
-### 业务逻辑层测试
-- ViewModel 命令执行、属性变更、消息发送发生变化时，应补充对应测试
-- Service 层业务逻辑、数据转换、异常处理发生变化时，应补充对应测试
-- 使用 xUnit 作为测试框架
+<!-- include: shared/application/application-layer-testing.md -->
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
 <!-- include: shared/backend/background-write-races.md -->

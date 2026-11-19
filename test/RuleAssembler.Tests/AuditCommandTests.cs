@@ -57,7 +57,7 @@ public sealed class AuditCommandTests
             .ToList();
 
         var findings = AuditCommand.FindUnreferencedFragmentsForTest(manifest, resources, rendered);
-        Assert.Empty(findings.Where(f => f.Check == "不可达片段"));
+        Assert.DoesNotContain(findings, f => f.Check == "不可达片段");
     }
 
     [Fact]

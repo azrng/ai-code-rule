@@ -176,7 +176,7 @@ backend/src/YourProject/
 ## 测试规则
 
 ### 提交前最小回归
-- 默认执行：项目现有的静态检查、类型检查或编译校验
+<!-- include: shared/common/regression-baseline.md -->
 - 模型调用 / Agent 改动：至少用 mock `IChatClient` 验证一次输入输出或工具调度链路
 - Prompt 改动：至少验证关键输出格式与边界（空输入、超长输入、异常输入）
 - 工具 / Skills 改动：至少验证工具被正确选择并真实生效（可用等价验证替代真实模型调用）
