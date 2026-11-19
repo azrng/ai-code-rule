@@ -1,11 +1,11 @@
 ---
 name: onion-architecture
-description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, background tasks (BackgroundService workers), and the cross-cutting AppService conventions — global result-packing and paged queries. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration/BackgroundService worker, wiring DI/middleware through Service Startup, placing business logic vs data-access vs DTOs, or implementing scheduled scan / lifecycle-advance background tasks. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询, 后台任务, BackgroundService, Worker, 定时扫描, 多实例."
+description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, background tasks (BackgroundService workers), and the cross-cutting AppService conventions — global result-packing, paged queries, and JWT authn/authz. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration/BackgroundService worker, wiring DI/middleware through Service Startup, placing business logic vs data-access vs DTOs, designing login/JWT authentication or authorization policy, resolving the current user, or implementing scheduled scan / lifecycle-advance background tasks. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询, 认证, 授权, JWT, IBearerAuthService, FallbackPolicy, AllowAnonymous, ICurrentUser, 当前用户, 后台任务, BackgroundService, Worker, 定时扫描, 多实例."
 ---
 
 # 洋葱架构（Onion / Clean Architecture）分层指南
 
-指导在 Azrng 系列解决方案里正确分层：哪一层放什么、层间依赖方向、项目结对（接口/实现）、典型 CRUD 功能落点，以及贯穿所有 AppService 的两条横切约定——**全局返回包装**与**分页查询**。
+指导在 Azrng 系列解决方案里正确分层：哪一层放什么、层间依赖方向、项目结对（接口/实现）、典型 CRUD 功能落点，以及贯穿所有 AppService 的三条横切约定——**全局返回包装**、**分页查询**与**认证授权（JWT）**。
 
 > 本文件是**决策入口与规则总览**；各层完整代码示例、跨层数据流、`.csproj` 依赖详见 `references/layer-responsibilities.md`。
 
@@ -21,7 +21,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
                 ├─────────────────────────────────────────┤
                 │  Domain（领域服务实现：可复用公共操作）               │  ← IDomain 的实现（按需）
                 ├─────────────────────────────────────────┤
-                │  EntityFramework / Storage（DbContext/存储）│
+                │  EntityFramework / Storage（DbContext/存储/仓储）│
                 ├─────────────────────────────────────────┤
    内核(被依赖)  │  IApplication  │  IDomain  │  Core        │
                 │ (服务接口+DTO入口)│(实体+配置)│(纯DTO/常量) │
@@ -40,7 +40,7 @@ description: "Guide for the .NET onion/clean architecture used across Azrng solu
 | **EntityFramework** | 基础设施-数据 | Core, IDomain | `DbContext`、EFCore 配置类（`{Entity}Etc.cs`）、迁移 |
 | **Service** | 入口/组装层 | Application, EntityFramework, Storage | `Controllers`、`HostedServices`（BackgroundService 后台任务，仅调度，见「后台任务 Worker」）、`Program.cs`（宿主生命周期）、`Startup.cs`（DI 装配 + 中间件管道）、配置 |
 | **Adapter** | 外部适配器 | IDomain | 外部系统调用封装：`I{X}Adapter`（接口在 `IDomain/Adapter/`）+ 适配实现（`Adapter/Services/`）+ 可选 HTTP 客户端包装（`Adapter/HttpClients/`），屏蔽 HTTP/SDK 细节（可选） |
-| **Storage** | 存储适配 | Core | 文件/对象存储实现（可选）；存储能力接口定义在 `Core`（Storage 仅依赖 Core），实现放 Storage 项目 |
+| **Storage** | 存储适配 | Core, EntityFramework | 文件/对象存储实现 + **自定义仓储实现**（团队惯例落点：接口在 `IDomain/{域}Manager/I{实体}Repository.cs`，实现放 `Storage/{域}Manager/`，Storage 工程引用 EntityFramework 工程；见 azrng-efcore skill「自定义仓储」）；文件/对象存储的能力接口定义在 `Core` |
 
 > **接口/实现结对**：`I*` 项目只有抽象，对应无前缀项目是实现。`IApplication`/`Application`、`IDomain`/`Domain` 总是成对出现。控制器永远只依赖 `I*AppService`，不依赖实现。
 
@@ -64,26 +64,37 @@ YourProject/
     └── YourProject.Tests/
 ```
 
-`.slnx` 至少按 `/src/` 与 `/test/` 划分解决方案目录；没有测试项目时可以先保留空的 `/test/` 节点：
+`.slnx` 按编号层级文件夹分组，不用 `src` / `test` 平铺：`1.Presentation`（Service）、`2.Application`（Application + IApplication）、`3.Domain`（Domain + IDomain）、`4.Infrastructure`（Core / Storage / Adapter / EntityFramework）、`5.Plugins`（插件工程，无插件省略）；测试项目放 `/test/`。没有测试项目时可以先保留空的 `/test/` 节点：
 
 ```xml
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/YourProject.Core/YourProject.Core.csproj" />
+  <Folder Name="/src/1.Presentation/">
     <Project Path="src/YourProject.Service/YourProject.Service.csproj" />
+  </Folder>
+  <Folder Name="/src/2.Application/">
+    <Project Path="src/YourProject.Application/YourProject.Application.csproj" />
+    <Project Path="src/YourProject.IApplication/YourProject.IApplication.csproj" />
+  </Folder>
+  <Folder Name="/src/3.Domain/">
+    <Project Path="src/YourProject.Domain/YourProject.Domain.csproj" />
+    <Project Path="src/YourProject.IDomain/YourProject.IDomain.csproj" />
+  </Folder>
+  <Folder Name="/src/4.Infrastructure/">
+    <Project Path="src/YourProject.Core/YourProject.Core.csproj" />
+    <Project Path="src/YourProject.EntityFramework/YourProject.EntityFramework.csproj" />
   </Folder>
   <Folder Name="/test/" />
 </Solution>
 ```
 
-新增测试项目时，物理路径使用 `test/YourProject.Tests/YourProject.Tests.csproj`，并在 `/test/` 节点下以相对路径引用。
+slnx 用路径式平铺表达分组——同级多个 `<Folder Name="/src/1.Presentation/">` 按 `Name` 路径自动归并；**禁止 `<Folder>` 嵌套 `<Project>` / `<Folder>` 子元素**（slnx 非法语法，VS 打不开、`dotnet sln list` 只解析出 1 个项目）。新增测试项目时，物理路径使用 `test/YourProject.Tests/YourProject.Tests.csproj`，并在 `/test/` 节点下以相对路径引用。
 
 ## 核心规则（AI 必读）
 
 1. **依赖单向向内**：外层引用内层，内层绝不引用外层。`Core` 不引用任何项目；`Service` 引用 `Application`（不直接引用 `IBaseRepository`）。
 2. **控制器瘦**：控制器只做 HTTP 适配——接参数 → 调 `I*AppService` → 一行转发返回值。**不写 EF 查询、不注入 `IBaseRepository`、不写业务校验、不写 `Ok()`/`return ResultModel`**。
 3. **应用编排 vs 领域操作分层**：`AppService`（应用层）承担**用例编排**——接 DTO → 调领域服务/仓储/适配器 → 返回 DTO + 实体↔DTO 映射；**可复用的公共领域操作下沉到 DomainService**（领域层），如「发会话消息」「读系统配置」这类被多个 AppService 复用的操作。**AppService 和 DomainService 都可注入 `IBaseRepository<T>` / `IUnitOfWork` 做数据访问**（并非 AppService 独占）。判断：单一用例、不复用 → 直接写在 AppService；多 AppService 复用 / 稳定领域概念 → 抽 DomainService。详见「领域服务 DomainService」。
-4. **DTO 放 IApplication/{业务域}/Dto/**：应用层 DTO/Request/Response 放 `IApplication/{业务域}/Dto/`（如 `IApplication/Role/Dto/CreateRoleRequest.cs`），一类一文件。不要在控制器内 inline 定义请求类。**「通用」= 跨业务域/跨模块复用**（公共枚举、常量、跨域包装）才放 `Core/Models`——单业务域的 DTO 即使接口、实现、控制器三方都在用也放 IApplication（控制器注入 `I*AppService` 时本来就引用 IApplication，不产生新依赖）。注意：不是「跨层共享（三方都用）」就入 Core——跨层使用是应用层 DTO 的常态，按那个判据所有 DTO 都会命中 Core，`IApplication/{业务域}/Dto/` 规则将永远没有适用对象。领域服务/适配器接口签名用的业务对象 Bo 放 `IDomain/{业务域}/Bo/`；外部适配器接口签名用的 Bo 放 `IDomain/Adapter/Bo/{外部系统}/`。
+4. **DTO 放 IApplication/{业务域}Manager/Dto/**：应用层 DTO/Request/Response 放 `IApplication/{业务域}Manager/Dto/`（如 `IApplication/RoleManager/Dto/CreateRoleRequest.cs`），一类一文件。不要在控制器内 inline 定义请求类。**「通用」= 跨业务域/跨模块复用**（公共枚举、常量、跨域包装）才放 `Core/Models`——单业务域的 DTO 即使接口、实现、控制器三方都在用也放 IApplication（控制器注入 `I*AppService` 时本来就引用 IApplication，不产生新依赖）。注意：不是「跨层共享（三方都用）」就入 Core——跨层使用是应用层 DTO 的常态，按那个判据所有 DTO 都会命中 Core，`IApplication/{业务域}Manager/Dto/` 规则将永远没有适用对象。领域服务/适配器接口签名用的业务对象 Bo 放 `IDomain/{业务域}Manager/Bo/`；外部适配器接口签名用的 Bo 放 `IDomain/Adapter/Bo/{外部系统}/`。业务域目录统一 `{业务域}Manager/` 后缀、同域跨工程共用命名空间 `根.{业务域}Manager`（不带工程段），`IDomain/Entities/`、`IDomain/Adapter/` 等基础设施目录不套 `Manager` 后缀。
 5. **实体在 IDomain、配置在 EntityFramework**：实体（继承 `IdentityOperatorStatusEntity`）放 `IDomain/Entities/`；EFCore 配置类（`{Entity}Etc.cs`，继承 `EntityTypeConfigurationIdentityOperatorStatus<TEntity, TKey>`）放 **EntityFramework 层**，`Configure` 里设表名/列名/查询过滤；**映射单源**——表名/列名只在 `{Entity}Etc.cs` 维护一处，禁止同时在实体上挂 `[Table]`/`[Column]` 特性形成两份簿记（两份必然漂移）；DbContext 用 `ApplyConfigurationsFromAssembly(当前程序集)` 扫描它们（详见 azrng-efcore skill）。
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
@@ -121,6 +132,8 @@ YourProject/
 > **成功包装保留 action 状态码（Azrng.AspNetCore.Core ≥ 1.6.0）**：`CustomResultPackFilter` 只替换响应体为统一外壳，不再把 `CreatedAtAction`(201)/`Accepted`(202)/`StatusCode(...)` 强制改成 200——但外壳内 `code` 仍是 `"200"`，前端判成功按 `isSuccess`，不要按 `code` 推断 HTTP 状态。
 
 > `AddMvcResultPackFilter` 的忽略前缀按 URI 路径匹配，传值应以 `/` 开头，例如 `/swagger`。传入 `swagger` 可能不影响启动，但在首个结果过滤请求时才抛参数异常。
+
+> **包 API 以锁定版本为准**：Azrng 生态包的注入签名 / 参数单位 / 自动注册范围**以锁定版本解包 XML 或反射探测为准，本文档口径可能滞后于包版本**。已核实的易错事实：`AddMvcResultPackFilter` / `AddMvcModelVerifyFilter` 挂 `IServiceCollection`（不是 `AddControllers().Add…` 链式扩展）；`HttpClientOptions.Timeout` 单位是秒（int，不是 TimeSpan）；`IBearerAuthService` 无自动注册需手动 `AddScoped`；`AddEntityFramework<T>` 已内含 UnitOfWork / Repository / 发号注册，不重复手写。
 
 ### Startup 装配（标准模板见 references）
 
@@ -181,15 +194,67 @@ public async Task<long> CreateAsync(CreateOrderRequest req)
 ```
 
 ```csharp
-// 控制器（Service）：一行转发，不写 Ok() / 不写 ResultModel
+// 控制器（Service）：一行转发，不写 Ok() / 不写 ResultModel（块体 + return，不用表达式体）
 [HttpGet("{id}")]
-public Task<OrderDto> Get(long id) => _orderAppService.GetAsync(id);
+public Task<OrderDto> Get(long id)
+{
+    return _orderAppService.GetAsync(id);
+}
 
 [HttpPost]
-public Task<long> Create([FromBody] CreateOrderRequest req) => _orderAppService.CreateAsync(req);
+public Task<long> Create([FromBody] CreateOrderRequest req)
+{
+    return _orderAppService.CreateAsync(req);
+}
 ```
 
 > 关于 `IResultModel<T>`（历史/迁移期）：旧代码里 AppService 返回 `Task<IResultModel<T>>`、手动 `ResultModel<T>.Success/Error`，仍能工作（过滤器不重复包装），迁移期可与全局包装共存。但新代码统一用全局包装：更省事、控制器/AppService 一行转发。逐步替换即可。
+
+## 认证与授权（JWT）
+
+登录 / 鉴权是与全局包装、分页同级的横切约定。**设计认证方案时先读本节**，不要按通用经验选裸 `Microsoft.AspNetCore.Authentication.JwtBearer` 再自写 `JwtTokenProvider`——那会绕开包内置的密钥校验、统一响应与 token 生命周期管理，产生一次设计返工。
+
+### 包选型与用法
+
+- 认证包用 `Azrng.AspNetCore.Authentication.JwtBearer`（Service.csproj 引用），**禁止**裸引 `Microsoft.AspNetCore.Authentication.JwtBearer` + 自写 token 生成器。
+- 生成 / 校验 token 走 `IBearerAuthService`：登录用例所在 AppService 注入它发 token；它**没有自动注册**，需在 Startup 手动 `services.AddScoped<IBearerAuthService, JwtBearerAuthService>()`。
+- JWT 密钥要求 **≥32 位且 ≥8 种字符**（旧包文档「≥16」口径已过期，以锁定版本包内校验器实测为准）。
+- 需要「操作者从已认证身份解析」时，直接用 `Azrng.Core` 的 `ICurrentUser<TSubject>`（见「当前用户上下文」），禁止自造同名抽象。
+
+### Startup 装配（实测形态）
+
+```csharp
+// RegisterServices 内
+services.Configure<JwtTokenConfig>(options =>
+{
+    options.JwtSecretKey = configuration["Jwt:SecretKey"]!;   // ≥32 位且 ≥8 种字符
+    options.ValidTime = TimeSpan.FromMinutes(120);
+});
+services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearerAuthentication(jwtBearerEventsAction: events =>
+    {
+        events.UseJwtBearerDefaultResponses();                 // 401/403 统一响应形态
+    });
+services.AddScoped<IBearerAuthService, JwtBearerAuthService>();
+```
+
+签名与配置节名以锁定版本为准（见「包 API 以锁定版本为准」）。
+
+### 授权默认拒绝（FallbackPolicy 全局兜底）
+
+「默认拒绝」不靠逐端点挂 `[Authorize]`——逐点标注属「默认放开、显式收紧」，新增端点忘标即静默匿名。用全局回退策略兜底：
+
+```csharp
+services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+```
+
+- 匿名例外端点（登录、健康探针）显式 `[AllowAnonymous]`；整控制器均无鉴权需求（如 HealthController）标注上移到控制器类级，不逐动作重复挂。
+- 认证方案就绪后 Swagger 的 `showJwtToken` 才传 `true`（见「Swagger 与静态文件装配」）。
 
 ## 分页查询最佳实践
 
@@ -250,12 +315,12 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 当一段领域操作**会被多个 AppService 复用**，或封装**稳定的多实体领域规则/数据访问**时，不要在每个 AppService 里重复写——抽成 DomainService。典型：会话消息收发、系统配置读写、指标计算、同义词管理等“公共能力”。
 
-**结对模式**（与 AppService 一致：接口在 `I*`、实现在无前缀项目）：
+**结对模式**（与 AppService 一致：接口在 `I*`、实现在无前缀项目；业务域目录统一 `{Module}Manager/`）：
 
 | | 位置 | 命名 |
 |---|---|---|
-| 接口 | `IDomain/{Module}/` | `I{X}DomainService` |
-| 实现 | `Domain/{Module}/` | `{X}DomainService : IScopedDependency, I{X}DomainService` |
+| 接口 | `IDomain/{Module}Manager/` | `I{X}DomainService` |
+| 实现 | `Domain/{Module}Manager/` | `{X}DomainService : IScopedDependency, I{X}DomainService` |
 
 **关键点**：
 - DomainService **可注入 `IBaseRepository<T>` / `IUnitOfWork` 自己读写数据**（`Domain` 项目依赖 `EntityFramework`），也可注入 Adapter/缓存等——**数据访问并非 AppService 独占**。
@@ -278,12 +343,12 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 ## 文件上传与外部存储
 
-应用层和领域契约层不接受 `IFormFile`、`HttpContext` 等 ASP.NET 类型。文件上传时，在 `IApplication/{业务域}/Dto/` 定义只包含业务数据的 Command（例如 `FileName`、`Size`、`Stream`；仅本业务域使用，不放 `Core/Models`），由 Controller 把 `IFormFile` 适配后再调用 AppService。
+应用层和领域契约层不接受 `IFormFile`、`HttpContext` 等 ASP.NET 类型。文件上传时，在 `IApplication/{业务域}Manager/Dto/` 定义只包含业务数据的 Command（例如 `FileName`、`Size`、`Stream`；仅本业务域使用，不放 `Core/Models`），由 Controller 把 `IFormFile` 适配后再调用 AppService。
 
-存储能力接口定义在 `Core`（例如 `Core/Storage/IMaterialStorage.cs`；Storage 仅依赖 Core，接口放 Core 后 Application / Domain 通过 Core 中的接口使用存储能力），本地磁盘或对象存储实现放在 `Storage` 项目。Service 组合根负责注册实现；禁止 Controller 绕过业务层直接调用存储实现。
+存储能力接口定义在 `Core`（例如 `Core/Storage/IMaterialStorage.cs`；接口放 Core 后 Application / Domain 通过 Core 中的接口使用存储能力），本地磁盘或对象存储实现放在 `Storage` 项目。Service 组合根负责注册实现；禁止 Controller 绕过业务层直接调用存储实现。
 
 ```csharp
-// 文件：IApplication/Material/Dto/MaterialUploadCommand.cs —— 仅 Material 业务域使用，非跨域通用，不放 Core/Models
+// 文件：IApplication/MaterialManager/Dto/MaterialUploadCommand.cs —— 仅 Material 业务域使用，非跨域通用，不放 Core/Models
 public class MaterialUploadCommand
 {
     public string FileName { get; set; } = string.Empty;
@@ -294,12 +359,14 @@ public class MaterialUploadCommand
 // 文件：Service/Controllers/MaterialController.cs
 [HttpPost("upload")]
 public Task<MaterialDto> Upload(IFormFile file)
-    => _materialAppService.UploadAsync(new MaterialUploadCommand
+{
+    return _materialAppService.UploadAsync(new MaterialUploadCommand
     {
         FileName = file.FileName,
         Size = file.Length,
         Content = file.OpenReadStream()
     });
+}
 ```
 
 > **判断门槛**：操作只被**一个 AppService 用、不会复用**时，直接写在那个 AppService 里即可，不必提前抽 DomainService（避免过度设计）。复用真正出现、或领域规则变复杂时再下沉——`ISystemConfigDomainService` 就是后来被 5+ 个 AppService 共用才抽出来的。
@@ -350,12 +417,12 @@ services.AddControllers().AddJsonOptions(options =>
 
 以"商品(Product)管理"为例，自内向外依次落地（详版含每步完整代码见 `references/layer-responsibilities.md → 完整功能落点速查`）：
 
-1. **IApplication/Product/Dto/** — 应用层契约类一类一个文件、文件名与类名一致：`ProductDto.cs`、`ProductListRequest.cs`（继承 `GetPageRequest`）、`CreateProductRequest.cs`、`UpdateProductRequest.cs`。这些类只服务 Product 业务域，即使接口/实现/控制器三方共用也不放 Core（`Core/Models` 仅收跨业务域通用 DTO/枚举/常量，判据见核心规则 4）。
+1. **IApplication/ProductManager/Dto/** — 应用层契约类一类一个文件、文件名与类名一致：`ProductDto.cs`、`ProductListRequest.cs`（继承 `GetPageRequest`）、`CreateProductRequest.cs`、`UpdateProductRequest.cs`。这些类只服务 Product 业务域，即使接口/实现/控制器三方共用也不放 Core（`Core/Models` 仅收跨业务域通用 DTO/枚举/常量，判据见核心规则 4）。
 2. **IDomain/Entities/Product.cs** — 实体继承 `IdentityOperatorStatusEntity`，构造函数 `SetCreator("system")`。
 3. **EntityFramework/ProductEtc.cs** — 配置类继承 `EntityTypeConfigurationIdentityOperatorStatus<Product, long>`，`base.Configure(builder)` 后设表名/列名/查询过滤。
-4. **IApplication/Product/IProductAppService.cs** — 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）。
-5. **Application/Product/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `if (entity is null) throw new NotFoundException(msg)`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。`is null` 检查会被编译器原生流分析收窄，后续代码直接使用实体；不要写 `entity = entity!` 自赋值（CS1717）和 `var required = entity!` 中间变量（侵入方法体、可读性差），也不要依赖 `NotFoundException.ThrowIfNull`（包未标注 `[NotNull]`，不产生流分析收窄；若坚持使用，只能在成员访问处补 `entity!.Xxx` 断言）。
-6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发。无需手写 `AddScoped`（扫描注册自动完成）。
+4. **IApplication/ProductManager/IProductAppService.cs** — 接口，返回 `Task<T>` / `Task<GetQueryPageResult<T>>`（全局包装，不出现 IResultModel）。
+5. **Application/ProductManager/ProductAppService.cs** — 实现类加 `IScopedDependency`（自动注册），注入 `IBaseRepository<Product>`，写查询/校验/CRUD；成功 `return dto`，业务失败 `throw new ParameterException(msg)`，资源不存在 `if (entity is null) throw new NotFoundException(msg)`；列表用 `WhereIfNotNullOrWhiteSpace` + `ToPageListAsync` + `GetQueryPageResult<T>`。`is null` 检查会被编译器原生流分析收窄，后续代码直接使用实体；不要写 `entity = entity!` 自赋值（CS1717）和 `var required = entity!` 中间变量（侵入方法体、可读性差），也不要依赖 `NotFoundException.ThrowIfNull`（包未标注 `[NotNull]`，不产生流分析收窄；若坚持使用，只能在成员访问处补 `entity!.Xxx` 断言）。
+6. **Service/Controllers/ProductController.cs** — 注入 `IProductAppService`，每个 action 一行转发（块体 + `return`，不用表达式体）。无需手写 `AddScoped`（扫描注册自动完成）。
 
 > 配置类由 DbContext 的 `ApplyConfigurationsFromAssembly(当前程序集)` 自动扫描应用；新增实体只需在 DbContext 加 `DbSet` + 写一个 `{Entity}Etc.cs` 配置类。如用 SQL 脚本迁移，在 `Service/wwwroot/MigrationSql/` 增版本脚本（详见 azrng-efcore skill）。
 
@@ -369,9 +436,9 @@ services.AddControllers().AddJsonOptions(options =>
 | 实体 | 单数 `{Entity}` | IDomain/Entities |
 | 配置类 | `{Entity}Etc` | EntityFramework |
 | DbContext | `{Solution}DbContext` | EntityFramework |
-| 私有依赖字段 | 携带依赖类型语义：领域服务 `_{域}Domain`、应用服务 `_{域}AppService`、仓储用实体复数名（`IToolInfoRepository _tools`）、通用基础件 `_logger`/`_unitOfWork` | 各类内部 |
+| 私有依赖字段 | `_{接口类型去前导 I、首字母小写}全名`：领域服务 `_trialDomainService`、应用服务 `_{域}AppService`、自定义仓储 `_{实体单数}Repository`、仓储基类 `_{实体单数}BaseRepository`、通用基础件 `_logger`/`_unitOfWork`/`_currentUser` | 各类内部 |
 
-> **私有依赖字段禁止泛称**：`_domain` / `_service` / `_sso` / `_helper` 只说架构角色不说依赖对象，跨文件同名异指（`_domain` 可指任意 DomainService），新代码无从推断风格。字段名从类型来：`ITrialDomainService _trialDomain`、`ITrialAppService _trialAppService`。存量文件已有风格时先对齐所在文件，不混用。
+> **私有依赖字段禁止泛称**：`_domain` / `_service` / `_sso` / `_helper` 只说架构角色不说依赖对象，跨文件同名异指（`_domain` 可指任意 DomainService），新代码无从推断风格。字段名从类型来、取全名：`ITrialDomainService _trialDomainService`（不截尾简写 `_trialDomain`）、`ITrialAppService _trialAppService`、`IMenuRepository _menuRepository`（不复数简写 `_menus`）。存量文件已有风格时先对齐所在文件，不混用；单测手写 Fake 的私有字段不受限。
 
 > **实体名与模块命名空间同名时必须消歧**：AppService 实现放 `HotelManagement.Application.User` 这类模块命名空间后，同文件内裸引用实体 `User` 会被解析为命名空间（CS0118）。消歧任选其一：① `using UserEntity = HotelManagement.IDomain.Entities.User;` 别名后用 `UserEntity`；② 模块名复数化（`Application.Users`），实体保持单数。推荐②，一劳永逸。
 
@@ -379,7 +446,7 @@ services.AddControllers().AddJsonOptions(options =>
 
 只列**决策增量**——基础规则见上方「核心规则」，分页/全局包装写法见对应章节。
 
-- **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数纯 CRUD 项目初期 Domain/Adapter/Storage 可空，出现对应需求（复用操作 / 外部调用 / 文件存储）再建。
+- **该不该新建项目？** 标准模板共 9 个项目：7 个核心分层（Core/IDomain/IApplication/Domain/Application/EntityFramework/Service）+ 2 个可选基础设施（Adapter 外部 API 封装、Storage 文件/对象存储 + 自定义仓储实现）。只有引入全新基础设施（如 Redis、消息队列、第三方 SDK）才新增独立项目（如 `Cache`/`Notification`），并保持单向依赖。多数纯 CRUD 项目初期 Domain/Adapter/Storage 可空，出现对应需求（复用操作 / 外部调用 / 文件存储）再建。
 > **全新解决方案按标准清单建项，同仓库其他项目不构成豁免**：在同一仓库看到其他项目用了简化分层（如四层 Domain/Application/Infrastructure/Web）时，那只是该项目自身的现状，不是本架构的替代结构。既有项目分三态处理：① 纯增量改动——以该项目现有实现为准；② **拆分 / 重构既有项目（如单项目拆类库）——按该项目自身规则文件（如 backend-AGENTS.md）声明的分层口径执行，拆分不改变既定架构，不套用九项目清单**；③ 全新解决方案——一律按上表标准项目清单建项。
 - **读取用 `Entities` 还是 `EntitiesNoTacking`？** 只读查询默认 `EntitiesNoTacking`（不带追踪、更快）；读出来还要改并回写才用 `Entities`。
 - **读查询要不要包事务？** 默认**不包**。① 单语句读（含 join / 相关子查询 / GROUP BY）不需要事务——READ COMMITTED 下每条语句自带一致快照（PostgreSQL / MySQL 恒成立；SQL Server 需开启 RCSI，默认锁定读下长扫描仍可能撕裂），包事务只是白钉连接；② 需要跨语句一致的读，优先折进单语句表达（把第二批读做成 join / 子查询），其次靠写侧 CAS + 唯一约束 + 「读 → 外部调用 → 重读复检」栅栏——快照追不上"展示之后"的世界，不是权威防线；③ 事务级快照（RepeatableRead / Serializable）仅用于「多条语句结果必须互相一致、不一致会引发错误行为」的场景，隔离级别必须能说出对应不变量，说不出不包；④ NEVER 把外部调用（SSO / HTTP / 第三方）圈进读事务；事务内发布**进程内**领域事件（如 MediatR 通知）不违规，但 handler 同步执行会拉长持锁窗口，能挪到事务提交后再发就挪；NEVER 把重读栅栏的首读与复检放进同一个 RR 快照（复检会命中同一旧快照，栅栏失效——两次复检必须在两个独立事务）；⑤ 写路径默认 ReadCommitted + 唯一键/检查约束冲突翻译成业务文案，SERIALIZABLE 仅显式 SSI 需求点。
@@ -410,7 +477,7 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 ```
 
 > 早期代码里逐个 `AddScoped<IXxx, Xxx>()` 的写法仍在（迁移过渡期），新代码用 `IScopedDependency` + 扫描注册，避免漏注册。控制器由 `AddControllers()` 自动发现，无需注册。
-> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、对应的 `Common.EFCore.*` provider 包（如 `Common.EFCore.PostgresSql`）、`Azrng.SqlMigration`（SQL 迁移——接库即装，属骨架必装项，不因「暂无业务实体」延后，见下方「新项目骨架清单」）/ `Azrng.Swashbuckle`（Swagger）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）/ `DotNetEnv`（仅本地 `.env` 开发配置）。如果代码直接写 `new NpgsqlConnection(...)`，Service 还应显式引用 `Npgsql`；不要依赖 provider 的传递引用。
+> **Service.csproj 需引用的包**：`Azrng.AspNetCore.Core`（三件套 + `RegisterBusinessServices`）、对应的 `Common.EFCore.*` provider 包（如 `Common.EFCore.PostgresSql`）、`Azrng.SqlMigration`（SQL 迁移——接库即装，属骨架必装项，不因「暂无业务实体」延后，见下方「新项目骨架清单」）/ `Azrng.Swashbuckle`（Swagger）/ `Azrng.AspNetCore.Authentication.JwtBearer`（JWT，用法与装配见「认证与授权（JWT）」）/ `Azrng.Core.Json`（`ConfigureDefaultJson` + `IJsonSerializer`）/ `DotNetEnv`（仅本地 `.env` 开发配置）。如果代码直接写 `new NpgsqlConnection(...)`，Service 还应显式引用 `Npgsql`；不要依赖 provider 的传递引用。包的注入签名 / 参数单位 / 自动注册范围以锁定版本解包 XML 或反射探测为准（见「包 API 以锁定版本为准」）。
 
 ## 常见反模式（最易踩）
 
@@ -431,9 +498,10 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 骨架阶段就位、不依赖业务实体是否已存在的能力，核对时不要以「还没有业务代码」为由延后：
 
 1. **Core.csproj 显式引用 `Azrng.Core`**：Core 项目直接声明架构允许且实际使用的基础包，不依赖 `IDomain → Common.EFCore → Azrng.Core` 的传递引用（传递可达是 Application 层的口径，见 layer-responsibilities.md）；包版本以当前解决方案还原结果为准。
-2. **SQL 迁移骨架**：Service 引用 `Azrng.SqlMigration`、建 `wwwroot/MigrationSql/` 目录、`RegisterServices` 内完成 `AddSqlMigrationService(...).AddAutoMigration()` 装配（模板见 `references/layer-responsibilities.md → Program.cs 与 Startup.cs 分工`）——迁移框架属数据层骨架能力，无业务 SQL 也要接好。
+2. **SQL 迁移骨架（含迁移锁）**：Service 引用 `Azrng.SqlMigration`、建 `wwwroot/MigrationSql/` 目录、`RegisterServices` 内完成 `AddSqlMigrationService(...).AddAutoMigration()` 装配（模板见 `references/layer-responsibilities.md → Program.cs 与 Startup.cs 分工`）——迁移框架属数据层骨架能力，无业务 SQL 也要接好。多副本部署默认挂迁移锁（已用 Redis 则 `AddRedisLockProvider`，无则 `AddDbLockProvider(同库连接串)`；`LockAsync` 返回 null 须 `?? throw`，等待超时显式传长如 5 分钟；用户明确单实例且不扩副本可省——细则见 azrng-efcore skill「SQL 脚本迁移」）。
 3. **Startup 显式构造函数**：`Startup` 不用主构造函数，按模板写显式构造函数（与生成规则的主构造函数禁令一致，Startup 不豁免）。
 4. **`showJwtToken` 默认关闭**：未配置认证时不开启（见上方 Swagger 小节）。
+5. **涉及登录 / 认证时按「认证与授权（JWT）」节装配**：包选型 `Azrng.AspNetCore.Authentication.JwtBearer`、`IBearerAuthService` 发 token、`FallbackPolicy` 全局兜底授权（无认证需求的项目跳过，授权兜底策略也可先行装配——匿名端点显式 `[AllowAnonymous]` 即可）。
 
 ## 深入参考
 

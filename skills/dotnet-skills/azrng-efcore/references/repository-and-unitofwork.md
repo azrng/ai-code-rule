@@ -33,6 +33,8 @@ var exists = await _repo.AnyAsync(x => x.Email == email);
 var q = _repo.Entities.Where(x => x.IsValid).OrderByDescending(x => x.CreateTime);
 ```
 
+> **LINQ 统一方法语法（Method Syntax）**：多表 JOIN 用 `.Join().Join()...` 链式组合，**禁止查询表达式语法**（`from ur in db.UserRoles join ... select ...`）——多表 JOIN 查询表达式可读性差、断点与分段调试困难，团队参照工程仓储均为方法链风格。
+
 ## 2. IBaseRepository 操作方法
 
 | 方法 | 说明 |

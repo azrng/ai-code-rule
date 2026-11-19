@@ -1,6 +1,6 @@
 ---
 name: azrng-efcore
-description: "Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when installing or injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities on the Identity base classes, calling IBaseRepository / IUnitOfWork, configuring SQL migrations, or diagnosing PostgreSQL timestamp errors. Keywords: Common.EFCore, IBaseRepository, IUnitOfWork, DbContext, 仓储, 迁移."
+description: "Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when installing or injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities on the Identity base classes, calling IBaseRepository / IUnitOfWork, creating custom repositories on BaseRepository<T>, configuring SQL migrations with distributed migration locks, or diagnosing PostgreSQL timestamp errors. Keywords: Common.EFCore, IBaseRepository, IUnitOfWork, DbContext, 仓储, 自定义仓储, BaseRepository, IScopedDependency, 迁移, 迁移锁, LockProvider."
 ---
 
 # Azrng EFCore (Common.EFCore) 数据访问指南
@@ -35,7 +35,7 @@ description: "Guide for using the Azrng Common.EFCore family of NuGet packages t
 <PackageReference Include="Common.EFCore" Version="1.7.1" />
 ```
 
-> 以上版本是当前核实基线：`Common.EFCore` 1.7.1、PostgreSQL provider `Common.EFCore.PostgresSql` 1.7.2。其他 provider 按项目锁定版本核实 API 与行为。
+> 以上版本是当前核实基线：`Common.EFCore` 1.7.1、PostgreSQL provider `Common.EFCore.PostgresSql` 1.7.2。**包的注入签名 / 参数单位 / 自动注册范围以锁定版本解包 XML 或反射探测为准，本文档口径可能滞后于包版本**（如 `AddEntityFramework<T>` 已内含 UnitOfWork / Repository / 发号注册，不要重复手写）。其他 provider 按项目锁定版本核实 API 与行为，核实流程见文末「包 API 核实流程」。
 
 ### 2. 注入（Program.cs）
 
@@ -96,13 +96,16 @@ public class User : IdentityOperatorStatusEntity   // Id+审计+软删除/禁用
 ```csharp
 public class UserService
 {
-    private readonly IBaseRepository<User> _repo;
-    public UserService(IBaseRepository<User> repo) => _repo = repo;
+    private readonly IBaseRepository<User> _userBaseRepository;   // 字段名：_{实体单数}BaseRepository
+    public UserService(IBaseRepository<User> userBaseRepository)
+    {
+        _userBaseRepository = userBaseRepository;   // 显式构造函数 + private readonly
+    }
 
-    public Task<User?> GetAsync(long id) => _repo.GetAsync(x => x.Id == id);
-    public Task AddAsync(User user) => _repo.AddAsync(user, submit: true);   // submit=true 立即保存
-    public Task<List<User>> ActiveAsync() => _repo.GetListAsync(x => !x.Deleted);
-    public Task<bool> ExistsAsync(string account) => _repo.AnyAsync(x => x.Account == account);
+    public Task<User?> GetAsync(long id) { return _userBaseRepository.GetAsync(x => x.Id == id); }
+    public Task AddAsync(User user) { return _userBaseRepository.AddAsync(user, submit: true); }   // submit=true 立即保存
+    public Task<List<User>> ActiveAsync() { return _userBaseRepository.GetListAsync(x => !x.Deleted); }
+    public Task<bool> ExistsAsync(string account) { return _userBaseRepository.AnyAsync(x => x.Account == account); }
 }
 ```
 
@@ -178,6 +181,45 @@ public async Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListReques
 
 > `RefAsync<T>`（`using Azrng.Core.CommonDto;`）有到 `T` 的隐式转换，`new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。分页在 AppService 的整体编排（含全局返回包装）见 onion-architecture skill「分页查询最佳实践」。
 
+## 自定义仓储（仅复杂查询需要）
+
+默认**不为每个实体建仓储**：直接注入 `IBaseRepository<T>`（`AddEntityFramework<T>` 已自动注册，见 providers.md「各注册了什么」）。仅当查询逻辑复杂、需要封装复用（如跨三表 JOIN + 去重 + 多状态过滤）时才定义自定义仓储，落点按团队惯例（参照工程 `Synyi.Manhattan.SEA.Api.Storage` 镜像结构，与 onion-architecture skill 分层表 Storage 行一致）：
+
+- **接口**：`I{实体名}Repository : IBaseRepository<T>`，放 `IDomain/{业务域}Manager/`（命名空间 `根.{业务域}Manager`）。
+- **实现**：`{实体名}Repository : BaseRepository<T>, IScopedDependency, I{实体名}Repository`，放 `Storage/{业务域}Manager/`（Storage 工程引用 EntityFramework 工程）。
+- **`BaseRepository<T>` 不带生命周期标记**——实现类必须**显式标注 `IScopedDependency`** 才会被宿主 `RegisterBusinessServices("Root.*.dll")` 约定扫描注册；漏标则启动 DI 校验直接失败（`Unable to resolve I{实体名}Repository`）。从其他工程移植仓储惯例时这是第一个崩点（参照工程基类自带 `IScopedDependency`，本系列包不带）。
+- **接口收窄取舍**：接口继承 `IBaseRepository<T>` 会让实现同时暴露全部基类仓储成员（调用方可拿到 `Entities` 裸 `IQueryable` 绕过封装）；是否收窄为只暴露自定义方法按场景取舍——收窄则接口不继承 `IBaseRepository<T>`，实现类仍可继承 `BaseRepository<T>` 复用基建。
+- 实现内多表查询统一 LINQ **方法语法**（`.Join()` 链），禁止查询表达式语法（`from x in ... join ...`），单语句读不包事务。
+
+```csharp
+// IDomain/MenuManager/IMenuRepository.cs —— 接口（IDomain 层）
+namespace Root.MenuManager;
+
+public interface IMenuRepository : IBaseRepository<Menu>
+{
+    Task<List<Menu>> GetAuthorizedMenusAsync(long userId);
+}
+
+// Storage/MenuManager/MenuRepository.cs —— 实现（Storage 层，工程引用 EntityFramework）
+using Azrng.Core.DependencyInjection;
+using Azrng.EFCore;
+
+namespace Root.MenuManager;   // 业务域命名空间跨工程共用，不带工程段
+
+public class MenuRepository : BaseRepository<Menu>, IScopedDependency, IMenuRepository
+{                                                    // ↑ IScopedDependency 必须显式标注
+    public MenuRepository(RootDbContext dbContext) : base(dbContext)
+    {
+    }
+
+    public Task<List<Menu>> GetAuthorizedMenusAsync(long userId)
+    {
+        // 三表 JOIN 走 .Join() 方法链，单语句读不包事务
+        /* ... */
+    }
+}
+```
+
 ## SQL 脚本迁移（Azrng.SqlMigration）
 
 数据库 schema 变更用 SQL 脚本版本化管理（不走 EF Core 的 Code-First Migrations）。装 `Azrng.SqlMigration` 包，应用启动时自动按版本顺序执行未应用的脚本，已执行的记在版本日志表、不重复跑。
@@ -208,6 +250,28 @@ builder.Services.AddSqlMigrationService("default", config =>
 ```
 
 `ConnectionBuilder` 的真实类型是 `Func<IServiceProvider, IDbConnection>`；使用 PostgreSQL 时，Service 项目应直接引用 `Npgsql`，并通过 `sp => new NpgsqlConnection(connectionString)` 创建连接。
+
+**迁移锁（多副本部署默认装配，单实例且不扩副本可省）**：`SqlMigrationStartupFilter` 仅在 `config.LockProvider != null` 时加锁，不配锁则多副本滚动发布并发启动会同时执行同一批脚本（版本日志表是后写记录，DDL 不幂等）。锁源按项目现状选：已用 Redis 则 `AddRedisLockProvider(连接串)`（`Azrng.DistributeLock.Redis`），无 Redis 则 `AddDbLockProvider(同库连接串)`（`Azrng.DistributeLock.PostgreSql`，锁表 `distribute_lock` 由包 `CREATE SCHEMA/TABLE IF NOT EXISTS` 自动建于同库，零新增外部组件）。关键坑：
+
+- **`ILockProvider.LockAsync` 拿不到锁返回 null 不抛错**，挂进 `config.LockProvider` 时必须 `?? throw`，否则第二副本静默无锁并发迁移。
+- `getLockTimeOut` 默认仅 5 秒；多副本并发启动应显式传长（如 5 分钟）让后启动副本排队等首个副本迁完，锁有效期（expire）覆盖长脚本。
+- 锁 key 按迁移名（如 `migration_default`）。
+
+```csharp
+// 无 Redis 场景：同库 PG 锁兜底
+builder.Services.AddDbLockProvider(connectionString);
+
+builder.Services.AddSqlMigrationService("default", config =>
+{
+    /* ...同上... */
+    config.LockProvider = async sp =>
+        await sp.GetRequiredService<ILockProvider>().LockAsync(
+            "migration_default",
+            TimeSpan.FromMinutes(5),      // 等待上限：让后启动副本排队
+            TimeSpan.FromMinutes(5))      // 锁有效期：覆盖长脚本
+        ?? throw new InvalidOperationException("未获取到迁移锁，无法执行数据库迁移");
+}).AddAutoMigration();
+```
 
 > 迁移只能由 `.AddAutoMigration()` 注册的启动过滤器触发：包内执行服务（如 `ISqlMigrationService`）是 internal，不要手动从容器解析服务来触发迁移或单独执行脚本。
 

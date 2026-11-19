@@ -54,6 +54,8 @@ src/
 └── YourProject.Service/
 ```
 
+解决方案文件（`*.slnx`）按编号层级文件夹分组，不用 `src` / `test` 平铺：`1.Presentation`（Service）、`2.Application`（Application + IApplication）、`3.Domain`（Domain + IDomain）、`4.Infrastructure`（Core / Storage / Adapter / EntityFramework）、`5.Plugins`（插件工程，无插件省略该层）。slnx 用路径式平铺表达分组——同级多个 `<Folder Name="/src/1.Presentation/">` 按 `Name` 路径自动归并；**禁止 `<Folder>` 嵌套 `<Project>` / `<Folder>` 子元素**（slnx 非法语法，VS 打不开、`dotnet sln list` 只解析出 1 个项目）。新项目脚手架直接生成分组形态。
+
 ### 各层职责
 
 | 层 | 项目 | 职责 | 依赖 | 禁止 |
@@ -61,14 +63,15 @@ src/
 | 基础层 | Core | 公共 DTO、工具类、安全、缓存配置 | 无 | 禁止依赖任何业务层 |
 | 领域接口 | IDomain | 实体定义、领域服务接口、仓储接口 | Core | 禁止依赖 Adapter / EntityFramework / Domain |
 | 适配器 | Adapter | 外部 HTTP 服务调用、第三方 SDK 封装 | Core, IDomain | 禁止依赖 Domain / Application |
-| 数据访问 | EntityFramework | DbContext、EF Core 实体配置、自定义仓储实现 | Core, IDomain | 禁止依赖 Domain / Application |
+| 数据访问 | EntityFramework | DbContext、EF Core 实体配置 | Core, IDomain | 禁止依赖 Domain / Application |
 | 领域实现 | Domain | 核心业务逻辑，编排 Adapter 和数据访问 | IDomain, Adapter, EntityFramework | 禁止依赖 IApplication / Application |
 | 应用接口 | IApplication | 应用服务接口定义、CQRS 请求 / 响应 | Core, IDomain | 禁止依赖 Domain / Application |
 | 应用实现 | Application | 应用服务实现、业务流程编排 | IApplication, Domain | 禁止依赖 Service |
-| 存储 | Storage | 文件上传下载、对象存储操作 | Core | 禁止依赖 Application / Service |
+| 存储 | Storage | 文件上传下载、对象存储操作、自定义仓储实现 | Core, EntityFramework | 禁止依赖 Domain / Application / Service |
 | 宿主层 | Service | Controller、后台任务（BackgroundService）调度入口、中间件、DI 注册、配置 | Application, Storage | 禁止包含业务逻辑（Worker 内的业务编排同样禁止，编排走应用层接口） |
 
-- Storage 的能力接口定义在 Core（Storage 仅依赖 Core），实现放在 Storage 项目；Application / Domain 通过 Core 中的接口使用存储能力，Service 只负责装配。禁止 Controller 绕过业务层直接调用存储实现。
+- 文件 / 对象存储的能力接口定义在 Core，实现放在 Storage 项目；Application / Domain 通过 Core 中的接口使用存储能力，Service 只负责装配。禁止 Controller 绕过业务层直接调用存储实现。
+- 自定义仓储实现同样落 Storage 项目（团队惯例口径，参照工程按业务域 `XxxManager/` 镜像组织）：Storage 工程引用 EntityFramework 工程以取得 `BaseRepository<T>` 与 DbContext，判定与落点细则见 `EntityFramework（数据访问层）规则`。
 
 ### 层内目录组织
 
@@ -76,20 +79,23 @@ src/
 
 | 类型 | 所在层 / 目录 | 命名约定 |
 | --- | --- | --- |
-| 应用服务接口 | `IApplication/{业务域}/` | `I{业务域}AppService.cs` |
-| 应用层 DTO（请求 / 响应 / 查询） | `IApplication/{业务域}/Dto/` | `CreateOrderRequest.cs`、`OrderDetailResponse.cs` |
-| 领域服务接口 | `IDomain/{业务域}/` | `I{业务域}DomainService.cs` |
-| 实体 / 值对象 | `IDomain/{业务域}/` | `{实体名}.cs` |
-| 自定义仓储接口（仅复杂查询需要时，位置与判定规则见 `EntityFramework（数据访问层）规则`） | `IDomain/{业务域}/` | `I{实体名}Repository.cs` |
+| 应用服务接口 | `IApplication/{业务域}Manager/` | `I{业务域}AppService.cs` |
+| 应用层 DTO（请求 / 响应 / 查询） | `IApplication/{业务域}Manager/Dto/` | `CreateOrderRequest.cs`、`OrderDetailResponse.cs` |
+| 领域服务接口 | `IDomain/{业务域}Manager/` | `I{业务域}DomainService.cs` |
+| 实体 / 值对象 | `IDomain/Entities/`（跨业务域共用；强绑定单业务域的值对象随域目录） | `{实体名}.cs` |
+| 自定义仓储接口（仅复杂查询需要时，位置与判定规则见 `EntityFramework（数据访问层）规则`） | `IDomain/{业务域}Manager/` | `I{实体名}Repository.cs` |
+| 自定义仓储实现（判定与基类口径见 `EntityFramework（数据访问层）规则`） | `Storage/{业务域}Manager/` | `{实体名}Repository.cs` |
 | EF Core 实体配置 | `EntityFramework/` | `{实体名}Etc.cs`（继承 Azrng 配置基类） |
 | DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
 | 数据库迁移脚本 | `Service/wwwroot/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
 | 外部服务调用 / 第三方封装 | `Adapter/Services/`；HTTP 客户端包装按需放 `Adapter/HttpClients/` | `{名称}Adapter.cs`、`I{名称}HttpClient.cs` / `{名称}HttpClient.cs` |
 | 跨业务域通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
-| 领域业务对象 Bo（领域服务 / 适配器接口签名用） | `IDomain/{业务域}/Bo/`；Adapter 的 Bo 在 `IDomain/Adapter/Bo/{外部系统}/` | `SendSessionMessageBo.cs` |
-| 文件 / 对象存储 | `Storage/` | `{名称}Storage.cs` |
+| 领域业务对象 Bo（领域服务 / 适配器接口签名用） | `IDomain/{业务域}Manager/Bo/`；Adapter 的 Bo 在 `IDomain/Adapter/Bo/{外部系统}/` | `SendSessionMessageBo.cs` |
+| 文件 / 对象存储（仅文件 / 对象存储，不含数据库仓储） | `Storage/` | `{名称}Storage.cs` |
 | Controller / 中间件 / DI 注册 | `Service/` | `{资源}Controller.cs` 等 |
 | 后台任务（定时扫描 / 生命周期推进，仅调度、编排走应用层接口，口径见「后台任务（Worker）基线」） | `Service/HostedServices/` | `{业务域}Worker.cs` |
+
+业务域目录与命名空间口径：IApplication / Application / IDomain / Domain / Storage 各工程的业务域目录统一 `{业务域}Manager/`（如 `UserManager/`、`OrderManager/`），同业务域跨工程共用一个命名空间 `根.{业务域}Manager`（不带工程段；子目录追加段，如 `根.{业务域}Manager.Dto`），禁止把工程段写进命名空间；`IDomain/Entities/`、`IDomain/Adapter/` 等基础设施目录不套 `Manager` 后缀。
 
 ---
 
@@ -123,7 +129,9 @@ src/
 - Controller action 直接返回 `Task<T>` 并一行转发 AppService；不写 `Ok()`，不手动构造 `ResultModel`，统一包装由全局过滤器与异常中间件完成（见 `统一响应格式`）。
 - DI 注册、中间件配置、Swagger 配置等都在此层完成。
 - `Service` 项目按需引用 `DotNetEnv`，用于本地开发时加载仓库根目录 `.env`；`Program.cs` 在 `WebApplication.CreateBuilder(args)` 之前调用 `Env.NoClobber().TraversePath().Load()`，再进入 `Startup` 装配。`.env` 必须加入根 `.gitignore`，敏感值不得提交，`.env.example` 只保留键名或非敏感示例值。
-- 禁止在 Controller、AppService、DomainService、Repository、Entity、DTO、Startup 等所有 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数。
+- 禁止在 Controller、AppService、DomainService、Repository、Entity、DTO、Startup 等所有 C# 类中使用主构造函数（Primary Constructor），统一使用显式构造函数 + `private readonly` 字段。
+- Controller action 与公共业务方法统一语句块体 + 显式 `return`，禁止表达式体成员写法（`=> ...` 单行转发）；纯只读属性 getter 可豁免。
+- 授权默认拒绝用全局兜底实现：`services.AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())`，业务端点不逐个挂 `[Authorize]`（逐点标注属「默认放开、显式收紧」，新增端点漏标即静默匿名）；匿名例外端点（登录、健康探针）显式 `[AllowAnonymous]`，整控制器均无鉴权需求时标注上移到控制器类级。
 
 ### IApplication（应用接口层）规则
 - 按业务域拆分接口文件夹（如 `UserManager/`、`OrderManager/`）。
@@ -152,8 +160,8 @@ src/
 - 业务异常抛出继承自 Azrng 异常体系的自定义异常。
 
 ### EntityFramework（数据访问层）规则
-- 数据访问默认直接注入 `Common.EFCore` 提供的 `IBaseRepository<T>`，不为每个实体创建自定义仓储；仅当查询逻辑复杂、需要封装复用时才定义 `I{实体名}Repository`（接口放 `IDomain/{业务域}/`，实现放 `EntityFramework/Repositories/`）。
-- 使用 LINQ 查询，避免原生 SQL。
+- 数据访问默认直接注入 `Common.EFCore` 提供的 `IBaseRepository<T>`，不为每个实体创建自定义仓储；仅当查询逻辑复杂、需要封装复用时才定义 `I{实体名}Repository`：接口放 `IDomain/{业务域}Manager/`（继承 `IBaseRepository<T>`），实现放 `Storage/{业务域}Manager/`（团队惯例落点，Storage 工程引用 EntityFramework 工程），实现类继承 `BaseRepository<T>` 并**显式标注 `IScopedDependency`**——基类不带生命周期标记，漏标则 `RegisterBusinessServices` 扫描不到，宿主启动 DI 校验直接失败。
+- 使用 LINQ 查询，避免原生 SQL；LINQ 统一方法语法（`.Where()` / `.Join()` 链式），禁止查询表达式语法（`from x in ... join ...`，多表 JOIN 可读性差、断点与分段调试困难）。
 - 多步原子写操作优先使用 `IUnitOfWork` 事务，不直接操作 `IDbContextTransaction`。
 <!-- include: shared/backend/read-transaction-rules.md -->
 - 软删除统一使用实体基类的 `Deleted` 字段；包不自动做全局过滤，默认在查询中显式过滤 `!x.Deleted`，或在实体配置类中统一配置查询过滤器。
@@ -172,11 +180,12 @@ src/
 - 提供全局共享的 DTO、枚举、常量。
 - 提供通用工具类和扩展方法。
 - 提供安全相关的配置和工具。
+- 当前用户上下文直接用 `Azrng.Core` 提供的 `ICurrentUser<TSubject>`（按主键类型选泛型形态，如 `ICurrentUser<long>`；接口继承 `IScopedDependency` 可被约定扫描注册），实现落 `Core/Security/`（需 `IHttpContextAccessor`，Core 工程加 `FrameworkReference` 引 ASP.NET Core 共享框架）；禁止自造 `ICurrentUser` 同名抽象。
 - 禁止依赖任何业务层项目。
 
 ### 代码组织规范
 - 一个文件只放一个主类型：实体、DTO、Request、Response、领域服务接口、仓储接口等公开契约类，默认一个类一个文件，文件名与类名一致。
-- DTO 目录组织：应用层 DTO 放 `IApplication/{业务域}/Dto/`，Request 与 Response 各自独立文件；跨业务域通用 DTO 放 Core 层对应目录，不合并到 `Dtos.cs`。**通用 = 被多个业务域复用**（公共枚举 / 常量 / 跨域包装）；单业务域的 DTO 即使接口、实现、控制器三方都在用也放 `IApplication/{业务域}/Dto/`——跨层使用是应用层 DTO 的常态，不构成放 Core 的判据。
+- DTO 目录组织：应用层 DTO 放 `IApplication/{业务域}Manager/Dto/`，Request 与 Response 各自独立文件；跨业务域通用 DTO 放 Core 层对应目录，不合并到 `Dtos.cs`。**通用 = 被多个业务域复用**（公共枚举 / 常量 / 跨域包装）；单业务域的 DTO 即使接口、实现、控制器三方都在用也放 `IApplication/{业务域}Manager/Dto/`——跨层使用是应用层 DTO 的常态，不构成放 Core 的判据。
 - 触发拆分的信号：职责混杂、同文件出现多个主类型、参数或字段持续堆叠、方法跨多个不相关业务时，应主动拆分。
 - 允许例外：`private` / `internal` 且只服务当前文件的小辅助类型、与主类型强绑定的局部 mapping extension、测试文件中只服务当前测试类的小型 fixture。
 - 反模式：`Dtos.cs` 长期堆放十几个 Request / Response；把 Controller 专用 request 内联写在 Controller 文件里；跨层把多个不相关类型塞进同一文件。
@@ -238,6 +247,7 @@ src/
 - 数据访问测试：使用 In-Memory 数据库或 Testcontainers
 - 集成测试：使用 `WebApplicationFactory` 测试完整请求管道
 - 新增测试 / 源工程必须与工程本体同提交登记进解决方案（`*.slnx` / `*.sln`）：`dotnet test` 按解决方案枚举工程，对未登记工程**静默跳过**（不报错，绿灯行数悄悄变小）。验证时把 `dotnet test` 输出的工程结果行与解决方案工程清单逐一核对，缺行即登记遗漏。
+- HTTP 冒烟涉及口令 / 密钥等敏感字面量时，用变量拼接、环境变量或命令行内联 `--data` 传参，不落盘中间请求体文件——工具 / 传输层可能对疑似凭据字面量做静默替换（如写成 `***`），「文件已按原样落盘」不是可靠假设；此类请求异常排障先 `xxd` / `hexdump` 核对请求体与落盘字节，再怀疑业务代码与部署产物。
 
 <!-- include: shared/backend/dotnet-build-isolation.md -->
 <!-- include: shared/backend/background-write-races.md -->
