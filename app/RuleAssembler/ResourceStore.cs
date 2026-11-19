@@ -14,6 +14,9 @@ internal sealed class ResourceStore
         _resourceNames = _provider.Names.ToArray();
     }
 
+    // 全部资源相对路径（含 fragments/ 与 skills/ 前缀），供审计等只读枚举使用
+    internal IReadOnlyCollection<string> ResourceNames => _resourceNames;
+
     public string? Read(string relativePath)
     {
         var normalized = relativePath.Replace('\\', '/').TrimStart('/');

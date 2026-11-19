@@ -484,6 +484,14 @@ internal static class Program
         if (args.Length == 1 && args[0].Equals("--check", StringComparison.OrdinalIgnoreCase))
             return CheckCommand.Run(manifest, resources, skillsStore);
 
+        // 维护者体检：只读规则源，报告不可达 / 重复 / 冲突候选 / Skill 引用与体积指标，不拦截
+        if (args.Length is 1 or 2 && args[0].Equals("--audit", StringComparison.OrdinalIgnoreCase))
+        {
+            if (args.Length == 2 && !args[1].Equals("--offline", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException($"--audit 不接受目录参数（报告固定写入当前目录）：{args[1]}", nameof(args));
+            return AuditCommand.Run(manifest, resources, skillsStore);
+        }
+
         if (args.Length is 1 or 2 && args[0].Equals("--detect", StringComparison.OrdinalIgnoreCase))
         {
             var dir = args.Length == 2 ? args[1] : Environment.CurrentDirectory;
@@ -632,6 +640,7 @@ internal static class Program
             Console.WriteLine("直接双击或不带参数运行：先选模式——生成规则文件（自动检测推荐 / 问答选择）、检测当前目录组合，或仅导入 Skills；已存在配方记录时优先生成「按配方重放」入口。");
             Console.WriteLine("规则文件落盘后可选择把内置 Skills 导入到 Codex（.agents/skills）/ ZCode（.zcode/skills）/ Claude Code（.claude/skills）/ pi（.pi/skills），追加导入、同名技能可覆盖或跳过；--recipe / --upgrade 按配方同步已记录的 Skills。");
             Console.WriteLine("--check：只校验 manifest、片段、全部兼容样例的输出契约一致性、问答决策树、组件问答决策树与内置技能，不写入文件。");
+            Console.WriteLine("--audit [维护者]：审计规则源（不可达 / 重复 / 冲突候选 / Skill 引用 / 上下文体积），报告写入当前目录，不拦截。");
             Console.WriteLine("--detect [目录]：只做项目检测，打印推荐组合；证据不足时打印待确认维度与候选组合，不写入文件。");
             Console.WriteLine("--plan 维度=取值 ...：按显式维度选择解析组合内核，打印命中组件与文件清单，不写入文件。");
             Console.WriteLine("--recipe <配方.json> [目标目录]：按配方记录重放生成（缺省写入当前目录），写入配方与 .gitignore。");

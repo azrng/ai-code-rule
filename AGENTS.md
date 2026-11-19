@@ -23,6 +23,7 @@
 发布形态为 exe 单产物 + latest.json 清单（2026-11-18 收敛单轨道，内容包 zip 与包缓存已退役）：由 `.github/workflows/release.yml` 在推送 master 时自动发布，版本唯一事实源是 `fragments/manifest.json` 的 `vars.version`（`x.y.z`），exe（InformationalVersion 注入）、Release tag（v<版本>）、latest.json 同源；规则与技能内容全量打进 exe（程序集内嵌资源），不存在独立的包文件与包缓存，「内容落后于引擎」的中间态不再存在。改 fragments / skills / 生成器代码都必须升版（emit 基线仍只在规则内容变更时刷新），CI 对 push 触发的发布校验版本严格大于已发布最高 tag，不升版直接失败。latest.json 的 `engine_version` 是旧版 exe（2.x 引擎轨道口径）的兼容字段、写同值，助其一次性迁移到新 exe；新 exe 更新检查把 latest.json 的统一版本对照 exe 版本，落后且带 `engine_sha256` 即确认后自更新（同机共享缓存命中或下载 → 哈希校验 → 原子替换 exe；缓存根 `%LOCALAPPDATA%\use-ai-rule\`，`USE_AI_RULE_CACHE` 可整体替换，多目录副本命中已校验缓存免下载），安装成功即退出并提示重新运行生效——不做自动拉起（分离进程会与终端抢同一控制台的输入，菜单看似卡死）。仅生成器代码（`app/RuleAssembler/`）变更同样升版推 master，CI 自动出新 exe。exe 启动时经 PackResolver 决定内容来源：`--pack` 指定包（zip / 已解包目录，硬失败语义，本地验证用）→ 程序集内嵌兜底；`--offline` 仅表示跳过网络更新检查；交互模式启动时另做一次性更新检查（latest.json，失败降级），单 exe 无网络永远可用。
 
 其中「冗余」反馈的判定、证据门槛与候选规则维护在 `doc/规则退役清单.md`，不得凭单次体验删除规则。
+提交纪律：标题遵循 Conventional Commits；正文总计 ≤8 行且 ≤600 字符，只写任务指针（批次任务 ID 或 rulelog 路径）、变更要点与真实风险；根因分析、拍板过程、验证细节放 `TASK.md` 档案行、`tasks/<ID>.md` 或 rulelog，不在提交正文复述。
 
 其中「rule / skill 放错平面」类条目（规范错放技能失去强制力、how-to 手册错放 rule 吃上下文预算）的判定测试与待处理项维护在 `doc/规则技能归属处理清单.md`；归属判定统一按其判定测试执行，处理时按清单分组（A 冲突缺陷 / B 基线上移 / C 拆基线+手册 / D 边缘）推进并回写处理记录。
 

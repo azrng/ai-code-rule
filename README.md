@@ -58,7 +58,7 @@ doc/                  # 反馈承接、规则退役、归属处理等仓库级�
 ```powershell
 dotnet test                                    # 全量回归（含 emit 基线）
 dotnet run --project app/RuleAssembler -- --check   # 校验 37 个兼容样例
-dotnet run --project app/RuleAssembler -- --emit <目录>  # 批量预览全部组合产物
+dotnet run --project app/RuleAssembler -- --audit  # 规则源体检：不可达 / 重复 / 冲突候选 / Skill 引用 / 上下文体积报告
 ```
 
 ## 使用说明
