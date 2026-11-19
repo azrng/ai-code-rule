@@ -44,6 +44,8 @@ dependencies: [agents-root]
 - 移动端增量：移动端布局规则（安全区域、触摸目标、适配断点）
 
 ---
+<!-- include: shared/doc/readme.md -->
+
 
 ## 文档更新要求
 以下内容发生变化时，必须同步更新相关文档：

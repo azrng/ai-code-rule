@@ -1,204 +1,76 @@
-# AI Code Rule
+# ai-code-rule
 
-用于沉淀和维护不同技术架构下的 AI 协作开发规则。`fragments/` 是唯一维护源，仓库根下的架构目录仅作为历史生成快照，后续不再手工维护。
+沉淀和维护不同技术架构下的 AI 协作开发规则模板：`fragments/` 是唯一维护源，生成器 `app/RuleAssembler/` 按维度组合把片段拼装为各技术栈的 `AGENTS.md` 与子规则文件，并全量打包内置 AI Skills。
 
-## 当前统一标准
+## 项目简介
 
-`fragments/` 是仓库内统一维护入口，生成后的规则组合遵循“轻量入口 + 按需子规则”标准：
+目标是给不同形态的项目（Web、桌面、移动、控制台、包仓库）生成一套「轻量入口 + 按需子规则」的 AI 协作规则：根 `AGENTS.md` 只保留硬约束与导航，领域细则放子规则，按任务命中阅读。规则在目标项目使用中发现问题可回传本仓库（`.ai-rule-feedback.md`），形成反馈闭环。
 
-- 根 `AGENTS.md` 只保留硬约束、阶段门控和按需导航；需求澄清、任务、交付与回退流程统一放在生成的 `collaboration-AGENTS.md`，仅在命中场景读取
-- 高频子规则优先补齐 `阅读摘要`、`提交前最小回归`（按需导航统一收敛到根 `AGENTS.md`，子规则不再维护「常见任务入口」类自导块）
-- `TASK.md` 只维护活动任务与最近少量 `DONE` 任务
+## 技术栈
 
-## 组合一览
+- .NET 10（C#）控制台应用：规则生成器与内容打包
+- xUnit：回归测试（产物 emit 基线守卫 214+ 条目）
+- GitHub Actions：推送 master 自动发布 exe
 
-| 组合 | 项目类型 | 典型子规则 | 使用场景 |
-| --- | --- | --- | --- |
-| dotnetConsole | .NET 控制台应用 | `application` / `doc` | CLI 工具、批处理服务、定时任务、数据迁移脚本、后台守护进程、交互式终端应用 |
-| dotnetCoreSingle | .NET 单层 API 后端 | `backend` / `doc` / `infra` | 中小型 REST API、微服务中的单一职责服务、内部工具 API、MVP 快速验证、Serverless 本地开发模拟 |
-| dotnetLayered | .NET 分层 API 后端 | `backend` / `doc` / `infra` | 中大型业务系统（ERP/CRM/OA）、DDD 项目、高单元测试覆盖率系统、多人协作长期维护的核心业务 |
-| dotnetBlazor | .NET Blazor 全栈 Web | `ui` / `backend` / `doc` / `infra` | 企业内部管理系统、.NET 团队不想引入 JS 框架、实时交互仪表盘、已有 .NET 后端扩展 Web 界面 |
-| dotnetBlazorWebApp | .NET Blazor Web App | `ui` / `backend` / `doc` / `infra` | 支持 Static SSR、Interactive Server、Interactive WebAssembly 与 Interactive Auto 的现代 Blazor Web App |
-| vueLinkdotNet | Vue + .NET 前后端分离（多项目分层后端） | `frontend` / `backend` / `doc` / `infra` | Vue 3 企业级 SPA、前后端团队独立开发、数据可视化运营后台、已有 .NET 后端重建 Vue 前端 |
-| vueLinkdotNetSingle | Vue + .NET 前后端分离（单项目后端） | `frontend` / `backend` / `doc` / `infra` | 同 vueLinkdotNet 但后端为单项目整洁架构（文件夹分层）：中小型项目快速起步、后续可平滑拆分为多项目 |
-| reactLinkdotNet | React + .NET 前后端分离（多项目分层后端） | `frontend` / `backend` / `doc` / `infra` | React 18 企业应用、复杂表单/审批流系统、前后端团队独立开发、已有 .NET 后端选用 React 前端 |
-| reactLinkdotNetSingle | React + .NET 前后端分离（单项目后端） | `frontend` / `backend` / `doc` / `infra` | 同 reactLinkdotNet 但后端为单项目整洁架构（文件夹分层）：中小型项目快速起步、原型验证、后续可平滑拆分为多项目 |
-| reactLinkPython | React + Python 前后端分离 | `frontend` / `backend` / `doc` / `infra` | React SPA + FastAPI（Pydantic + SQLAlchemy）：AI/ML 推理服务配前端、数据处理平台、Python 团队主导的分离项目 |
-| vueLinkPython | Vue + Python 前后端分离 | `frontend` / `backend` / `doc` / `infra` | 同 reactLinkPython 但偏好 Vue 生态 |
-| reactLinkdotNet-ai | React + .NET + AI Agent 全栈 | `frontend` / `backend` / `ai` / `doc` / `infra` | AI Agent 产品 MVP、模型调用、工具与流式交互 |
-| nextFullstack | Next.js 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | SaaS 平台、电商网站、SEO 敏感的公众网站、创业项目快速迭代、全栈一人搞定（仓库参考标准模板） |
-| nuxtFullstack | Nuxt 3 全栈 Web 应用 | `frontend` / `backend` / `doc` / `infra` | 同 nextFullstack 但偏好 Vue 生态：Nuxt 3 文件路由 + Nitro 服务路由 + Prisma，SEO 敏感站点与 Vue 团队全栈项目 |
-| generalProject | 通用项目协作模板 | `frontend` / `backend` / `doc` / `infra` | 尚未最终确定技术栈的新项目、需要先统一 AI 协作口径再细化实现方案的项目、希望尽量少预设框架约束的通用业务项目 |
-| reactOnly | React 纯前端 SPA | `frontend` / `doc` / `infra` | 无独立后端的 React 单页应用：纯展示 / 工具型前端、调第三方 API 的轻应用、先做界面后补后端的原型 |
-| reactOnly-ai | React 纯前端 + AI 产品 | `frontend` / `ai` / `doc` / `infra` | 无独立后端的 AI 前端产品：模型调用走托管网关 / 代理、密钥不下发浏览器、流式交互体验 |
-| vueOnly | Vue 纯前端 SPA | `frontend` / `doc` / `infra` | 无独立后端的 Vue 3 单页应用：纯展示 / 工具型前端、调第三方 API 的轻应用、先做界面后补后端的原型 |
-| vueOnly-ai | Vue 纯前端 + AI 产品 | `frontend` / `ai` / `doc` / `infra` | 无独立后端的 AI 前端产品（Vue 版）：模型调用走托管网关 / 代理、密钥不下发浏览器、流式交互体验 |
-| generalFrontend | 通用纯前端（技术栈无关） | `frontend` / `doc` / `infra` | 无独立后端且不锁定框架的前端项目：Svelte / Lit / 其他栈，或仓库已有实现、只要协作规则不要技术栈预设 |
-| python | Python API 后端 | `backend` / `doc` / `infra` | AI/ML 模型推理服务、数据处理 API、与 .NET 配合的 Python 微服务、自动化运维接口、快速原型 API |
-| wpfExe | WPF Windows 桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 工业控制/医疗/金融等 Windows 桌面终端、WinForms 迁移现代化、离线优先本地工具、硬件设备交互 |
-| avaloniaExe | Avalonia 跨平台桌面应用 | `ui` / `application` / `infrastructure` / `doc` | 跨 Windows/macOS/Linux 的桌面工具、Linux 运维工具、WPF 跨平台迁移、嵌入式设备界面 |
-| mauiMobile | .NET MAUI 移动端应用 | `ui` / `application` / `infrastructure` / `doc` | 跨 Android/iOS 的移动应用、企业移动办公、数据采集与巡检、已有 .NET 后端扩展移动端、轻量级消费者 App |
-| flutterMobile | Flutter 移动应用 | `ui` / `application` / `backend` / `doc` | 跨 Android/iOS 的 Flutter 移动客户端 |
-| vueWailsExe | Wails 桌面应用（Vue + Go） | `frontend` / `backend` / `doc` / `infra` | 轻量桌面工具（替代 Electron）、Go 服务加桌面界面、需原生系统能力的 Vue 应用、本地数据管理 |
-| reactWailsExe | Wails 桌面应用（React + Go） | `frontend` / `backend` / `doc` / `infra` | 同 vueWailsExe 但偏好 React 生态、已有 React 组件复用到桌面、Go CLI 工具加图形界面 |
-| reactTauriExe | Tauri 桌面应用（React + Rust） | `frontend` / `backend` / `doc` / `infra` | 极致轻量桌面应用（几 MB 安装包）、安全敏感工具、Rust 高性能需求、嵌入式/IoT 配套工具 |
-| vueTauri | Tauri 桌面应用（Vue + Rust） | `frontend` / `backend` / `doc` / `infra` | 同 reactTauriExe 但偏好 Vue 生态（Vue 3 + Tailwind + Radix Vue + Pinia）、已有 Vue 组件复用到桌面 |
-| reactElectronDotNet | Electron + .NET 桌面应用（React） | `frontend` / `backend` / `doc` / `infra` | Electron 桌面应用配 .NET 重度业务后端、复用已有 .NET 代码与生态、需要 Node 生态 + .NET 运行时、sidecar 子进程 IPC 架构，偏好 React 生态 |
-| vueElectronDotNet | Electron + .NET 桌面应用（Vue） | `frontend` / `backend` / `doc` / `infra` | 同 reactElectronDotNet 但偏好 Vue 生态（Vue 3 + Element Plus + Pinia）、已有 Vue 组件复用到桌面 |
-| reactElectron | Electron 桌面应用（React，无独立后端） | `frontend` / `backend` / `doc` / `infra` | 纯 Electron + React 桌面应用：本地业务由主进程（Node）承担、无需 .NET / Go / Rust 后端、依赖 Node 生态与 electron-builder / electron-updater 交付链路 |
-| vueElectron | Electron 桌面应用（Vue，无独立后端） | `frontend` / `backend` / `doc` / `infra` | 同 reactElectron 但偏好 Vue 生态（Vue 3 + Element Plus + Pinia） |
-| staticHtml | 纯静态页面 | `frontend` / `doc` | 营销落地页、企业官网、静态文档站、HTML 邮件模板、微信 H5 活动页、设计稿交互原型 |
+## 支持的组合家族
 
-## 模板选择决策指南
+| 家族 | 覆盖 |
+| --- | --- |
+| web-fullstack | 前后端分离 / 全栈（Vue、React、Blazor、Next.js、Nuxt，配 .NET / Python 后端） |
+| dotnet-backend | .NET 控制台与 API 后端（单层 / 分层） |
+| dotnet-package | .NET NuGet 包仓库（多包工程 + 逐包测试 + CI 发布链路） |
+| python-backend | Python API 后端（FastAPI） |
+| desktop | Windows / 跨平台桌面（WPF、Avalonia） |
+| hybrid-app | 混合桌面（Electron、Tauri、Wails 配 Web 前端） |
+| mobile | 移动客户端（.NET MAUI、Flutter） |
+| frontend-static | 纯前端 SPA 与静态站点 |
+| general | 技术栈未定的通用项目协作模板 |
 
-根据项目特征快速定位对应模板：
+共 37 个兼容组合。完整清单、维度约束与适用场景见 `fragments/manifest.json` 的 `compatibilityCases`，或直接运行 exe 的「检测当前目录组合」由证据推荐。
 
-```
-项目有前端界面吗？
-├── 否 → 纯后端 API
-│   ├── .NET 技术栈
-│   │   ├── 无 Web 框架（CLI/批处理）→ dotnetConsole
-│   │   ├── 单层结构（所有代码在一个项目）→ dotnetCoreSingle
-│   │   └── 分层结构（Controller/Service/Repository 拆分）→ dotnetLayered
-│   └── Python 技术栈 → python
-│
-├── 是 → 前后端是否同框架？
-│   ├── 无独立后端（纯前端）
-│   │   ├── React → reactOnly（需要 AI 能力 → reactOnly-ai）
-│   │   ├── Vue → vueOnly（需要 AI 能力 → vueOnly-ai）
-│   │   ├── 其他框架 / 不锁定 → generalFrontend
-│   │   └── 无框架无构建（原生 HTML/CSS/JS）→ staticHtml
-│   │
-│   ├── 同框架（全栈）
-│   │   ├── Next.js → nextFullstack
-│   │   ├── Nuxt → nuxtFullstack
-│   │   ├── Blazor → dotnetBlazor
-│   │   ├── Blazor Web App（SSR / Server / WebAssembly / Auto）→ dotnetBlazorWebApp
-│   │   └── 尚未锁定具体技术栈，先要通用协作规则 → generalProject
-│   │
-│   ├── 分离部署（前后端独立；.NET 后端多项目分层 → 默认，单项目 → *Single）
-│   │   ├── Vue + .NET → vueLinkdotNet / vueLinkdotNetSingle
-│   │   ├── React + .NET → reactLinkdotNet / reactLinkdotNetSingle
-│   │   ├── Vue + Python（FastAPI）→ vueLinkPython
-│   │   └── React + Python（FastAPI）→ reactLinkPython
-│   │
-│   ├── 移动端应用
-│       └── .NET MAUI → mauiMobile
-│
-│   └── 桌面应用
-│       ├── 仅 Windows
-│       │   └── WPF → wpfExe
-│       ├── 跨平台（原生 UI 框架）
-│       │   └── Avalonia → avaloniaExe
-│       ├── 跨平台（Web 技术驱动）
-│       │   ├── Wails + Vue → vueWailsExe
-│       │   ├── Wails + React → reactWailsExe
-│       │   ├── Tauri + React → reactTauriExe
-│       │   ├── Tauri + Vue → vueTauri
-│       │   │   ├── Electron + React + .NET → reactElectronDotNet
-│       │   │   ├── Electron + Vue + .NET → vueElectronDotNet
-│       │   │   ├── Electron + React（无独立后端）→ reactElectron
-│       │   │   └── Electron + Vue（无独立后端）→ vueElectron
-```
-
-## 规则源与生成结构
-
-规则源集中维护在 `fragments/`，生成到目标项目后形成“根入口 + 子规则 + 任务主表”的使用结构：
+## 项目结构
 
 ```text
-fragments/
-├── root/AGENTS.md         # 公共根骨架，使用组件变量槽
-├── pointers/              # 公共入口指针
-├── shared/                # 跨架构共享小节，子规则用 include 指令引用
-├── arch/<id>/             # 当前架构的专属规则片段
-├── manifest.json          # 模块、家族、组件、约束、兼容样例与输出配方
-└── ...                    # design-system 等能力片段
+fragments/            # 唯一维护源：root 骨架、shared 共享小节、arch 架构片段、manifest.json
+app/RuleAssembler/    # 生成器 exe（组合内核、交互问答、Skills 导入、更新检查）
+skills/               # 内置 AI Skills 全量源（53 个，随 exe 发布）
+test/                 # xUnit 回归 + emit 基线守卫
+doc/                  # 反馈承接、规则退役、归属处理等仓库级文档
 ```
 
-组合内核：manifest 的 `components` / `constraints` / `compatibilityCases` 节点是维度组合的唯一事实来源（schema 3，`profiles` 节点与旧渲染路径已退役），`CompositionPlanner` 把「形态 + 壳 + 前端 + 后端」的维度选择解析为组件集合并渲染产物；37 个组合全部注册为兼容样例（携带 label / desc / family 展示元数据，经典入口、检测候选展示与配方三件套都按样例取值；形态含类库 / 包仓库——多 NuGet 打包工程 + 逐包测试 + CI 发布链路；AI 能力已覆盖 .NET Web 全系——React 分离、Blazor Server / Blazor Web App 两形态与纯前端 AI 站点），其中 `reactLinkdotNet-ai` 已拆为「.NET AI Web 壳 + React AI 前端 + 单项目 .NET 后端 + AI capability/module」，其他组合按复用价值逐步收敛。组件还可以声明 `moduleIds`，组合始终从 `core` 开始按组件顺序合并模块；同一输出支持一个 `replace` 基底和多个按顺序拼接的 `append` 贡献，能力过滤与槽位替换逐项执行，重复基底或缺少基底会显式报错。`--check` 对每个样例做组合口径的输出契约校验（声明 vs 产物）、组件问答决策树仿真与内置技能校验；`constraints` 承载壳 / 形态 / 前端 / 后端的钳制关系（如 tauri→rust、wails→go、electron 仅 dotnet/主进程、纯后端无前端、类库 / 包仓库锁定 dotnet 无前端无壳），问答剪枝先过钳制约束，再做结构锚定校验（已回答维度必须仍被存续组件表达），违反钳制或缺组件锚定的组合在问答与 `--plan` 中直接拒绝。新增技术类型 = 扩展组件而非复制整套组合。
+## 环境要求
 
-## 使用方式
+- .NET SDK 10（构建；发布产物为 win-x64 框架依赖单文件，目标机自装 .NET 10 运行时）
+- Windows（交互式生成与 Skills 导入的目录约定按 Windows 验证）
 
-1. 根据项目技术栈准备目标项目目录。
-2. 将 `use-ai-rule.exe` 复制到目标项目根目录并双击启动（启动时先打印当前规则版本），先选择模式：「生成规则文件（含可选 Skills 导入）」、「检测当前目录组合（仅查看）」或「仅导入 Skills」（不生成规则文件、不写配方记录）。
-3. 选择生成规则文件时，生成器先自动检测目录特征（sln/csproj、package.json、wails.json、tauri、pubspec 等）给出推荐组合：证据充分时直接推荐；证据不足时列出已确认维度、待确认维度与候选组合，走补答流程（已确认项保留，只回答缺失项），不伪造推荐。问答走组件决策树（项目形态 → 前端/界面 → 桌面壳 → 后端 → 细分项）：每个问题只列「存续组件间仍有分歧」的选项并经可行性剪枝（不会选出无法生成的组合），唯一取值自动推导不提问；也可选「经典选择（兼容）」走技术大类 → 组合。交互终端中菜单为方向键 + 回车选择，选中「0」项即取消或返回上一步；脚本/管道调用时自动退化为编号输入模式。
-4. 组合确定后进入 Q5 能力开关：按需勾选文档 / 基础设施 / 设计系统等能力（默认 = 当前组合，不可用能力自动隐藏），关闭的能力不会生成文件、根导航也不会再引用。
-5. 规则文件落盘后可选择导入内置 AI Skills：生成器已全量打包仓库 `skills/`，技能按领域分组展示（.NET 后端 / .NET 桌面 / 前端 UI / Flutter / 测试 / 办公文档 / 通用工具），并按本次组合的维度选择自动预选推荐技能（如 .NET 后端组合预选 aspnet-core、dotnet-best-practices、run-tests 等，可自由调整）；多选技能与目标工具（Codex / ZCode / Claude Code / pi）后按项目级目录约定整体写入，不需要时选「跳过，不导入」；导入是追加语义，目标目录已有同名技能时会提示覆盖或跳过（覆盖 = 同名技能目录先删后写、按内置内容整体重写）；勾选结果记入配方，`--recipe` / `--upgrade` 按配方同步重放（同名技能先删后写）。技能分组与推荐条件登记在 `fragments/manifest.json` 的 `skills` 节点（`id` = 技能短 ID，`group` = 展示分组，`when` = 推荐条件，复用 wizard 维度语义），`--check` 校验登记与内置技能一致。
-6. 开始协作时先读根 `AGENTS.md`，再根据任务命中对应子规则，不默认预读全部文件。
-7. 开发过程中通过 `TASK.md` 维护活动任务与最近少量已完成任务（`TASK.md` 由目标项目自己维护，生成器只引用不释放）。
+## 快速开始
 
-文档维护按业务模块和功能拆分：`doc/requirements/<module>/<feature>.md` 记录业务需求，`doc/design/<module>/<feature>.md` 记录对应技术设计，`doc/index.md` 及各目录索引负责导航。设计文档通过 `REQ-` / `DES-` 编号建立追溯，不重复维护需求正文；新增接口先用 `CON-` 契约草案承载完整字段，落地后以 DTO / Schema / 接口代码为最终事实；跨模块方案放在 `doc/design/architecture.md`。
+目标项目使用（推荐，无需本仓库）：
 
-### 一键导出（推荐）
+1. 从 GitHub Release 下载 `use-ai-rule.exe`（或本地构建：`./app/RuleAssembler/publish.ps1`，产物在 `dist/`）。
+2. 复制到目标项目根目录并运行，先选模式：生成规则文件（含可选 Skills 导入）、检测当前目录组合（仅查看）、仅导入 Skills。
+3. 生成模式：exe 自动检测目录特征推荐组合，证据不足时走补答 / 问答决策树；组合确定后勾选能力开关（文档 / 基础设施 / 设计系统）与 Skills，统一确认后落盘。
+4. 生成后目标项目根出现 `AGENTS.md` 与子规则（部分组合含 `design-system.yaml`）、配方记录 `.ai-rule-profile.json`（供 `--recipe` / `--upgrade` 重放）。
+5. 升级：`use-ai-rule.exe --recipe .ai-rule-profile.json` 按记录重放；`--upgrade` 原地升级（本地修改默认保留，`--force` 全覆盖）。
 
-仓库附带一个交互式拼接器，免去手动复制：
+本仓库开发：
 
 ```powershell
-# 构建（首次）：发布 win-x64 框架依赖单文件（目标机需自装 .NET 10 运行时），并生成 latest.json 更新清单
-./app/RuleAssembler/publish.ps1
-
-# Windows 下也可以在仓库根目录双击或执行 build-use-ai-rule.bat
-
-# 产物位于 dist/：use-ai-rule.exe（内嵌全量规则与技能，单文件可用）+ latest.json（发布 Release 时上传）
-# Windows 产物双击启动（或命令行执行，支持 --check / --emit / --detect 等命令行模式）：
-# 启动时先选模式：生成规则文件（含可选 Skills 导入）、检测当前目录组合（仅查看），或仅导入 Skills（不生成规则文件、不写配方记录，gitignore 按 minimal 处理）。
-# 生成模式：自动检测当前项目并推荐组合（含判断依据）；证据不足时展示待确认维度与候选，
-# 补答只问缺失项、已确认项保留。也可以选择问答决策树（项目形态 → 前端/界面 → 桌面壳 → 后端 → 细分项，
-# 只出现已接入的选项；桌面混合应用会先选壳 Electron/Tauri/Wails，再问该壳下的后端）或经典的「技术大类 → 组合」（兼容入口）。
-# 组合确定后进入 Q5 能力开关（文档 / 基础设施 / 设计系统等，默认 = 当前组合），
-# 随后列出实际生成文件并统一确认后释放（AGENTS + 子规则 + CLAUDE/GEMINI/GROK），同名文件会直接覆盖；
-# 例外：已定制（meta.status=已定制）的 design-system.yaml 保留本地版本不覆盖，仍是基线时才刷新。
-# 不释放 TASK.md（运行时任务清单，不随规则分发，配方中按 referenced-existing 声明）。
-# 生成成功后会在目标项目写入 .ai-rule-profile.json 配方记录（记录维度选择、命中组件、回答来源与能力开关），
-# 并自动把该记录、生成器本体（use-ai-rule* 通配，覆盖 .exe、无扩展名与带 RID 后缀的历史副本）、规则效果反馈记录（.ai-rule-feedback.md）与 AI 工具本地目录（.zcode/、.claude/、.dotnet/、.codex/、.pi/、.cursor/、.codegraph/、.learnings/）加入目标项目 .gitignore（没有 .gitignore 时按技术栈创建一份默认规则）。
-# 规则文件落盘后还可选导入内置 AI Skills（生成器已全量打包仓库 skills/，无需再手动拷贝）：
-# 多选技能（35+ 个，含 dotnet-skills / officeSkills 等分组下的技能）、多选目标工具后按项目级目录约定整体写入：
-#   Codex → .codex/skills/<技能>/，ZCode → .zcode/skills/<技能>/，Claude Code → .claude/skills/<技能>/，pi → .pi/skills/<技能>/
-# 导入是追加语义：未选中的技能不动；目标目录已有同名技能（含 SKILL.md）时提示「覆盖」或「跳过」（覆盖 = 同名技能目录先删后写、按内置内容整体重写；跳过 = 保留本地版本，且不记入配方）。
-# 勾选结果记入配方（skills / skill_targets），--recipe / --upgrade 会按配方同步重放（内置内容直接覆盖，本地改过的技能先备份）。
-# 已有配方时可用 --recipe 按记录重放生成（升级规则或在新项目还原同一组合）：
-#   use-ai-rule.exe --recipe .ai-rule-profile.json [目标目录]
-# 规则版本升级后用 --upgrade 原地升级：配方内容哈希识别本地修改，默认保留、--force 全部覆盖：
-#   use-ai-rule.exe --upgrade [目录] [--force]
+dotnet test                                    # 全量回归（含 emit 基线）
+dotnet run --project app/RuleAssembler -- --check   # 校验 37 个兼容样例
+dotnet run --project app/RuleAssembler -- --emit <目录>  # 批量预览全部组合产物
 ```
 
-发布产物是 win-x64 框架依赖单文件（目标机需自装 .NET 10 运行时；本机需 .NET SDK 10 构建）。拼接器把公共入口、指针和可复用能力抽成模块，按所选组合填入差异内容后输出；子规则中的共性小节（如提交前最小回归、无法执行测试时）集中维护在 `fragments/shared/`，由各架构片段通过 `<!-- include: ... -->` 指令引用，改一处即可同步全部组合。后续只维护 `fragments/`，重新构建即可让所有组合生效（根目录原有的 19 套架构快照目录已于 2026-08-28 删除）。详见 `app/RuleAssembler/` 与 `fragments/`。
+## 使用说明
 
-### exe 单产物发布（CI 自动化）
+- 协作入口：AI 在目标项目先读根 `AGENTS.md`，再按任务命中对应子规则，不默认预读全部文件。
+- 改规则内容（fragments / skills）或生成器代码后必须升版：版本唯一事实源是 `fragments/manifest.json` 的 `vars.version`，推送 master 后 CI 自动发布并校验版本严格递增；规则内容变更还需刷新 emit 基线（`UPDATE_EMIT_BASELINE=1 dotnet test --filter EmitBaseline`）。
+- 规则效果反馈：目标项目把命中 / 违反情况记入 `.ai-rule-feedback.md`，按 `doc/规则效果反馈承接.md` 的口径回传处理。
 
-推送 `master` 后 GitHub Actions（`.github/workflows/release.yml`）自动完成发布，产物：
+## 相关文档
 
-```text
-GitHub Release（tag = v<统一版本>，如 v3.0.0）
-├── use-ai-rule.exe          # win-x64 框架依赖单文件（需自装 .NET 10 运行时），版本经 InformationalVersion 注入，规则与技能内容全量内嵌
-└── latest.json              # 更新检查清单：version（统一版本）+ engine_version（旧 exe 兼容字段，同值）+ engine_sha256
-```
-
-统一版本口径：exe、Release tag、latest.json 共用同一个版本号，事实源是
-`fragments/manifest.json` 的 `vars.version`。改 fragments / skills / 生成器代码都必须升版
-（emit 基线仍只在规则内容变更时刷）；CI 对 push 触发的发布校验版本严格大于已发布最高 tag，
-不升版直接失败——每次发布都产出新用户可检测到的更新。版本号用 `x.y.z`：规则 / 技能内容演进
-递增次版本或补丁位，生成器代码变更同样升版（同一版本 = 同一套完整能力）。
-
-exe 启动时按以下优先级确定内容来源，改规则 / 技能后只需升版并推送，CI 自动发新版本：
-
-1. `--pack <zip|目录>`：显式指定内容包（zip 或已解包目录，本地验证用），SHA-256 校验失败直接报错退出；
-2. 程序集内嵌资源：常态唯一来源，内容与 exe 同版本构建发布，单 exe 无网络永远可用。
-
-更新只在交互模式（无参数启动）发生：显示「检查更新中…」加载动画并拉取 Release 的 `latest.json` 一次（3 秒超时），统一版本对照 exe 版本，落后且携带 `engine_sha256` 即弹一次确认（默认更新，说明会动什么）：同机共享缓存（`%LOCALAPPDATA%\use-ai-rule\engine\<版本>\`，多目录副本复用，命中已校验缓存免下载）或下载新 exe，按 `engine_sha256` 校验后原子替换当前 exe（字段缺失 / 校验不匹配拒绝替换）。安装成功后**退出并提示重新运行**（不做自动拉起：分离进程会与终端抢同一控制台的键盘输入，菜单看似卡死；重新运行后版本一致不再提示），避免继续用启动时加载的旧内容生成、把配方版本回写降级。
-
-命令行模式（带参数启动）与 `--offline` 均不做网络检查。更新失败（网络中断、校验不匹配）只告警降级不阻塞。环境变量 `USE_AI_RULE_PACK_URL` 可替换发布源（gitee 镜像等），缺省指向 GitHub Release；`USE_AI_RULE_CACHE` 可替换引擎缓存根（测试隔离用）。本地手动发布仍可跑 `publish.ps1`，但常规流程无需手动操作。
-
-生成的规则内置效果反馈闭环：AI 在目标项目协作中发现规则被违反、与现实冲突或缺失时，任务收尾把条目记入项目根目录 `.ai-rule-feedback.md`（本地产物，已加入 `.gitignore` 不随项目提交）；把这些反馈回传本仓库，按 `doc/规则效果反馈承接.md` 的口径登记并转化为 `fragments/` 修改，目标项目再通过 `--upgrade` 拿到改进后的规则。
-
-## 共同规则
-
-所有模板共享以下基础约束：
-
-- 先理解，再修改；不要基于猜测直接改代码或规则
-- 先复用，再新增；避免无关重构和重复体系
-- 交付必须真实可用；涉及新增、修改、删除的业务逻辑不能停留在伪交互层面
-- 能验证的地方优先验证；无法验证时必须说明原因、影响与建议下一步
-- 如果编写注释，统一使用中文
-- 单个类、页面、组件、页面基类应保持职责单一，避免持续膨胀
-- Windows / PowerShell 场景下禁止使用 `&&` 链式命令
+- `AGENTS.md` — 本仓库维护规则与约束
+- `app/RuleAssembler/README.md` — 生成器架构与维护说明
+- `fragments/manifest.json` — 维度组合内核（组件 / 约束 / 兼容样例 / 技能登记）
+- `doc/规则效果反馈承接.md` — 反馈承接流程
+- `doc/规则退役清单.md`、`doc/规则技能归属处理清单.md` — 规则治理

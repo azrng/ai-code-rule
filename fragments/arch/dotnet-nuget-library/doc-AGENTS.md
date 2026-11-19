@@ -73,6 +73,8 @@ dependencies: [agents-root]
 - 为较大功能写方案 / 迁移计划时，按主题命名新增文件，写清背景、方案、边界与验证方式即可，不强制模板和编号体系
 - 开发日志只记录当次任务事实（改动、验证、结论），不重复维护与 README / ARCHITECTURE 冲突的长期说明
 
+<!-- include: shared/doc/readme.md -->
+
 <!-- include: shared/doc/retro-format.md -->
 
 ---

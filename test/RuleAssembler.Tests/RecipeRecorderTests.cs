@@ -145,7 +145,7 @@ public sealed class RecipeRecorderTests : IDisposable
         Assert.Contains("use-ai-rule*", content);
         Assert.Contains(".ai-rule-feedback.md", content);
         Assert.Contains(".codegraph/", content);
-        Assert.Contains("追加忽略规则：use-ai-rule*、.ai-rule-feedback.md、.zcode/", message);
+        Assert.Contains("追加忽略规则：use-ai-rule*、.ai-rule-feedback.md、.agents/、.zcode/", message);
     }
 
     [Fact]

@@ -173,6 +173,45 @@ public sealed class RecipeReplayerTests : IDisposable
     }
 
     [Fact]
+    public void 能力全关配方重放_保持全关不回退默认()
+    {
+        // 用户显式关闭全部可选能力时配方写 "features": []：重放/升级必须保持全关，
+        // 不得因数组为空回退默认能力集（否则已关闭的 doc / infra / design-system 会在升级时复活）
+        var (_, json) = BuildRecipe("reactElectron", new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        var result = _replayer.Replay(json, _tempDir);
+
+        Assert.DoesNotContain(result.Files, file => file.Output == "doc-AGENTS.md");
+        Assert.DoesNotContain(result.Files, file => file.Output == "infra-AGENTS.md");
+        Assert.DoesNotContain(result.Files, file => file.Output == "design-system.yaml");
+        var expectedFiles = RenderCase("reactElectron", new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        Assert.Equal(expectedFiles.Select(file => file.Output), result.Files.Select(file => file.Output));
+        // 回写配方同样保持全关记录，下次升级不复活
+        Assert.NotNull(result.Record.Features);
+        Assert.Empty(result.Record.Features);
+    }
+
+    [Fact]
+    public void 旧配方无features字段_重放回退默认能力集()
+    {
+        // 字段引入前的旧配方没有 features 键（反序列化为 null）：按默认能力集重放，行为与历史一致
+        var json = """
+            {
+              "schema_version": 1,
+              "manifest_version": "1.40.0",
+              "generated_at": "2026-09-01T10:00:00+08:00",
+              "mode": "classic",
+              "profile_id": "reactElectron",
+              "files": []
+            }
+            """;
+        var result = _replayer.Replay(json, _tempDir);
+
+        var expectedFiles = RenderCase("reactElectron");
+        Assert.Equal(expectedFiles.Select(file => file.Output), result.Files.Select(file => file.Output));
+        Assert.Contains("doc-AGENTS.md", result.Files.Select(file => file.Output));
+    }
+
+    [Fact]
     public void 非法组合配方被组合器拒绝()
     {
         var json = """

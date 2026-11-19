@@ -85,6 +85,18 @@ public sealed class SkillCatalogTests
     }
 
     [Fact]
+    public void blazor_组合仅预选mudblazor不预选bootstrapblazor()
+    {
+        // 用户反馈：Blazor 组合默认只推荐 MudBlazor，bootstrap-blazor 未登记 when 恒不预选、仅分组展示供手动勾选
+        var manifest = LoadManifest();
+        var recommended = RecommendedIds(manifest, SelectionOf(
+            ("form", "web"), ("backend", "dotnet"), ("frontend", "blazor")));
+
+        Assert.Contains("mudblazor", recommended);
+        Assert.DoesNotContain(recommended, id => id == "bootstrap-blazor");
+    }
+
+    [Fact]
     public void 条件取值是任一命中_维度缺失视为证据不足()
     {
         var definition = new SkillDefinition

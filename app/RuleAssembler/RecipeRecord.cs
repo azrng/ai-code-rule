@@ -34,9 +34,10 @@ internal sealed class RecipeRecord
     [JsonPropertyName("answer_sources")]
     public Dictionary<string, string> AnswerSources { get; init; } = new();
 
-    // Q5 启用的能力 ID 集；旧 profile_id 保留为迁移兼容，能力状态以本字段为准
+    // Q5 启用的能力 ID 集；旧 profile_id 保留为迁移兼容，能力状态以本字段为准。
+    // null = 旧配方缺失该字段（重放回退默认能力集）；空数组 = 用户显式关闭全部能力，重放必须保持全关
     [JsonPropertyName("features")]
-    public List<string> Features { get; init; } = new();
+    public List<string>? Features { get; init; }
 
     // 组合内核路径（P2 阶段 3）专属：维度选择与命中组件；经典 Profile 路径为 null 且不序列化
     [JsonPropertyName("selection")]

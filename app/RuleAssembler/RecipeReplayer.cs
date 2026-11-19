@@ -162,9 +162,11 @@ internal sealed class RecipeReplayer
                 + $"当前解析 [{string.Join("、", plan.ComponentIds)}]。请重新运行生成器确认组合后再生成。");
         }
 
-        var features = recipe.Features is { Count: > 0 }
-            ? FeatureSelection.Normalize(_manifest, plan, recipe.Features)
-            : FeatureSelection.Defaults(_manifest, plan);
+        // 能力开关以字段存在性区分语义：null = 旧配方无 features 字段，回退默认能力集；
+        // 显式数组（含空数组）= 用户当时的真实选择，空数组保持全关，不得回退默认（否则升级会复活已关能力）
+        var features = recipe.Features is null
+            ? FeatureSelection.Defaults(_manifest, plan)
+            : FeatureSelection.Normalize(_manifest, plan, recipe.Features);
         var files = _renderer.Plan(_manifest, plan, features);
 
         var notes = new List<string>();

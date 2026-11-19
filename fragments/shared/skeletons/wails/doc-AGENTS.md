@@ -27,6 +27,8 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/doc-update.md -->
 
+<!-- include: shared/doc/readme.md -->
+
 <!-- include: shared/doc/doc-directory.md -->
 
 <!-- include: shared/doc/requirement.md -->

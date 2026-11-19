@@ -2,9 +2,10 @@ using System.Text;
 
 namespace RuleAssembler.Tests;
 
-// SkillImporter 落盘行为回归：四目标（codex → .codex/skills、zcode、claude、pi → .pi/skills）目录约定、
+// SkillImporter 落盘行为回归：四目标（codex → .agents/skills、zcode、claude、pi → .pi/skills）目录约定、
 // 字节级原样拷贝、同名冲突检测（以 SKILL.md 为准）、同名技能先删后写（消除残留）、
-// 无 SKILL.md 目录并入不删除、skipKeys 跳过语义（保留本地版本）
+// 无 SKILL.md 目录并入不删除、skipKeys 跳过语义（保留本地版本）、
+// codex 旧目录 .codex/skills 同名技能导入时迁移清理（Codex 只发现 .agents/skills）
 public sealed class SkillImporterTests : IDisposable
 {
     private readonly string _root;
@@ -50,7 +51,7 @@ public sealed class SkillImporterTests : IDisposable
         foreach (var file in _store.ReadFiles(skill!))
         {
             var path = Path.Combine(
-                _root, ".codex", "skills", skill.Id,
+                _root, ".agents", "skills", skill.Id,
                 file.RelativePath.Replace('/', Path.DirectorySeparatorChar));
             Assert.True(File.Exists(path), $"缺少 {path}");
             Assert.Equal(file.Content, File.ReadAllBytes(path));
@@ -83,7 +84,7 @@ public sealed class SkillImporterTests : IDisposable
         // 无 SKILL.md 的目录不算同名技能：不删除目录，用户文件保留，内置文件并入写入
         var skill = _store.Find("brainstorming");
         Assert.NotNull(skill);
-        var skillRoot = Path.Combine(_root, ".codex", "skills", skill.Id);
+        var skillRoot = Path.Combine(_root, ".agents", "skills", skill.Id);
         Directory.CreateDirectory(skillRoot);
         File.WriteAllText(Path.Combine(skillRoot, "用户笔记.txt"), "非技能内容", Encoding.UTF8);
 
@@ -116,7 +117,7 @@ public sealed class SkillImporterTests : IDisposable
         // 只有无 SKILL.md 的空目录不算同名技能，允许直接写入
         var skill = _store.Find("brainstorming");
         Assert.NotNull(skill);
-        Directory.CreateDirectory(Path.Combine(_root, ".codex", "skills", skill.Id));
+        Directory.CreateDirectory(Path.Combine(_root, ".agents", "skills", skill.Id));
 
         Assert.Empty(_importer.DetectConflicts(_root, new[] { SkillTargets.Find("codex")! }, new[] { skill! }));
     }
@@ -144,7 +145,45 @@ public sealed class SkillImporterTests : IDisposable
     public void Import_UnknownTargetIdIsNotResolvable()
     {
         Assert.Null(SkillTargets.Find("cursor"));
-        Assert.Equal(".codex/skills", SkillTargets.Find("Codex")!.RelativeRoot);
+        var codex = SkillTargets.Find("Codex")!;
+        Assert.Equal(".agents/skills", codex.RelativeRoot);
+        Assert.Equal(".codex/skills", codex.LegacyRoot);
+        Assert.Null(SkillTargets.Find("pi")!.LegacyRoot);
         Assert.Equal(".pi/skills", SkillTargets.Find("pi")!.RelativeRoot);
+    }
+
+    [Fact]
+    public void Import_MigratesLegacyCodexSkillDirectoryOnWrite()
+    {
+        // 历史版本把 Codex 技能写到 .codex/skills（Codex 不读取）：导入同名技能到 .agents/skills 后，
+        // 旧目录整目录清理，新目录为内置内容
+        var skill = _store.Find("brainstorming");
+        Assert.NotNull(skill);
+        var legacyRoot = Path.Combine(_root, ".codex", "skills", skill.Id);
+        Directory.CreateDirectory(legacyRoot);
+        File.WriteAllText(Path.Combine(legacyRoot, "SKILL.md"), "旧版死文件", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(legacyRoot, "残留.txt"), "stale", Encoding.UTF8);
+
+        _importer.Import(_root, new[] { SkillTargets.Find("codex")! }, new[] { skill! }, _store);
+
+        var newText = File.ReadAllText(Path.Combine(_root, ".agents", "skills", skill.Id, "SKILL.md"));
+        Assert.NotEqual("旧版死文件", newText);
+        Assert.False(Directory.Exists(legacyRoot), "旧目录 .codex/skills/<技能> 应整目录清理");
+    }
+
+    [Fact]
+    public void Import_LegacyDirectoryWithoutSkillManifestIsNotMigrated()
+    {
+        // 迁移清理同样以 SKILL.md 为准：旧目录无 SKILL.md 时不删除，避免误清用户文件
+        var skill = _store.Find("brainstorming");
+        Assert.NotNull(skill);
+        var legacyRoot = Path.Combine(_root, ".codex", "skills", skill.Id);
+        Directory.CreateDirectory(legacyRoot);
+        File.WriteAllText(Path.Combine(legacyRoot, "用户笔记.txt"), "非技能内容", Encoding.UTF8);
+
+        _importer.Import(_root, new[] { SkillTargets.Find("codex")! }, new[] { skill! }, _store);
+
+        Assert.True(File.Exists(Path.Combine(_root, ".agents", "skills", skill.Id, "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(legacyRoot, "用户笔记.txt")));
     }
 }

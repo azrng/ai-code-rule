@@ -90,6 +90,8 @@ Agent 产品的前端不能只是一个聊天框。设计 Agent 交互时，必�
 - 主题配置映射按 Tailwind 主题与 shadcn CSS 变量落地；页面状态规范含 streaming
 
 ---
+<!-- include: shared/doc/readme.md -->
+
 
 ## 文档更新要求
 以下内容发生变化时，必须同步更新相关文档：

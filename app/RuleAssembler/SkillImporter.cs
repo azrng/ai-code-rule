@@ -1,14 +1,16 @@
 namespace RuleAssembler;
 
-// Skills 导入目标（项目级目录约定，按用户本地习惯）：
-// Codex 读取 .codex/skills，ZCode 读取 .zcode/skills，Claude Code 读取 .claude/skills，pi 读取 .pi/skills
-internal sealed record SkillTarget(string Id, string Label, string RelativeRoot);
+// Skills 导入目标（项目级目录约定，按各工具实际发现的目录）：
+// Codex 读取 .agents/skills，ZCode 读取 .zcode/skills，Claude Code 读取 .claude/skills，pi 读取 .pi/skills
+internal sealed record SkillTarget(string Id, string Label, string RelativeRoot, string? LegacyRoot = null);
 
 internal static class SkillTargets
 {
     public static readonly IReadOnlyList<SkillTarget> All = new[]
     {
-        new SkillTarget("codex", "Codex", ".codex/skills"),
+        // Codex 只发现 .agents/skills（项目级向上探测与用户级 ~/.agents/skills 同标准）；
+        // LegacyRoot 是历史版本误写的 .codex/skills（Codex 不读取），导入同名技能时顺手清理迁移
+        new SkillTarget("codex", "Codex", ".agents/skills", ".codex/skills"),
         new SkillTarget("zcode", "ZCode", ".zcode/skills"),
         new SkillTarget("claude", "Claude Code", ".claude/skills"),
         new SkillTarget("pi", "pi", ".pi/skills")
@@ -79,7 +81,19 @@ internal sealed class SkillImporter
                     written++;
                 }
 
-                Console.WriteLine($"  [{target.Id}] {skill.Id}（{skill.FileCount} 个文件）");
+                // 旧目录迁移：历史版本写入 LegacyRoot 的同名技能是工具不读取的死文件，本次写入后顺手删除
+                var migratedFrom = target.LegacyRoot is not null
+                    && File.Exists(Path.Combine(
+                        PathGuard.GetPathWithin(rootDirectory, $"{target.LegacyRoot}/{skill.Id}"), "SKILL.md"))
+                    ? target.LegacyRoot
+                    : null;
+                if (migratedFrom is not null)
+                    Directory.Delete(
+                        PathGuard.GetPathWithin(rootDirectory, $"{migratedFrom}/{skill.Id}"), recursive: true);
+
+                Console.WriteLine(migratedFrom is null
+                    ? $"  [{target.Id}] {skill.Id}（{skill.FileCount} 个文件）"
+                    : $"  [{target.Id}] {skill.Id}（{skill.FileCount} 个文件，已从 {migratedFrom} 迁移）");
             }
         }
 
