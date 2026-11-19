@@ -371,40 +371,55 @@ internal static class AuditCommand
         return sb.Length >= 2 ? new string(sb.ToString().Reverse().ToArray()) : null;
     }
 
-    // Skill 引用完整性：SKILL.md 引用的本地相对路径（markdown 链接 / 代码围栏外的文件名）必须存在
+    // Skill 引用完整性：SKILL.md 引用的本地相对路径（markdown 链接）必须存在；
+    // 代码围栏内的链接是「怎么写技能」的示例文本而非真实引用，跳过——skill-creator 的
+    // Pattern 示例引用 FORMS.md / DOCX-JS.md 等假想文件，曾因此被整批误报为缺失
     private static List<AuditFinding> FindSkillReferenceIssues(SkillsStore skillsStore)
     {
         var findings = new List<AuditFinding>();
         foreach (var skill in skillsStore.Discover())
         {
-            var skillMd = skillsStore.ReadFiles(skill)
+            var files = skillsStore.ReadFiles(skill);
+            var skillMd = files
                 .FirstOrDefault(f => f.RelativePath.Equals("SKILL.md", StringComparison.OrdinalIgnoreCase));
             if (skillMd is null)
                 continue;
 
             var skillContent = System.Text.Encoding.UTF8.GetString(skillMd.Content);
-            var skillFiles = skillsStore.ReadFiles(skill)
+            var skillFiles = files
                 .Select(f => f.RelativePath)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            findings.AddRange(FindSkillReferenceIssuesIn(skill.Id, skillContent, skillFiles));
+        }
 
-            // 本地 markdown 链接目标与反引号内同目录文件引用
-            foreach (Match match in Regex.Matches(skillContent, @"\[[^\]]*\]\(([^)]+)"))
-            {
-                var target = match.Groups[1].Value.Trim();
-                if (target.StartsWithAny("http://", "https://", "#", "mailto:"))
-                    continue;
-                var path = target.Split('#')[0];
-                if (path.Length == 0)
-                    continue;
-                if (!skillFiles.Contains(path.Replace('\\', '/')))
-                    findings.Add(new AuditFinding(
-                        $"skills/{skill.Id}/SKILL.md",
-                        "Skill 引用缺失",
-                        $"引用的本地文件不存在：{path}",
-                        skill.Id,
-                        "检查替代来源或修正路径；确属过时技能列入技能变更批次",
-                        "low"));
-            }
+        return findings;
+    }
+
+    // 单技能引用缺失检测：围栏外的本地 markdown 链接目标必须存在于技能文件集
+    internal static List<AuditFinding> FindSkillReferenceIssuesIn(
+        string skillId, string skillContent, HashSet<string> skillFiles)
+    {
+        var findings = new List<AuditFinding>();
+        var fences = MarkdownFences.FindSpans(skillContent);
+        foreach (Match match in Regex.Matches(skillContent, @"\[[^\]]*\]\(([^)]+)"))
+        {
+            if (MarkdownFences.IsInside(fences, match.Index))
+                continue;
+
+            var target = match.Groups[1].Value.Trim();
+            if (target.StartsWithAny("http://", "https://", "#", "mailto:"))
+                continue;
+            var path = target.Split('#')[0];
+            if (path.Length == 0)
+                continue;
+            if (!skillFiles.Contains(path.Replace('\\', '/')))
+                findings.Add(new AuditFinding(
+                    $"skills/{skillId}/SKILL.md",
+                    "Skill 引用缺失",
+                    $"引用的本地文件不存在：{path}",
+                    skillId,
+                    "检查替代来源或修正路径；确属过时技能列入技能变更批次",
+                    "low"));
         }
 
         return findings;

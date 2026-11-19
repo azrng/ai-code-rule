@@ -113,23 +113,44 @@ public sealed class AuditCommandTests
     }
 
     [Fact]
-    public void SkillReferenceIssues_DetectMissingLocalLink()
+    public void SkillReferenceIssues_RealSkillsHaveNoMissingLink()
     {
-        var manifest = LoadManifest();
-        var resources = new ResourceStore();
-        var planner = new CompositionPlanner(manifest);
-        var renderer = new RuleRenderer(resources);
-        var rendered = new List<(CompatibilityCase, List<PlannedFile>)>();
-        foreach (var c in manifest.CompatibilityCases)
-        {
-            var selection = new Selection { Dimensions = new Dictionary<string, string>(c.Selection, StringComparer.Ordinal) };
-            var plan = planner.Plan(selection);
-            rendered.Add((c, renderer.Plan(manifest, plan, FeatureSelection.Defaults(manifest, plan))));
-        }
-
+        // 回归锚点：内置技能当前零缺失引用（skill-creator 围栏内的 FORMS.md 等示例链接不算）；
+        // 未来新增技能引入真实缺失会在此暴露
         var issues = AuditCommand.FindSkillReferenceIssuesForTest(new SkillsStore());
-        // 当前源：skill-creator 引用 FORMS.md 等不存在文件；回归锚点——若技能修复后此数变 0 属预期改进，
-        // 断言只要求「缺失项的证据必须指向真实不存在的文件」
-        Assert.All(issues, i => Assert.Contains("不存在", i.Evidence, StringComparison.Ordinal));
+        Assert.Empty(issues);
+    }
+
+    [Fact]
+    public void SkillReferenceIssues_SkipFencedExampleLinks()
+    {
+        // 围栏内是「怎么写技能」的示例文本（引用假想文件），不算真实引用
+        var content = """
+            # 示例技能
+
+            正文引用真实文件：见 [接口字段](references/openai_yaml.md)。
+
+            ```markdown
+            - **Form filling**: See [FORMS.md](FORMS.md) for complete guide
+            - **Examples**: See [EXAMPLES.md](EXAMPLES.md) for common patterns
+            ```
+            """;
+        var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "references/openai_yaml.md" };
+
+        var issues = AuditCommand.FindSkillReferenceIssuesIn("demo", content, files);
+
+        Assert.Empty(issues);
+    }
+
+    [Fact]
+    public void SkillReferenceIssues_FlagMissingLinkOutsideFence()
+    {
+        var content = "见 [手册](docs/manual.md)。";
+        var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "references/openai_yaml.md" };
+
+        var issues = AuditCommand.FindSkillReferenceIssuesIn("demo", content, files);
+
+        var issue = Assert.Single(issues);
+        Assert.Contains("docs/manual.md", issue.Evidence, StringComparison.Ordinal);
     }
 }

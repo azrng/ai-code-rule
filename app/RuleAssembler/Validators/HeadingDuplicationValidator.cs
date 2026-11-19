@@ -10,36 +10,15 @@ internal static class HeadingDuplicationValidator
     private static readonly Regex HeadingPattern =
         new(@"^(?<level>#{2,3}) (?<text>.+?)[ \t]*$", RegexOptions.Multiline | RegexOptions.Compiled);
 
-    private static readonly Regex FencePattern = new(@"^```", RegexOptions.Multiline | RegexOptions.Compiled);
-
     public static List<string> FindDuplicateHeadings(string content)
     {
-        var fences = new List<(int Start, int End)>();
-        var openAt = -1;
-        foreach (Match fence in FencePattern.Matches(content))
-        {
-            if (openAt < 0)
-            {
-                openAt = fence.Index;
-            }
-            else
-            {
-                fences.Add((openAt, fence.Index + fence.Length));
-                openAt = -1;
-            }
-        }
-
-        // 未闭合围栏按延伸到文末处理，宁可多跳过也不把围栏内容误判为标题
-        if (openAt >= 0)
-            fences.Add((openAt, content.Length));
-
-        bool InFence(int position) => fences.Any(span => position >= span.Start && position < span.End);
+        var fences = MarkdownFences.FindSpans(content);
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var duplicates = new List<string>();
         foreach (Match heading in HeadingPattern.Matches(content))
         {
-            if (InFence(heading.Index))
+            if (MarkdownFences.IsInside(fences, heading.Index))
                 continue;
 
             var key = heading.Groups["level"].Value + " " + heading.Groups["text"].Value.Trim();
