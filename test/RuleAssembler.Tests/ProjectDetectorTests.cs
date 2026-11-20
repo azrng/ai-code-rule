@@ -203,6 +203,34 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_WinFormsTrayProject_RecommendsWinformsExe()
+    {
+        // sso-launcher 真实形态：net8.0-windows + UseWindowsForms 的托盘常驻程序（无窗体）
+        File.WriteAllText(
+            Path.Combine(_root, "sso-launcher.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms></PropertyGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("winformsExe", result!.SampleProfileId);
+    }
+
+    [Fact]
+    public void Detect_ProjectWithBothWpfAndWinForms_PrefersWpf()
+    {
+        // UseWPF 优先生效：WinForms 互操作场景（WPF 工程显式开启 UseWindowsForms）不得被误判为 WinForms 方案
+        File.WriteAllText(
+            Path.Combine(_root, "Demo.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms></PropertyGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("wpfExe", result!.SampleProfileId);
+    }
+
+    [Fact]
     public void Detect_FastapiProject_RecommendsPython()
     {
         File.WriteAllText(Path.Combine(_root, "requirements.txt"), "fastapi==0.110.0\nuvicorn\n");

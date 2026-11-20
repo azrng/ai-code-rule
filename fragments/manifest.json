@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "3.19.1",
+    "version": "3.20.0",
     "last_updated": "2026-11-20"
   },
   "schema_version": 3,
@@ -466,6 +466,10 @@
         "wpf": {
           "label": "WPF",
           "desc": "WPF Windows 桌面"
+        },
+        "winforms": {
+          "label": "WinForms",
+          "desc": "WinForms Windows 桌面"
         },
         "console": {
           "label": "控制台界面",
@@ -2246,6 +2250,72 @@
       "designSystemSource": "arch/wpfExe/design-system.yaml"
     },
     {
+      "id": "winformsExe",
+      "kind": "form",
+      "label": "WinForms Windows 桌面应用",
+      "desc": "WinForms 桌面 / 托盘常驻程序（含无窗体托盘变体）",
+      "when": {
+        "form": "desktop",
+        "backend": "none",
+        "frontend": "winforms",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "family": "desktop",
+      "root": {
+        "subrule-index": [
+          "| 文件 | 适用范围 | 何时阅读 |",
+          "| --- | --- | --- |",
+          "| `ui-AGENTS.md` | 窗体、控件、托盘与消息循环、主题样式、交互、界面 smoke test | 涉及界面或托盘交互实现时 |",
+          "| `application-AGENTS.md` | ViewModel、Service、命令、状态流转、应用层测试 | 涉及业务编排、命令逻辑或应用层实现时 |",
+          {
+            "line": "| `infrastructure-AGENTS.md` | Repository、数据访问、依赖注入、配置、构建发布链路 | 涉及数据库、仓储、配置、打包或交付时 |",
+            "features": [
+              "infra"
+            ]
+          },
+          {
+            "line": "| `doc-AGENTS.md` | 设计文档、契约说明 | 涉及阶段 0、文档维护或设计系统时 |",
+            "features": [
+              "doc"
+            ]
+          }
+        ],
+        "understanding-checklist": [
+          "- 涉及界面时，已查看相关窗体、控件、托盘实现、主题样式、设计 token 和现有交互模式",
+          "- 涉及业务逻辑时，已查看相关 ViewModel、Service、DTO、Repository、调用方和现有测试"
+        ],
+        "contract-error-line": "阶段 1 输出的界面契约、控件参数、DTO 或字段说明在阶段 2 发现缺口时，应先回到契约变更流程，修改 DTO / 接口定义后同步界面、ViewModel、Service、Repository 映射、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+        "search-nouns": "窗体、控件、托盘、ViewModel、Service、Repository、DTO 和测试实现",
+        "task-kind-nouns": "界面、业务逻辑还是基础设施"
+      },
+      "files": [
+        {
+          "source": "arch/winformsExe/ui-AGENTS.md",
+          "output": "ui-AGENTS.md"
+        },
+        {
+          "source": "arch/winformsExe/application-AGENTS.md",
+          "output": "application-AGENTS.md"
+        },
+        {
+          "source": "arch/winformsExe/infrastructure-AGENTS.md",
+          "output": "infrastructure-AGENTS.md",
+          "feature": "infra"
+        },
+        {
+          "output": "doc-AGENTS.md",
+          "feature": "doc",
+          "sources": [
+            "shared/skeletons/desktop-xaml/doc-AGENTS.md"
+          ]
+        }
+      ],
+      "designSystemSource": "arch/winformsExe/design-system.yaml"
+    },
+    {
       "id": "dotnetConsole",
       "kind": "form",
       "label": ".NET 控制台程序",
@@ -3849,6 +3919,16 @@
     },
     {
       "when": {
+        "frontend": "winforms"
+      },
+      "require": {
+        "form": "desktop",
+        "shell": "none",
+        "backend": "none"
+      }
+    },
+    {
+      "when": {
         "frontend": "console"
       },
       "require": {
@@ -4167,6 +4247,21 @@
         "form": "desktop",
         "backend": "none",
         "frontend": "wpf",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      }
+    },
+    {
+      "profile": "winformsExe",
+      "label": "WinForms Windows 桌面应用",
+      "desc": "WinForms + AntdUI，Windows 桌面客户端（含托盘常驻变体）",
+      "family": "desktop",
+      "selection": {
+        "form": "desktop",
+        "backend": "none",
+        "frontend": "winforms",
         "shell": "none",
         "arch-style": "single",
         "blazor-flavor": "none",

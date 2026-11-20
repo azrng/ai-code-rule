@@ -166,6 +166,7 @@ internal sealed class ProjectDetector
         Plain,
         MauiMobile,
         WpfDesktop,
+        WinFormsDesktop,
         AvaloniaDesktop,
         ElectronNetHost,
         Blazor,
@@ -184,6 +185,11 @@ internal sealed class ProjectDetector
 
         if (content.Contains("UseWPF", StringComparison.OrdinalIgnoreCase))
             return DotnetProjectKind.WpfDesktop;
+
+        // UseWindowsForms 在纯 WPF 工程也可能被显式开启（WinForms 互操作），
+        // 因此必须排在 UseWPF 分支之后，WPF 优先生效
+        if (content.Contains("UseWindowsForms", StringComparison.OrdinalIgnoreCase))
+            return DotnetProjectKind.WinFormsDesktop;
 
         if (content.Contains("Avalonia", StringComparison.OrdinalIgnoreCase))
             return DotnetProjectKind.AvaloniaDesktop;
@@ -280,6 +286,10 @@ internal sealed class ProjectDetector
                 case DotnetProjectKind.WpfDesktop:
                     evidence.Add(new("form", "desktop", "csproj 启用 UseWPF"));
                     evidence.Add(new("frontend", "wpf", "csproj 启用 UseWPF（WPF 界面）"));
+                    continue;
+                case DotnetProjectKind.WinFormsDesktop:
+                    evidence.Add(new("form", "desktop", "csproj 启用 UseWindowsForms"));
+                    evidence.Add(new("frontend", "winforms", "csproj 启用 UseWindowsForms（WinForms 界面）"));
                     continue;
                 case DotnetProjectKind.AvaloniaDesktop:
                     evidence.Add(new("form", "desktop", "csproj 引用 Avalonia"));
