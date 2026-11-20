@@ -16,6 +16,7 @@ on:
       - 'doc/**'
       - '**.md'
       - '.gitignore'
+      # 注意：paths-ignore 下空提交（无文件变更）不会触发发布，重触发需改动非忽略路径
   workflow_dispatch:
 
 permissions:
