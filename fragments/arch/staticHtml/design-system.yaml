@@ -557,7 +557,7 @@ bootstrap_components:
     structure: "breadcrumb"
     items: "breadcrumb-item"
     active: "breadcrumb-item active"
-    separator: "/"（Bootstrap 默认分隔符）
+    separator: "/" # Bootstrap 默认分隔符
     rules:
       - "最后一项（当前页）不可点击"
       - "面包屑文字与页面标题保持一致"
@@ -592,7 +592,7 @@ bootstrap_components:
   placeholder:
     description: "骨架屏，内容加载时的占位动画"
     structure:
-      container: "placeholder-glow" 或 "placeholder-wave"
+      container: "placeholder-glow" # 或 "placeholder-wave"（两种骨架动画二选一）
       item: "placeholder col-X"
     variants:
       text_line: "placeholder col-12"

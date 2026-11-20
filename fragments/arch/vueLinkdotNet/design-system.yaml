@@ -434,7 +434,8 @@ form_rules:
     section_gap: "表单分区间距 mb-8（32px）"
   sizes:
     sm:
-      description: "紧凑型，用于筛选栏、内联表单，      el_size: "small"
+      description: "紧凑型，用于筛选栏、内联表单"
+      el_size: "small"
     md:
       description: "默认尺寸，企业表单标准"
       el_size: "default"
