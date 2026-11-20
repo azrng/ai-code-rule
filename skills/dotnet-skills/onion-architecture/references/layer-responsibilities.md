@@ -165,7 +165,7 @@ public interface IProductAppService
 **依赖**：IApplication（+ 间接 Domain/EntityFramework）。
 **包引用**：核心包经依赖链**传递可达**，多数无需在 Application.csproj 显式声明：
 - **传递可达**（经 `Application → IApplication → IDomain → Common.EFCore → Azrng.Core / Microsoft.EntityFrameworkCore`，无需显式引）：`IBaseRepository`/`IUnitOfWork`/`ToPageListAsync`（Common.EFCore）、`FirstOrDefaultAsync`/`CountAsync`/`ToListAsync`（Microsoft.EntityFrameworkCore）、`IScopedDependency`/`ParameterException`/`NotFoundException`/`WhereIfNotNullOrWhiteSpace`/`GetQueryPageResult`/`RefAsync`/`ToUnspecifiedDateTime()`（Azrng.Core）。
-  > 实测 `MovieManage.Application` 只显式引 `Azrng.Core`（可选，为注释清晰）、`JwtBearer`、`DistributeLock.Core`；synyi 的 Application 甚至一个 Azrng 包都不显式引（全靠传递）。
+  > 实测存量典型解决方案的 Application 只显式引 `Azrng.Core`（可选，为注释清晰）、`JwtBearer`、`DistributeLock.Core`；更常见的形态是一个 Azrng 包都不显式引（全靠传递）。
 - **按需显式引**（独立功能包，不在传递链，AppService 真用到才加）：
   - `Azrng.AspNetCore.Authentication.JwtBearer` — 登录/鉴权 AppService 注入 `IBearerAuthService` 生成 token（装配与口径见 `SKILL.md → 认证与授权（JWT）`）
   - `Azrng.DistributeLock.Core` — 并发控制 AppService 注入 `ILockProvider`
@@ -817,12 +817,12 @@ Storage           → Core, EntityFramework                 ← 可选（文件/
   <ProjectReference Include="..\App.Domain\App.Domain.csproj" />
 </ItemGroup>
 <ItemGroup>
-  <PackageReference Include="Azrng.Core" Version="1.20.1" />
+  <PackageReference Include="Azrng.Core" Version="2.0.0" />
   <!-- 仅当 AppService 需要时才引：JWT 认证、分布式锁等 -->
 </ItemGroup>
 ```
 
-> 版本号是核实基线（Azrng.Core 1.20.1，源码核实），实际以解决方案锁定版本的还原结果为准；示例 API 与锁定版本不一致时，先按锁定版本的公开 API 与编译结果核对再接入。
+> 版本号是核实基线（Azrng.Core 2.0.0，源码核实），实际以解决方案锁定版本的还原结果为准；示例 API 与锁定版本不一致时，先按锁定版本的公开 API 与编译结果核对再接入。
 
 **依赖方向自检**：若发现内层项目（如 Core）要 `using` 外层（如 Application），说明分层错了，立刻停下来纠正。
 

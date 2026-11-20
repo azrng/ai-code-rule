@@ -1,6 +1,6 @@
 ---
 name: azrng-efcore
-description: "Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when installing or injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities on the Identity base classes, calling IBaseRepository / IUnitOfWork, creating custom repositories on BaseRepository<T>, configuring SQL migrations with distributed migration locks, or diagnosing PostgreSQL timestamp errors. Keywords: Common.EFCore, IBaseRepository, IUnitOfWork, DbContext, 仓储, 自定义仓储, BaseRepository, IScopedDependency, 迁移, 迁移锁, LockProvider."
+description: "Guide for using the Azrng Common.EFCore family of NuGet packages to operate databases in .NET apps. Use when installing or injecting the EFCore provider (PostgreSQL, MySQL, SQLite, SQLServer, InMemory), defining entities on the Identity base classes, calling IBaseRepository / IUnitOfWork, creating custom repositories on BaseRepository<T>, choosing raw-SQL alternatives (Common.Dapper IDapperRepository, Azrng.DynamicSqlBuilder + Azrng.JSqlParser for runtime-configurable SQL), configuring SQL migrations with distributed migration locks, or diagnosing PostgreSQL timestamp errors. Keywords: Common.EFCore, IBaseRepository, IUnitOfWork, DbContext, 仓储, 自定义仓储, BaseRepository, IScopedDependency, Dapper, IDapperRepository, DynamicSqlBuilder, JSqlParser, 动态SQL, 原生SQL, 迁移, 迁移锁, LockProvider."
 ---
 
 # Azrng EFCore (Common.EFCore) 数据访问指南
@@ -29,13 +29,13 @@ description: "Guide for using the Azrng Common.EFCore family of NuGet packages t
 
 ```xml
 <!-- EntityFrameworkal 项目 -->
-<PackageReference Include="Common.EFCore" Version="1.7.1" />
-<PackageReference Include="Common.EFCore.PostgresSql" Version="1.7.2" />
+<PackageReference Include="Common.EFCore" Version="1.8.0" />
+<PackageReference Include="Common.EFCore.PostgresSql" Version="1.8.0" />
 <!-- IDomain 项目（仅实体） -->
-<PackageReference Include="Common.EFCore" Version="1.7.1" />
+<PackageReference Include="Common.EFCore" Version="1.8.0" />
 ```
 
-> 以上版本是当前核实基线：`Common.EFCore` 1.7.1、PostgreSQL provider `Common.EFCore.PostgresSql` 1.7.2。**包的注入签名 / 参数单位 / 自动注册范围以锁定版本解包 XML 或反射探测为准，本文档口径可能滞后于包版本**（如 `AddEntityFramework<T>` 已内含 UnitOfWork / Repository / 发号注册，不要重复手写）。其他 provider 按项目锁定版本核实 API 与行为，核实流程见文末「包 API 核实流程」。
+> 以上版本是当前核实基线：`Common.EFCore` 1.8.0、PostgreSQL provider `Common.EFCore.PostgresSql` 1.8.0（2026-11 实测项目锁定版本，构建 / 迁移 / 仓储链路验证通过）。**包的注入签名 / 参数单位 / 自动注册范围以锁定版本解包 XML 或反射探测为准，本文档口径可能滞后于包版本**（如 `AddEntityFramework<T>` 已内含 UnitOfWork / Repository / 发号注册，不要重复手写）。其他 provider 按项目锁定版本核实 API 与行为，核实流程见文末「包 API 核实流程」。
 
 ### 2. 注入（Program.cs）
 
@@ -183,7 +183,7 @@ public async Task<GetQueryPageResult<ProductDto>> GetListAsync(ProductListReques
 
 ## 自定义仓储（仅复杂查询需要）
 
-默认**不为每个实体建仓储**：直接注入 `IBaseRepository<T>`（`AddEntityFramework<T>` 已自动注册，见 providers.md「各注册了什么」）。仅当查询逻辑复杂、需要封装复用（如跨三表 JOIN + 去重 + 多状态过滤）时才定义自定义仓储，落点按团队惯例（参照工程 `Synyi.Manhattan.SEA.Api.Storage` 镜像结构，与 onion-architecture skill 分层表 Storage 行一致）：
+默认**不为每个实体建仓储**：直接注入 `IBaseRepository<T>`（`AddEntityFramework<T>` 已自动注册，见 providers.md「各注册了什么」）。仅当查询逻辑复杂、需要封装复用（如跨三表 JOIN + 去重 + 多状态过滤）时才定义自定义仓储，落点按团队惯例（与 onion-architecture skill 分层表 Storage 行一致）：
 
 - **接口**：`I{实体名}Repository : IBaseRepository<T>`，放 `IDomain/{业务域}Manager/`（命名空间 `根.{业务域}Manager`）。
 - **实现**：`{实体名}Repository : BaseRepository<T>, IScopedDependency, I{实体名}Repository`，放 `Storage/{业务域}Manager/`（Storage 工程引用 EntityFramework 工程）。
@@ -220,11 +220,20 @@ public class MenuRepository : BaseRepository<Menu>, IScopedDependency, IMenuRepo
 }
 ```
 
+**LINQ 之外的原生 SQL 选型**（自定义仓储内部按此排序，均落 Storage 层实现；全部为可选项，触发门槛不满足不引入）：
+
+1. **LINQ 可表达**（含 JOIN / 分页 / 固定语义查询）→ `BaseRepository<T>` 上的 LINQ 方法语法，默认路径。
+2. **固定 SQL 的报表 / 多结果集 / 分页原生查询** → `Common.Dapper`（基线 0.2.0）：`AddDapper()`（Service 组合根注册）后注入 `IDapperRepository`——`QueryAsync<T>` / `QueryPagedAsync<T>` / `QueryMultipleAsync` / `ExecuteInTransactionAsync`。用它替代手写 Dapper 或 `FromSql`；实体 CRUD 仍走 `IBaseRepository`，不因「Dapper 快」迁移既有 EF 路径。
+3. **查询条件、表名或 SQL 模板运行时可配置（元数据驱动查询），或需要 SQL 解析 / 改写 / 权限条件注入** → `Azrng.DynamicSqlBuilder` + `Azrng.JSqlParser`：前者按条件片段列表（含 IN/NOT IN、排序、分页、COUNT）参数化拼装 `Sql + DynamicParameters`，后者把 SQL 解析为强类型 AST 做改写（如自动注入权限 WHERE）。引用形态：`Azrng.DynamicSqlBuilder` 独立成工程、随解决方案 ProjectReference 引入，`Azrng.JSqlParser` 为 NuGet 包。**触发门槛**：组件是独立工程且体量大，纯 CRUD 项目不引入；连接池等基础设施细节（如 `NpgsqlConnection` 对象池）同样收敛在 Storage/组合根，不向业务层暴露。
+4. **行锁（`FOR UPDATE`）等单一事务原语** → 维持现行口径：AppService 注入 DbContext，`BeginTransactionAsync()` + `FromSqlInterpolated`。
+
+NEVER 手拼查询条件字符串（`$" ... WHERE {field} = '{value}'"` 式注入面）；条件拼装交 Dapper 参数或 DynamicSqlBuilder 的 `DynamicParameters`。
+
 ## SQL 脚本迁移（Azrng.SqlMigration）
 
 数据库 schema 变更用 SQL 脚本版本化管理（不走 EF Core 的 Code-First Migrations）。装 `Azrng.SqlMigration` 包，应用启动时自动按版本顺序执行未应用的脚本，已执行的记在版本日志表、不重复跑。
 
-**安装**（Service 项目）：
+**安装**（Service 项目，当前基线 0.6.1）：
 ```bash
 dotnet add package Azrng.SqlMigration
 ```

@@ -1,6 +1,6 @@
 ---
 name: onion-architecture
-description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, background tasks (BackgroundService workers), and the cross-cutting AppService conventions — global result-packing, paged queries, and JWT authn/authz. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration/BackgroundService worker, wiring DI/middleware through Service Startup, placing business logic vs data-access vs DTOs, designing login/JWT authentication or authorization policy, resolving the current user, or implementing scheduled scan / lifecycle-advance background tasks. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询, 认证, 授权, JWT, IBearerAuthService, FallbackPolicy, AllowAnonymous, ICurrentUser, 当前用户, 后台任务, BackgroundService, Worker, 定时扫描, 多实例."
+description: "Guide for the .NET onion/clean architecture used across Azrng solution templates (Core/IDomain/IApplication/Domain/Application/EntityFramework/Service layers, plus Storage/Adapter). Covers layer responsibilities, dependency direction, background tasks (BackgroundService workers), and the cross-cutting AppService conventions — global result-packing, paged queries, and JWT authn/authz. Use when adding a new feature, deciding which project a class belongs in, creating an AppService/Controller/Entity/Configuration/BackgroundService worker, wiring DI/middleware through Service Startup, placing business logic vs data-access vs DTOs, designing login/JWT authentication or authorization policy, resolving the current user, or implementing scheduled scan / lifecycle-advance background tasks. Keywords: onion architecture, clean architecture, 分层, IApplication vs Application, AppService, IResultModel, 分页查询, 认证, 授权, JWT, IBearerAuthService, FallbackPolicy, AllowAnonymous, ICurrentUser, 当前用户, 后台任务, BackgroundService, Worker, 定时扫描, 多实例, 对象存储, S3Store, 缓存选型, ICacheProvider, 可选包速查."
 ---
 
 # 洋葱架构（Onion / Clean Architecture）分层指南
@@ -99,162 +99,62 @@ slnx 用路径式平铺表达分组——同级多个 `<Folder Name="/src/1.Pres
 6. **接口先行**：每个 AppService 先在 `IApplication` 定义 `IXxxAppService`，再在 `Application` 实现。控制器注入的是接口。
 7. **返回值走全局包装（首选）**：AppService **成功直接 `return Task<T>`（业务对象）**，由 `CustomResultPackFilter` 自动包成 `ResultModel<T>(success)`；**业务校验/规则失败 `throw new ParameterException(msg)`**（或 `LogicBusinessException`），由全局异常中间件 `app.UseGlobalException()` 统一映射成失败结果。控制器一行转发 `return _appService.XxxAsync(...)`。**三件套缺一不可**（见「全局返回包装」）。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 为迁移期可容忍，新代码不再使用。
 
-## 全局返回包装（三件套 + Startup 装配）
+## 全局返回包装（三件套，缺一不可）
 
-这是本架构的**统一对外结果契约**：所有 action 返回值最终都是 `{ isSuccess, isFailure, code, message, data, errors }` 形态的 `ResultModel`，但**业务代码不手动包装**——靠框架三件套自动完成。没有数据或没有错误时，`data` / `errors` 仍可能以空值或空数组输出，按实际序列化配置为准。
+统一对外结果契约：所有 action 返回值最终都是 `{ isSuccess, isFailure, code, message, data, errors }` 形态的 `ResultModel`，但**业务代码不手动包装**——**成功路径靠过滤器，失败路径靠异常中间件**，两者必须都装配，否则失败抛异常会变成裸 500。
 
-### 三件套（来自 `Azrng.AspNetCore.Core`，缺一不可）
+| 件 | 注册 | 负责路径 |
+|---|---|---|
+| 返回值包装过滤器 `CustomResultPackFilter` | `services.AddMvcResultPackFilter("/swagger")` | 成功路径：非 `IResultModel` 返回值自动包成 `ResultModel<T>`；已是 `IResultModel` 不重复包装；`[NoWrapper]` 特性或忽略前缀跳过 |
+| 模型校验过滤器 `ModelVerifyFilter` | `services.AddMvcModelVerifyFilter()` | 模型校验失败 → `ResultModel(false,"参数格式不正确","400", errors)` |
+| 全局异常中间件 `CustomExceptionMiddleware` | `app.UseGlobalException()` | 业务异常 / 未处理异常 → 按类型映射成失败结果 |
 
-| 件 | 注册 | 负责路径 | 行为 |
-|---|---|---|---|
-| 返回值包装过滤器 `CustomResultPackFilter` | `services.AddMvcResultPackFilter("/swagger")` | **成功路径** | action 返回值**非 `IResultModel`** → 包成 `ResultModel<T>(data, true, "success", "200")`；`EmptyResult`→`ResultModel(true,"成功")`；已是 `IResultModel` 则**不重复包装**；`[NoWrapper]` 特性或忽略前缀跳过 |
-| 模型校验过滤器 `ModelVerifyFilter` | `services.AddMvcModelVerifyFilter()` | **模型校验失败** | 把 `ModelState` 错误转成 `ResultModel(false,"参数格式不正确","400", errors)` |
-| 全局异常中间件 `CustomExceptionMiddleware` | `app.UseGlobalException()` | **业务异常 / 未处理异常** | catch 异常，按类型映射成 `ResultModel(false, msg, code)`（见下表） |
+Service 项目用与 `Program.cs` 平级的 `Startup.cs` 装配三件套（`Program.cs` 只负责创建宿主；`Startup` 显式构造函数，禁主构造函数，见「新项目骨架清单」）。**最常见的坑**：只注册了 `AddMvcResultPackFilter` 却忘了 `app.UseGlobalException()`——业务失败会返回裸 HTTP 500。
 
-> **成功路径靠过滤器，失败路径靠异常中间件**——这是全局包装的核心。两者必须都装配，否则失败抛异常会变成裸 500。
+**业务异常速查**（`Azrng.Core.Exceptions`，默认按真实 HTTP 状态码返回；`CommonMvcConfig.UseHttpStateCode = false` 可统一 200）：参数/业务校验失败 `ParameterException`（400）、业务规则 `LogicBusinessException`（400）、资源不存在 `NotFoundException`（404）、未认证 `UnauthorizedException`（401）、无权限 `ForbiddenException`（403）。**ErrorCode 有版本差异**（Azrng.Core ≥ 2.0.0 才与状态码对齐；存量锁 `Common.EFCore` 1.7.x 时传递的旧版 `LogicBusinessException` code 为 `"500"`、`ForbiddenException` 无参构造为 `"401"`）——完整映射表、版本口径与前端判错约定（只判 `isSuccess`，不判 `code`）见 `references/result-packing-and-exceptions.md → 业务异常 → 结果映射`。
 
-### 业务异常 → 结果映射（`CustomExceptionMiddleware`）
-
-| 业务场景 | 抛什么（`Azrng.Core.Exceptions`） | HTTP 状态码 | ErrorCode |
-|---|---|---|---|
-| 参数错误 / 业务校验失败 | `throw new ParameterException(msg)` | 400 | `"400"` |
-| 业务规则不满足（语义同参数异常） | `throw new LogicBusinessException(msg)` | 400 | `"400"` |
-| 资源不存在（按 id 查不到） | `if (entity is null) throw new NotFoundException("记录不存在")` | 404 | `"404"` |
-| 未认证（未登录或凭证无效） | `throw new UnauthorizedException(msg)` | 401 | `"401"` |
-| 已认证但无权限 | `throw new ForbiddenException(msg)` | 403 | `"403"` |
-| 服务器内部错误 | `throw new InternalServerException(msg)` | 500 | `"500"` |
-| 其他未处理异常 | （任何 `Exception`） | 500 | `"500"` |
-
-> 默认按真实 HTTP 状态码返回（400/401/403/404/500）。若要统一返回 200、错误信息只放 body，配 `CommonMvcConfig.UseHttpStateCode = false`。
-
-> **异常 ErrorCode 口径（Azrng.Core 2.0.0 起，NuGet 已发布）**：`LogicBusinessException`/`ParameterException` 全构造 400、`ForbiddenException` 全构造 403、`NotFoundException` 全构造 404，上表按此成立。**注意实际生效版本**：NuGet 上 `Common.EFCore 1.7.1` 的传递依赖是 `Azrng.Core 1.20.1`（传递版本只是下限），只引 EFCore 家族不显式引 Core 时生效的是 1.20.1——需要 2.0.0 口径必须显式 `PackageReference Azrng.Core ≥ 2.0.0`（新项目骨架清单第 1 条已要求 Core.csproj 显式引用，按 2.0.0+ 锁版本）。**旧版（< 2.0.0）差异**：`LogicBusinessException(string message)` 走 `BaseException(string)`，`ResultModel.code` 为 `"500"`（HTTP 仍是 400）；`ForbiddenException` 无参构造的 `ErrorCode` 是 `"401"`——存量项目锁旧版时按旧版实测值处理，不要按上表预期旧版行为；无论哪个版本，前端判错统一按 `isSuccess=false`，不要依赖 code。
-
-> **成功包装保留 action 状态码（Azrng.AspNetCore.Core ≥ 1.6.0）**：`CustomResultPackFilter` 只替换响应体为统一外壳，不再把 `CreatedAtAction`(201)/`Accepted`(202)/`StatusCode(...)` 强制改成 200——但外壳内 `code` 仍是 `"200"`，前端判成功按 `isSuccess`，不要按 `code` 推断 HTTP 状态。
-
-> `AddMvcResultPackFilter` 的忽略前缀按 URI 路径匹配，传值应以 `/` 开头，例如 `/swagger`。传入 `swagger` 可能不影响启动，但在首个结果过滤请求时才抛参数异常。
-
-> **包 API 以锁定版本为准**：Azrng 生态包的注入签名 / 参数单位 / 自动注册范围**以锁定版本解包 XML 或反射探测为准，本文档口径可能滞后于包版本**。已核实的易错事实：`AddMvcResultPackFilter` / `AddMvcModelVerifyFilter` 挂 `IServiceCollection`（不是 `AddControllers().Add…` 链式扩展）；`HttpClientOptions.Timeout` 单位是秒（int，不是 TimeSpan）；`IBearerAuthService` 无自动注册需手动 `AddScoped`；`AddEntityFramework<T>` 已内含 UnitOfWork / Repository / 发号注册，不重复手写。
-
-### Startup 装配（标准模板见 references）
-
-Service 项目使用与 `Program.cs` 平级的 `Startup.cs` 承担依赖注入和中间件管道装配，`Program.cs` 只负责创建宿主、调用 Startup、构建运行，不堆积业务注册与中间件细节。三件套按上表「注册」列装配；完整标准模板（Program.cs / Startup.cs / DotNetEnv `.env` 时序）见 `references/layer-responsibilities.md → Program.cs 与 Startup.cs 分工`，`Startup` 使用显式构造函数（禁主构造函数，见「新项目骨架清单」）。
-
-> **最常见的坑**：只注册了 `AddMvcResultPackFilter` 却忘了 `app.UseGlobalException()`——此时 AppService 抛 `ParameterException` 无人接住，业务失败会返回 HTTP 500，前端拿不到统一失败结构。三件套必须齐备。
-
-### CORS 跨域装配
-
-CORS 优先用 `Azrng.AspNetCore.Core` 内置扩展，不要手写原生 `AddCors`/`AddPolicy`（特殊策略需求除外）：
-
-- **注册（模板默认）**：`services.AddAnyCors()`——`AllowAnyOrigin`，开箱即用，**仅限开发环境**，上线前必须改掉。
-- **生产按需改**：`services.AddCorsByOrigins(string[] allowedOrigins)`——来源白名单走配置（`appsettings.json` 的 `Cors:AllowedOrigins` 节，生产用环境变量 `Cors__AllowedOrigins__N` 覆盖）；空列表 / 含空白项启动即抛 `ArgumentException`，防漏配；`allowCredentials: true` 仅 SignalR / 携带凭证场景。
-- **管道**：`app.UseCorsPolicy()`（默认策略名 `DefaultCors`，两种注册方式通用），放在异常处理 / Swagger / 静态文件之后、`UseAuthentication` / `UseAuthorization` / `MapControllers` 之前。
-- **禁忌**：未注册 CORS 服务就写 `app.UseCors()`，首个跨域请求直接 500；`AddAnyCors` 不得用于生产；`allowCredentials: true` 不得与 `AllowAnyOrigin` 组合。纯后端 / 无跨域需求的项目整体删掉注册与中间件两行，不是必装项。
-- **版本提示**：`Azrng.AspNetCore.Core` 1.5.0 起移除了 `AddCorsPolicy()`（与框架原生 `services.AddCors(o => o.AddPolicy(...))` 完全等价）——高级自定义策略直接用原生 `AddCors` 注册，策略名与 `app.UseCorsPolicy(策略名)` 对齐即可；存量模板里仍见 `AddCorsPolicy` 说明包版本 < 1.5.0，升级时按原生写法迁移。
-
-### Swagger 与静态文件装配
-
-Swagger 注册用 `services.AddDefaultSwaggerGen(title: "项目名称", showJwtToken: ...)`（Azrng.Swashbuckle，禁止直接引 Swashbuckle.AspNetCore；签名以锁定版本为准，当前基线 0.4.0，源码核实）。`showJwtToken` 默认 `false`：开启会向 OpenAPI 文档声明全局 Bearer 安全要求、改变接口契约——**仅在认证方案就绪后传 `true`**，并与 `app.UseAuthentication()` / `app.UseAuthorization()` 一起验证；无认证的服务保持默认（见「新项目骨架清单」）。`UseDefaultSwagger` 行为细节（`onlyDevelopmentEnabled` 语义、默认路由前缀、`/swagger` 前缀写法、联调页静态文件）见 `references/layer-responsibilities.md → Swagger 与静态文件装配`。
-
-### 默认健康检查控制器
-
-Service 项目默认提供 `HealthController`（`alive` / `ready` 双探针）：`alive` 只表示进程仍能响应，`ready` 表示已完成启动——若 `ready` 需核对数据库等依赖，必须在端点内接入对应检查，不要让 `alive` 依赖外部服务。两个探针必须 `[NoWrapper]` 返回裸 JSON。完整模板见 `references/layer-responsibilities.md → 默认健康检查控制器`。
-
-### 文件下载与原始响应
-
-`NoWrapperAttribute` 位于 `Azrng.AspNetCore.Core.Filter`。包装过滤器本身会自动跳过 `FileResult`，因此 `return File(...)` 通常不需要 `[NoWrapper]`；action 返回其它原始 `IActionResult` 时可显式加 `[NoWrapper]` 保护。示例见 `references/layer-responsibilities.md → 文件下载与原始响应`。
+> **包 API 以锁定版本为准**：Azrng 生态包的注入签名 / 参数单位 / 自动注册范围**以锁定版本解包 XML 或反射探测为准，本文档口径可能滞后于包版本**（已核实的易错事实清单见 `references/result-packing-and-exceptions.md`）。
 
 ### AppService / 控制器写法（全局包装模式）
 
-```csharp
-// 接口（IApplication）：返回裸 Task<T>，不出现 IResultModel
-public interface IOrderAppService
-{
-    Task<OrderDto> GetAsync(long id);                 // 成功返 DTO
-    Task<long> CreateAsync(CreateOrderRequest req);   // 成功返 id
-    Task DeleteAsync(long id);                        // 无返回数据
-}
+接口返回裸 `Task<T>`（不出现 `IResultModel`）；实现成功直接 `return`、失败 `throw` 业务异常；控制器一行转发（块体 + `return`，不用表达式体，不写 `Ok()` / `ResultModel`）：
 
-// 实现（Application）：成功直接 return；失败 throw 业务异常（不要手写 ResultModel.Error）
+```csharp
 public async Task<OrderDto> GetAsync(long id)
 {
     var order = await _repository.EntitiesNoTacking.FirstOrDefaultAsync(x => x.Id == id);
-    if (order is null)                                  // 资源不存在 → 404；is null 检查原生收窄可空流分析
-        throw new NotFoundException("订单不存在");
-    return new OrderDto { /* 直接使用 order 完成实体→DTO 映射，无需断言 */ };
+    if (order is null)
+        throw new NotFoundException("订单不存在");        // 资源不存在 → 404
+    return new OrderDto { /* 直接用 order 映射，is null 检查原生收窄可空流分析 */ };
 }
 
-public async Task<long> CreateAsync(CreateOrderRequest req)
-{
-    if (req.Amount <= 0)
-        throw new ParameterException("金额必须大于 0");   // 业务校验失败 → 400
-    var order = new Order { /* ... */ };
-    await _repository.AddAsync(order, submit: true);
-    return order.Id;                                     // 成功 → 过滤器包成 ResultModel<long>(success)
-}
-```
-
-```csharp
-// 控制器（Service）：一行转发，不写 Ok() / 不写 ResultModel（块体 + return，不用表达式体）
 [HttpGet("{id}")]
 public Task<OrderDto> Get(long id)
 {
-    return _orderAppService.GetAsync(id);
-}
-
-[HttpPost]
-public Task<long> Create([FromBody] CreateOrderRequest req)
-{
-    return _orderAppService.CreateAsync(req);
+    return _orderAppService.GetAsync(id);                // 控制器一行转发
 }
 ```
 
-> 关于 `IResultModel<T>`（历史/迁移期）：旧代码里 AppService 返回 `Task<IResultModel<T>>`、手动 `ResultModel<T>.Success/Error`，仍能工作（过滤器不重复包装），迁移期可与全局包装共存。但新代码统一用全局包装：更省事、控制器/AppService 一行转发。逐步替换即可。
+完整结对示例（接口/实现/控制器三方）见 `references/result-packing-and-exceptions.md → AppService / 控制器写法`。历史写法 `Task<IResultModel<T>>` 手动 `Success/Error` 迁移期可共存（过滤器不重复包装），新代码不再使用。
+
+### 其他入口层装配（细则见 references）
+
+- **CORS**：优先用包内置扩展——开发 `services.AddAnyCors()`、生产 `services.AddCorsByOrigins(白名单)`，管道 `app.UseCorsPolicy()` 放在认证之前；禁忌与版本提示见 `references/result-packing-and-exceptions.md → CORS 跨域装配`。
+- **Swagger**：`services.AddDefaultSwaggerGen(title: ...)`（Azrng.Swashbuckle，禁止直接引 Swashbuckle.AspNetCore）；`showJwtToken` 默认 `false`，仅认证方案就绪后传 `true`；行为细节见 `references/layer-responsibilities.md → Swagger 与静态文件装配`。
+- **健康探针**：`HealthController`（`alive`/`ready`）必须 `[NoWrapper]` 返回裸 JSON，`alive` 不依赖外部服务；模板见 `references/layer-responsibilities.md → 默认健康检查控制器`。
+- **文件下载/原始响应**：`return File(...)` 过滤器自动跳过；其它原始 `IActionResult` 显式加 `[NoWrapper]`（`Azrng.AspNetCore.Core.Filter`）。
 
 ## 认证与授权（JWT）
 
-登录 / 鉴权是与全局包装、分页同级的横切约定。**设计认证方案时先读本节**，不要按通用经验选裸 `Microsoft.AspNetCore.Authentication.JwtBearer` 再自写 `JwtTokenProvider`——那会绕开包内置的密钥校验、统一响应与 token 生命周期管理，产生一次设计返工。
+登录 / 鉴权是与全局包装、分页同级的横切约定。**设计认证方案时先读 `references/authentication-jwt.md`**（包选型理由、Startup 装配实测模板、FallbackPolicy 细节），不要按通用经验选裸 `Microsoft.AspNetCore.Authentication.JwtBearer` 再自写 `JwtTokenProvider`——那会绕开包内置的密钥校验、统一响应与 token 生命周期管理，产生一次设计返工。
 
-### 包选型与用法
+硬约束速记：
 
-- 认证包用 `Azrng.AspNetCore.Authentication.JwtBearer`（Service.csproj 引用），**禁止**裸引 `Microsoft.AspNetCore.Authentication.JwtBearer` + 自写 token 生成器。
-- 生成 / 校验 token 走 `IBearerAuthService`：登录用例所在 AppService 注入它发 token；它**没有自动注册**，需在 Startup 手动 `services.AddScoped<IBearerAuthService, JwtBearerAuthService>()`。
-- JWT 密钥要求 **≥32 位且 ≥8 种字符**（旧包文档「≥16」口径已过期，以锁定版本包内校验器实测为准）。
-- 需要「操作者从已认证身份解析」时，直接用 `Azrng.Core` 的 `ICurrentUser<TSubject>`（见「当前用户上下文」），禁止自造同名抽象。
-
-### Startup 装配（实测形态）
-
-```csharp
-// RegisterServices 内
-services.Configure<JwtTokenConfig>(options =>
-{
-    options.JwtSecretKey = configuration["Jwt:SecretKey"]!;   // ≥32 位且 ≥8 种字符
-    options.ValidTime = TimeSpan.FromMinutes(120);
-});
-services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearerAuthentication(jwtBearerEventsAction: events =>
-    {
-        events.UseJwtBearerDefaultResponses();                 // 401/403 统一响应形态
-    });
-services.AddScoped<IBearerAuthService, JwtBearerAuthService>();
-```
-
-签名与配置节名以锁定版本为准（见「包 API 以锁定版本为准」）。
-
-### 授权默认拒绝（FallbackPolicy 全局兜底）
-
-「默认拒绝」不靠逐端点挂 `[Authorize]`——逐点标注属「默认放开、显式收紧」，新增端点忘标即静默匿名。用全局回退策略兜底：
-
-```csharp
-services.AddAuthorization(options =>
-{
-    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-});
-```
-
-- 匿名例外端点（登录、健康探针）显式 `[AllowAnonymous]`；整控制器均无鉴权需求（如 HealthController）标注上移到控制器类级，不逐动作重复挂。
-- 认证方案就绪后 Swagger 的 `showJwtToken` 才传 `true`（见「Swagger 与静态文件装配」）。
+- 认证包用 `Azrng.AspNetCore.Authentication.JwtBearer`（当前基线 1.5.0），**禁止**裸引微软包 + 自写 token 生成器。
+- 发 token 走 `IBearerAuthService`（登录用例所在 AppService 注入）；**无自动注册**，需在 Startup 手动 `services.AddScoped<IBearerAuthService, JwtBearerAuthService>()`。
+- JWT 密钥 **≥32 位且 ≥8 种字符**（旧包「≥16」口径已过期，以锁定版本包内校验器实测为准）。
+- 「操作者从已认证身份解析」直接用 `Azrng.Core` 的 `ICurrentUser<TSubject>`（见 `references/layer-responsibilities.md → 当前用户上下文`），禁止自造同名抽象。
+- 「默认拒绝」用全局 `FallbackPolicy`（`RequireAuthenticatedUser`）兜底，**不靠**逐端点挂 `[Authorize]`；匿名例外（登录、健康探针）显式 `[AllowAnonymous]`。认证就绪前 Swagger `showJwtToken` 保持 `false`。
 
 ## 分页查询最佳实践
 
@@ -270,45 +170,8 @@ services.AddAuthorization(options =>
 | 总数引用容器 | `RefAsync<int>` | `Azrng.Core.CommonDto` |
 | 分页结果（`Rows` + `PageInfo`） | `GetQueryPageResult<T>` | `Azrng.Core.Results` |
 
-### 标准写法（AppService）
+**两个必错点**：`ToPageListAsync` 返回 `Task<List<T>>` 而非分页结果，必须再用 `new GetQueryPageResult<T>(list, new GetQueryPageResult(request, total))` 组装（`RefAsync<int>` 有到 `long` 的隐式转换）；完整标准写法（请求类 + AppService 链式查询、全部 using）见 `references/paging-and-json.md → 分页标准写法`。
 
-```csharp
-using Azrng.Core.CommonDto;
-using Azrng.Core.DependencyInjection;
-using Azrng.Core.Extension;
-using Azrng.Core.Requests;
-using Azrng.Core.Results;
-using Azrng.EFCore;
-using Azrng.EFCore.Extensions;
-using Microsoft.EntityFrameworkCore;
-
-// 1) 请求类继承 GetPageRequest，只声明业务筛选字段（PageIndex/PageSize 由基类提供）
-public class EmployeeListRequest : GetPageRequest
-{
-    public string? Username { get; set; }
-    public string? Role { get; set; }
-}
-
-// 2) AppService：链式 WhereIfNotNullOrWhiteSpace + ToPageListAsync，返回 GetQueryPageResult<Dto>
-public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequest request)
-{
-    var total = new RefAsync<int>();                 // 接收总数
-    var list = await _repository.EntitiesNoTacking.Where(e => !e.Deleted)
-        .WhereIfNotNullOrWhiteSpace(request.Username, t => t.Username.Contains(request.Username!))
-        .WhereIfNotNullOrWhiteSpace(request.Role, t => t.Role == request.Role)
-        .OrderByDescending(e => e.CreateTime)
-        .Select(t => new EmployeeDto { Id = t.Id, Username = t.Username, /* ... */ })
-        .ToPageListAsync(request, total);            // 内部一次 Count + Skip/Take
-
-    return new GetQueryPageResult<EmployeeDto>(list, new GetQueryPageResult(request, total));
-    // 或等价的四参构造：new GetQueryPageResult<EmployeeDto>(list, request.PageIndex, request.PageSize, total);
-}
-```
-
-> `ToPageListAsync` 实际返回 `Task<List<T>>`，不是分页结果对象；必须再用 `new GetQueryPageResult<T>(list, new GetQueryPageResult(request, total))` 或四参数构造函数组装分页结果。完整 using 为 `Azrng.Core.CommonDto`、`Azrng.Core.Extension`、`Azrng.Core.Requests`、`Azrng.Core.Results`、`Azrng.EFCore.Extensions`。
-
-> `RefAsync<T>` 有到 `T` 的隐式转换，所以 `new GetQueryPageResult(request, total)` 里 `RefAsync<int>` 可直接当 `long totalCount` 用。
-> 返回的 `GetQueryPageResult<Dto>` 经全局包装过滤器自动包成 `ResultModel<GetQueryPageResult<EmployeeDto>>(success)`，前端拿到 `{ isSuccess, data: { rows:[...], pageInfo:{ pageIndex, pageSize, total, totalPage } } }`。
 > 分页/条件扩展 API 的完整签名（`PagedBy`、`WhereIfNotNull<T,F>`、`WhereAny` 等）见 azrng-efcore skill「分页/条件查询扩展」。
 
 ## 领域服务 DomainService（可复用公共操作）
@@ -345,7 +208,7 @@ public async Task<GetQueryPageResult<EmployeeDto>> GetListAsync(EmployeeListRequ
 
 应用层和领域契约层不接受 `IFormFile`、`HttpContext` 等 ASP.NET 类型。文件上传时，在 `IApplication/{业务域}Manager/Dto/` 定义只包含业务数据的 Command（例如 `FileName`、`Size`、`Stream`；仅本业务域使用，不放 `Core/Models`），由 Controller 把 `IFormFile` 适配后再调用 AppService。
 
-存储能力接口定义在 `Core`（例如 `Core/Storage/IMaterialStorage.cs`；接口放 Core 后 Application / Domain 通过 Core 中的接口使用存储能力），本地磁盘或对象存储实现放在 `Storage` 项目。Service 组合根负责注册实现；禁止 Controller 绕过业务层直接调用存储实现。
+存储能力接口定义在 `Core`（例如 `Core/Storage/IMaterialStorage.cs`；接口放 Core 后 Application / Domain 通过 Core 中的接口使用存储能力），本地磁盘或对象存储实现放在 `Storage` 项目。Service 组合根负责注册实现；禁止 Controller 绕过业务层直接调用存储实现。对象存储落地默认用生态既有包 `Azrng.S3Store`（选型与触发门槛见「何时该拆/不该拆」之「基础设施可选包速查」），不要手写 S3 SDK 调用。
 
 ```csharp
 // 文件：IApplication/MaterialManager/Dto/MaterialUploadCommand.cs —— 仅 Material 业务域使用，非跨域通用，不放 Core/Models
@@ -394,24 +257,9 @@ public Task<MaterialDto> Upload(IFormFile file)
 
 ## JSON 序列化（IJsonSerializer）
 
-需要 JSON 序列化时，统一注入 `IJsonSerializer`（`Azrng.Core.IJsonSerializer`），**不要在各处直接用 `JsonSerializer`/`JsonConvert`**——底层切换 STJ↔Newtonsoft 只改一处。API：`ToJson<T>(obj)`、`ToObject<T>(json)`、`Clone<T>(obj)`（深拷贝）、`ToList<T>(json)`。
+需要 JSON 序列化时，统一注入 `IJsonSerializer`（`Azrng.Core.IJsonSerializer`），**不要在各处直接用 `JsonSerializer`/`JsonConvert`**——底层切换 STJ↔Newtonsoft 只改一处（Service 项目换实现包 + `ConfigureDefaultJson()` 注册）。API：`ToJson<T>` / `ToObject<T>` / `Clone<T>` / `ToList<T>`。
 
-- 实现 + 注册：`Azrng.Core.Json`（System.Text.Json 实现 `SysTextJsonSerializer`，推荐、AOT 友好）或 `Azrng.Core.NewtonsoftJson`（`NewtonsoftJsonSerializer`，兼容旧代码）。Service 项目装实现包后 `builder.Services.ConfigureDefaultJson();`（`using Azrng.Core.Json;`）注册。
-- 默认配置（`DefaultJsonSerializerOptions`）：驼峰命名、不转义中文（`UnsafeRelaxedJsonEscaping`）、忽略循环引用。
-- **HTTP 响应的 long→string 需单独配置**：`ConfigureDefaultJson` 只注册 `IJsonSerializer` 及其 options，**不碰 MVC 的 `AddJsonOptions`**，控制器的 JSON 响应序列化由 MVC 自己的 `JsonOptions` 决定。雪花 long 主键超出 JS `2^53` 精度，前端拿数字 id 会精度丢失——需要在 HTTP 响应中 long→string 时，必须在 MVC 层自行注册：
-
-```csharp
-// Service/Startup.cs 的 RegisterServices：为 MVC 响应启用 long→string，防前端精度丢失
-// 包内置转换器在 Azrng.Core.Json.JsonConverters 命名空间（using Azrng.Core.Json.JsonConverters;）
-services.AddControllers().AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.Converters.Add(new LongToStringConverter());
-});
-```
-
-也可在 Service/Filters/LongToStringJsonConverter.cs 自定义转换器（入口层横切关注，不入侵业务层）：`JsonConverter<long>`，Write 时 `value.ToString(CultureInfo.InvariantCulture)`，Read 时 `long.Parse`。若还要覆盖 `long?` / `IEnumerable<long>` 等形态，用 `JsonConverterFactory` 按请求类型分发。
-
-> 业务层依赖 `IJsonSerializer` 接口；切换底层只改 Service 项目装的实现包 + 注册，不波及业务。
+**易踩坑**：`ConfigureDefaultJson` 不碰 MVC 的 `AddJsonOptions`——HTTP 响应里雪花 long 主键超 JS `2^53` 会精度丢失，需要 long→string 时必须在 MVC 层单独注册转换器；装配代码与自定义转换器写法见 `references/paging-and-json.md → JSON 序列化`。
 
 ## 新增一个完整 CRUD 功能的标准流程
 
@@ -451,7 +299,17 @@ services.AddControllers().AddJsonOptions(options =>
 - **读取用 `Entities` 还是 `EntitiesNoTacking`？** 只读查询默认 `EntitiesNoTacking`（不带追踪、更快）；读出来还要改并回写才用 `Entities`。
 - **读查询要不要包事务？** 默认**不包**。① 单语句读（含 join / 相关子查询 / GROUP BY）不需要事务——READ COMMITTED 下每条语句自带一致快照（PostgreSQL / MySQL 恒成立；SQL Server 需开启 RCSI，默认锁定读下长扫描仍可能撕裂），包事务只是白钉连接；② 需要跨语句一致的读，优先折进单语句表达（把第二批读做成 join / 子查询），其次靠写侧 CAS + 唯一约束 + 「读 → 外部调用 → 重读复检」栅栏——快照追不上"展示之后"的世界，不是权威防线；③ 事务级快照（RepeatableRead / Serializable）仅用于「多条语句结果必须互相一致、不一致会引发错误行为」的场景，隔离级别必须能说出对应不变量，说不出不包；④ NEVER 把外部调用（SSO / HTTP / 第三方）圈进读事务；事务内发布**进程内**领域事件（如 MediatR 通知）不违规，但 handler 同步执行会拉长持锁窗口，能挪到事务提交后再发就挪；NEVER 把重读栅栏的首读与复检放进同一个 RR 快照（复检会命中同一旧快照，栅栏失效——两次复检必须在两个独立事务）；⑤ 写路径默认 ReadCommitted + 唯一键/检查约束冲突翻译成业务文案，SERIALIZABLE 仅显式 SSI 需求点。
 - **事务该用 `IUnitOfWork` 还是直接注入 DbContext？** 多步原子写优先用 `IUnitOfWork.CommitTransactionAsync(async () => {...})`（自动开/提交/回滚）。目标仓库已有统一事务助手（含并发冲突 → 业务异常翻译）时一律走助手，不手写 Begin/Commit、不逐处自捕 `23505`/`40001`，**也不自建私有事务包装副本**（把助手代码复制进 AppService/DomainService 改名重用、或同解决方案并存多套 `InTransactionAsync` 式包装——第二套出现，冲突翻译/超时/隔离级别口径必然漂移）。只有需要原生 SQL / `FOR UPDATE` 行锁（如并发扣库存/抢购）才让 AppService 注入 DbContext 用 `BeginTransactionAsync()` + `FromSqlInterpolated`——这是 DbContext 跨层注入的少数合理场景。
+- **LINQ 之外的原生 SQL 怎么走？** 普通 JOIN、分页、固定语义查询走 `IBaseRepository` + 自定义仓储（azrng-efcore skill）；固定 SQL 的报表 / 多结果集 / 分页原生查询用 `Common.Dapper` 替代手写 Dapper / `FromSql`；查询条件、表名或 SQL 模板**运行时可配置**（元数据驱动查询）、或需要 SQL 解析/改写/权限条件注入时用 `Azrng.DynamicSqlBuilder` + `Azrng.JSqlParser`，不手写字符串拼接；手写 `FromSql` 拼接仅限行锁等单一事务原语场景（维持上一条口径）。选型细则与触发门槛见 azrng-efcore skill「自定义仓储」；均为可选项，纯 CRUD 项目不引入。
 - **控制器能不能调多个 AppService？** 可以，但要警惕——若一个请求要协调多个服务完成一个事务，说明该把编排逻辑下沉到一个 AppService（用 `IUnitOfWork` 包事务），控制器只调这一个。
+- **基础设施可选包速查**（均为可选项，不进「新项目骨架清单」；命中触发条件才引入，注册一律在 Service 组合根；包 API 以锁定版本解包 XML/源码为准）：
+
+  | 需求 | 选型 | 注册与落层 | 触发门槛 |
+  |---|---|---|---|
+  | 分布式缓存 / 跨实例共享缓存 | `Common.Cache.Redis`（基线 3.1.0，`AddRedisCacheStore(Action<RedisCacheOptions>)` 注册 `IRedisProvider`/`ICacheProvider` 单例，KeyPrefix 隔离、含发布订阅） | 业务层依赖 `ICacheProvider` 接口（`Azrng.Cache.Core`）；引入 Redis 才新建 `Cache` 项目（与「该不该新建项目」一致） | 纯单实例用框架自带 `IMemoryCache` 即可，**不引包** |
+  | 对象存储落地 | `Azrng.S3Store`（基线 1.2.0，`AddS3Store(连接串 \| Action<S3StoreConfig>)`，`IStore`：上传/下载落盘/预签名 URL/桶策略，兼容 AWS/MinIO/OSS/COS） | 能力接口仍按「文件上传与外部存储」节定义在 Core，`S3Store` 实现注册在组合根、细节收敛 Storage | 对象存储需求出现时默认用本包，不再手写 SDK 调用 |
+  | 固定 SQL 报表 / 多结果集 / 分页原生查询 | `Common.Dapper`（基线 0.2.0，`AddDapper()` 注册 `IDapperRepository`：QueryAsync/QueryPagedAsync/多结果集/ExecuteInTransactionAsync） | 实现收敛 Storage 层自定义仓储 | 实体 CRUD 仍走 `IBaseRepository`，**不因「Dapper 快」迁移既有 EF 路径** |
+  | 运行时可配置动态 SQL / SQL 解析改写 | `Azrng.DynamicSqlBuilder` + `Azrng.JSqlParser`（细则见 azrng-efcore skill「自定义仓储」） | 实现落 Storage 层自定义仓储，连接池等基础设施细节收敛 Storage/组合根 | 组件体量大且独立成工程，**纯 CRUD 项目不引入** |
+  | SettingConfig 配置中心保护 | `Azrng.SettingConfig.BasicAuthorization`（基线 1.3.0，`AddSettingConfig(options => options.Authorization = new[] { new BasicAuthAuthorizationFilter(...) })`，多用户、密码 SHA1 哈希、可强制 SSL） | 依附 `Azrng.SettingConfig` 注册点 | 项目引入 SettingConfig 时**必须**挂认证，Dashboard 裸奔视为缺陷；未引入不涉及 |
 
 ## 依赖注入与中间件装配（Startup）
 
@@ -505,5 +363,8 @@ public class ProductAppService : IScopedDependency, IProductAppService  // ← I
 
 ## 深入参考
 
-- **各层职责详细对照 + 跨层数据流 + 完整代码示例（全局包装 / 分页写法 / Startup 与 Swagger 装配模板 / 健康探针 / 文件下载）**：见 references/layer-responsibilities.md
+- **各层职责详细对照 + 跨层数据流 + 完整代码示例（Startup 与 Swagger 装配模板 / 健康探针 / 文件下载 / 当前用户上下文）**：见 references/layer-responsibilities.md
+- **全局返回包装细则（三件套行为细节、异常映射全表与版本口径、CORS 禁忌、AppService/控制器完整结对示例）**：装配入口层或处理返回契约时读 references/result-packing-and-exceptions.md
+- **认证与授权（JWT）装配细则（包选型理由、Startup 模板、FallbackPolicy）**：设计登录 / 鉴权方案时读 references/authentication-jwt.md
+- **分页标准写法 + JSON 序列化 long→string 装配**：写列表查询 / 序列化定制时读 references/paging-and-json.md
 - **数据访问（仓储/工作单元/实体基类/配置类/DbContext + 分页条件扩展 API）细节**：用 azrng-efcore skill

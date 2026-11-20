@@ -39,3 +39,12 @@
 ## 回执（已同步测试项目）
 
 15 条全部采纳（汇总条并入），规则版本 3.15.0；测试项目 `.ai-rule-feedback.md` 已清空，`--upgrade` 重放同步新规则与技能。
+
+## 补充批（3.15.1）：技能包版本基线对齐 T-005
+
+测试项目 T-005（Azrng/Common 包对齐最新）后技能里的版本基线滞后，按测试项目 csproj 锁定版本 + `C:\Work\gitee\nuget-packages` 源码仓库核实订正：
+
+- azrng-efcore：`Common.EFCore` 1.7.1 → **1.8.0**、`Common.EFCore.PostgresSql` 1.7.2 → **1.8.0**（安装示例 3 处 + 基线句，注明 2026-11 实测项目锁定验证）；`Azrng.SqlMigration` 安装处补基线 **0.6.1**（「0.6.0+」下限表述本就兼容）
+- onion：ErrorCode blockquote 的传递依赖叙述改写（新基线 1.8.0 与 Azrng.Core 2.0.0 同批，1.20.1 下限坑只影响锁 1.7.x 的存量项目）；layer-responsibilities 示例 `Azrng.Core` 1.20.1 → **2.0.0**；JWT 节补 `Azrng.AspNetCore.Authentication.JwtBearer` 基线 **1.5.0**
+- fragments 侧核对无需改（swagger.md 0.4.0、core-libs.md HttpClients 4.2.0 与实测一致）
+- 纯技能变更：升 3.15.1 + 刷基线（214 条全 AGENTS 家族，签名与 3.15.0 批一致）；273 测试与 --check 37 样例全绿
