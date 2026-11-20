@@ -1,7 +1,7 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "3.20.0",
+    "version": "3.21.0",
     "last_updated": "2026-11-20"
   },
   "schema_version": 3,
@@ -52,7 +52,7 @@
     { "id": "flutter-add-widget-test", "group": "Flutter", "when": { "frontend": "flutter" } },
     { "id": "flutter-improve-design", "group": "Flutter", "when": { "frontend": "flutter" } },
     { "id": "flutter-motion", "group": "Flutter", "when": { "frontend": "flutter" } },
-    { "id": "grill-me", "group": "通用工具", "when": { "form": ["backend-only", "library", "web", "desktop", "mobile", "static", "general"] } },
+    { "id": "grill-me", "group": "通用工具", "when": { "form": ["backend-only", "library", "web", "desktop", "daemon", "mobile", "static", "general"] } },
     { "id": "systematic-debugging", "group": "通用工具" },
     { "id": "brainstorming", "group": "通用工具" },
     { "id": "skill-creator", "group": "通用工具" },
@@ -284,6 +284,11 @@
       }
     },
     {
+      "id": "daemon",
+      "label": "后台常驻服务",
+      "desc": "无界面常驻 .NET 进程（Windows 服务 / systemd / 容器 worker）"
+    },
+    {
       "id": "hybrid-app",
       "label": "跨平台混合桌面",
       "desc": "Web 前端 + 原生/托管后端的打包桌面应用",
@@ -406,6 +411,10 @@
         "desktop": {
           "label": "桌面应用",
           "desc": "Windows / 跨平台桌面客户端"
+        },
+        "daemon": {
+          "label": "后台常驻服务",
+          "desc": "无界面常驻进程：Windows 服务 / systemd / 容器 worker"
         },
         "mobile": {
           "label": "移动应用",
@@ -2397,6 +2406,103 @@
       ]
     },
     {
+    "id": "dotnetWorker",
+    "kind": "form",
+    "label": ".NET 后台常驻服务",
+    "desc": "BackgroundService 常驻作业（Windows 服务 / systemd / 容器 worker）",
+    "when": {
+      "form": "daemon",
+      "backend": "dotnet",
+      "frontend": "none",
+      "shell": "none",
+      "arch-style": "single",
+      "blazor-flavor": "none",
+      "ai-capability": "no"
+    },
+    "family": "daemon",
+    "root": {
+      "subrule-index": [
+        "| 文件 | 适用范围 | 何时阅读 |",
+        "| --- | --- | --- |",
+        "| `application-AGENTS.md` | Worker、Service、配置、日志、并发幂等与测试 | 涉及服务实现与验证时 |",
+        {
+          "line": "| `infrastructure-AGENTS.md` | 数据访问、安装部署、日志落点、构建发布链路 | 涉及数据库、服务安装、配置、打包或交付时 |",
+          "features": [
+            "infra"
+          ]
+        },
+        {
+          "line": "| `doc-AGENTS.md` | 需求文档、作业契约与运维说明 | 涉及需求整理、文档维护或归档时 |",
+          "features": [
+            "doc"
+          ]
+        }
+      ],
+      "dev-stage": [
+        "### 三个阶段",
+        "",
+        "```text",
+        "阶段 0          阶段 1                阶段 2",
+        "设计文档   →   服务与作业实现     →   验证与交付",
+        "（用户确认）    （服务实现角色）        （交付验证角色）",
+        "```",
+        "",
+        "- 新功能需经过完整阶段流程，以下场景可简化或跳过阶段 0：",
+        "  - Bug 修复",
+        "  - 轻量配置、环境变量或部署脚本调整",
+        "  - 单个字段增删改，且不引入新作业或新业务流程",
+        "- 除上述场景外，各阶段必须满足入场条件后方可进入下一阶段",
+        "- 阶段括号仅表示推荐职责角色，不绑定具体 AI 工具；单 Agent 场景下可在满足门控条件后连续执行各阶段",
+        "",
+        "### 阶段职责",
+        {
+          "line": "- 阶段 0：需求整理、作业契约与运维说明，细则见 `doc-AGENTS.md`",
+          "features": [
+            "doc"
+          ]
+        },
+        "- 阶段 1：Worker、Service、配置、日志与测试，细则见 `application-AGENTS.md`",
+        {
+          "line": "- 阶段 2：构建、安装、启停验证与交付收口，结合当前文件与 `infrastructure-AGENTS.md`",
+          "features": [
+            "infra"
+          ]
+        }
+      ],
+      "reading-order": [
+        "1. 先读当前文件，确认全局规则、任务阶段和交付要求。",
+        "2. 根据任务类型命中对应子规则，不预读全部文件。",
+        "3. 再阅读相关模块与现有实现，确认复用点后再动手。"
+      ],
+      "understanding-checklist": [
+        "- 涉及服务实现时，已查看相关 Worker、Service、配置、日志、DTO 和现有测试"
+      ],
+      "contract-error-line": "阶段 0 输出的需求说明、作业契约或配置项定义在阶段 1 发现缺口时，应先回到契约变更流程，修改需求说明 / 作业与配置定义后同步 Worker、Service、测试和相关文档，再继续实现；不得绕过契约直接补临时字段",
+      "search-nouns": "Worker、Service、配置、DTO 和测试实现",
+      "root-scope-nouns": "实现与文档",
+      "context-scope-nouns": "需求说明、服务实现与交付验证",
+      "evidence-nouns": "日志、运行状态、测试和启停验证",
+      "destructive-nouns": "环境清理",
+      "task-kind-nouns": "还是服务实现"
+    },
+    "files": [
+      {
+        "source": "arch/dotnetWorker/application-AGENTS.md",
+        "output": "application-AGENTS.md"
+      },
+      {
+        "source": "arch/dotnetWorker/infrastructure-AGENTS.md",
+        "output": "infrastructure-AGENTS.md",
+        "feature": "infra"
+      },
+      {
+        "source": "arch/dotnetWorker/doc-AGENTS.md",
+        "output": "doc-AGENTS.md",
+        "feature": "doc"
+      }
+    ]
+  },
+    {
       "id": "dotnet-backend-layered",
       "kind": "backend",
       "label": ".NET 分层 API 后端",
@@ -3890,6 +3996,16 @@
     },
     {
       "when": {
+        "form": "daemon"
+      },
+      "require": {
+        "frontend": "none",
+        "shell": "none",
+        "backend": "dotnet"
+      }
+    },
+    {
+      "when": {
         "frontend": "blazor"
       },
       "require": {
@@ -4343,6 +4459,21 @@
         "ai-capability": "no"
       }
     },
+    {
+    "profile": "dotnetWorker",
+    "label": ".NET 后台常驻服务",
+    "desc": "BackgroundService 常驻作业，Windows 服务 / systemd / 容器 worker",
+    "family": "daemon",
+    "selection": {
+      "form": "daemon",
+      "backend": "dotnet",
+      "frontend": "none",
+      "shell": "none",
+      "arch-style": "single",
+      "blazor-flavor": "none",
+      "ai-capability": "no"
+    }
+  },
     {
       "profile": "reactElectronDotNet",
       "label": "React + Electron + .NET 桌面应用",

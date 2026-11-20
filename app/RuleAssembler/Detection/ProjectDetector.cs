@@ -170,6 +170,7 @@ internal sealed class ProjectDetector
         AvaloniaDesktop,
         ElectronNetHost,
         Blazor,
+        WorkerService,
         WebService
     }
 
@@ -202,6 +203,14 @@ internal sealed class ProjectDetector
             || hasRazorFiles)
         {
             return DotnetProjectKind.Blazor;
+        }
+
+        // Worker 服务强特征：专用 SDK 或 Windows 服务托管包；
+        // 普通 Sdk 工程仅引用 Microsoft.Extensions.Hosting（控制台模板默认）不算，避免误判
+        if (content.Contains("Microsoft.NET.Sdk.Worker", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("Microsoft.Extensions.Hosting.WindowsServices", StringComparison.OrdinalIgnoreCase))
+        {
+            return DotnetProjectKind.WorkerService;
         }
 
         if (content.Contains("Microsoft.NET.Sdk.Web", StringComparison.OrdinalIgnoreCase))
@@ -314,6 +323,14 @@ internal sealed class ProjectDetector
                     if (signals.RazorUnderComponents)
                         evidence.Add(new("blazor-flavor", "webapp", "Components/ 目录下发现 .razor 组件（Blazor Web App 结构）"));
                     // 传统 / Web App 之争证据不足时交给补答确认（detect-default 已随旧引擎退役）
+                    continue;
+                case DotnetProjectKind.WorkerService:
+                    // 方案形态已被 UI / 壳定义时，Worker 是辅助工程（桌面 / Web 方案自带的后台任务项目），
+                    // 不声明方案级 daemon 证据（与 WebService 分支同一守卫思路）
+                    if (uiFormDefined || packageRepoDominant)
+                        continue;
+                    evidence.Add(new("form", "daemon", "csproj 使用 Worker SDK / Windows 服务托管（后台常驻服务）"));
+                    evidence.Add(new("backend", "dotnet", "发现 .NET 工程（csproj）"));
                     continue;
                 case DotnetProjectKind.WebService:
                     if (uiFormDefined || packageRepoDominant)

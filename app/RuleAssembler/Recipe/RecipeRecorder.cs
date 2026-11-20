@@ -157,6 +157,7 @@ internal sealed class RecipeRecorder
             "frontend-static" => "node",
             "mobile" => "dotnet",
             "desktop" => "dotnet",
+            "daemon" => "dotnet",
             _ => "minimal"
         };
     }

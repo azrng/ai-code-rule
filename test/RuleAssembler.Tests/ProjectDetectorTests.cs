@@ -217,6 +217,67 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_WorkerSdkProject_RecommendsDotnetWorker()
+    {
+        // Worker SDK 强特征：后台常驻服务（Windows 服务 / systemd / 容器 worker）
+        File.WriteAllText(
+            Path.Combine(_root, "Sync.Service.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Worker\"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("dotnetWorker", result!.SampleProfileId);
+    }
+
+    [Fact]
+    public void Detect_WindowsServicesPackageProject_RecommendsDotnetWorker()
+    {
+        // 普通 SDK + Windows 服务托管包：无专用 SDK 也是 Worker 强特征
+        File.WriteAllText(
+            Path.Combine(_root, "Sync.Service.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Microsoft.Extensions.Hosting.WindowsServices\" Version=\"8.0.0\" /></ItemGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("dotnetWorker", result!.SampleProfileId);
+    }
+
+    [Fact]
+    public void Detect_HostingOnlyConsoleProject_DoesNotRecommendDotnetWorker()
+    {
+        // 仅引用 Microsoft.Extensions.Hosting（控制台模板默认）不构成 daemon 强特征，不得误判为 Worker 服务
+        File.WriteAllText(
+            Path.Combine(_root, "Tool.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Microsoft.Extensions.Hosting\" Version=\"8.0.0\" /></ItemGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.True(result is null || !result.Candidates.Any(candidate =>
+            candidate.SampleProfileId == "dotnetWorker"));
+    }
+
+    [Fact]
+    public void Detect_WpfAppWithWorkerLibrary_KeepsWpfForm()
+    {
+        // WPF 主程序 + Worker 辅助工程：方案形态由 UI 定义，Worker 不声明方案级 daemon 证据
+        Directory.CreateDirectory(Path.Combine(_root, "src"));
+        Directory.CreateDirectory(Path.Combine(_root, "worker"));
+        File.WriteAllText(
+            Path.Combine(_root, "src", "App.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><UseWPF>true</UseWPF><TargetFramework>net8.0-windows</TargetFramework></PropertyGroup></Project>");
+        File.WriteAllText(
+            Path.Combine(_root, "worker", "Sync.Service.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Worker\"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("wpfExe", result!.SampleProfileId);
+    }
+
+    [Fact]
     public void Detect_ProjectWithBothWpfAndWinForms_PrefersWpf()
     {
         // UseWPF 优先生效：WinForms 互操作场景（WPF 工程显式开启 UseWindowsForms）不得被误判为 WinForms 方案
