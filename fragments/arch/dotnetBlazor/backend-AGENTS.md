@@ -132,7 +132,9 @@ Web (Blazor Server) → Application → Domain ← Infrastructure
 
 ### 数据库迁移规则（可选）
 - 使用 `Azrng.SqlMigration` 进行数据库脚本迁移，不使用 EF Core Code-First Migrations。
-- 迁移脚本放在宿主项目下 `Web/MigrationSql/` 目录，文件名按 `版本号.sql` 或 `版本号.txt` 命名（如 `1.0.0.sql`、`1.1.0.txt`），不含描述文字——去掉版本前缀与扩展名后的剩余部分会被整体解析为版本号；按版本号顺序执行。
+- 迁移脚本放在宿主项目下 `Web/MigrationSql/` 目录（项目根下、`wwwroot` 之外），文件名按 `版本号.sql` 或 `版本号.txt` 命名（如 `1.0.0.sql`、`1.1.0.txt`），不含描述文字——去掉版本前缀与扩展名后的剩余部分会被整体解析为版本号；按版本号顺序执行。
+- **迁移脚本目录红线：不得位于 `wwwroot/` 或任何静态服务根之下**——`UseStaticFiles` 默认装配在认证 / 授权之前且无路径限制，`wwwroot` 内任意文件可被匿名 `GET` 直接下载（含全库表结构、种子数据与口令哈希）；`wwwroot` 只放前端静态资源，禁止把 `MigrationSql/` 挪入 `wwwroot` 换发布默认集。
+- **发布产物必含声明**：`Microsoft.NET.Sdk.Web` 默认发布集只含 `wwwroot/**` 与配置文件，非 `wwwroot` 目录的 `.sql` 不进 build / publish 产物——发布环境迁移会静默失效（读不到脚本）。`Web.csproj` 必须显式声明 `<Content Include="MigrationSql/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />`；运行期脚本根按 `ContentRootPath` 相对解析。
 - 通过 `AddSqlMigrationService(...).AddAutoMigration()` 在应用启动时自动执行未应用的脚本；已执行版本由包自动记录在版本日志表，不重复执行，无需手工维护版本表。
 - 已应用的脚本不可修改；结构调整必须新增更高版本号的脚本。
 - 涉及数据的高风险结构变更，建议同步准备回滚脚本并在文档中说明恢复方式。

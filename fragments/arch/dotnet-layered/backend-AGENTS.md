@@ -87,7 +87,7 @@ src/
 | 自定义仓储实现（判定与基类口径见 `EntityFramework（数据访问层）规则`） | `Storage/{业务域}Manager/` | `{实体名}Repository.cs` |
 | EF Core 实体配置 | `EntityFramework/` | `{实体名}Etc.cs`（继承 Azrng 配置基类） |
 | DbContext | `EntityFramework/` | `{项目名}DbContext.cs` |
-| 数据库迁移脚本 | `Service/wwwroot/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
+| 数据库迁移脚本 | `Service/MigrationSql/` | `版本号.sql` / `版本号.txt`，命名细则见 `数据库迁移规则` |
 | 外部服务调用 / 第三方封装 | `Adapter/Services/`；HTTP 客户端包装按需放 `Adapter/HttpClients/` | `{名称}Adapter.cs`、`I{名称}HttpClient.cs` / `{名称}HttpClient.cs` |
 | 跨业务域通用 DTO / 枚举 / 常量 / 工具 | `Core/Models/`、`Core/Enums/` 等 | `{名称}.cs` |
 | 领域业务对象 Bo（领域服务 / 适配器接口签名用） | `IDomain/{业务域}Manager/Bo/`；Adapter 的 Bo 在 `IDomain/Adapter/Bo/{外部系统}/` | `SendSessionMessageBo.cs` |
