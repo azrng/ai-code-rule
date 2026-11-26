@@ -13,7 +13,8 @@ internal sealed record PackResolution(IResourceProvider Provider, string? Versio
 internal static class PackResolver
 {
     private const string LatestFile = "latest.json";
-    private const string EngineAsset = "use-ai-rule.exe";
+    // internal：EngineCache 的登记 / 回退按同一文件名定位缓存内 exe
+    internal const string EngineAsset = "use-ai-rule.exe";
 
     // 默认发布源：GitHub Release latest 端点；环境变量 USE_AI_RULE_PACK_URL 可整体替换（gitee 镜像等）
     private static string BaseUrl =>
@@ -58,14 +59,19 @@ internal static class PackResolver
 
     // 启动时统一更新检查的结论：latest.json 的统一版本对照当前 exe 版本，
     // 引擎轨道额外要求 engine_sha256：静默落位的二进制必须有校验值，
-    // 发布源没给哈希就当引擎没有这个更新（旧发布源场景）
-    internal sealed record UpdateOffer(string Version, string EngineCurrent, string? EngineSha256)
+    // 发布源没给哈希就当引擎没有这个更新（旧发布源场景）。
+    // FromLocalCache = 本机缓存回退产生的 offer（在线检查失败 / --offline）：
+    // 安装阶段禁用网络下载——缓存丢失就放弃本次更新等下次重查（离线下载必然失败）
+    internal sealed record UpdateOffer(
+        string Version, string EngineCurrent, string? EngineSha256, bool FromLocalCache = false)
     {
         public bool HasEngineUpdate => IsNewer(Version, EngineCurrent) && !string.IsNullOrWhiteSpace(EngineSha256);
         public bool HasAnyUpdate => HasEngineUpdate;
 
-        // 确认框文案：只列本次真正会更新的部分
-        public string Describe() => $"程序 {EngineCurrent} → {Version}（替换 exe，重新运行后生效）";
+        // 确认框文案：只列本次真正会更新的部分；本地缓存来源明示「不联网，直接用本机文件」
+        public string Describe() => FromLocalCache
+            ? $"程序 {EngineCurrent} → {Version}（来自本机缓存，替换 exe，重新运行后生效）"
+            : $"程序 {EngineCurrent} → {Version}（替换 exe，重新运行后生效）";
     }
 
     // 启动时统一更新检查：一次 latest.json 拉取，统一版本对照 exe 版本。
@@ -81,7 +87,8 @@ internal static class PackResolver
     }
 
     // 按已确认的更新结论落地安装（唯一轨道：引擎自更新）。返回 true = 安装成功，
-    // 调用方必须退出并提示重跑（否则按启动时加载的旧内容生成会回写降级配方）；失败只告警不阻塞
+    // 调用方必须退出并提示重跑（否则按启动时加载的旧内容生成会回写降级配方）；失败只告警不阻塞。
+    // 本地缓存来源的 offer 禁用下载：缓存丢失（竞态删除等）就放弃本次，下次启动重查
     public static bool ApplyUpdates(UpdateOffer offer, Func<UpdateOffer, bool> confirm)
     {
         if (!offer.HasAnyUpdate || !confirm(offer))
@@ -90,13 +97,15 @@ internal static class PackResolver
             return false;
         }
 
-        return TryUpdateEngine(offer.Version, offer.EngineSha256);
+        return TryUpdateEngine(offer.Version, offer.EngineSha256, allowDownload: !offer.FromLocalCache);
     }
 
     // 引擎在线自更新：共享缓存命中或下载 → SHA-256 校验 → 「运行中 exe 改名 .old + 新 exe 落位」原子替换。
     // 哈希校验是唯一完整性防线：latest.json 缺 engine_sha256（旧发布源）或校验不匹配一律拒绝落位——
-    // 二进制绝不接受未校验字节；参数传调用方刚查到的远端版本与哈希，避免二次网络请求
-    public static bool TryUpdateEngine(string expectedVersion, string? expectedSha256)
+    // 二进制绝不接受未校验字节；参数传调用方刚查到的远端版本与哈希，避免二次网络请求。
+    // allowDownload = false（本地缓存 offer）：只认缓存命中，miss 即放弃本次更新等下次重查。
+    // 落缓存的同时补写 sidecar（N3），让该版本目录可被离线回退与同机其他目录副本发现
+    public static bool TryUpdateEngine(string expectedVersion, string? expectedSha256, bool allowDownload = true)
     {
         var currentExe = Environment.ProcessPath;
         if (currentExe is null || !File.Exists(currentExe))
@@ -122,9 +131,19 @@ internal static class PackResolver
             {
                 Console.WriteLine($"[engine] 本机缓存命中 {expectedVersion}，跳过下载");
                 exeBytes = cachedBytes;
+                // 自愈：缓存可能是旧版程序落的（无 sidecar），命中即补登记，供离线回退发现
+                EngineCache.TryStoreEngineSidecar(CacheRoot, expectedVersion, expectedSha256);
             }
             else
             {
+                // 本地缓存 offer 丟失缓存文件（验证后到安装前的竞态删除）：不回退网络下载
+                // （离线环境下载必然失败），放弃本次更新，下次启动重新检查
+                if (!allowDownload)
+                {
+                    Console.WriteLine("[engine] 本机缓存文件已丢失，本次跳过更新（下次启动会重新检查）");
+                    return false;
+                }
+
                 Console.WriteLine($"[engine] 下载新程序 {expectedVersion} …");
                 using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(300) };
                 exeBytes = client.GetByteArrayAsync($"{BaseUrl}/{EngineAsset}").GetAwaiter().GetResult();
@@ -134,6 +153,8 @@ internal static class PackResolver
                     throw new InvalidOperationException($"SHA-256 不匹配（期望 {expectedSha256[..Math.Min(16, expectedSha256.Length)]}…，实际 {actual[..16]}…）");
 
                 TryStoreCachedEngine(CacheRoot, expectedVersion, exeBytes);
+                // N3：下载校验通过即落 sidecar，本机其他目录副本 / 离线回退据此命中免下载
+                EngineCache.TryStoreEngineSidecar(CacheRoot, expectedVersion, expectedSha256);
             }
 
             var tempExe = currentExe + ".new";

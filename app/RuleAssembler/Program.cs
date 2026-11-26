@@ -36,6 +36,10 @@ internal static class Program
             // 不存在「引擎已换、内容未更」的部分生效状态，横幅恒显单一版本
             Console.WriteLine($"use-ai-rule {engineVersion}（{manifest.Vars.LastUpdated}）");
 
+            // N1 启动自登记：把当前 exe 字节 + 哈希登进本机缓存（命令模式同样登记——
+            // script-only 用户的目录副本也该成为同机更新源；first-wins，常态目录已完整零拷贝）
+            EngineCache.RegisterCurrentEngine(engineVersion);
+
             // 带参模式走命令行分发（--check / --audit / --emit / --plan / --detect / --upgrade / --recipe 等），
             // 不做交互与更新检查，避免脚本调用出网络副作用
             if (StripPackArgs(ref packArgs))
@@ -45,10 +49,11 @@ internal static class Program
             // 鼠标误点进入文本选择会挂起整个控制台输入，菜单表现为卡死
             QuickEditGuard.Disable();
 
-            // 启动统一更新检查（仅交互模式；带参命令与 --offline / --pack 绝不联网）；
+            // 启动统一更新检查（仅交互模式；带参命令与 --pack 绝不联网）；
+            // --offline 跳过在线拉取但仍走本机缓存回退（离线升级刚需）；
             // 安装成功即退出提示重跑，不落入后续交互
-            if (!args.Contains("--offline", StringComparer.OrdinalIgnoreCase) && resolution.Source != "pack"
-                && !RunStartupUpdateCheck(engineVersion))
+            if (resolution.Source != "pack"
+                && !RunStartupUpdateCheck(engineVersion, offline: args.Contains("--offline", StringComparer.OrdinalIgnoreCase)))
                 return 0;
 
             return InteractiveSession.Run(manifest, resources, skillsStore);
@@ -86,20 +91,42 @@ internal static class Program
         return engineVersion;
     }
 
-    // 启动更新检查（仅交互模式）：弹一次确认（默认更新），安装成功即退出提示重跑——
-    // 分离进程会与终端抢同一控制台输入，故不自动拉起；带旧内容继续交互会回写降级配方，绝不落入原流程。
+    // 启动更新检查（仅交互模式）：在线查 latest.json（--offline 跳过），失败回退本机缓存登记的更新；
+    // 弹一次确认（默认更新），安装成功即退出提示重跑——分离进程会与终端抢同一控制台输入，
+    // 故不自动拉起；带旧内容继续交互会回写降级配方，绝不落入原流程。
     // 返回 false 表示已安装新版本，主流程应直接退出；stdin 重定向只报告不更新
-    private static bool RunStartupUpdateCheck(string engineVersion)
+    private static bool RunStartupUpdateCheck(string engineVersion, bool offline)
     {
-        // 检查包一层转圈：latest.json 拉取最多阻塞 3 秒，无反馈时启动看起来像卡死；
-        // 降级说明（[update] 更新检查超时…）在动画收尾后输出，纯文本场景不插帧
+        // 检查包一层转圈：latest.json 拉取最多阻塞 3 秒、本机缓存回退要哈希大文件，
+        // 无反馈时启动看起来像卡死；降级说明（[update] 更新检查超时…）在动画收尾后输出，纯文本场景不插帧
         IConsoleUi startupUi = CreateUi();
         var updateLogs = new List<string>();
-        var offer = startupUi.WithProgress(
-            "检查更新中…",
-            () => PackResolver.TryFetchUpdateOffer(engineVersion, updateLogs));
-        foreach (var line in updateLogs)
-            Console.WriteLine(line);
+
+        PackResolver.UpdateOffer? offer;
+        if (offline)
+        {
+            // --offline：本机缓存是唯一更新源（离线升级刚需）
+            offer = startupUi.WithProgress("检查本机缓存更新…", () => EngineCache.TryFetchLocalOffer(engineVersion));
+            if (offer is not null)
+                Console.WriteLine($"[update] --offline 已跳过在线检查，检测到更新：{offer.Describe()}");
+        }
+        else
+        {
+            offer = startupUi.WithProgress(
+                "检查更新中…",
+                () => PackResolver.TryFetchUpdateOffer(engineVersion, updateLogs));
+            foreach (var line in updateLogs)
+                Console.WriteLine(line);
+
+            // 在线检查失败（无网络 / 超时 / 清单不可用，统一表现为 null）→ 回退本机缓存；
+            // 在线成功且已最新不查本地——远端清单是事实源，本地不会有远端不知道的版本
+            if (offer is null)
+            {
+                offer = startupUi.WithProgress("在线检查失败，查找本机缓存更新…", () => EngineCache.TryFetchLocalOffer(engineVersion));
+                if (offer is not null)
+                    Console.WriteLine($"[update] 在线检查失败，本机缓存有可用更新：{offer.Describe()}");
+            }
+        }
 
         if (offer is not { HasAnyUpdate: true })
             return true;
@@ -221,7 +248,7 @@ internal static class Program
         Console.WriteLine("--upgrade [目录] [--force]：按目标目录的配方记录升级规则；识别本地修改默认保留，--force 全部覆盖。");
         Console.WriteLine("--emit <目录>：把全部兼容样例的组合路径生成结果输出到指定目录，用于批量预览与产物回归。");
         Console.WriteLine("--pack <内容包.zip|目录>：使用指定内容包（zip 或已解包目录），校验失败直接报错退出。");
-        Console.WriteLine("--offline：跳过网络更新检查（内容随 exe 内嵌，离线永远可用）。");
+        Console.WriteLine("--offline：跳过在线更新检查，但仍会检查本机缓存的更新（内容随 exe 内嵌，离线永远可用）。");
         Console.WriteLine("--help：显示帮助。");
         return 0;
     }
