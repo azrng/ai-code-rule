@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>use-ai-rule exe 启动 / 自更新流程 —— 现状实现</title>
+<style>
+  :root {
+    --line: #94a3b8;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --mono: Consolas, "Cascadia Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f1f5f9;
+    color: var(--ink);
+    padding: 28px 16px 60px;
+  }
+  .page { max-width: 1280px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 22px; }
+  header h1 { font-size: 22px; letter-spacing: 0.5px; }
+  header .sub { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  header .sub code { font-family: var(--mono); font-size: 12px; background: #e2e8f0; padding: 1px 6px; border-radius: 4px; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; color: #6d28d9; background: #f5f3ff; border: 1px dashed #a78bfa; padding: 5px 14px; border-radius: 999px; cursor: pointer; user-select: none; }
+  .toggle input { accent-color: #7c3aed; }
+
+  .layout { display: flex; gap: 22px; align-items: flex-start; }
+  .flow-col { flex: 1; min-width: 0; }
+  .facts { width: 320px; flex: none; position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
+  @media (max-width: 1080px) { .layout { flex-direction: column-reverse; } .facts { width: 100%; position: static; flex-direction: row; flex-wrap: wrap; } .facts .panel { flex: 1; min-width: 280px; } }
+
+  .panel { background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgb(15 23 42 / 6%); }
+  .panel h3 { font-size: 13px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+  .panel ul { list-style: none; }
+  .panel li { font-size: 12px; color: #334155; padding: 5px 0 5px 14px; position: relative; line-height: 1.55; }
+  .panel li::before { content: '▪'; position: absolute; left: 0; color: #94a3b8; }
+  .panel.diff h3 { color: #6d28d9; border-color: #ddd6fe; }
+  .panel.diff li::before { content: '◆'; color: #a78bfa; }
+  .panel code { font-family: var(--mono); font-size: 11px; background: #f1f5f9; padding: 0 4px; border-radius: 3px; }
+
+  .flow { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+  .phase { display: flex; align-items: center; gap: 14px; width: 100%; margin: 26px 0 18px; }
+  .phase::before, .phase::after { content: ''; flex: 1; border-top: 1px dashed #cbd5e1; }
+  .phase span { background: #1e293b; color: #fff; padding: 5px 16px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+
+  .node { position: relative; background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 16px; max-width: 560px; width: fit-content; box-shadow: 0 1px 3px rgb(15 23 42 / 7%); text-align: center; }
+  .node .t { font-size: 13.5px; font-weight: 600; }
+  .node .d { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.55; }
+  .node .refs { font-family: var(--mono); font-size: 10.5px; color: #94a3b8; margin-top: 6px; }
+  .node .id { position: absolute; top: -10px; left: -10px; background: #1e293b; color: #fff; font-size: 11px; font-family: var(--mono); min-width: 30px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+
+  .start { background: #1e293b; color: #fff; border-color: #1e293b; }
+  .start .d { color: #cbd5e1; }
+  .start .refs { color: #64748b; }
+  .decision { border-color: #60a5fa; background: #eff6ff; }
+  .decision .t::before { content: '◆ '; color: #3b82f6; }
+  .degrade { border-color: #fcd34d; background: #fffbeb; }
+  .err { border-color: #fca5a5; background: #fef2f2; }
+  .term-ok { border-color: #86efac; background: #f0fdf4; }
+  .term-ok .t::before { content: '✓ '; color: #16a34a; }
+  .term-exit { border-color: #94a3b8; background: #f1f5f9; border-style: dashed; }
+
+  .hook { display: none; margin-top: 8px; border: 1.5px dashed #a78bfa; background: #f5f3ff; color: #6d28d9; font-size: 11.5px; padding: 5px 10px; border-radius: 8px; line-height: 1.5; text-align: left; }
+  .hook::before { content: attr(data-no) ' '; font-weight: 700; }
+  body.mode-now.show-hooks .hook { display: block; }
+
+  .arrow, .stub { width: 2px; background: var(--line); flex: none; }
+  .arrow { height: 30px; position: relative; }
+  .arrow::after { content: ''; position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: none; border-top: 7px solid var(--line); }
+  .stub { height: 20px; }
+  .tail { margin-top: auto; height: 20px; width: 2px; background: var(--line); flex: none; }
+  .cont { display: flex; flex-direction: column; align-items: center; }
+  .edge { background: #e2e8f0; color: #475569; font-size: 11px; padding: 2px 12px; border-radius: 999px; margin: 6px 0; white-space: nowrap; }
+  .goto { border: 1.5px dashed #94a3b8; border-radius: 8px; padding: 6px 12px; color: #475569; background: #f8fafc; font-size: 11.5px; margin-top: 8px; line-height: 1.5; }
+
+  .grid3 { display: grid; grid-template-columns: 1fr minmax(0, 440px) 1fr; width: 100%; align-items: center; }
+  .fork-main { grid-column: 2; display: flex; justify-content: center; }
+  .fork-side { grid-column: 3; display: flex; align-items: center; gap: 8px; padding-left: 6px; min-width: 0; }
+  .fork-side .node { max-width: 100%; text-align: left; padding: 8px 12px; }
+  .fork-side .node .t { font-size: 12.5px; }
+  .fork-side .node .d { font-size: 11px; }
+  .hline { flex: none; width: 26px; height: 2px; background: var(--line); position: relative; }
+  .hline::after { content: ''; position: absolute; right: -1px; top: 50%; transform: translateY(-50%); border: 6px solid transparent; border-left: 7px solid var(--line); border-right: none; }
+  .fork-side .edge { margin: 0; flex: none; }
+
+  .split { display: flex; width: 100%; align-items: stretch; }
+  .branch { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+  .branch .node { max-width: 94%; text-align: left; }
+  .branch .node .t { text-align: center; }
+  .subsplit { display: flex; width: 100%; align-items: stretch; margin-top: 2px; }
+  .subbranch { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+  .subbranch .node { max-width: 94%; }
+  .merge { position: relative; height: 30px; width: 100%; }
+  .merge::before { content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 2px; background: var(--line); }
+  .merge .arrow { position: absolute; left: 50%; top: 0; transform: translateX(-50%); height: 100%; }
+
+  footer { text-align: center; color: #94a3b8; font-size: 11.5px; margin-top: 36px; }
+
+  /* 模式切换：现状实现 / 提议目标态（N1–N3 新增节点） */
+  .mode-now .mode-next { display: none !important; }
+  .mode-next .mode-now { display: none !important; }
+  .segbar { display: flex; width: fit-content; margin: 14px auto 0; border: 1px solid #cbd5e1; border-radius: 999px; overflow: hidden; background: #fff; }
+  .segbar button { border: none; background: transparent; color: #475569; font-size: 13px; padding: 7px 20px; cursor: pointer; font-family: inherit; }
+  .segbar button.active { background: #1e293b; color: #fff; }
+  .badge-new { position: absolute; top: -10px; right: -10px; background: #16a34a; color: #fff; font-size: 11px; padding: 2px 9px; border-radius: 999px; box-shadow: 0 1px 2px rgb(15 23 42 / 25%); }
+</style>
+</head>
+<body class="mode-next">
+<div class="page">
+  <header>
+    <h1>use-ai-rule · exe 启动与自更新流程设计</h1>
+    <p class="sub">现状依据 <code>app/RuleAssembler/Program.cs</code> 与 <code>Infra/PackResolver.cs</code> 当前代码绘制 · 目标态为设计提案 · 2026-11-26</p>
+    <div class="segbar">
+      <button type="button" id="modeNow">现状实现</button>
+      <button type="button" id="modeNext" class="active">提议目标态（新增 N1–N3）</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="hookToggle" checked> 现状模式下显示提议挂载点 ①–④（紫色虚线）</label>
+  </header>
+
+  <div class="layout">
+    <div class="flow-col">
+      <div class="flow">
+
+        <div class="phase"><span>阶段 A · 启动（无网络副作用）</span></div>
+
+        <div class="node start">
+          <div class="id">A1</div>
+          <div class="t">启动 use-ai-rule.exe（Main 入口）</div>
+          <div class="d">设置 UTF-8 输入输出编码（个别宿主无标准输入句柄时 setter 会抛，纳入兜底）</div>
+          <div class="refs">Program.cs:9-15</div>
+          <div class="hook" data-no="①">提议挂载点①：首次启动把自身复制一份到全局配置目录 —— 现状：不写任何全局副本</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <div class="id">A2</div>
+          <div class="t">清理上次自更新残留</div>
+          <div class="d">删除当前 exe 同目录的 <code>.old</code> / <code>.new</code>；仍被占用删不掉 → 静默跳过，下次启动再试</div>
+          <div class="refs">Program.cs:19-20 · PackResolver.cs:247-257</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <div class="id">A3</div>
+          <div class="t">exe 内嵌内容（唯一内容来源，Resolve 不联网）</div>
+          <div class="d">内容全量打进 exe、与 exe 同版本构建发布；不存在独立内容包与包缓存</div>
+          <div class="refs">PackResolver.cs:44-57</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <div class="id">A4</div>
+          <div class="t">加载 manifest / SkillsStore，打印横幅</div>
+          <div class="d">use-ai-rule {版本}（{LastUpdated}）；版本取 InformationalVersion（manifest.vars.version 注入），本地 dev 构建显示 dev —— <b>dev 不比任何远端版本新，永不触发自更新</b></div>
+          <div class="refs">Program.cs:30-37, 76-87</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="grid3">
+          <div class="fork-main">
+            <div class="node decision" style="max-width:100%;">
+              <div class="id">A5</div>
+              <div class="t">带业务参数？（--check / --emit / --plan / --recipe / --upgrade / --detect / --audit …）</div>
+              <div class="refs">Program.cs:39-42</div>
+            </div>
+          </div>
+          <div class="fork-side">
+            <span class="edge">是</span>
+            <div class="hline"></div>
+            <div class="node term-exit">
+              <div class="t">命令行分发执行</div>
+              <div class="d">脚本友好：不联网、不弹交互、不做更新检查 → 进程退出（0 / 1 / 2）</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="fork-main cont">
+            <span class="edge">否（进入交互模式）</span>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <div class="mode-next" style="display:contents;">
+          <div class="node">
+            <div class="badge-new">新增</div>
+            <div class="id">N1</div>
+            <div class="t">启动自登记：确保当前版本目录自包含（exe + sidecar）</div>
+            <div class="d">engine\&lt;版本&gt;\ 已存在且 meta.json 哈希验证通过 → 零成本跳过（常态）；未登记（首次 / 直接下载 / sidecar 丢失）→ 算自身 SHA-256 + 复制 exe + 写 sidecar（各自 temp + 原子改名，每进程唯一临时名）；dev / 版本不可解析不登记；失败静默不阻塞</div>
+          </div>
+          <div class="arrow"></div>
+        </div>
+
+        <div class="node">
+          <div class="id">A6</div>
+          <div class="t">关闭 conhost QuickEdit</div>
+          <div class="d">后续更新确认与全部菜单是键盘链路；鼠标误点进入文本选择会挂起控制台输入，表现为菜单卡死</div>
+          <div class="refs">Program.cs:44-46</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="phase"><span>阶段 B · 启动更新检查（仅交互模式，一次）</span></div>
+
+        <div class="grid3">
+          <div class="fork-main">
+            <div class="node decision" style="max-width:100%;">
+              <div class="id">B1</div>
+              <div class="t">--offline？</div>
+              <div class="refs">Program.cs:50-52</div>
+            </div>
+          </div>
+          <div class="fork-side">
+            <div class="mode-now" style="display:flex; align-items:center; gap:8px;">
+              <span class="edge">是</span>
+              <div class="hline"></div>
+              <div class="goto">跳过更新检查<br>→ 直接进入 D · 交互会话</div>
+            </div>
+            <div class="mode-next" style="display:flex; align-items:center; gap:8px;">
+              <span class="edge">是</span>
+              <div class="hline"></div>
+              <div class="goto">跳过在线检查<br>→ N2 本地回退检查（见 B3 右侧）</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="fork-main cont">
+            <span class="edge">否 ↓</span>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="id">B2</div>
+          <div class="t">拉取 latest.json（转圈动画包裹）</div>
+          <div class="d">一次拉取、<b>3 秒超时</b>；BaseUrl 默认 GitHub …/releases/latest/download，USE_AI_RULE_PACK_URL 可整体替换（gitee 镜像等）</div>
+          <div class="refs">Program.cs:92-102 · PackResolver.cs:301-319</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="grid3">
+          <div class="fork-main">
+            <div class="node decision" style="max-width:100%;">
+              <div class="id">B3</div>
+              <div class="t">拉取成功？</div>
+            </div>
+          </div>
+          <div class="fork-side">
+            <div class="mode-now" style="display:flex; align-items:center; gap:8px;">
+              <span class="edge">失败 / 超时 / 字段缺失</span>
+              <div class="hline"></div>
+              <div class="node degrade">
+                <div class="t">降级："[update] 更新检查超时，使用本地版本"</div>
+                <div class="d">失败只降级、绝不阻塞启动；无网络时单 exe 永远可用</div>
+                <div class="hook" data-no="③">提议挂载点③：检查失败时改查本机全局副本，取更高版本本地升级 —— 现状：直接降级，继续用旧版进交互</div>
+                <div class="goto">→ D · 交互会话（旧版本）</div>
+              </div>
+            </div>
+            <div class="mode-next" style="display:flex; align-items:center; gap:8px;">
+              <span class="edge">失败 / 超时 / 字段缺失</span>
+              <div class="hline"></div>
+              <div class="node">
+                <div class="badge-new">新增</div>
+                <div class="id">N2</div>
+                <div class="t">本地回退检查</div>
+                <div class="d">扫描 &lt;缓存根&gt;\engine\*\：逐目录读 meta.json sidecar（version + sha256），取最高版本 &gt; 本机 → 对应 exe 哈希回验（sidecar 与 exe 漂移则剔除该目录自愈）</div>
+                <div class="goto">有 → 本地 offer {version, sha256} → 汇入 B5 同一确认链</div>
+                <div class="goto">无 / 验证失败 → "更新检查超时，使用本地版本" → D</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="fork-main cont">
+            <span class="edge">成功 ↓ offer { version, engine_sha256 }</span>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <div class="grid3">
+          <div class="fork-main">
+            <div class="node decision" style="max-width:100%;">
+              <div class="id">B4</div>
+              <div class="t">HasEngineUpdate？＝ 远端版本 &gt; 本机 && 带 engine_sha256</div>
+              <div class="refs">PackResolver.cs:59-69</div>
+            </div>
+          </div>
+          <div class="fork-side">
+            <span class="edge">否</span>
+            <div class="hline"></div>
+            <div class="node term-exit">
+              <div class="t">已是最新</div>
+              <div class="d">远端缺 engine_sha256 同样视为无更新（静默）；engine_version 旧兼容字段不读取</div>
+              <div class="goto">→ D · 交互会话</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="fork-main cont">
+            <span class="edge">是 ↓</span>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <div class="grid3">
+          <div class="fork-main">
+            <div class="node decision" style="max-width:100%;">
+              <div class="id">B5</div>
+              <div class="t">stdin 被重定向？<span class="mode-next" style="color:#16a34a; font-weight:400; font-size:11px;">（目标态：在线 offer 与 N2 本地 offer 在此汇合）</span></div>
+              <div class="refs">Program.cs:107-111</div>
+            </div>
+          </div>
+          <div class="fork-side">
+            <span class="edge">是</span>
+            <div class="hline"></div>
+            <div class="node term-exit">
+              <div class="t">只报告不更新</div>
+              <div class="d">"[update] 检测到更新 …（非交互输入，跳过更新）"</div>
+              <div class="mode-next" style="color:#16a34a; font-size:11px; margin-top:4px;">本地 offer 同理：脚本场景不做替换副作用</div>
+              <div class="goto">→ D · 交互会话</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="fork-main cont">
+            <span class="edge">否 ↓</span>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <div class="node">
+          <div class="id">B6</div>
+          <div class="t">弹确认框（默认 = 更新）</div>
+          <div class="d">"发现更新：程序 X → Y（替换 exe，重新运行后生效），是否更新？"；非 ANSI 终端回退纯文本 UI</div>
+          <div class="mode-next" style="color:#16a34a; font-size:11px; margin-top:4px;">目标态：同一确认链服务两个来源——在线更新 / 本机缓存更新（文案标明来源）</div>
+          <div class="refs">Program.cs:113-118 · PackResolver.cs:85-94</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="grid3">
+          <div class="fork-main">
+            <div class="node decision" style="max-width:100%;">
+              <div class="id">B7</div>
+              <div class="t">用户确认？</div>
+            </div>
+          </div>
+          <div class="fork-side">
+            <span class="edge">拒绝</span>
+            <div class="hline"></div>
+            <div class="node term-exit">
+              <div class="t">"[update] 本次跳过更新"</div>
+              <div class="mode-next" style="color:#16a34a; font-size:11px; margin-top:4px;">拒绝同时否定本地 offer——同版本不绕道重问</div>
+              <div class="goto">→ D · 交互会话（仍是旧版）</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="fork-main cont">
+            <span class="edge">同意 ↓ 进入阶段 C</span>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <div class="phase"><span>阶段 C · 自更新安装 TryUpdateEngine（确认后执行）</span></div>
+
+        <div class="node decision" style="max-width:640px;">
+          <div class="id">C1</div>
+          <div class="t">共享缓存命中？&lt;缓存根&gt;\engine\&lt;版本&gt;\use-ai-rule.exe</div>
+          <div class="d">缓存根默认 %LOCALAPPDATA%\use-ai-rule\（USE_AI_RULE_CACHE 可整体替换）；命中后仍以 engine_sha256 逐字节回验，损坏即删、回退下载</div>
+          <div class="refs">PackResolver.cs:117-125, 199-226</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="split">
+          <div class="branch">
+            <span class="edge">命中</span>
+            <div class="stub"></div>
+            <div class="node">
+              <div class="t">"本机缓存命中 {版本}，跳过下载"</div>
+              <div class="d">同机多目录副本共享一份已校验 exe：第一个目录下载落缓存，其余目录哈希命中免下载</div>
+              <div class="refs">PackResolver.cs:119-125, 204-226</div>
+              <div class="hook" data-no="④">提议相关④：该缓存只在「在线 + 已确认更新」路径被读取；离线 / 检查失败时不会翻它 —— 多目录旧副本离线无升级来源</div>
+              <div class="mode-next" style="color:#16a34a; font-size:11px; margin-top:4px;">目标态：命中时顺手补缺 / 修复 sidecar（自愈，目录自包含）</div>
+            </div>
+            <div class="tail"></div>
+          </div>
+          <div class="branch">
+            <span class="edge">未命中</span>
+            <div class="stub"></div>
+            <div class="node">
+              <div class="t">下载新程序</div>
+              <div class="d">GET {BaseUrl}/use-ai-rule.exe，300 秒超时</div>
+              <div class="refs">PackResolver.cs:128-130</div>
+            </div>
+            <div class="arrow"></div>
+            <div class="node">
+              <div class="t">SHA-256 校验（唯一完整性防线）</div>
+              <div class="d">下载字节哈希 ≠ latest.engine_sha256 → 拒绝落位，二进制绝不接受未校验字节</div>
+              <div class="refs">PackResolver.cs:132-134</div>
+            </div>
+            <div class="subsplit">
+              <div class="subbranch">
+                <span class="edge">通过</span>
+                <div class="stub"></div>
+                <div class="node">
+                  <div class="t">校验字节落共享缓存</div>
+                  <div class="d">temp + 原子改名，防并发读到半截文件；落盘失败只降级（本次更新照常用内存字节）</div>
+                  <div class="refs">PackResolver.cs:229-244</div>
+                </div>
+                <div class="tail"></div>
+              </div>
+              <div class="subbranch">
+                <span class="edge">不匹配</span>
+                <div class="stub"></div>
+                <div class="node err">
+                  <div class="t">告警：SHA-256 不匹配</div>
+                  <div class="d">"请到 Release 页手动下载"</div>
+                  <div class="goto">→ D · 交互会话（仍是旧版）</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="merge"><div class="arrow"></div></div>
+
+        <div class="mode-next" style="display:contents;">
+          <div class="node">
+            <div class="badge-new">新增</div>
+            <div class="id">N3</div>
+            <div class="t">写 sidecar meta.json</div>
+            <div class="d">{version, sha256} 写入 engine\&lt;版本&gt;\meta.json（temp + 原子改名）；与缓存 exe 同生共死——缓存落盘失败则不写 sidecar</div>
+          </div>
+          <div class="arrow"></div>
+        </div>
+
+        <div class="node">
+          <div class="id">C2</div>
+          <div class="t">原子替换本目录 exe</div>
+          <div class="d">写 {exe}.new → 运行中 exe 改名 .old → .new 落位原路径（运行中的 exe 不能直接覆盖，改名后可移动）</div>
+          <div class="refs">PackResolver.cs:139-146</div>
+          <div class="hook" data-no="②">提议挂载点②：安装成功时把已校验的新版本字节同步一份到全局存储 —— 现状：只落下载缓存 + 替换本目录 exe，随后即退出，无任何同步动作</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="grid3">
+          <div class="fork-main">
+            <div class="node decision" style="max-width:100%;">
+              <div class="id">C3</div>
+              <div class="t">替换结果？</div>
+            </div>
+          </div>
+          <div class="fork-side">
+            <span class="edge">失败</span>
+            <div class="hline"></div>
+            <div class="node err">
+              <div class="t">TryAbortEngineSwap 收尾还原</div>
+              <div class="d">move2 失败时原路径已空缺、.old 是唯一副本 → 优先还原而非清理；还原也失败则留 .old 让用户手动恢复</div>
+              <div class="refs">PackResolver.cs:151-184</div>
+              <div class="goto">→ D · 交互会话（旧版未动 / .old 手动恢复）</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="fork-main cont">
+            <span class="edge">成功 ↓</span>
+            <div class="arrow"></div>
+          </div>
+        </div>
+
+        <div class="node term-ok">
+          <div class="id">C4</div>
+          <div class="t">"[update] 更新完成，本次退出。请重新运行 use-ai-rule 生效"</div>
+          <div class="d">进程退出，<b>不自动拉起</b>（分离进程会与终端抢同一控制台输入）；也绝不带着旧内容继续交互 —— 会回写降级配方</div>
+          <div class="refs">Program.cs:119-123</div>
+        </div>
+        <div class="arrow"></div>
+        <div class="node term-exit">
+          <div class="t">进程退出 · 下次启动 = 新版本（回到 A1，.old 残留被 A2 清理）</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="phase"><span>阶段 D · 交互会话（InteractiveSession）</span></div>
+
+        <div class="node" style="max-width:640px;">
+          <div class="id">D1</div>
+          <div class="t">交互会话</div>
+          <div class="d">项目检测 → 两级选择（形态 / 家族 → 检测器候选）→ 生成 AGENTS.md / 子规则 / .ai-rule-profile.json → Skills 树形多选导入（Codex / ZCode / Claude Code / pi）→ 可 --recipe / --upgrade 重放</div>
+          <div class="refs">Program.cs:54</div>
+        </div>
+
+      </div>
+      <footer>开关切换「现状实现 / 提议目标态」；目标态新增节点 N1–N3（绿色「新增」徽标，A1 已修复为 sidecar 架构）；现状模式下紫色 ①–④ 为提议挂载点标注 · 节点编号 A1–D1、N1–N3 可直接引用</footer>
+    </div>
+
+    <aside class="facts">
+      <div class="panel">
+        <h3>关键机制速览（现状）</h3>
+        <ul>
+          <li>内容与引擎同版本：内容全量内嵌 exe、同版本构建发布，无独立包与包缓存</li>
+          <li>更新检查门：仅「无参交互模式」执行一次；--offline / 任何带参命令都不联网</li>
+          <li>latest.json：<code>{ version, engine_sha256 }</code>；engine_version 是旧 2.x 兼容字段，新代码不读</li>
+          <li>版本比较：x.y.z 语义化；dev 不比任何远端版本新</li>
+          <li>共享缓存：<code>%LOCALAPPDATA%\use-ai-rule\engine\&lt;版本&gt;\</code>；读时哈希回验、写时 temp + 原子改名</li>
+          <li>失败哲学：任何失败只降级不阻塞启动；安装成功必退出重跑</li>
+        </ul>
+      </div>
+      <div class="panel diff mode-now">
+        <h3>现状没有 · 提议差异对照</h3>
+        <ul>
+          <li><b>①</b> 首次启动存全局副本 —— 现状不写任何全局位置（对应提议步骤 1）</li>
+          <li><b>②</b> 更新安装同步全局存储 —— 现状只落下载缓存 + 替换本目录 exe 后退出（对应提议步骤 3）</li>
+          <li><b>③</b> 检查失败时查本地更高版本 —— 现状直接降级继续交互（对应提议步骤 4 前半）</li>
+          <li><b>④</b> 多目录旧副本离线升级 —— 现状唯一共享物是下载缓存，且仅「在线 + 已确认」路径读取（对应提议步骤 4 后半）</li>
+        </ul>
+      </div>
+      <div class="panel diff mode-next">
+        <h3>新增机制（目标态 · A1 已修复：sidecar 架构）</h3>
+        <ul>
+          <li><b>存储</b>：<code>engine\&lt;版本&gt;\</code> 目录自包含 = exe + <code>meta.json</code>（version + sha256），<b>无中心清单</b>——单文件损坏只丢一个版本，删目录即整体清理，无多实例并发写同一 JSON 冲突</li>
+          <li><b>N1 自登记</b>：目录在且 sidecar 验证过 → 零成本跳过（常态）；未登记才算自身 SHA-256 + 复制 + 写 sidecar；dev / 不可解析版本不登记</li>
+          <li><b>N2 本地回退</b>：仅「在线检查失败 / --offline」进入；扫 <code>engine\*\</code> 读 sidecar，最高版本 &gt; 本机 → exe 哈希回验 → 本地 offer 汇入同一确认链；在线已最新 / 用户拒绝不触发</li>
+          <li><b>N3 sidecar 写入</b>：自更新字节校验通过后与缓存 exe 同步落盘，同生共死</li>
+          <li>安装路径全复用：本地 offer 走 TryUpdateEngine 缓存命中分支，免下载直接替换</li>
+          <li>保留策略：当前版本 + 最高 N 版目录整体清理（sidecar 随目录走），N 待定</li>
+          <li><b>待拍板</b>：A2 同版本不同哈希语义 / A3 命令模式是否登记 / A4 清理竞态与离线文案 / B3 --offline 是否触发 N2</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  // 模式切换：现状实现（mode-now）/ 提议目标态（mode-next）；
+  // 挂载点 ①–④ 仅在现状模式 + 勾选时显示
+  const btnNow = document.getElementById('modeNow');
+  const btnNext = document.getElementById('modeNext');
+  const hookToggle = document.getElementById('hookToggle');
+
+  function applyMode() {
+    const next = btnNext.classList.contains('active');
+    document.body.classList.toggle('mode-next', next);
+    document.body.classList.toggle('mode-now', !next);
+    document.body.classList.toggle('show-hooks', !next && hookToggle.checked);
+  }
+
+  btnNow.addEventListener('click', () => {
+    btnNow.classList.add('active');
+    btnNext.classList.remove('active');
+    applyMode();
+  });
+  btnNext.addEventListener('click', () => {
+    btnNext.classList.add('active');
+    btnNow.classList.remove('active');
+    applyMode();
+  });
+  hookToggle.addEventListener('change', applyMode);
+  applyMode();
+</script>
+</body>
+</html>
