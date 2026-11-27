@@ -1,8 +1,8 @@
 {
   "note": "维度组合配方：wizard.steps 定义维度空间，components / constraints / compatibilityCases 是组合事实来源，modules 与 families 提供公共装配。schema_version 是配方结构版本，规则版本见 vars。",
   "vars": {
-    "version": "3.24.0",
-    "last_updated": "2026-11-26"
+    "version": "3.25.0",
+    "last_updated": "2026-11-27"
   },
   "schema_version": 3,
   "line_ending": "LF",
@@ -70,7 +70,7 @@
     { "id": "platform-detection", "group": "测试" },
     { "id": "filter-syntax", "group": "测试" },
     { "id": "find-untested-sources", "group": "测试" },
-    { "id": "webapp-testing", "group": "测试", "when": { "frontend": ["react", "vue"] } },
+    { "id": "webapp-testing", "group": "测试", "when": { "frontend": ["react", "vue", "angular"] } },
     { "id": "browser-walkthrough", "group": "测试", "when": { "frontend": "blazor" } },
     { "id": "python-backend-howto", "group": "Python 后端", "when": { "backend": "python" } },
     { "id": "news-summary", "group": "通用工具" },
@@ -463,6 +463,10 @@
         "vue": {
           "label": "Vue",
           "desc": "Vue 界面"
+        },
+        "angular": {
+          "label": "Angular",
+          "desc": "Angular 界面"
         },
         "blazor": {
           "label": "Blazor",
@@ -864,7 +868,7 @@
       "id": "frontend-static-web-shell",
       "kind": "form",
       "label": "纯前端 Web 公共壳",
-      "desc": "reactOnly / vueOnly / generalFrontend 共用根骨架：前端框架差异经槽位注入",
+      "desc": "reactOnly / vueOnly / angularOnly / generalFrontend 共用根骨架：前端框架差异经槽位注入",
       "when": {
         "form": "web",
         "backend": "none",
@@ -1229,6 +1233,45 @@
         }
       ],
       "designSystemSource": "arch/vueLinkdotNet/design-system.yaml"
+    },
+    {
+      "id": "frontend-static-frontend-angular",
+      "kind": "frontend",
+      "label": "Angular 纯前端界面",
+      "desc": "纯前端组合的 Angular 界面组件（angularOnly）",
+      "when": {
+        "form": "web",
+        "backend": "none",
+        "frontend": "angular",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
+      },
+      "slots": {
+        "fs-search-nouns": "页面、组件、路由、状态管理、请求封装、mock / 本地存储实现和测试实现",
+        "fs-subr-frontend": "| `frontend-AGENTS.md` | 页面、布局、表单、交互、样式、数据层、前端 smoke test | 涉及界面实现、交互或数据来源时 |",
+        "fs-target-frontend": "- `frontend-AGENTS.md`：页面、布局、组件、路由、状态、样式、数据层与前端测试",
+        "fs-understanding-frontend": "- 涉及页面或交互时，已查看相关页面、组件、路由、状态管理、样式资源、设计 token 和现有交互模式"
+      },
+      "family": "frontend-static",
+      "files": [
+        {
+          "source": "arch/angularOnly/frontend-AGENTS.md",
+          "output": "frontend-AGENTS.md"
+        },
+        {
+          "source": "arch/generalProject/doc-AGENTS.md",
+          "output": "doc-AGENTS.md",
+          "feature": "doc"
+        },
+        {
+          "source": "arch/generalProject/infra-AGENTS.md",
+          "output": "infra-AGENTS.md",
+          "feature": "infra"
+        }
+      ],
+      "designSystemSource": "arch/angularOnly/design-system.yaml"
     },
     {
       "id": "wails-desktop-shell",
@@ -4682,6 +4725,21 @@
         "arch-style": "single",
         "blazor-flavor": "none",
         "ai-capability": "yes"
+      }
+    },
+    {
+      "profile": "angularOnly",
+      "label": "Angular 纯前端 SPA",
+      "desc": "Angular（Angular CLI）纯前端单页应用，无独立后端；数据走 mock / 本地存储 / 第三方 API",
+      "family": "frontend-static",
+      "selection": {
+        "form": "web",
+        "backend": "none",
+        "frontend": "angular",
+        "shell": "none",
+        "arch-style": "single",
+        "blazor-flavor": "none",
+        "ai-capability": "no"
       }
     },
     {

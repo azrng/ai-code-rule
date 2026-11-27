@@ -95,6 +95,8 @@ backend/
 
 <!-- include: shared/backend/field-naming.md -->
 
+<!-- include: shared/backend/id-wire-type.md -->
+
 <!-- include: shared/backend/comment-rules.md -->
 
 <!-- include: shared/backend/time-contract-rules.md -->

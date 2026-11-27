@@ -259,7 +259,7 @@ public Task<MaterialDto> Upload(IFormFile file)
 
 需要 JSON 序列化时，统一注入 `IJsonSerializer`（`Azrng.Core.IJsonSerializer`），**不要在各处直接用 `JsonSerializer`/`JsonConvert`**——底层切换 STJ↔Newtonsoft 只改一处（Service 项目换实现包 + `ConfigureDefaultJson()` 注册）。API：`ToJson<T>` / `ToObject<T>` / `Clone<T>` / `ToList<T>`。
 
-**易踩坑**：`ConfigureDefaultJson` 不碰 MVC 的 `AddJsonOptions`——HTTP 响应里雪花 long 主键超 JS `2^53` 会精度丢失，需要 long→string 时必须在 MVC 层单独注册转换器；装配代码与自定义转换器写法见 `references/paging-and-json.md → JSON 序列化`。
+**硬约束（规则层 `backend-AGENTS.md`「雪花 id 线上类型」）**：HTTP 响应里 id 类 `long` 字段（主键、外键、`long?`）一律 long→string，防 JS `2^53` 精度丢失——属性标注包内置转换器或 MVC 层全局注册。注意 `ConfigureDefaultJson` 不碰 MVC 的 `AddJsonOptions`，业务层 `IJsonSerializer` 的配置管不到控制器响应。两个实测坑（Azrng.Core.Json / Azrng.Core.NewtonsoftJson 1.3.1）：①转换器必须与 MVC 实际序列化器同族——默认 STJ 管线里标 Newtonsoft 的 `JsonConverterLong` 不生效也不报错，id 照旧出数字；②Newtonsoft 全局 `Converters.Add(new LongToStringConverter())` 不覆盖 `long?`（`CanConvert` 只匹配 `typeof(long)`），要全覆盖用 `CustomContractResolver` 或逐属性标注。两种写法对照与装配代码见 `references/paging-and-json.md → JSON 序列化`。
 
 ## 新增一个完整 CRUD 功能的标准流程
 

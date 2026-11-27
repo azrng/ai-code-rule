@@ -85,6 +85,21 @@ public sealed class SkillCatalogTests
     }
 
     [Fact]
+    public void angular_组合预选前端设计与webapp测试技能()
+    {
+        // Angular 纯前端组合：webapp-testing 的 when 覆盖 frontend=angular，frontend-design 按形态预选；
+        // blazor 专属技能不随 angular 组合预选
+        var manifest = LoadManifest();
+        var recommended = RecommendedIds(manifest, SelectionOf(
+            ("form", "web"), ("backend", "none"), ("frontend", "angular")));
+
+        Assert.Contains("frontend-design", recommended);
+        Assert.Contains("webapp-testing", recommended);
+        Assert.DoesNotContain(recommended, id => id == "mudblazor");
+        Assert.DoesNotContain(recommended, id => id == "browser-walkthrough");
+    }
+
+    [Fact]
     public void blazor_组合仅预选mudblazor不预选bootstrapblazor()
     {
         // 用户反馈：Blazor 组合默认只推荐 MudBlazor，bootstrap-blazor 未登记 when 恒不预选、仅分组展示供手动勾选

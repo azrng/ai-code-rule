@@ -198,6 +198,8 @@ Controllers → Application → Domain ← Infrastructure
 
 <!-- include: shared/backend/field-naming.md -->
 
+<!-- include: shared/backend/id-wire-type.md -->
+
 ### 代码注释规范
 - 必须补 XML 注释的位置：
   - Controller action：用 `<summary>` 说明接口用途、关键参数、返回结果（Swagger 会消费这些说明）。

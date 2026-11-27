@@ -336,7 +336,8 @@ internal sealed class ProjectDetector
                     if (uiFormDefined || packageRepoDominant)
                         continue;
                     // Web 工程伴随前端框架依赖时按前后端分离处理，避免与 frontend 证据组合出无匹配候选
-                    var hasJsFrontend = signals.ReactInPackageJson || signals.VueInPackageJson || signals.NextInPackageJson;
+                    var hasJsFrontend = signals.ReactInPackageJson || signals.VueInPackageJson
+                        || signals.AngularInPackageJson || signals.NextInPackageJson;
                     evidence.Add(new(
                         "form",
                         hasJsFrontend ? "web" : "backend-only",
@@ -394,6 +395,10 @@ internal sealed class ProjectDetector
         else if (signals.VueInPackageJson)
         {
             evidence.Add(new("frontend", "vue", "package.json 依赖 vue"));
+        }
+        else if (signals.AngularInPackageJson)
+        {
+            evidence.Add(new("frontend", "angular", "package.json 依赖 @angular/core"));
         }
 
         if (signals.PackageJsonWithoutBackend)
@@ -574,6 +579,7 @@ internal sealed class ProjectDetector
 
             signals.ReactInPackageJson |= deps.Contains("react");
             signals.VueInPackageJson |= deps.Contains("vue");
+            signals.AngularInPackageJson |= deps.Contains("@angular/core");
             signals.NextInPackageJson |= deps.Contains("next");
             signals.NuxtInPackageJson |= deps.Contains("nuxt");
             signals.ElectronInPackageJson |= deps.Contains("electron");

@@ -402,6 +402,44 @@ public sealed class ProjectDetectorTests : IDisposable
     }
 
     [Fact]
+    public void Detect_BareAngularSpa_RecommendsAngularOnly()
+    {
+        // 只有 package.json @angular/core 依赖：Angular SPA 无独立后端组合唯一收敛
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"@angular/core\":\"^19.0.0\"},\"devDependencies\":{\"@angular/cli\":\"^19.0.0\"}}");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.True(result!.Converged);
+        Assert.Equal("angularOnly", result.SampleProfileId);
+        Assert.Equal("angular", result.Confirmed["frontend"]);
+        Assert.Equal("web", result.Confirmed["form"]);
+        Assert.Contains(result.Reasons, reason => reason.Contains("@angular/core"));
+    }
+
+    [Fact]
+    public void Detect_AngularSpaWithDotnetBackend_FormWebNotBackendOnly()
+    {
+        // Angular 前端伴随 .NET Web 工程：hasJsFrontend 命中 angular → form=web，
+        // 不得误判为纯后端；该跨族组合暂无专属样例，按最接近样例给出并附说明
+        File.WriteAllText(
+            Path.Combine(_root, "package.json"),
+            "{\"dependencies\":{\"@angular/core\":\"^19.0.0\"}}");
+        File.WriteAllText(
+            Path.Combine(_root, "Api.csproj"),
+            "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+
+        var result = new ProjectDetector(_manifest).Detect(_root);
+
+        Assert.NotNull(result);
+        Assert.Equal("web", result!.Confirmed["form"]);
+        Assert.Equal("angular", result.Confirmed["frontend"]);
+        Assert.Equal("dotnet", result.Confirmed["backend"]);
+    }
+
+    [Fact]
     public void Detect_ElectronReactWithoutDotnet_RecommendsReactElectron()
     {
         // 纯 Electron + React（无 .NET 工程）：backend=none 证据来自「未伴随 .NET 工程」，

@@ -32,6 +32,8 @@ dependencies: [agents-root]
 - **变更规则**：接口变更时，必须先修改 DTO，再同步修改前端类型定义
 - **文件结构建议**：前端按业务域拆分类型定义文件
 
+<!-- include: shared/doc/contract-id-type.md -->
+
 ---
 
 <!-- include: shared/doc/design-system-file-web.md -->

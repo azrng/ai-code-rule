@@ -22,6 +22,7 @@ internal sealed class ScanSignals
     public bool HasRootHtmlOnly;
     public bool ReactInPackageJson;
     public bool VueInPackageJson;
+    public bool AngularInPackageJson;
     public bool NextInPackageJson;
     public bool NuxtInPackageJson;
     public bool ElectronInPackageJson;

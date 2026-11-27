@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.22.0
-last_updated: 2026-11-15
+version: 1.23.0
+last_updated: 2026-11-27
 dependencies: [agents-root]
 ---
 
@@ -147,6 +147,8 @@ frontend/
 
 <!-- include: shared/frontend/request-rules.md -->
 - 流式接口单独封装（基于 fetch + ReadableStream 或 EventSource），与普通 Axios 请求分层，命名用 `streamXxx`
+
+<!-- include: shared/frontend/contract-type-rules.md -->
 
 <!-- include: shared/frontend/code-organization.md -->
 - 例外补充：`src/components/ui/` 下的 shadcn 组件遵循 shadcn 自身的组织约定

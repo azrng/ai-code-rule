@@ -43,6 +43,8 @@ dependencies: [agents-root]
 - **变更规则**：接口契约变更时，必须先修改 DTO 或接口定义，再同步修改 AppService、数据映射、测试与相关文档。
 - **文件结构建议**：按业务域拆分 DTO，避免将全部请求和响应堆叠在单个文件中。
 
+<!-- include: shared/doc/contract-id-type.md -->
+
 ---
 
 <!-- include: shared/doc/doc-update.md -->

@@ -1,7 +1,7 @@
 ---
 rule_id: frontend-agents
-version: 1.22.0
-last_updated: 2026-11-15
+version: 1.23.0
+last_updated: 2026-11-27
 dependencies: [agents-root]
 ---
 
@@ -110,6 +110,8 @@ frontend/
 <!-- include: shared/frontend/component-rules.md -->
 
 <!-- include: shared/frontend/request-rules.md -->
+
+<!-- include: shared/frontend/contract-type-rules.md -->
 
 <!-- include: shared/frontend/code-organization.md -->
 

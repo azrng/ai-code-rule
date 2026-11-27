@@ -27,6 +27,8 @@ dependencies: [agents-root]
 
 <!-- include: shared/doc/contract-requirements.md -->
 
+<!-- include: shared/doc/contract-id-type.md -->
+
 ---
 
 <!-- include: shared/doc/doc-update.md -->

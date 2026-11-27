@@ -218,6 +218,7 @@ public class CompositionPlannerTests
     [Theory]
     [InlineData("react", "frontend-static-frontend-react", "arch/reactLinkdotNet/design-system.yaml")]
     [InlineData("vue", "frontend-static-frontend-vue", "arch/vueLinkdotNet/design-system.yaml")]
+    [InlineData("angular", "frontend-static-frontend-angular", "arch/angularOnly/design-system.yaml")]
     [InlineData("general", "generalFrontend", "arch/generalProject/design-system.yaml")]
     public void 纯前端组合解析出公共壳与前端组件(
         string frontend, string frontendComponent, string designSystemSource)

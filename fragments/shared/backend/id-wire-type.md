@@ -1,0 +1,2 @@
+### 雪花 id 线上类型
+- 实体主键为雪花 `long` 时，响应里所有 id 类 `long` 字段（主键、外键、关联 id，含 `long?`）的 JSON 线上类型必须是字符串：`long` 超出 JS 安全整数（2^53）后浏览器 `JSON.parse` 静默舍入，前端拿到的是另一个 id。DTO 属性类型保持 `long`，在属性上标注包内置转换器（入参同时兼容字符串与数字）：MVC 默认的 System.Text.Json 用 `Azrng.Core.Json` 的 `LongToStringConverter`，走 `AddNewtonsoftJson` 的项目用 `Azrng.Core.NewtonsoftJson` 的 `JsonConverterLong` 或 `LongToStringConverter`；转换器与 MVC 实际序列化器不同族时标注不生效也不报错。也可改为全局开启 long→string（写法见 onion-architecture 技能「JSON 序列化」，未导入时按包 README），同一项目只用一种方式。禁止裸 `long` id 直接出参，禁止把精度问题留给前端处理。

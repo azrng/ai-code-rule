@@ -1,7 +1,7 @@
 namespace RuleAssembler.Tests;
 
 // P1-4 兼容回归：必覆盖组合的「检测 → 能力开关 → 渲染 → 契约校验」全链路样例。
-// 覆盖：.NET + React、.NET 分层、React + Wails、React + Electron + .NET、React / Vue + 纯 Electron、纯静态 HTML、纯后端 Python
+// 覆盖：.NET + React、.NET 分层、React + Wails、React + Electron + .NET、React / Vue + 纯 Electron、Angular 纯前端、纯静态 HTML、纯后端 Python
 public sealed class ComboRegressionTests : IDisposable
 {
     private readonly string _root;
@@ -307,6 +307,27 @@ public sealed class ComboRegressionTests : IDisposable
     }
 
     [Fact]
+    public void Combo_AngularOnly_DetectsAndRenders()
+    {
+        // Angular 纯前端 SPA：@angular/core 信号唯一收敛到 angularOnly，
+        // frontend 规则携带 ng-zorro 口径，无独立后端产物
+        var result = Detect(root =>
+            File.WriteAllText(
+                Path.Combine(root, "package.json"),
+                "{\"dependencies\":{\"@angular/core\":\"^19.0.0\"},\"devDependencies\":{\"@angular/cli\":\"^19.0.0\"}}"));
+
+        Assert.True(result.Converged);
+        Assert.Equal("angularOnly", result.SampleProfileId);
+        var plan = PlanOf(result);
+        var files = _renderer.Plan(_manifest, plan, FeatureSelection.Defaults(_manifest, plan));
+        var frontend = Assert.Single(files, file => file.Output == "frontend-AGENTS.md");
+        Assert.Contains("NG-ZORRO", frontend.Content, StringComparison.Ordinal);
+        Assert.Contains(files, file => file.Output == "design-system.yaml");
+        Assert.DoesNotContain(files, file => file.Output == "backend-AGENTS.md");
+        AssertContractPasses(plan, "angularOnly");
+    }
+
+    [Fact]
     public void Combo_ReactOnlyAi_RendersWithFrontendAiModule()
     {
         // 纯前端 + AI：ai-AGENTS.md 来自前端 AI 模块，frontend/doc/infra 为骨架追加 AI 补充段，
@@ -357,7 +378,7 @@ public sealed class ComboRegressionTests : IDisposable
     public void Combo_AllCases_DefaultFeatureRenderIsStable()
     {
         // 全量兼容样例：默认能力集渲染、契约校验全部通过
-        Assert.Equal(39, _manifest.CompatibilityCases.Count);
+        Assert.Equal(40, _manifest.CompatibilityCases.Count);
         foreach (var caseItem in _manifest.CompatibilityCases)
         {
             var plan = PlanFor(caseItem.Profile);
